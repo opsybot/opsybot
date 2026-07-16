@@ -1,0 +1,206 @@
+<script lang="ts">
+	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
+	import CheckIcon from '@lucide/svelte/icons/check';
+	import GlobeIcon from '@lucide/svelte/icons/globe';
+	import PlusIcon from '@lucide/svelte/icons/plus';
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
+	import { untrack } from 'svelte';
+	import { superForm, type SuperValidated } from 'sveltekit-superforms';
+	import { zod4Client } from 'sveltekit-superforms/adapters';
+	import { Alert, AlertContent, AlertTitle } from '$lib/components/ui/alert';
+	import { Button } from '$lib/components/ui/button';
+	import * as Field from '$lib/components/ui/field';
+	import { Input } from '$lib/components/ui/input';
+	import * as Select from '$lib/components/ui/select';
+	import { scheduleSchema } from '$lib/schemas/oncall';
+	import { TEAMS, UNREACHABLE, type Layer } from '$lib/oncall';
+	import LayerCard from './layer-card.svelte';
+	import PreviewGrid from './preview-grid.svelte';
+
+	let {
+		data,
+		heading,
+		submitLabel,
+		back,
+		previewFrom
+	}: {
+		data: SuperValidated<{ name: string; team: string; layers: Layer[] }>;
+		heading: string;
+		submitLabel: string;
+		back: string;
+		previewFrom: string;
+	} = $props();
+
+	// dataType 'json' so the nested layers array posts as one object
+	const form = superForm(untrack(() => data), {
+		dataType: 'json',
+		validators: zod4Client(scheduleSchema)
+	});
+	const { form: formData, errors, enhance } = form;
+
+	const layers = $derived($formData.layers);
+	const nobodyIn = $derived(layers.some((layer) => layer.participants.length === 0));
+	const layerErrors = $derived(
+		($errors.layers ?? {}) as Record<
+			number,
+			{ participants?: string[]; intervalDays?: string[]; startsOn?: string[] } | undefined
+		>
+	);
+	const unreachable = $derived([
+		...new Set(
+			layers.flatMap((layer) => layer.participants.filter((person) => UNREACHABLE.includes(person)))
+		)
+	]);
+
+	function update(index: number, patch: Partial<Layer>) {
+		$formData.layers = layers.map((layer, position) =>
+			position === index ? { ...layer, ...patch } : layer
+		);
+	}
+
+	function move(index: number, by: number) {
+		const next = [...layers];
+		[next[index], next[index + by]] = [next[index + by], next[index]];
+		$formData.layers = next;
+	}
+
+	function remove(index: number) {
+		$formData.layers = layers.filter((_, position) => position !== index);
+	}
+
+	function addLayer() {
+		$formData.layers = [
+			...layers,
+			{
+				id: `l-${Math.random().toString(36).slice(2, 7)}`,
+				participants: [],
+				rotation: 'weekly',
+				intervalDays: 7,
+				handoverHour: 9,
+				startsOn: previewFrom,
+				restrictions: []
+			}
+		];
+	}
+</script>
+
+<div class="flex flex-col gap-3.5">
+	<a
+		href={back}
+		class="text-muted-foreground hover:text-brand-foreground inline-flex items-center gap-1.5 self-start text-[12.5px]"
+	>
+		<ArrowLeftIcon class="size-3.5" />
+		{back === '/on-call' ? 'All schedules' : 'Back to schedule'}
+	</a>
+
+	<h2 class="tracking-heading m-0 text-[18px] font-semibold">{heading}</h2>
+
+	<form method="POST" use:enhance>
+		<div class="grid items-start gap-3.5 min-[1100px]:grid-cols-[minmax(0,1fr)_360px]">
+			<div class="flex min-w-0 flex-col gap-3.5">
+				<div class="bg-card flex flex-wrap gap-3 rounded-xl border p-4">
+					<Field.Field class="min-w-[200px] flex-1 gap-1.5 space-y-0">
+						<Field.FieldLabel for="name" class="text-muted-foreground text-[13px] font-medium">
+							Name
+						</Field.FieldLabel>
+						<Input
+							id="name"
+							name="name"
+							bind:value={$formData.name}
+							aria-invalid={$errors.name ? 'true' : undefined}
+							class="font-mono"
+						/>
+						{#if $errors.name}
+							<Field.FieldError class="text-critical-ink text-xs font-normal">
+								{$errors.name}
+							</Field.FieldError>
+						{:else}
+							<Field.FieldDescription class="text-subtle-foreground text-xs">
+								Used in the calendar feed URL.
+							</Field.FieldDescription>
+						{/if}
+					</Field.Field>
+
+					<Field.Field class="w-[180px] gap-1.5 space-y-0">
+						<Field.FieldLabel class="text-muted-foreground text-[13px] font-medium">
+							Team
+						</Field.FieldLabel>
+						<Select.Root type="single" name="team" bind:value={$formData.team}>
+							<Select.Trigger>{$formData.team}</Select.Trigger>
+							<Select.Content>
+								<Select.Group>
+									{#each TEAMS as team (team)}
+										<Select.Item value={team} label={team}>{team}</Select.Item>
+									{/each}
+								</Select.Group>
+							</Select.Content>
+						</Select.Root>
+					</Field.Field>
+				</div>
+
+				<Alert tone="info">
+					<GlobeIcon />
+					<AlertContent>
+						<AlertTitle>How timezones work</AlertTitle>
+						Shifts are stored in UTC. Everyone sees the calendar in their own timezone, and handovers
+						happen at the same instant everywhere — 09:00 UTC is 11:00 for Berlin responders and 02:00
+						for San Francisco.
+					</AlertContent>
+				</Alert>
+
+				{#if unreachable.length}
+					<Alert tone="warning">
+						<TriangleAlertIcon />
+						<AlertContent>
+							<AlertTitle>
+								{unreachable.join(', ')}
+								{unreachable.length === 1 ? 'has' : 'have'} no notification channel
+							</AlertTitle>
+							They would be skipped when paged. Ask them to connect a channel before this schedule goes
+							live.
+						</AlertContent>
+					</Alert>
+				{/if}
+
+				{#each layers as layer, index (layer.id)}
+					<LayerCard
+						{layer}
+						{index}
+						total={layers.length}
+						errors={layerErrors[index]}
+						{update}
+						{move}
+						{remove}
+					/>
+				{/each}
+
+				<Button type="button" variant="secondary" size="sm" class="self-start" onclick={addLayer}>
+					<PlusIcon data-icon="inline-start" />
+					Add layer
+				</Button>
+
+				<div class="flex gap-2.5 pt-1">
+					<Button type="submit" disabled={nobodyIn}>
+						<CheckIcon data-icon="inline-start" />
+						{submitLabel}
+					</Button>
+					<Button variant="ghost" href={back}>Cancel</Button>
+				</div>
+			</div>
+
+			<section class="bg-card overflow-hidden rounded-xl border">
+				<header class="flex items-center gap-2.5 border-b px-4 py-3">
+					<span class="text-[13.5px] font-semibold">Preview</span>
+					<span class="text-subtle-foreground ml-auto font-mono text-[10.5px]">UTC</span>
+				</header>
+				<div class="overflow-x-auto p-3">
+					<PreviewGrid {layers} from={previewFrom} />
+					<p class="text-subtle-foreground m-0 mt-2.5 px-0.5 text-[11px] leading-[1.5]">
+						The top row is who actually gets paged — the highest layer on duty with people in it
+						wins.
+					</p>
+				</div>
+			</section>
+		</div>
+	</form>
+</div>
