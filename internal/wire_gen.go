@@ -10,8 +10,10 @@ import (
 	"github.com/goforj/wire"
 	"github.com/opsybot/opsybot/internal/config"
 	"github.com/opsybot/opsybot/internal/pkg"
+	"github.com/opsybot/opsybot/internal/pkg/casbin"
 	"github.com/opsybot/opsybot/internal/pkg/logger"
 	"github.com/opsybot/opsybot/internal/pkg/postgres"
+	"github.com/opsybot/opsybot/internal/pkg/valkey"
 	"github.com/opsybot/opsybot/internal/repository"
 )
 
@@ -29,16 +31,53 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
+	configCasbin := config.NewCasbin(configConfig)
+	configValkey := config.NewValkey(configConfig)
+	valkeyClient, cleanup2, err := valkey.New(configValkey)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	casbinClient, cleanup3, err := casbin.New(configCasbin, client, valkeyClient)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
 	app := &App{
-		Cfg: configConfig,
+		Cfg:      configConfig,
+		Log:      slogLogger,
+		PG:       client,
+		Enforcer: casbinClient,
+	}
+	return app, func() {
+		cleanup3()
+		cleanup2()
+		cleanup()
+	}, nil
+}
+
+func InitMigrator(cfgFile string) (*Migrator, func(), error) {
+	configConfig, err := config.New(cfgFile)
+	if err != nil {
+		return nil, nil, err
+	}
+	log := config.NewLog(configConfig)
+	slogLogger := logger.New(log)
+	configPostgres := config.NewPostgres(configConfig)
+	client, cleanup, err := postgres.New(configPostgres)
+	if err != nil {
+		return nil, nil, err
+	}
+	migrator := &Migrator{
 		Log: slogLogger,
 		PG:  client,
 	}
-	return app, func() {
+	return migrator, func() {
 		cleanup()
 	}, nil
 }
 
 // wire.go:
 
-var baseSet = wire.NewSet(config.Set, pkg.Set, repository.Set, wire.Struct(new(App), "*"))
+var baseSet = wire.NewSet(config.Set, pkg.Set, repository.Set, wire.Struct(new(App), "*"), wire.Struct(new(Migrator), "*"))

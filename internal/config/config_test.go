@@ -35,6 +35,20 @@ func TestNewDefaults(t *testing.T) {
 		p.ConnectTimeout != 5*time.Second {
 		t.Errorf("unexpected duration defaults: %+v", p)
 	}
+	vk := cfg.Valkey
+	if len(vk.Addrs) != 1 || vk.Addrs[0] != "localhost:6379" {
+		t.Errorf("Valkey.Addrs = %v, want [localhost:6379]", vk.Addrs)
+	}
+	if vk.DB != 0 || vk.PoolSize != 10 {
+		t.Errorf("unexpected valkey pool defaults: %+v", vk)
+	}
+	if vk.DialTimeout != 5*time.Second || vk.ReadTimeout != 3*time.Second ||
+		vk.WriteTimeout != 3*time.Second {
+		t.Errorf("unexpected valkey duration defaults: %+v", vk)
+	}
+	if cfg.Casbin.TableName != "casbin_rule" || cfg.Casbin.Channel != "/casbin" {
+		t.Errorf("unexpected casbin defaults: %+v", cfg.Casbin)
+	}
 }
 
 func TestNewEnvOverridesDefaults(t *testing.T) {
@@ -118,5 +132,36 @@ func TestNewPostgres(t *testing.T) {
 	cfg := config.Config{Postgres: config.Postgres{Host: "h"}}
 	if got := config.NewPostgres(cfg); got.Host != "h" {
 		t.Fatalf("NewPostgres.Host = %q, want h", got.Host)
+	}
+}
+
+func TestNewValkeyAddrsFromCommaSeparatedEnv(t *testing.T) {
+	t.Setenv("OPSYBOT_VALKEY_ADDRS", "a:6379,b:6380")
+	t.Setenv("OPSYBOT_VALKEY_DB", "3")
+
+	cfg, err := config.New("")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	got := cfg.Valkey.Addrs
+	if len(got) != 2 || got[0] != "a:6379" || got[1] != "b:6380" {
+		t.Errorf("Valkey.Addrs = %v, want [a:6379 b:6380]", got)
+	}
+	if cfg.Valkey.DB != 3 {
+		t.Errorf("Valkey.DB = %d, want 3", cfg.Valkey.DB)
+	}
+}
+
+func TestNewCasbin(t *testing.T) {
+	cfg := config.Config{Casbin: config.Casbin{TableName: "t"}}
+	if got := config.NewCasbin(cfg); got.TableName != "t" {
+		t.Fatalf("NewCasbin.TableName = %q, want t", got.TableName)
+	}
+}
+
+func TestNewValkey(t *testing.T) {
+	cfg := config.Config{Valkey: config.Valkey{Password: "p"}}
+	if got := config.NewValkey(cfg); got.Password != "p" {
+		t.Fatalf("NewValkey.Password = %q, want p", got.Password)
 	}
 }

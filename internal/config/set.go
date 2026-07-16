@@ -6,4 +6,6 @@ var Set = wire.NewSet(
 	New,
 	NewPostgres,
 	NewLog,
+	NewValkey,
+	NewCasbin,
 )

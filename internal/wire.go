@@ -15,9 +15,15 @@ var baseSet = wire.NewSet(
 	pkg.Set,
 	repository.Set,
 	wire.Struct(new(App), "*"),
+	wire.Struct(new(Migrator), "*"),
 )
 
 func InitApp(cfgFile string) (*App, func(), error) {
+	wire.Build(baseSet)
+	return nil, nil, nil
+}
+
+func InitMigrator(cfgFile string) (*Migrator, func(), error) {
 	wire.Build(baseSet)
 	return nil, nil, nil
 }

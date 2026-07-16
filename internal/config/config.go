@@ -13,6 +13,8 @@ type Config struct {
 	ShutdownTimeout time.Duration `mapstructure:"shutdown_timeout"`
 	Log             Log           `mapstructure:"log"`
 	Postgres        Postgres      `mapstructure:"postgres"`
+	Valkey          Valkey        `mapstructure:"valkey"`
+	Casbin          Casbin        `mapstructure:"casbin"`
 }
 
 type Log struct {
@@ -35,12 +37,36 @@ type Postgres struct {
 	ConnectTimeout  time.Duration `mapstructure:"connect_timeout"`
 }
 
+type Valkey struct {
+	Addrs        []string      `mapstructure:"addrs"`
+	Username     string        `mapstructure:"username"`
+	Password     string        `mapstructure:"password"`
+	DB           int           `mapstructure:"db"`
+	DialTimeout  time.Duration `mapstructure:"dial_timeout"`
+	ReadTimeout  time.Duration `mapstructure:"read_timeout"`
+	WriteTimeout time.Duration `mapstructure:"write_timeout"`
+	PoolSize     int           `mapstructure:"pool_size"`
+}
+
+type Casbin struct {
+	TableName string `mapstructure:"table_name"`
+	Channel   string `mapstructure:"channel"`
+}
+
 func NewPostgres(cfg Config) Postgres {
 	return cfg.Postgres
 }
 
 func NewLog(cfg Config) Log {
 	return cfg.Log
+}
+
+func NewValkey(cfg Config) Valkey {
+	return cfg.Valkey
+}
+
+func NewCasbin(cfg Config) Casbin {
+	return cfg.Casbin
 }
 
 func New(cfgFile string) (Config, error) {
@@ -62,6 +88,16 @@ func New(cfgFile string) (Config, error) {
 	v.SetDefault("postgres.conn_max_lifetime", "5m")
 	v.SetDefault("postgres.conn_max_idle_time", "5m")
 	v.SetDefault("postgres.connect_timeout", "5s")
+	v.SetDefault("valkey.addrs", []string{"localhost:6379"})
+	v.SetDefault("valkey.username", "")
+	v.SetDefault("valkey.password", "")
+	v.SetDefault("valkey.db", 0)
+	v.SetDefault("valkey.dial_timeout", "5s")
+	v.SetDefault("valkey.read_timeout", "3s")
+	v.SetDefault("valkey.write_timeout", "3s")
+	v.SetDefault("valkey.pool_size", 10)
+	v.SetDefault("casbin.table_name", "casbin_rule")
+	v.SetDefault("casbin.channel", "/casbin")
 
 	v.SetEnvPrefix("OPSYBOT")
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))

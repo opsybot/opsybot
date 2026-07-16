@@ -5,14 +5,16 @@ import (
 	"log/slog"
 
 	"github.com/opsybot/opsybot/internal/config"
+	"github.com/opsybot/opsybot/internal/pkg/casbin"
 	"github.com/opsybot/opsybot/internal/pkg/logger"
 	"github.com/opsybot/opsybot/internal/pkg/postgres"
 )
 
 type App struct {
-	Cfg config.Config
-	Log *slog.Logger
-	PG  postgres.Client
+	Cfg      config.Config
+	Log      *slog.Logger
+	PG       postgres.Client
+	Enforcer casbin.Client
 }
 
 func (a *App) Run(ctx context.Context) error {
