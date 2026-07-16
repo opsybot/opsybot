@@ -3,6 +3,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import type { Shift } from '$lib/dashboard';
 	import { untrack } from 'svelte';
+	import { ws } from '$lib/navigation';
 	import { formatUtcTime } from '$lib/time';
 
 	let { shift, now: serverNow }: { shift: Shift; now: number } = $props();
@@ -46,7 +47,7 @@
 		</div>
 	</div>
 
-	<Button variant="secondary" size="sm" href="/on-call">
+	<Button variant="secondary" size="sm" href={ws('/on-call')}>
 		<CalendarClockIcon data-icon="inline-start" />
 		View schedule
 	</Button>

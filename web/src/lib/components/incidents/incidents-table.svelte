@@ -7,6 +7,7 @@
 	import * as Table from '$lib/components/ui/table';
 	import { SEVERITY_TONE } from '$lib/dashboard';
 	import type { Incident } from '$lib/incidents';
+	import { ws } from '$lib/navigation';
 	import { formatAge, formatDue } from '$lib/time';
 	import {
 		getCoreRowModel,
@@ -91,7 +92,7 @@
 	<Table.Body>
 		{#each rows as incident (incident.id)}
 			{@const overdue = incident.nextUpdateAt && Date.parse(incident.nextUpdateAt) < now}
-			<Table.Row data-clickable="true" onclick={() => goto(`/incidents/${incident.id}`)}>
+			<Table.Row data-clickable="true" onclick={() => goto(ws(`/incidents/${incident.id}`))}>
 				<Table.Cell class="p-3 pl-[18px]">
 					<div class="flex items-center gap-2.5">
 						<Badge tone={SEVERITY_TONE[incident.severity]} size="sm">{incident.severity}</Badge>
@@ -132,7 +133,7 @@
 {#if rows.length === 0}
 	<div class="flex flex-col items-center gap-2.5 px-5 py-9">
 		<div class="text-sm font-medium">Nothing matches these filters</div>
-		<a href="/incidents" class="text-muted-foreground hover:text-brand-foreground text-[12.5px]">
+		<a href={ws('/incidents')} class="text-muted-foreground hover:text-brand-foreground text-[12.5px]">
 			Reset all filters
 		</a>
 	</div>

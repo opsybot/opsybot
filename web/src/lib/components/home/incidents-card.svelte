@@ -5,6 +5,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Table from '$lib/components/ui/table';
 	import { SEVERITY_TONE, type Incident } from '$lib/dashboard';
+	import { ws } from '$lib/navigation';
 	import Card from './card.svelte';
 	import LiveAge from './live-age.svelte';
 	import QuietRow from './quiet-row.svelte';
@@ -20,7 +21,7 @@
 	live={incidents.length > 0}
 >
 	{#snippet aside()}
-		<a href="/incidents" class="text-brand-foreground text-[12.5px] hover:underline">View all</a>
+		<a href={ws('/incidents')} class="text-brand-foreground text-[12.5px] hover:underline">View all</a>
 	{/snippet}
 
 	{#if incidents.length === 0}
@@ -38,7 +39,7 @@
 
 			<Table.Body>
 				{#each incidents as incident (incident.id)}
-					<Table.Row data-clickable="true" onclick={() => goto('/incidents')}>
+					<Table.Row data-clickable="true" onclick={() => goto(ws('/incidents'))}>
 						<Table.Cell class="p-3 pl-[18px]">
 							<div class="flex items-center gap-2.5">
 								<Badge tone={SEVERITY_TONE[incident.severity]} size="sm">

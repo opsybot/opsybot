@@ -1,6 +1,6 @@
 <script lang="ts">
 	import * as Command from '$lib/components/ui/command';
-	import { navigation } from '$lib/navigation';
+	import { navigation, ws } from '$lib/navigation';
 	import { useAppShell } from './context.svelte';
 
 	const shell = useAppShell();
@@ -29,7 +29,7 @@
 			{/if}
 			<Command.Group heading={section.label ?? 'Go to'}>
 				{#each section.items as item (item.href)}
-					<Command.LinkItem href={item.href} onSelect={() => (shell.commandOpen = false)}>
+					<Command.LinkItem href={ws(item.href)} onSelect={() => (shell.commandOpen = false)}>
 						<item.icon />
 						<span>{item.title}</span>
 					</Command.LinkItem>

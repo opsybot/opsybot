@@ -90,7 +90,7 @@
 		class="text-muted-foreground hover:text-brand-foreground inline-flex items-center gap-1.5 self-start text-[12.5px]"
 	>
 		<ArrowLeftIcon class="size-3.5" />
-		{back === '/on-call' ? 'All schedules' : 'Back to schedule'}
+		{back.endsWith('/on-call') ? 'All schedules' : 'Back to schedule'}
 	</a>
 
 	<h2 class="tracking-heading m-0 text-[18px] font-semibold">{heading}</h2>

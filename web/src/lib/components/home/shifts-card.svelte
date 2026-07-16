@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Badge } from '$lib/components/ui/badge';
 	import type { Shift } from '$lib/dashboard';
+	import { ws } from '$lib/navigation';
 	import { formatUtcDate, formatUtcTime } from '$lib/time';
 	import RailCard from './rail-card.svelte';
 
@@ -37,7 +38,7 @@
 
 <RailCard title="My next 7 days">
 	{#snippet footer()}
-		<a href="/on-call" class="text-brand-foreground hover:underline">Full schedule</a>
+		<a href={ws('/on-call')} class="text-brand-foreground hover:underline">Full schedule</a>
 	{/snippet}
 
 	<div class="grid grid-cols-7 gap-[5px] px-4 pt-3 pb-1" aria-hidden="true">

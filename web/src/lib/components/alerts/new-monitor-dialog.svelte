@@ -9,6 +9,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import * as Select from '$lib/components/ui/select';
 	import { ESCALATION_POLICIES, GRACE_PERIODS, INTERVALS } from '$lib/alerts';
+	import { ws } from '$lib/navigation';
 
 	let { open = $bindable(false) }: { open?: boolean } = $props();
 
@@ -87,7 +88,7 @@
 		{:else}
 			<form
 				method="POST"
-				action="/alerts/heartbeats?/create"
+				action="{ws('/alerts/heartbeats')}?/create"
 				use:enhance={() => async ({ result, update }) => {
 					await update({ reset: false, invalidateAll: true });
 					if (result.type === 'success' && result.data?.url) {

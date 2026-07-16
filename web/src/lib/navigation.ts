@@ -19,6 +19,7 @@ import SettingsIcon from '@lucide/svelte/icons/settings';
 import SirenIcon from '@lucide/svelte/icons/siren';
 import SparklesIcon from '@lucide/svelte/icons/sparkles';
 import WorkflowIcon from '@lucide/svelte/icons/workflow';
+import { page } from '$app/state';
 
 export type NavItem = {
 	title: string;
@@ -66,6 +67,14 @@ export const navigation: NavSection[] = [
 		]
 	}
 ];
+
+export function ws(path = ''): string {
+	return `/${page.params.workspace}${path === '/' ? '' : path}`;
+}
+
+export function workspacePath(pathname: string, workspace: string): string {
+	return pathname.slice(`/${workspace}`.length) || '/';
+}
 
 export function isCurrentSection(pathname: string, href: string): boolean {
 	if (href === '/') return pathname === '/';

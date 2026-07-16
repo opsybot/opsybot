@@ -2,6 +2,7 @@
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { Button } from '$lib/components/ui/button';
 	import type { InstanceHealth } from '$lib/dashboard';
+	import { ws } from '$lib/navigation';
 	import { formatUtc } from '$lib/time';
 
 	let { instance }: { instance: InstanceHealth } = $props();
@@ -21,7 +22,7 @@
 			Last check {formatUtc(instance.checkedAt)}
 		</span>
 	</span>
-	<Button variant="ghost" size="sm" href="/operations" class="ml-auto shrink-0">
+	<Button variant="ghost" size="sm" href={ws('/operations')} class="ml-auto shrink-0">
 		View diagnostics
 	</Button>
 </div>

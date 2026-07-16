@@ -6,6 +6,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import type { Onboarding } from '$lib/dashboard';
+	import { ws } from '$lib/navigation';
 	import { ONBOARDING_STEPS } from '$lib/onboarding';
 
 	let {
@@ -90,7 +91,7 @@
 					{#if stepDone}
 						<span class="text-brand-foreground px-2 text-[12.5px] font-medium">Done</span>
 					{:else}
-						<Button variant="secondary" size="sm" href={step.href}>
+						<Button variant="secondary" size="sm" href={ws(step.href)}>
 							<step.icon data-icon="inline-start" />
 							{step.action}
 						</Button>

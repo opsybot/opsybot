@@ -7,6 +7,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Textarea } from '$lib/components/ui/textarea';
+	import { ws } from '$lib/navigation';
 	import type { Factor } from '$lib/postmortems';
 
 	let {
@@ -79,7 +80,7 @@
 			<span class="text-subtle-foreground text-[11.5px]">derived from:</span>
 			{#each factor.fromTimeline as entry (entry)}
 				<a
-					href="/incidents/{incidentId}/timeline"
+					href={ws(`/incidents/${incidentId}/timeline`)}
 					class="border-brand-edge text-brand-foreground hover:bg-brand-wash rounded-full border px-2 py-0.5 font-mono text-[10.5px]"
 				>
 					{entry}

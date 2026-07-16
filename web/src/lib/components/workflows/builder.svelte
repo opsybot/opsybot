@@ -17,6 +17,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Field from '$lib/components/ui/field';
 	import { Input } from '$lib/components/ui/input';
+	import { ws } from '$lib/navigation';
 	import {
 		ACTION_META,
 		ACTION_TYPES,
@@ -117,14 +118,14 @@
 					? `“${name.trim()}” saved.`
 					: `“${name.trim()}” saved${fromTemplate ? ' from template' : ''}. It starts disabled — flip it on when ready.`
 			);
-			await goto('/workflows');
+			await goto(ws('/workflows'));
 		}}
 	class="flex max-w-[760px] flex-col gap-3.5"
 >
 	<input type="hidden" name="definition" value={definition} />
 
 	<a
-		href="/workflows"
+		href={ws('/workflows')}
 		class="text-muted-foreground hover:text-brand-foreground inline-flex items-center gap-1.5 self-start text-[12.5px] transition-colors"
 	>
 		<ArrowLeftIcon class="size-3.5" />
@@ -284,6 +285,6 @@
 			<CheckIcon data-icon="inline-start" />
 			Save workflow
 		</Button>
-		<Button variant="ghost" href="/workflows">Cancel</Button>
+		<Button variant="ghost" href={ws('/workflows')}>Cancel</Button>
 	</div>
 </form>

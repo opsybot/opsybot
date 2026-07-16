@@ -4,22 +4,18 @@
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
-	import { goto, invalidateAll } from '$app/navigation';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import {
-		healthColour,
-		WORKSPACE_COOKIE,
-		WORKSPACE_COOKIE_MAX_AGE,
-		type Session,
-		type Workspace
-	} from '$lib/session';
+	import { workspacePath, ws } from '$lib/navigation';
+	import { healthColour, type Session, type Workspace } from '$lib/session';
 
 	let { session }: { session: Session } = $props();
 
 	async function select(workspace: Workspace) {
 		if (workspace.id === session.activeWorkspace.id) return;
-		document.cookie = `${WORKSPACE_COOKIE}=${workspace.id}; path=/; max-age=${WORKSPACE_COOKIE_MAX_AGE}; samesite=lax`;
-		await invalidateAll();
+		const path = workspacePath(page.url.pathname, session.activeWorkspace.id);
+		await goto(`/${workspace.id}${path === '/' ? '' : path}${page.url.search}`);
 	}
 </script>
 
@@ -84,7 +80,7 @@
 		<DropdownMenu.Group>
 			<DropdownMenu.Item
 				class="text-muted-foreground rounded-xs gap-[9px] px-[9px] py-2 text-[12.5px]"
-				onSelect={() => goto('/workspace')}
+				onSelect={() => goto(ws('/workspace'))}
 			>
 				<SettingsIcon class="size-3.5 shrink-0" />
 				Workspace settings

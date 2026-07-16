@@ -4,6 +4,7 @@
 	import SirenIcon from '@lucide/svelte/icons/siren';
 	import { Button } from '$lib/components/ui/button';
 	import * as Sidebar from '$lib/components/ui/sidebar';
+	import { ws } from '$lib/navigation';
 	import CommandTrigger from './command-trigger.svelte';
 	import { useAppShell } from './context.svelte';
 	import ThemeToggle from './theme-toggle.svelte';
@@ -47,7 +48,7 @@
 
 	{@render actions?.()}
 
-	<Button variant="destructive" size="sm" href="/incidents?declare">
+	<Button variant="destructive" size="sm" href={ws('/incidents?declare')}>
 		<SirenIcon data-icon="inline-start" />
 		Declare
 	</Button>

@@ -5,6 +5,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Select from '$lib/components/ui/select';
 	import { RANGE_OPTIONS, SERVICES, SEVERITIES, TEAMS, filterQuery, parseFilters, type Filters } from '$lib/insights';
+	import { ws } from '$lib/navigation';
 
 	let { tab }: { tab: string } = $props();
 
@@ -25,7 +26,7 @@
 	const exportHref = $derived.by(() => {
 		const params = new URLSearchParams(filterQuery(filters));
 		params.set('tab', tab);
-		return `/insights/export?${params}`;
+		return ws(`/insights/export?${params}`);
 	});
 </script>
 

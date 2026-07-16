@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Sidebar from '$lib/components/ui/sidebar';
-	import { isCurrentSection, navigation } from '$lib/navigation';
+	import { isCurrentSection, navigation, workspacePath, ws } from '$lib/navigation';
 	import type { Session } from '$lib/session';
 	import UserCard from './user-card.svelte';
 	import Wordmark from './wordmark.svelte';
@@ -15,6 +15,8 @@
 		session: Session;
 		counts: { openIncidents: number };
 	} = $props();
+
+	const current = $derived(workspacePath(page.url.pathname, page.params.workspace ?? ''));
 </script>
 
 <Sidebar.Root>
@@ -42,14 +44,14 @@
 				<Sidebar.GroupContent>
 					<Sidebar.Menu class="gap-[2px]">
 						{#each section.items as item (item.href)}
-							{@const current = isCurrentSection(page.url.pathname, item.href)}
+							{@const active = isCurrentSection(current, item.href)}
 							<Sidebar.MenuItem>
 								<Sidebar.MenuButton
-									isActive={current}
+									isActive={active}
 									class="h-auto gap-[11px] rounded-sm px-[11px] py-2 text-[13.5px] leading-[18px] font-medium"
 								>
 									{#snippet child({ props })}
-										<a href={item.href} aria-current={current ? 'page' : undefined} {...props}>
+										<a href={ws(item.href)} aria-current={active ? 'page' : undefined} {...props}>
 											<item.icon />
 											<span class="flex-1">{item.title}</span>
 											{#if item.href === '/incidents' && counts.openIncidents > 0}

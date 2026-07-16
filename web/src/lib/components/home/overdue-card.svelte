@@ -4,6 +4,7 @@
 	import ListChecksIcon from '@lucide/svelte/icons/list-checks';
 	import { Button } from '$lib/components/ui/button';
 	import type { OverdueItem, OverdueKind } from '$lib/dashboard';
+	import { ws } from '$lib/navigation';
 	import { formatDue } from '$lib/time';
 	import QuietRow from './quiet-row.svelte';
 	import RailCard from './rail-card.svelte';
@@ -38,7 +39,7 @@
 					</div>
 				</div>
 
-				<Button variant="ghost" size="sm" href={item.href}>{item.action}</Button>
+				<Button variant="ghost" size="sm" href={ws(item.href)}>{item.action}</Button>
 			</div>
 		{/each}
 	{/if}

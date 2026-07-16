@@ -7,6 +7,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import SurfaceOff from '$lib/components/ai/surface-off.svelte';
+	import { ws } from '$lib/navigation';
 
 	let { enabled }: { enabled: boolean } = $props();
 
@@ -23,7 +24,7 @@
 {#if !enabled}
 	<SurfaceOff>
 		Catch-me-up needs a model. AI is off or no model is configured —
-		<a href="/ai" class="text-brand-foreground hover:underline">connect one</a>.
+		<a href={ws('/ai')} class="text-brand-foreground hover:underline">connect one</a>.
 	</SurfaceOff>
 {:else}
 	<div class="bg-card rounded-xl border px-4 py-3.5">

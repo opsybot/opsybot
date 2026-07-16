@@ -3,6 +3,7 @@
 	import MegaphoneIcon from '@lucide/svelte/icons/megaphone';
 	import UsersIcon from '@lucide/svelte/icons/users';
 	import WrenchIcon from '@lucide/svelte/icons/wrench';
+	import { ws } from '$lib/navigation';
 
 	let { current }: { current: 'pages' | 'publish' | 'maintenance' | 'subscribers' } = $props();
 
@@ -18,7 +19,7 @@
 	{#each TABS as tab (tab.id)}
 		{@const active = tab.id === current}
 		<a
-			href={tab.href}
+			href={ws(tab.href)}
 			aria-current={active ? 'page' : undefined}
 			class="focus-visible:ring-ring/50 -mb-px inline-flex items-center gap-[7px] border-b-2 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors duration-[120ms] ease-out outline-none focus-visible:ring-2 [&_svg]:size-4 [&_svg]:shrink-0
 			{active

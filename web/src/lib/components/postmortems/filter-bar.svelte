@@ -5,6 +5,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import * as Select from '$lib/components/ui/select';
 	import { SERVICES } from '$lib/incidents';
+	import { ws } from '$lib/navigation';
 
 	let {
 		query,
@@ -93,7 +94,7 @@
 
 	{#if filtered}
 		<a
-			href="/postmortems"
+			href={ws('/postmortems')}
 			class="text-muted-foreground hover:text-brand-foreground text-[12.5px]"
 		>
 			Clear

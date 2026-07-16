@@ -9,6 +9,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import * as Select from '$lib/components/ui/select';
 	import { DURATIONS, SCOPE_FIELDS } from '$lib/alerts';
+	import { ws } from '$lib/navigation';
 
 	let { open = $bindable(false), source }: { open?: boolean; source: string | null } = $props();
 
@@ -32,7 +33,7 @@
 	<Dialog.Content class="sm:max-w-[520px]">
 		<form
 			method="POST"
-			action="/alerts/silences?/create"
+			action="{ws('/alerts/silences')}?/create"
 			use:enhance={() => async ({ update }) => {
 				await update();
 				open = false;

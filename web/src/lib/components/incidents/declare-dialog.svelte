@@ -14,6 +14,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import type { Severity } from '$lib/dashboard';
 	import { PEOPLE, SERVICES, SEVERITIES, type LinkedAlert } from '$lib/incidents';
+	import { ws } from '$lib/navigation';
 
 	let {
 		open = $bindable(false),
@@ -39,7 +40,7 @@
 	<Dialog.Content class="sm:max-w-[560px]">
 		<form
 			method="POST"
-			action="/incidents?/declare"
+			action="{ws('/incidents')}?/declare"
 			use:enhance={() => async ({ update }) => {
 				await update();
 				open = false;

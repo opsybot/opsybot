@@ -33,6 +33,7 @@
 		type Level,
 		type Tree
 	} from '$lib/escalation';
+	import { ws } from '$lib/navigation';
 
 	let { initial, backHref }: { initial: Tree; backHref: string } = $props();
 
@@ -118,7 +119,7 @@
 					}
 					if (result.type !== 'success') return;
 					toast.success('Policy saved. Applies to the next escalation.');
-					await goto(`/escalation-policies/${result.data?.id}`);
+					await goto(ws(`/escalation-policies/${result.data?.id}`));
 				}}
 		>
 			<input type="hidden" name="tree" value={treeJson} />

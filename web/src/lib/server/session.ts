@@ -16,9 +16,9 @@ function user(): SessionUser {
 	return { name: 'Maya Chen', onCallFor: offCall ? null : 'payments' };
 }
 
-export function getSession(cookies: Cookies): Session {
-	const id = cookies.get(WORKSPACE_COOKIE);
-	const activeWorkspace = WORKSPACES.find((workspace) => workspace.id === id) ?? WORKSPACES[0];
+export function getSession(workspaceId: string): Session | null {
+	const activeWorkspace = WORKSPACES.find((workspace) => workspace.id === workspaceId);
+	if (!activeWorkspace) return null;
 
 	return {
 		organization: ORGANIZATION,
@@ -26,4 +26,10 @@ export function getSession(cookies: Cookies): Session {
 		workspaces: WORKSPACES,
 		activeWorkspace
 	};
+}
+
+export function lastWorkspace(cookies: Cookies): string {
+	const id = cookies.get(WORKSPACE_COOKIE);
+	const known = WORKSPACES.find((workspace) => workspace.id === id);
+	return (known ?? WORKSPACES[0]).id;
 }

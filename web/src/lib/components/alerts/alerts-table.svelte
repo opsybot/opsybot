@@ -10,6 +10,7 @@
 	import * as Table from '$lib/components/ui/table';
 	import AlertStatus from './alert-status.svelte';
 	import { SEVERITY_SHORT, SEVERITY_TONE, type Alert } from '$lib/alerts';
+	import { ws } from '$lib/navigation';
 	import { formatSince } from '$lib/time';
 	import {
 		getCoreRowModel,
@@ -86,7 +87,7 @@
 {#if rows.length === 0}
 	<div class="flex flex-col items-center gap-2.5 px-5 py-9">
 		<div class="text-sm font-medium">Nothing matches these filters</div>
-		<a href="/alerts" class="text-muted-foreground hover:text-brand-foreground text-[12.5px]">
+		<a href={ws('/alerts')} class="text-muted-foreground hover:text-brand-foreground text-[12.5px]">
 			Reset all filters
 		</a>
 	</div>
@@ -107,7 +108,7 @@
 			{#each rows as alert (alert.id)}
 				<Table.Row
 					data-clickable="true"
-					onclick={() => goto(`/alerts/${alert.id}`)}
+					onclick={() => goto(ws(`/alerts/${alert.id}`))}
 					style="box-shadow: inset 3px 0 0 var(--{alert.severity})"
 				>
 					<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
