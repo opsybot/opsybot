@@ -10,7 +10,9 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/opsybot/opsybot/internal/config"
 	"github.com/opsybot/opsybot/internal/handler/http/middleware"
+	"github.com/opsybot/opsybot/internal/service"
 	dashboardapi "github.com/opsybot/opsybot/pkg/http/v1/dashboard"
 )
 
@@ -19,12 +21,14 @@ const (
 	tracerName       = "opsybot/http"
 )
 
-func NewRouter(log *slog.Logger, dashboard dashboardapi.StrictServerInterface) http.Handler {
+func NewRouter(log *slog.Logger, cfg config.Auth, auth service.Auth, dashboard dashboardapi.StrictServerInterface) http.Handler {
 	r := chi.NewRouter()
 	r.Use(chimiddleware.RequestID)
 	r.Use(otelMiddleware)
 	r.Use(middleware.Logger(log))
 	r.Use(middleware.Recoverer)
+	r.Use(middleware.ClientInfo(cfg.TrustProxyHeaders))
+	r.Use(middleware.Authn(auth, cfg))
 
 	dashboardapi.HandlerWithOptions(
 		dashboardapi.NewStrictHandler(dashboard, nil),

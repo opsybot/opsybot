@@ -181,6 +181,14 @@ func (s *srv) Resolve(ctx context.Context, token string) (entity.Identity, error
 	}, nil
 }
 
+func (s *srv) Profile(ctx context.Context) (entity.User, error) {
+	id, ok := entity.IdentityFrom(ctx)
+	if !ok {
+		return entity.User{}, entity.ErrUnauthenticated
+	}
+	return s.users.GetByID(ctx, id.UserID)
+}
+
 func (s *srv) issueSession(ctx context.Context, userID, ip, userAgent string, remember bool) (entity.Session, string, error) {
 	token, err := entity.GenerateToken(entity.SessionTokenLength)
 	if err != nil {

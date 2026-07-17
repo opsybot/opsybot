@@ -14,4 +14,5 @@ type Auth interface {
 	Login(ctx context.Context, in entity.LoginInput) (entity.LoginResult, error)
 	Logout(ctx context.Context) error
 	Resolve(ctx context.Context, token string) (entity.Identity, error)
+	Profile(ctx context.Context) (entity.User, error)
 }

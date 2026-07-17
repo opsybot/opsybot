@@ -18,7 +18,16 @@ import (
 	"github.com/opsybot/opsybot/internal/pkg/otel"
 	"github.com/opsybot/opsybot/internal/pkg/postgres"
 	"github.com/opsybot/opsybot/internal/pkg/valkey"
-	"github.com/opsybot/opsybot/internal/repository"
+	"github.com/opsybot/opsybot/internal/repository/lock"
+	"github.com/opsybot/opsybot/internal/repository/member"
+	"github.com/opsybot/opsybot/internal/repository/policy"
+	"github.com/opsybot/opsybot/internal/repository/session"
+	"github.com/opsybot/opsybot/internal/repository/transactor"
+	"github.com/opsybot/opsybot/internal/repository/user"
+	"github.com/opsybot/opsybot/internal/repository/workspace"
+	"github.com/opsybot/opsybot/internal/service/auth"
+	"github.com/opsybot/opsybot/internal/service/members"
+	"github.com/opsybot/opsybot/internal/service/workspaces"
 )
 
 // Injectors from wire.go:
@@ -57,8 +66,19 @@ func InitApp(cfgFile string) (*App, func(), error) {
 		cleanup()
 		return nil, nil, err
 	}
-	strictServerInterface := dashboard.New()
-	handler := http.NewRouter(slogLogger, strictServerInterface)
+	configAuth := config.NewAuth(configConfig)
+	repositoryTransactor := transactor.New(postgresClient)
+	repositoryLock := lock.New(postgresClient)
+	repositoryUser := user.New(postgresClient)
+	repositoryWorkspace := workspace.New(postgresClient)
+	repositoryMember := member.New(postgresClient)
+	repositorySession := session.New(postgresClient)
+	repositoryPolicy := policy.New(casbinClient, postgresClient)
+	serviceAuth := auth.New(configAuth, repositoryTransactor, repositoryLock, repositoryUser, repositoryWorkspace, repositoryMember, repositorySession, repositoryPolicy)
+	serviceWorkspaces := workspaces.New(repositoryWorkspace, repositoryMember)
+	serviceMembers := members.New(repositoryWorkspace, repositoryMember, repositoryPolicy)
+	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers)
+	handler := http.NewRouter(slogLogger, configAuth, serviceAuth, strictServerInterface)
 	app := &App{
 		OTel:     client,
 		Cfg:      configConfig,
@@ -98,4 +118,6 @@ func InitMigrator(cfgFile string) (*Migrator, func(), error) {
 
 // wire.go:
 
-var baseSet = wire.NewSet(config.Set, pkg.Set, repository.Set, handler.Set, wire.Struct(new(App), "*"), wire.Struct(new(Migrator), "*"))
+var baseSet = wire.NewSet(config.Set, pkg.Set, repositoryProviders,
+	serviceProviders, handler.Set, wire.Struct(new(App), "*"), wire.Struct(new(Migrator), "*"),
+)

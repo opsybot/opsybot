@@ -70,6 +70,21 @@ func (mr *MockAuthMockRecorder) Logout(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Logout", reflect.TypeOf((*MockAuth)(nil).Logout), ctx)
 }
 
+// Profile mocks base method.
+func (m *MockAuth) Profile(ctx context.Context) (entity.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Profile", ctx)
+	ret0, _ := ret[0].(entity.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Profile indicates an expected call of Profile.
+func (mr *MockAuthMockRecorder) Profile(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Profile", reflect.TypeOf((*MockAuth)(nil).Profile), ctx)
+}
+
 // Resolve mocks base method.
 func (m *MockAuth) Resolve(ctx context.Context, token string) (entity.Identity, error) {
 	m.ctrl.T.Helper()

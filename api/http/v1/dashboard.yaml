@@ -47,8 +47,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SessionUser"
-        "400": { $ref: "#/components/responses/Problem" }
-        "409": { $ref: "#/components/responses/Problem" }
+        "400":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /auth/login:
     post:
       operationId: login
@@ -71,10 +81,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/LoginResult"
-        "400": { $ref: "#/components/responses/Problem" }
-        "401": { $ref: "#/components/responses/Problem" }
-        "403": { $ref: "#/components/responses/Problem" }
-        "429": { $ref: "#/components/responses/Problem" }
+        "400":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "403":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "429":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /auth/logout:
     post:
       operationId: logout
@@ -87,7 +117,12 @@ paths:
             Set-Cookie:
               schema:
                 type: string
-        "401": { $ref: "#/components/responses/Problem" }
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /me:
     get:
       operationId: getMe
@@ -100,7 +135,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Profile"
-        "401": { $ref: "#/components/responses/Problem" }
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /workspaces:
     get:
       operationId: listWorkspaces
@@ -113,7 +153,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WorkspaceList"
-        "401": { $ref: "#/components/responses/Problem" }
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /workspaces/{workspaceId}:
     get:
       operationId: getWorkspace
@@ -132,8 +177,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Workspace"
-        "401": { $ref: "#/components/responses/Problem" }
-        "404": { $ref: "#/components/responses/Problem" }
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
 components:
   schemas:
     Health:
@@ -229,10 +284,3 @@ components:
         instance:
           type: string
           format: uri-reference
-  responses:
-    Problem:
-      description: The request failed
-      content:
-        application/problem+json:
-          schema:
-            $ref: "#/components/schemas/Problem"

@@ -484,8 +484,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	return r
 }
 
-type ProblemApplicationProblemPlusJSONResponse Problem
-
 type LoginRequestObject struct {
 	Body *LoginJSONRequestBody
 }
@@ -518,9 +516,7 @@ func (response Login200JSONResponse) VisitLoginResponse(w http.ResponseWriter) e
 	return err
 }
 
-type Login400ApplicationProblemPlusJSONResponse struct {
-	ProblemApplicationProblemPlusJSONResponse
-}
+type Login400ApplicationProblemPlusJSONResponse Problem
 
 func (response Login400ApplicationProblemPlusJSONResponse) VisitLoginResponse(w http.ResponseWriter) error {
 
@@ -599,9 +595,7 @@ func (response Logout204Response) VisitLogoutResponse(w http.ResponseWriter) err
 	return nil
 }
 
-type Logout401ApplicationProblemPlusJSONResponse struct {
-	ProblemApplicationProblemPlusJSONResponse
-}
+type Logout401ApplicationProblemPlusJSONResponse Problem
 
 func (response Logout401ApplicationProblemPlusJSONResponse) VisitLogoutResponse(w http.ResponseWriter) error {
 
@@ -668,9 +662,7 @@ func (response Setup201JSONResponse) VisitSetupResponse(w http.ResponseWriter) e
 	return err
 }
 
-type Setup400ApplicationProblemPlusJSONResponse struct {
-	ProblemApplicationProblemPlusJSONResponse
-}
+type Setup400ApplicationProblemPlusJSONResponse Problem
 
 func (response Setup400ApplicationProblemPlusJSONResponse) VisitSetupResponse(w http.ResponseWriter) error {
 
@@ -740,9 +732,7 @@ func (response GetMe200JSONResponse) VisitGetMeResponse(w http.ResponseWriter) e
 	return err
 }
 
-type GetMe401ApplicationProblemPlusJSONResponse struct {
-	ProblemApplicationProblemPlusJSONResponse
-}
+type GetMe401ApplicationProblemPlusJSONResponse Problem
 
 func (response GetMe401ApplicationProblemPlusJSONResponse) VisitGetMeResponse(w http.ResponseWriter) error {
 
@@ -777,9 +767,7 @@ func (response ListWorkspaces200JSONResponse) VisitListWorkspacesResponse(w http
 	return err
 }
 
-type ListWorkspaces401ApplicationProblemPlusJSONResponse struct {
-	ProblemApplicationProblemPlusJSONResponse
-}
+type ListWorkspaces401ApplicationProblemPlusJSONResponse Problem
 
 func (response ListWorkspaces401ApplicationProblemPlusJSONResponse) VisitListWorkspacesResponse(w http.ResponseWriter) error {
 
@@ -815,9 +803,7 @@ func (response GetWorkspace200JSONResponse) VisitGetWorkspaceResponse(w http.Res
 	return err
 }
 
-type GetWorkspace401ApplicationProblemPlusJSONResponse struct {
-	ProblemApplicationProblemPlusJSONResponse
-}
+type GetWorkspace401ApplicationProblemPlusJSONResponse Problem
 
 func (response GetWorkspace401ApplicationProblemPlusJSONResponse) VisitGetWorkspaceResponse(w http.ResponseWriter) error {
 

@@ -7,6 +7,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/member"
 	"github.com/opsybot/opsybot/internal/repository/policy"
 	"github.com/opsybot/opsybot/internal/repository/session"
+	"github.com/opsybot/opsybot/internal/repository/transactor"
 	"github.com/opsybot/opsybot/internal/repository/user"
 	"github.com/opsybot/opsybot/internal/repository/workspace"
 	"github.com/opsybot/opsybot/internal/service/auth"
@@ -15,6 +16,7 @@ import (
 )
 
 var repositoryProviders = wire.NewSet(
+	transactor.New,
 	lock.New,
 	user.New,
 	workspace.New,

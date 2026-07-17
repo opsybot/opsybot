@@ -42,11 +42,11 @@ func validationDetail(err error) string {
 const problemBase = "https://opsybot.dev/problems/"
 
 func prob(status int, title, detail, problemType string) api.Problem {
-	p := api.Problem{Title: title, Status: status, Detail: ptr(detail)}
+	pt := "about:blank"
 	if problemType != "" {
-		p.Type = ptr(problemBase + problemType)
+		pt = problemBase + problemType
 	}
-	return p
+	return api.Problem{Status: status, Title: title, Detail: &detail, Type: pt}
 }
 
 func ptr[T any](v T) *T { return &v }
