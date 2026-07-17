@@ -12,6 +12,12 @@ export type SessionUser = {
 	onCallFor: string | null;
 };
 
+export type AuthUser = {
+	id: string;
+	name: string;
+	email: string;
+};
+
 export type Session = {
 	organization: string;
 	user: SessionUser;

@@ -44,6 +44,9 @@ type Auth struct {
 	SessionTouchWindow time.Duration `mapstructure:"session_touch_window"`
 	TrustProxyHeaders  bool          `mapstructure:"trust_proxy_headers"`
 	InviteTTL          time.Duration `mapstructure:"invite_ttl"`
+	RateLoginPerMin    int           `mapstructure:"rate_login_per_min"`
+	RateResetPerHour   int           `mapstructure:"rate_reset_per_hour"`
+	RateSSOPerMin      int           `mapstructure:"rate_sso_per_min"`
 }
 
 type Environment string
@@ -190,6 +193,9 @@ func New(cfgFile string) (Config, error) {
 	v.SetDefault("auth.session_touch_window", "5m")
 	v.SetDefault("auth.trust_proxy_headers", false)
 	v.SetDefault("auth.invite_ttl", "336h")
+	v.SetDefault("auth.rate_login_per_min", 10)
+	v.SetDefault("auth.rate_reset_per_hour", 5)
+	v.SetDefault("auth.rate_sso_per_min", 20)
 	v.SetDefault("mailer.host", "")
 	v.SetDefault("mailer.port", 587)
 	v.SetDefault("mailer.username", "")

@@ -16,13 +16,14 @@ const (
 )
 
 type Session struct {
-	ID         string
-	UserID     string
-	IP         string
-	UserAgent  string
-	ExpiresAt  time.Time
-	LastSeenAt time.Time
-	CreatedAt  time.Time
+	ID                string
+	UserID            string
+	IP                string
+	UserAgent         string
+	ExpiresAt         time.Time
+	AbsoluteExpiresAt time.Time
+	LastSeenAt        time.Time
+	CreatedAt         time.Time
 }
 
 var (

@@ -82,6 +82,7 @@ var (
 	ErrSSOStateInvalid         = errors.New("sso state invalid")
 	ErrSSOExchange             = errors.New("sso exchange failed")
 	ErrSSOEmailMissing         = errors.New("sso email missing")
+	ErrSSOEmailUnverified      = errors.New("sso email unverified")
 	ErrSSOProvisioningDisabled = errors.New("sso provisioning disabled")
 	ErrSSODomainNotAllowed     = errors.New("sso domain not allowed")
 	ErrUserIdentityNotFound    = errors.New("user identity not found")
@@ -119,10 +120,17 @@ func (in SSOConfigInput) Validate() error {
 
 func validHTTPSURL(s string) bool {
 	u, err := url.Parse(strings.TrimSpace(s))
-	if err != nil {
+	if err != nil || u.Host == "" {
 		return false
 	}
-	return (u.Scheme == "https" || u.Scheme == "http") && u.Host != ""
+	if u.Scheme == "https" {
+		return true
+	}
+	return u.Scheme == "http" && isLoopbackHost(u.Hostname())
+}
+
+func isLoopbackHost(host string) bool {
+	return host == "localhost" || host == "::1" || strings.HasPrefix(host, "127.")
 }
 
 func EmailDomain(email string) string {

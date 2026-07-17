@@ -7,7 +7,7 @@ export
 endif
 
 COMPOSE := docker compose
-DC_LONG_RUNNING := postgres valkey garage
+DC_LONG_RUNNING := postgres valkey garage mailpit
 
 MIGRATIONS_DIR := db/migrations/postgres
 

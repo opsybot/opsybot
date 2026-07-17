@@ -14,7 +14,7 @@ func newTestRouter(t *testing.T) http.Handler {
 	t.Helper()
 	cfg := config.Auth{CookieName: "opsybot_session"}
 	h := dashboard.New(cfg, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	return NewRouter(slog.New(slog.DiscardHandler), cfg, nil, nil, nil, h)
+	return NewRouter(slog.New(slog.DiscardHandler), cfg, nil, nil, nil, nil, h)
 }
 
 func TestRouterServesHealthPublicly(t *testing.T) {

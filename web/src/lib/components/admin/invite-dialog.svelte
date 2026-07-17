@@ -13,14 +13,14 @@
 	let { open = $bindable(false) }: { open?: boolean } = $props();
 
 	let email = $state('');
-	let role = $state('responder');
+	let role = $state('member');
 	let form: HTMLFormElement;
 
 	$effect(() => {
 		if (!open) return;
 		untrack(() => {
 			email = '';
-			role = 'responder';
+			role = 'member';
 		});
 	});
 
@@ -58,7 +58,7 @@
 						</Select.Content>
 					</Select.Root>
 					<Field.FieldDescription class="text-subtle-foreground text-xs">
-						Admins manage the workspace; responders run incidents; viewers read.
+						Admins manage the workspace; members run incidents and read.
 					</Field.FieldDescription>
 				</Field.Field>
 			</div>

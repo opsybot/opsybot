@@ -2,6 +2,7 @@ package users
 
 import (
 	"context"
+	"crypto/subtle"
 	"time"
 
 	"github.com/pquerna/otp/totp"
@@ -10,6 +11,21 @@ import (
 	"github.com/opsybot/opsybot/internal/repository"
 	"github.com/opsybot/opsybot/internal/service"
 )
+
+func acceptedTOTPStep(code, secret string) (int64, bool) {
+	base := time.Now().Unix() / entity.TOTPPeriodSeconds
+	for _, delta := range []int64{1, 0, -1} {
+		step := base + delta
+		expected, err := totp.GenerateCode(secret, time.Unix(step*entity.TOTPPeriodSeconds, 0))
+		if err != nil {
+			continue
+		}
+		if subtle.ConstantTimeCompare([]byte(expected), []byte(code)) == 1 {
+			return step, true
+		}
+	}
+	return 0, false
+}
 
 type srv struct {
 	tx       repository.Transactor
@@ -181,10 +197,10 @@ func (s *srv) requireTOTP(ctx context.Context, userID, code string) error {
 	if err != nil {
 		return err
 	}
-	if !totp.Validate(code, secret) {
+	step, ok := acceptedTOTPStep(code, secret)
+	if !ok {
 		return entity.ErrTOTPInvalidCode
 	}
-	step := time.Now().Unix() / entity.TOTPPeriodSeconds
 	accepted, err := s.users.AcceptTOTPStep(ctx, userID, step)
 	if err != nil {
 		return err

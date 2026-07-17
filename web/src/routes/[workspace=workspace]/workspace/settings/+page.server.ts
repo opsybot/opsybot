@@ -3,7 +3,7 @@ import { FIELD_TYPES, parseSettings } from '$lib/admin';
 import { addField, getSettings, removeField, saveSettings, setThreshold } from '$lib/server/admin';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = () => getSettings();
+export const load: PageServerLoad = ({ cookies, params }) => getSettings(cookies, params.workspace);
 
 export const actions: Actions = {
 	setThreshold: async ({ request }) => {
@@ -24,10 +24,11 @@ export const actions: Actions = {
 		if (!removeField(id)) return fail(404, { error: 'That field no longer exists.' });
 		return { removed: true };
 	},
-	save: async ({ request }) => {
-		const parsed = parseSettings(String((await request.formData()).get('settings') ?? ''), getSettings());
+	save: async ({ request, cookies, params }) => {
+		const current = await getSettings(cookies, params.workspace);
+		const parsed = parseSettings(String((await request.formData()).get('settings') ?? ''), current);
 		if ('error' in parsed) return fail(400, { error: parsed.error });
-		saveSettings(parsed);
+		await saveSettings(cookies, params.workspace, parsed);
 		return { saved: true };
 	}
 };

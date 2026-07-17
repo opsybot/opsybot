@@ -119,6 +119,8 @@ func ssoErrorCode(err error) string {
 		return "deactivated"
 	case errors.Is(err, entity.ErrSSOEmailMissing):
 		return "email_missing"
+	case errors.Is(err, entity.ErrSSOEmailUnverified):
+		return "email_unverified"
 	case errors.Is(err, entity.ErrWorkspaceNotFound):
 		return "not_found"
 	default:

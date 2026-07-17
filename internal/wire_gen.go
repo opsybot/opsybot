@@ -30,6 +30,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/password_reset"
 	"github.com/opsybot/opsybot/internal/repository/pending"
 	"github.com/opsybot/opsybot/internal/repository/policy"
+	"github.com/opsybot/opsybot/internal/repository/ratelimit"
 	"github.com/opsybot/opsybot/internal/repository/recovery_code"
 	"github.com/opsybot/opsybot/internal/repository/session"
 	"github.com/opsybot/opsybot/internal/repository/sso_connection"
@@ -45,6 +46,7 @@ import (
 	"github.com/opsybot/opsybot/internal/service/auth"
 	"github.com/opsybot/opsybot/internal/service/channels"
 	"github.com/opsybot/opsybot/internal/service/members"
+	"github.com/opsybot/opsybot/internal/service/ratelimiter"
 	"github.com/opsybot/opsybot/internal/service/references"
 	"github.com/opsybot/opsybot/internal/service/sso"
 	"github.com/opsybot/opsybot/internal/service/teams"
@@ -126,6 +128,8 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	userIdentity := user_identity.New(postgresClient)
 	ssoState := sso_state.New(valkeyClient)
 	serviceSSO := sso.New(configAuth, repositoryTransactor, repositoryWorkspace, repositoryMember, repositoryUser, repositoryPolicy, repositorySession, repositoryAudit, ssoConnection, userIdentity, ssoState)
+	rateLimiter := ratelimit.New(valkeyClient)
+	serviceRateLimiter := ratelimiter.New(configAuth, rateLimiter)
 	serviceWorkspaces := workspaces.New(repositoryWorkspace, repositoryMember)
 	v := _wireValue
 	serviceReferences := references.New(v)
@@ -137,7 +141,7 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	serviceTeams := teams.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, repositoryPolicy, repositoryAudit)
 	serviceAudits := audits.New(repositoryWorkspace, repositoryMember, repositoryPolicy, repositoryAudit)
 	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers, serviceUsers, serviceChannels, serviceTeams, apiKeys, serviceAudits, serviceSSO)
-	handler := http.NewRouter(slogLogger, configAuth, serviceAuth, apiKeys, serviceSSO, strictServerInterface)
+	handler := http.NewRouter(slogLogger, configAuth, serviceAuth, apiKeys, serviceSSO, serviceRateLimiter, strictServerInterface)
 	app := &App{
 		OTel:     client,
 		Cfg:      configConfig,

@@ -9,27 +9,28 @@ import {
 } from '$lib/server/admin';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = () => ({ members: listMembers() });
+export const load: PageServerLoad = async ({ cookies, params }) => ({
+	members: await listMembers(cookies, params.workspace)
+});
 
 export const actions: Actions = {
-	invite: async ({ request }) => {
+	invite: async ({ request, cookies, params }) => {
 		const parsed = parseInvite(await request.formData());
 		if ('error' in parsed) return fail(400, { error: parsed.error });
-		const result = inviteMember(parsed.email, parsed.role);
-		if ('error' in result) return fail(400, { error: result.error });
+		const result = await inviteMember(cookies, params.workspace, parsed.email, parsed.role);
+		if (result.error) return fail(400, { error: result.error });
 		return { invited: true };
 	},
-	changeRole: async ({ request }) => {
+	changeRole: async ({ request, cookies, params }) => {
 		const form = await request.formData();
 		const role = String(form.get('role') ?? '');
-		if (!isRole(role) || !changeRole(String(form.get('id') ?? ''), role))
+		if (!isRole(role) || !(await changeRole(cookies, params.workspace, String(form.get('id') ?? ''), role)))
 			return fail(400, { error: 'Keep at least one admin, and pick a valid role.' });
 		return { changed: true };
 	},
-	deactivate: async ({ request }) => {
+	deactivate: async ({ request, cookies, params }) => {
 		const form = await request.formData();
-		// Client-submitted replacements are filtered against the roster; unknown names are dropped
-		const roster = new Set(listMembers().map((member) => member.name));
+		const roster = new Set((await listMembers(cookies, params.workspace)).map((member) => member.name));
 		const replacements: Record<string, string> = {};
 		try {
 			const raw = JSON.parse(String(form.get('replacements') ?? '{}'));
@@ -39,12 +40,13 @@ export const actions: Actions = {
 		} catch {
 			// Bad JSON leaves replacements empty and the guard below rejects
 		}
-		if (!deactivateMember(String(form.get('id') ?? ''), replacements))
+		if (!(await deactivateMember(cookies, params.workspace, String(form.get('id') ?? ''), replacements)))
 			return fail(400, { error: 'Pick a replacement for every reference first.' });
 		return { deactivated: true };
 	},
-	reactivate: async ({ request }) => {
-		if (!reactivateMember(String((await request.formData()).get('id') ?? '')))
+	reactivate: async ({ request, cookies, params }) => {
+		const id = String((await request.formData()).get('id') ?? '');
+		if (!(await reactivateMember(cookies, params.workspace, id)))
 			return fail(404, { error: 'That member is not deactivated.' });
 		return { reactivated: true };
 	}

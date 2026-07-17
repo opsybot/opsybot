@@ -65,6 +65,9 @@ func (s *srv) CompleteSAML(ctx context.Context, workspaceSlug, samlResponse, rel
 	if conn.Mode != entity.SSOModeSAML || conn.ID != st.ConnectionID {
 		return entity.LoginResult{}, entity.ErrSSOStateInvalid
 	}
+	if !conn.Enabled {
+		return entity.LoginResult{}, entity.ErrSSONotEnabled
+	}
 	sp, err := s.serviceProvider(ctx, conn, workspaceSlug)
 	if err != nil {
 		return entity.LoginResult{}, err

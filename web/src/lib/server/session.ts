@@ -1,35 +1,40 @@
 import type { Cookies } from '@sveltejs/kit';
-import { WORKSPACE_COOKIE, type Session, type SessionUser, type Workspace } from '$lib/session';
-import { scenario } from './fixtures';
+import { WORKSPACE_COOKIE, type AuthUser, type Session, type Workspace } from '$lib/session';
+import { api } from './api';
 
-const ORGANIZATION = 'Acme';
+type WorkspaceDTO = { id: string; name: string; timezone: string; environment: string };
 
-const WORKSPACES: Workspace[] = [
-	{ id: 'acme-corp', name: 'Acme Corp', environment: 'production', health: 'degraded' },
-	{ id: 'acme-labs', name: 'Acme Labs', environment: 'production', health: 'operational' },
-	{ id: 'acme-eu', name: 'Acme EU', environment: 'staging', health: 'operational' }
-];
-
-function user(): SessionUser {
-	const state = scenario();
-	const offCall = state === 'not-on-call' || state === 'empty';
-	return { name: 'Maya Chen', onCallFor: offCall ? null : 'payments' };
+async function listWorkspaces(cookies: Cookies): Promise<Workspace[]> {
+	const res = await api.get<{ items: WorkspaceDTO[] }>('/workspaces', cookies);
+	const items = res.data?.items ?? [];
+	return items.map((workspace) => ({
+		id: workspace.id,
+		name: workspace.name,
+		environment: workspace.environment || 'production',
+		health: 'operational'
+	}));
 }
 
-export function getSession(workspaceId: string): Session | null {
-	const activeWorkspace = WORKSPACES.find((workspace) => workspace.id === workspaceId);
+export async function getSession(
+	cookies: Cookies,
+	workspaceSlug: string,
+	user: AuthUser
+): Promise<Session | null> {
+	const workspaces = await listWorkspaces(cookies);
+	const activeWorkspace = workspaces.find((workspace) => workspace.id === workspaceSlug);
 	if (!activeWorkspace) return null;
 
 	return {
-		organization: ORGANIZATION,
-		user: user(),
-		workspaces: WORKSPACES,
+		organization: activeWorkspace.name,
+		user: { name: user.name, onCallFor: null },
+		workspaces,
 		activeWorkspace
 	};
 }
 
-export function lastWorkspace(cookies: Cookies): string {
-	const id = cookies.get(WORKSPACE_COOKIE);
-	const known = WORKSPACES.find((workspace) => workspace.id === id);
-	return (known ?? WORKSPACES[0]).id;
+export async function lastWorkspace(cookies: Cookies): Promise<string> {
+	const workspaces = await listWorkspaces(cookies);
+	const remembered = cookies.get(WORKSPACE_COOKIE);
+	const known = workspaces.find((workspace) => workspace.id === remembered);
+	return (known ?? workspaces[0])?.id ?? '';
 }

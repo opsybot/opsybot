@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"crypto/subtle"
 	"errors"
 	"fmt"
 	"time"
@@ -14,6 +15,21 @@ import (
 	"github.com/opsybot/opsybot/internal/repository"
 	"github.com/opsybot/opsybot/internal/service"
 )
+
+func acceptedTOTPStep(code, secret string) (int64, bool) {
+	base := time.Now().Unix() / entity.TOTPPeriodSeconds
+	for _, delta := range []int64{1, 0, -1} {
+		step := base + delta
+		expected, err := totp.GenerateCode(secret, time.Unix(step*entity.TOTPPeriodSeconds, 0))
+		if err != nil {
+			continue
+		}
+		if subtle.ConstantTimeCompare([]byte(expected), []byte(code)) == 1 {
+			return step, true
+		}
+	}
+	return 0, false
+}
 
 type srv struct {
 	cfg        config.Auth
@@ -207,10 +223,10 @@ func (s *srv) VerifyTwoFactor(ctx context.Context, pendingToken, code string) (e
 	if err != nil {
 		return entity.LoginResult{}, err
 	}
-	if !totp.Validate(code, secret) {
+	step, ok := acceptedTOTPStep(code, secret)
+	if !ok {
 		return entity.LoginResult{}, entity.ErrTOTPInvalidCode
 	}
-	step := time.Now().Unix() / entity.TOTPPeriodSeconds
 	accepted, err := s.users.AcceptTOTPStep(ctx, p.UserID, step)
 	if err != nil {
 		return entity.LoginResult{}, err
@@ -304,9 +320,13 @@ func (s *srv) RequestPasswordReset(ctx context.Context, email, ip string) error 
 	if err != nil {
 		return err
 	}
-	if mailErr := s.mailer.SendPasswordReset(ctx, user.Email, s.cfg.BaseURL+"/reset-password?token="+token); mailErr != nil {
-		logger.From(ctx).WarnContext(ctx, "password reset email failed", "error", mailErr, "user_id", user.ID)
-	}
+	resetURL := s.cfg.BaseURL + "/reset-password?token=" + token
+	go func() {
+		bg := context.WithoutCancel(ctx)
+		if mailErr := s.mailer.SendPasswordReset(bg, user.Email, resetURL); mailErr != nil {
+			logger.From(bg).WarnContext(bg, "password reset email failed", "error", mailErr, "user_id", user.ID)
+		}
+	}()
 	return nil
 }
 
@@ -380,9 +400,15 @@ func (s *srv) Resolve(ctx context.Context, token string) (entity.Identity, error
 	if now.After(sess.ExpiresAt) {
 		return entity.Identity{}, entity.ErrSessionExpired
 	}
+	if !sess.AbsoluteExpiresAt.IsZero() && now.After(sess.AbsoluteExpiresAt) {
+		return entity.Identity{}, entity.ErrSessionExpired
+	}
 	if now.Sub(sess.LastSeenAt) > s.cfg.SessionTouchWindow {
-		idle := s.cfg.SessionIdleTTL
-		if err := s.sessions.Touch(ctx, sess.ID, now, now.Add(idle)); err != nil {
+		expires := now.Add(s.cfg.SessionIdleTTL)
+		if !sess.AbsoluteExpiresAt.IsZero() && expires.After(sess.AbsoluteExpiresAt) {
+			expires = sess.AbsoluteExpiresAt
+		}
+		if err := s.sessions.Touch(ctx, sess.ID, now, expires); err != nil {
 			return entity.Identity{}, err
 		}
 		if err := s.users.TouchLastActive(ctx, sess.UserID); err != nil {
@@ -491,11 +517,16 @@ func (s *srv) issueSession(ctx context.Context, userID, ip, userAgent string, re
 	if err != nil {
 		return entity.Session{}, "", err
 	}
-	ttl := s.cfg.SessionBrowserTTL
+	now := time.Now()
+	absolute := now.Add(s.cfg.SessionBrowserTTL)
 	if remember {
-		ttl = s.cfg.SessionAbsoluteTTL
+		absolute = now.Add(s.cfg.SessionAbsoluteTTL)
 	}
-	sess, err := s.sessions.Create(ctx, userID, entity.HashToken(token), ip, userAgent, time.Now().Add(ttl))
+	expires := now.Add(s.cfg.SessionIdleTTL)
+	if expires.After(absolute) {
+		expires = absolute
+	}
+	sess, err := s.sessions.Create(ctx, userID, entity.HashToken(token), ip, userAgent, expires, absolute)
 	if err != nil {
 		return entity.Session{}, "", fmt.Errorf("issue session: %w", err)
 	}

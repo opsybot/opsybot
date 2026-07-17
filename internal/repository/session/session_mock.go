@@ -43,18 +43,18 @@ func (m *MockSession) EXPECT() *MockSessionMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockSession) Create(ctx context.Context, userID, tokenHash, ip, userAgent string, expiresAt time.Time) (entity.Session, error) {
+func (m *MockSession) Create(ctx context.Context, userID, tokenHash, ip, userAgent string, expiresAt, absoluteExpiresAt time.Time) (entity.Session, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, userID, tokenHash, ip, userAgent, expiresAt)
+	ret := m.ctrl.Call(m, "Create", ctx, userID, tokenHash, ip, userAgent, expiresAt, absoluteExpiresAt)
 	ret0, _ := ret[0].(entity.Session)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockSessionMockRecorder) Create(ctx, userID, tokenHash, ip, userAgent, expiresAt any) *gomock.Call {
+func (mr *MockSessionMockRecorder) Create(ctx, userID, tokenHash, ip, userAgent, expiresAt, absoluteExpiresAt any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockSession)(nil).Create), ctx, userID, tokenHash, ip, userAgent, expiresAt)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockSession)(nil).Create), ctx, userID, tokenHash, ip, userAgent, expiresAt, absoluteExpiresAt)
 }
 
 // Delete mocks base method.

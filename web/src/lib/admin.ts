@@ -15,8 +15,8 @@ export function slugify(value: string): string {
 		.slice(0, 40);
 }
 
-export type Role = 'admin' | 'responder' | 'viewer';
-export const ROLES: Role[] = ['admin', 'responder', 'viewer'];
+export type Role = 'admin' | 'member';
+export const ROLES: Role[] = ['admin', 'member'];
 
 export type MemberReference = { id: string; kind: string; icon: string; label: string; detail: string };
 

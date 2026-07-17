@@ -13,6 +13,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/password_reset"
 	"github.com/opsybot/opsybot/internal/repository/pending"
 	"github.com/opsybot/opsybot/internal/repository/policy"
+	"github.com/opsybot/opsybot/internal/repository/ratelimit"
 	"github.com/opsybot/opsybot/internal/repository/recovery_code"
 	"github.com/opsybot/opsybot/internal/repository/session"
 	"github.com/opsybot/opsybot/internal/repository/sso_connection"
@@ -28,6 +29,7 @@ import (
 	"github.com/opsybot/opsybot/internal/service/auth"
 	"github.com/opsybot/opsybot/internal/service/channels"
 	"github.com/opsybot/opsybot/internal/service/members"
+	"github.com/opsybot/opsybot/internal/service/ratelimiter"
 	"github.com/opsybot/opsybot/internal/service/references"
 	"github.com/opsybot/opsybot/internal/service/sso"
 	"github.com/opsybot/opsybot/internal/service/teams"
@@ -49,6 +51,7 @@ var repositoryProviders = wire.NewSet(
 	sso_connection.New,
 	user_identity.New,
 	sso_state.New,
+	ratelimit.New,
 	audit.New,
 	mailer.New,
 	password_reset.New,
@@ -69,4 +72,5 @@ var serviceProviders = wire.NewSet(
 	apikeys.New,
 	audits.New,
 	sso.New,
+	ratelimiter.New,
 )

@@ -1,13 +1,12 @@
 import { formatShift, shiftsFor } from '$lib/oncall';
 import { listSchedules, listSwapRequests, requestSwap } from '$lib/server/oncall';
-import { getSession } from '$lib/server/session';
 import type { Actions, PageServerLoad } from './$types';
 
 const DAY = 86_400_000;
 
-export const load: PageServerLoad = ({ params }) => {
+export const load: PageServerLoad = ({ locals }) => {
 	const now = new Date();
-	const me = getSession(params.workspace)?.user.name ?? '';
+	const me = locals.user?.name ?? '';
 	const schedules = listSchedules();
 
 	const shifts = shiftsFor(schedules, me, now, 7).map((shift, index) => ({

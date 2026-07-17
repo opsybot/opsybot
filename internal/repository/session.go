@@ -10,7 +10,7 @@ import (
 )
 
 type Session interface {
-	Create(ctx context.Context, userID, tokenHash, ip, userAgent string, expiresAt time.Time) (entity.Session, error)
+	Create(ctx context.Context, userID, tokenHash, ip, userAgent string, expiresAt, absoluteExpiresAt time.Time) (entity.Session, error)
 	GetByTokenHash(ctx context.Context, tokenHash string) (entity.Session, error)
 	Touch(ctx context.Context, id string, seenAt, expiresAt time.Time) error
 	Delete(ctx context.Context, id string) error

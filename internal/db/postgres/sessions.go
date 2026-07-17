@@ -24,86 +24,93 @@ import (
 
 // Session is an object representing the database table.
 type Session struct {
-	ID         string      `boil:"id" json:"id" toml:"id" yaml:"id"`
-	UserID     string      `boil:"user_id" json:"user_id" toml:"user_id" yaml:"user_id"`
-	TokenHash  string      `boil:"token_hash" json:"token_hash" toml:"token_hash" yaml:"token_hash"`
-	ExpiresAt  time.Time   `boil:"expires_at" json:"expires_at" toml:"expires_at" yaml:"expires_at"`
-	LastSeenAt time.Time   `boil:"last_seen_at" json:"last_seen_at" toml:"last_seen_at" yaml:"last_seen_at"`
-	IP         null.String `boil:"ip" json:"ip,omitempty" toml:"ip" yaml:"ip,omitempty"`
-	UserAgent  string      `boil:"user_agent" json:"user_agent" toml:"user_agent" yaml:"user_agent"`
-	RevokedAt  null.Time   `boil:"revoked_at" json:"revoked_at,omitempty" toml:"revoked_at" yaml:"revoked_at,omitempty"`
-	CreatedAt  time.Time   `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	ID                string      `boil:"id" json:"id" toml:"id" yaml:"id"`
+	UserID            string      `boil:"user_id" json:"user_id" toml:"user_id" yaml:"user_id"`
+	TokenHash         string      `boil:"token_hash" json:"token_hash" toml:"token_hash" yaml:"token_hash"`
+	ExpiresAt         time.Time   `boil:"expires_at" json:"expires_at" toml:"expires_at" yaml:"expires_at"`
+	LastSeenAt        time.Time   `boil:"last_seen_at" json:"last_seen_at" toml:"last_seen_at" yaml:"last_seen_at"`
+	IP                null.String `boil:"ip" json:"ip,omitempty" toml:"ip" yaml:"ip,omitempty"`
+	UserAgent         string      `boil:"user_agent" json:"user_agent" toml:"user_agent" yaml:"user_agent"`
+	RevokedAt         null.Time   `boil:"revoked_at" json:"revoked_at,omitempty" toml:"revoked_at" yaml:"revoked_at,omitempty"`
+	CreatedAt         time.Time   `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	AbsoluteExpiresAt null.Time   `boil:"absolute_expires_at" json:"absolute_expires_at,omitempty" toml:"absolute_expires_at" yaml:"absolute_expires_at,omitempty"`
 
 	R *sessionR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L sessionL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var SessionColumns = struct {
-	ID         string
-	UserID     string
-	TokenHash  string
-	ExpiresAt  string
-	LastSeenAt string
-	IP         string
-	UserAgent  string
-	RevokedAt  string
-	CreatedAt  string
+	ID                string
+	UserID            string
+	TokenHash         string
+	ExpiresAt         string
+	LastSeenAt        string
+	IP                string
+	UserAgent         string
+	RevokedAt         string
+	CreatedAt         string
+	AbsoluteExpiresAt string
 }{
-	ID:         "id",
-	UserID:     "user_id",
-	TokenHash:  "token_hash",
-	ExpiresAt:  "expires_at",
-	LastSeenAt: "last_seen_at",
-	IP:         "ip",
-	UserAgent:  "user_agent",
-	RevokedAt:  "revoked_at",
-	CreatedAt:  "created_at",
+	ID:                "id",
+	UserID:            "user_id",
+	TokenHash:         "token_hash",
+	ExpiresAt:         "expires_at",
+	LastSeenAt:        "last_seen_at",
+	IP:                "ip",
+	UserAgent:         "user_agent",
+	RevokedAt:         "revoked_at",
+	CreatedAt:         "created_at",
+	AbsoluteExpiresAt: "absolute_expires_at",
 }
 
 var SessionTableColumns = struct {
-	ID         string
-	UserID     string
-	TokenHash  string
-	ExpiresAt  string
-	LastSeenAt string
-	IP         string
-	UserAgent  string
-	RevokedAt  string
-	CreatedAt  string
+	ID                string
+	UserID            string
+	TokenHash         string
+	ExpiresAt         string
+	LastSeenAt        string
+	IP                string
+	UserAgent         string
+	RevokedAt         string
+	CreatedAt         string
+	AbsoluteExpiresAt string
 }{
-	ID:         "sessions.id",
-	UserID:     "sessions.user_id",
-	TokenHash:  "sessions.token_hash",
-	ExpiresAt:  "sessions.expires_at",
-	LastSeenAt: "sessions.last_seen_at",
-	IP:         "sessions.ip",
-	UserAgent:  "sessions.user_agent",
-	RevokedAt:  "sessions.revoked_at",
-	CreatedAt:  "sessions.created_at",
+	ID:                "sessions.id",
+	UserID:            "sessions.user_id",
+	TokenHash:         "sessions.token_hash",
+	ExpiresAt:         "sessions.expires_at",
+	LastSeenAt:        "sessions.last_seen_at",
+	IP:                "sessions.ip",
+	UserAgent:         "sessions.user_agent",
+	RevokedAt:         "sessions.revoked_at",
+	CreatedAt:         "sessions.created_at",
+	AbsoluteExpiresAt: "sessions.absolute_expires_at",
 }
 
 // Generated where
 
 var SessionWhere = struct {
-	ID         whereHelperstring
-	UserID     whereHelperstring
-	TokenHash  whereHelperstring
-	ExpiresAt  whereHelpertime_Time
-	LastSeenAt whereHelpertime_Time
-	IP         whereHelpernull_String
-	UserAgent  whereHelperstring
-	RevokedAt  whereHelpernull_Time
-	CreatedAt  whereHelpertime_Time
+	ID                whereHelperstring
+	UserID            whereHelperstring
+	TokenHash         whereHelperstring
+	ExpiresAt         whereHelpertime_Time
+	LastSeenAt        whereHelpertime_Time
+	IP                whereHelpernull_String
+	UserAgent         whereHelperstring
+	RevokedAt         whereHelpernull_Time
+	CreatedAt         whereHelpertime_Time
+	AbsoluteExpiresAt whereHelpernull_Time
 }{
-	ID:         whereHelperstring{field: "\"sessions\".\"id\""},
-	UserID:     whereHelperstring{field: "\"sessions\".\"user_id\""},
-	TokenHash:  whereHelperstring{field: "\"sessions\".\"token_hash\""},
-	ExpiresAt:  whereHelpertime_Time{field: "\"sessions\".\"expires_at\""},
-	LastSeenAt: whereHelpertime_Time{field: "\"sessions\".\"last_seen_at\""},
-	IP:         whereHelpernull_String{field: "\"sessions\".\"ip\""},
-	UserAgent:  whereHelperstring{field: "\"sessions\".\"user_agent\""},
-	RevokedAt:  whereHelpernull_Time{field: "\"sessions\".\"revoked_at\""},
-	CreatedAt:  whereHelpertime_Time{field: "\"sessions\".\"created_at\""},
+	ID:                whereHelperstring{field: "\"sessions\".\"id\""},
+	UserID:            whereHelperstring{field: "\"sessions\".\"user_id\""},
+	TokenHash:         whereHelperstring{field: "\"sessions\".\"token_hash\""},
+	ExpiresAt:         whereHelpertime_Time{field: "\"sessions\".\"expires_at\""},
+	LastSeenAt:        whereHelpertime_Time{field: "\"sessions\".\"last_seen_at\""},
+	IP:                whereHelpernull_String{field: "\"sessions\".\"ip\""},
+	UserAgent:         whereHelperstring{field: "\"sessions\".\"user_agent\""},
+	RevokedAt:         whereHelpernull_Time{field: "\"sessions\".\"revoked_at\""},
+	CreatedAt:         whereHelpertime_Time{field: "\"sessions\".\"created_at\""},
+	AbsoluteExpiresAt: whereHelpernull_Time{field: "\"sessions\".\"absolute_expires_at\""},
 }
 
 // SessionRels is where relationship names are stored.
@@ -143,9 +150,9 @@ func (r *sessionR) GetUser() *User {
 type sessionL struct{}
 
 var (
-	sessionAllColumns            = []string{"id", "user_id", "token_hash", "expires_at", "last_seen_at", "ip", "user_agent", "revoked_at", "created_at"}
+	sessionAllColumns            = []string{"id", "user_id", "token_hash", "expires_at", "last_seen_at", "ip", "user_agent", "revoked_at", "created_at", "absolute_expires_at"}
 	sessionColumnsWithoutDefault = []string{"user_id", "token_hash", "expires_at"}
-	sessionColumnsWithDefault    = []string{"id", "last_seen_at", "ip", "user_agent", "revoked_at", "created_at"}
+	sessionColumnsWithDefault    = []string{"id", "last_seen_at", "ip", "user_agent", "revoked_at", "created_at", "absolute_expires_at"}
 	sessionPrimaryKeyColumns     = []string{"id"}
 	sessionGeneratedColumns      = []string{}
 )

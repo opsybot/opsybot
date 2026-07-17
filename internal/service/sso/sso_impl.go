@@ -208,6 +208,9 @@ func (s *srv) CompleteLogin(ctx context.Context, workspaceSlug, code, state, ip,
 	if conn.ID != st.ConnectionID {
 		return entity.LoginResult{}, entity.ErrSSOStateInvalid
 	}
+	if !conn.Enabled {
+		return entity.LoginResult{}, entity.ErrSSONotEnabled
+	}
 	secret, err := s.connections.ClientSecret(ctx, ws.ID)
 	if err != nil {
 		return entity.LoginResult{}, err
@@ -239,6 +242,9 @@ func (s *srv) CompleteLogin(ctx context.Context, workspaceSlug, code, state, ip,
 	}
 	if err := idToken.Claims(&claims); err != nil {
 		return entity.LoginResult{}, entity.ErrSSOExchange
+	}
+	if !claims.EmailVerified {
+		return entity.LoginResult{}, entity.ErrSSOEmailUnverified
 	}
 	email := entity.NormalizeEmail(claims.Email)
 	if email == "" {
@@ -366,7 +372,13 @@ func (s *srv) completeSession(ctx context.Context, ws entity.Workspace, user ent
 	if err != nil {
 		return entity.LoginResult{}, err
 	}
-	sess, err := s.sessions.Create(ctx, user.ID, entity.HashToken(token), ip, userAgent, time.Now().Add(s.cfg.SessionAbsoluteTTL))
+	now := time.Now()
+	absolute := now.Add(s.cfg.SessionAbsoluteTTL)
+	expires := now.Add(s.cfg.SessionIdleTTL)
+	if expires.After(absolute) {
+		expires = absolute
+	}
+	sess, err := s.sessions.Create(ctx, user.ID, entity.HashToken(token), ip, userAgent, expires, absolute)
 	if err != nil {
 		return entity.LoginResult{}, err
 	}

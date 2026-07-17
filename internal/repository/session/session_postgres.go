@@ -13,7 +13,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository"
 )
 
-const selectColumns = `id, user_id, ip, user_agent, expires_at, last_seen_at, created_at`
+const selectColumns = `id, user_id, ip, user_agent, expires_at, absolute_expires_at, last_seen_at, created_at`
 
 type repo struct {
 	db postgres.Client
@@ -27,20 +27,22 @@ func scanSession(row interface {
 	Scan(dest ...any) error
 }) (entity.Session, error) {
 	var (
-		m  dbpostgres.Session
-		ip sql.NullString
+		m        dbpostgres.Session
+		ip       sql.NullString
+		absolute sql.NullTime
 	)
-	if err := row.Scan(&m.ID, &m.UserID, &ip, &m.UserAgent, &m.ExpiresAt, &m.LastSeenAt, &m.CreatedAt); err != nil {
+	if err := row.Scan(&m.ID, &m.UserID, &ip, &m.UserAgent, &m.ExpiresAt, &absolute, &m.LastSeenAt, &m.CreatedAt); err != nil {
 		return entity.Session{}, err
 	}
 	return entity.Session{
-		ID:         m.ID,
-		UserID:     m.UserID,
-		IP:         ip.String,
-		UserAgent:  m.UserAgent,
-		ExpiresAt:  m.ExpiresAt,
-		LastSeenAt: m.LastSeenAt,
-		CreatedAt:  m.CreatedAt,
+		ID:                m.ID,
+		UserID:            m.UserID,
+		IP:                ip.String,
+		UserAgent:         m.UserAgent,
+		ExpiresAt:         m.ExpiresAt,
+		AbsoluteExpiresAt: absolute.Time,
+		LastSeenAt:        m.LastSeenAt,
+		CreatedAt:         m.CreatedAt,
 	}, nil
 }
 
@@ -51,11 +53,11 @@ func nullIP(ip string) any {
 	return ip
 }
 
-func (r *repo) Create(ctx context.Context, userID, tokenHash, ip, userAgent string, expiresAt time.Time) (entity.Session, error) {
+func (r *repo) Create(ctx context.Context, userID, tokenHash, ip, userAgent string, expiresAt, absoluteExpiresAt time.Time) (entity.Session, error) {
 	m, err := scanSession(r.db.Querier(ctx).QueryRowContext(ctx,
-		`INSERT INTO sessions (user_id, token_hash, ip, user_agent, expires_at)
-		 VALUES ($1, $2, $3, $4, $5) RETURNING `+selectColumns,
-		userID, tokenHash, nullIP(ip), userAgent, expiresAt))
+		`INSERT INTO sessions (user_id, token_hash, ip, user_agent, expires_at, absolute_expires_at)
+		 VALUES ($1, $2, $3, $4, $5, $6) RETURNING `+selectColumns,
+		userID, tokenHash, nullIP(ip), userAgent, expiresAt, absoluteExpiresAt))
 	if err != nil {
 		return entity.Session{}, fmt.Errorf("create session: %w", err)
 	}
