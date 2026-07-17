@@ -5,11 +5,13 @@ import (
 
 	"github.com/opsybot/opsybot/internal/pkg/casbin"
 	"github.com/opsybot/opsybot/internal/pkg/logger"
+	"github.com/opsybot/opsybot/internal/pkg/otel"
 	"github.com/opsybot/opsybot/internal/pkg/postgres"
 	"github.com/opsybot/opsybot/internal/pkg/valkey"
 )
 
 var Set = wire.NewSet(
+	otel.New,
 	logger.New,
 	postgres.New,
 	valkey.New,

@@ -2,4 +2,53 @@ openapi: 3.0.3
 info:
   title: Opsybot Dashboard API
   version: 1.0.0
-paths: {}
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Liveness probe
+      responses:
+        "200":
+          description: The service is running
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+components:
+  schemas:
+    Health:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+    Problem:
+      type: object
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          default: about:blank
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri-reference
+  responses:
+    Problem:
+      description: The request failed
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"

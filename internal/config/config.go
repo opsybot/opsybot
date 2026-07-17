@@ -12,9 +12,31 @@ type Config struct {
 	Environment     string        `mapstructure:"environment"`
 	ShutdownTimeout time.Duration `mapstructure:"shutdown_timeout"`
 	Log             Log           `mapstructure:"log"`
+	OTel            OTel          `mapstructure:"otel"`
+	HTTP            HTTP          `mapstructure:"http"`
 	Postgres        Postgres      `mapstructure:"postgres"`
 	Valkey          Valkey        `mapstructure:"valkey"`
 	Casbin          Casbin        `mapstructure:"casbin"`
+}
+
+type Environment string
+
+type OTel struct {
+	Endpoint       string        `mapstructure:"endpoint"`
+	Insecure       bool          `mapstructure:"insecure"`
+	ServiceName    string        `mapstructure:"service_name"`
+	SampleRatio    float64       `mapstructure:"sample_ratio"`
+	MetricInterval time.Duration `mapstructure:"metric_interval"`
+	ExportTimeout  time.Duration `mapstructure:"export_timeout"`
+}
+
+type HTTP struct {
+	Host              string        `mapstructure:"host"`
+	Port              int           `mapstructure:"port"`
+	ReadHeaderTimeout time.Duration `mapstructure:"read_header_timeout"`
+	ReadTimeout       time.Duration `mapstructure:"read_timeout"`
+	WriteTimeout      time.Duration `mapstructure:"write_timeout"`
+	IdleTimeout       time.Duration `mapstructure:"idle_timeout"`
 }
 
 type Log struct {
@@ -61,6 +83,18 @@ func NewLog(cfg Config) Log {
 	return cfg.Log
 }
 
+func NewHTTP(cfg Config) HTTP {
+	return cfg.HTTP
+}
+
+func NewOTel(cfg Config) OTel {
+	return cfg.OTel
+}
+
+func NewEnvironment(cfg Config) Environment {
+	return Environment(cfg.Environment)
+}
+
 func NewValkey(cfg Config) Valkey {
 	return cfg.Valkey
 }
@@ -76,6 +110,18 @@ func New(cfgFile string) (Config, error) {
 	v.SetDefault("shutdown_timeout", "15s")
 	v.SetDefault("log.level", "info")
 	v.SetDefault("log.format", "json")
+	v.SetDefault("otel.endpoint", "")
+	v.SetDefault("otel.insecure", true)
+	v.SetDefault("otel.service_name", "opsybot")
+	v.SetDefault("otel.sample_ratio", 1.0)
+	v.SetDefault("otel.metric_interval", "60s")
+	v.SetDefault("otel.export_timeout", "10s")
+	v.SetDefault("http.host", "")
+	v.SetDefault("http.port", 8080)
+	v.SetDefault("http.read_header_timeout", "5s")
+	v.SetDefault("http.read_timeout", "30s")
+	v.SetDefault("http.write_timeout", "30s")
+	v.SetDefault("http.idle_timeout", "120s")
 	v.SetDefault("postgres.url", "")
 	v.SetDefault("postgres.host", "localhost")
 	v.SetDefault("postgres.port", 5432)

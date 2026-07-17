@@ -6,6 +6,7 @@ import (
 	"github.com/goforj/wire"
 
 	"github.com/opsybot/opsybot/internal/config"
+	"github.com/opsybot/opsybot/internal/handler"
 	"github.com/opsybot/opsybot/internal/pkg"
 	"github.com/opsybot/opsybot/internal/repository"
 )
@@ -14,6 +15,7 @@ var baseSet = wire.NewSet(
 	config.Set,
 	pkg.Set,
 	repository.Set,
+	handler.Set,
 	wire.Struct(new(App), "*"),
 	wire.Struct(new(Migrator), "*"),
 )

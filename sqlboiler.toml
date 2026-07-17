@@ -1,0 +1,14 @@
+output   = "internal/db/postgres"
+pkgname  = "dbpostgres"
+wipe     = true
+no-tests = true
+
+[psql]
+dbname  = "opsybot"
+host    = "127.0.0.1"
+port    = 5432
+user    = "opsybot"
+pass    = "opsybot"
+sslmode = "disable"
+schema  = "public"
+blacklist = ["goose_db_version", "casbin_rule"]

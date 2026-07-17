@@ -9,9 +9,13 @@ package internal
 import (
 	"github.com/goforj/wire"
 	"github.com/opsybot/opsybot/internal/config"
+	"github.com/opsybot/opsybot/internal/handler"
+	"github.com/opsybot/opsybot/internal/handler/http"
+	"github.com/opsybot/opsybot/internal/handler/http/v1/dashboard"
 	"github.com/opsybot/opsybot/internal/pkg"
 	"github.com/opsybot/opsybot/internal/pkg/casbin"
 	"github.com/opsybot/opsybot/internal/pkg/logger"
+	"github.com/opsybot/opsybot/internal/pkg/otel"
 	"github.com/opsybot/opsybot/internal/pkg/postgres"
 	"github.com/opsybot/opsybot/internal/pkg/valkey"
 	"github.com/opsybot/opsybot/internal/repository"
@@ -24,33 +28,47 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	log := config.NewLog(configConfig)
-	slogLogger := logger.New(log)
-	configPostgres := config.NewPostgres(configConfig)
-	client, cleanup, err := postgres.New(configPostgres)
+	oTel := config.NewOTel(configConfig)
+	environment := config.NewEnvironment(configConfig)
+	client, cleanup, err := otel.New(oTel, environment)
 	if err != nil {
 		return nil, nil, err
 	}
-	configCasbin := config.NewCasbin(configConfig)
-	configValkey := config.NewValkey(configConfig)
-	valkeyClient, cleanup2, err := valkey.New(configValkey)
+	log := config.NewLog(configConfig)
+	slogLogger := logger.New(log)
+	configPostgres := config.NewPostgres(configConfig)
+	postgresClient, cleanup2, err := postgres.New(configPostgres)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	casbinClient, cleanup3, err := casbin.New(configCasbin, client, valkeyClient)
+	configCasbin := config.NewCasbin(configConfig)
+	configValkey := config.NewValkey(configConfig)
+	valkeyClient, cleanup3, err := valkey.New(configValkey)
 	if err != nil {
 		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
+	casbinClient, cleanup4, err := casbin.New(configCasbin, postgresClient, valkeyClient)
+	if err != nil {
+		cleanup3()
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	strictServerInterface := dashboard.New()
+	handler := http.NewRouter(slogLogger, strictServerInterface)
 	app := &App{
+		OTel:     client,
 		Cfg:      configConfig,
 		Log:      slogLogger,
-		PG:       client,
+		PG:       postgresClient,
 		Enforcer: casbinClient,
+		Router:   handler,
 	}
 	return app, func() {
+		cleanup4()
 		cleanup3()
 		cleanup2()
 		cleanup()
@@ -80,4 +98,4 @@ func InitMigrator(cfgFile string) (*Migrator, func(), error) {
 
 // wire.go:
 
-var baseSet = wire.NewSet(config.Set, pkg.Set, repository.Set, wire.Struct(new(App), "*"), wire.Struct(new(Migrator), "*"))
+var baseSet = wire.NewSet(config.Set, pkg.Set, repository.Set, handler.Set, wire.Struct(new(App), "*"), wire.Struct(new(Migrator), "*"))

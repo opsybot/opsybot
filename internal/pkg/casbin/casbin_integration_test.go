@@ -1,6 +1,7 @@
 package casbin
 
 import (
+	"context"
 	"os"
 	"strings"
 	"testing"
@@ -10,6 +11,21 @@ import (
 	"github.com/opsybot/opsybot/internal/pkg/postgres"
 	"github.com/opsybot/opsybot/internal/pkg/valkey"
 )
+
+func dropTableOnCleanup(t *testing.T, pgCfg config.Postgres, table string) {
+	t.Helper()
+	t.Cleanup(func() {
+		pg, cleanup, err := postgres.New(pgCfg)
+		if err != nil {
+			t.Errorf("connect to drop %s: %v", table, err)
+			return
+		}
+		defer cleanup()
+		if _, err := pg.ExecContext(context.Background(), "DROP TABLE IF EXISTS "+table); err != nil {
+			t.Errorf("drop %s: %v", table, err)
+		}
+	})
+}
 
 func testConfig(t *testing.T) (config.Postgres, config.Valkey, config.Casbin) {
 	t.Helper()
@@ -60,6 +76,7 @@ func newInstance(t *testing.T, pgCfg config.Postgres, vkCfg config.Valkey, cbCfg
 
 func TestIntegrationPolicyChangePropagatesToOtherInstance(t *testing.T) {
 	pgCfg, vkCfg, cbCfg := testConfig(t)
+	dropTableOnCleanup(t, pgCfg, cbCfg.TableName)
 
 	first := newInstance(t, pgCfg, vkCfg, cbCfg)
 	second := newInstance(t, pgCfg, vkCfg, cbCfg)
