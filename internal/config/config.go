@@ -18,6 +18,18 @@ type Config struct {
 	Valkey          Valkey        `mapstructure:"valkey"`
 	Casbin          Casbin        `mapstructure:"casbin"`
 	Auth            Auth          `mapstructure:"auth"`
+	Mailer          Mailer        `mapstructure:"mailer"`
+}
+
+type Mailer struct {
+	Host       string        `mapstructure:"host"`
+	Port       int           `mapstructure:"port"`
+	Username   string        `mapstructure:"username"`
+	Password   string        `mapstructure:"password"`
+	Encryption string        `mapstructure:"encryption"`
+	From       string        `mapstructure:"from"`
+	FromName   string        `mapstructure:"from_name"`
+	Timeout    time.Duration `mapstructure:"timeout"`
 }
 
 type Auth struct {
@@ -31,6 +43,7 @@ type Auth struct {
 	SessionBrowserTTL  time.Duration `mapstructure:"session_browser_ttl"`
 	SessionTouchWindow time.Duration `mapstructure:"session_touch_window"`
 	TrustProxyHeaders  bool          `mapstructure:"trust_proxy_headers"`
+	InviteTTL          time.Duration `mapstructure:"invite_ttl"`
 }
 
 type Environment string
@@ -109,6 +122,10 @@ func NewAuth(cfg Config) Auth {
 	return cfg.Auth
 }
 
+func NewMailer(cfg Config) Mailer {
+	return cfg.Mailer
+}
+
 func NewEnvironment(cfg Config) Environment {
 	return Environment(cfg.Environment)
 }
@@ -172,6 +189,15 @@ func New(cfgFile string) (Config, error) {
 	v.SetDefault("auth.session_browser_ttl", "24h")
 	v.SetDefault("auth.session_touch_window", "5m")
 	v.SetDefault("auth.trust_proxy_headers", false)
+	v.SetDefault("auth.invite_ttl", "336h")
+	v.SetDefault("mailer.host", "")
+	v.SetDefault("mailer.port", 587)
+	v.SetDefault("mailer.username", "")
+	v.SetDefault("mailer.password", "")
+	v.SetDefault("mailer.encryption", "starttls")
+	v.SetDefault("mailer.from", "opsybot@localhost")
+	v.SetDefault("mailer.from_name", "Opsybot")
+	v.SetDefault("mailer.timeout", "10s")
 
 	v.SetEnvPrefix("OPSYBOT")
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))

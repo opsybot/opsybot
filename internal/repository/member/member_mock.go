@@ -41,6 +41,21 @@ func (m *MockMember) EXPECT() *MockMemberMockRecorder {
 	return m.recorder
 }
 
+// CountOtherActive mocks base method.
+func (m *MockMember) CountOtherActive(ctx context.Context, userID, exceptWorkspaceID string) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountOtherActive", ctx, userID, exceptWorkspaceID)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountOtherActive indicates an expected call of CountOtherActive.
+func (mr *MockMemberMockRecorder) CountOtherActive(ctx, userID, exceptWorkspaceID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountOtherActive", reflect.TypeOf((*MockMember)(nil).CountOtherActive), ctx, userID, exceptWorkspaceID)
+}
+
 // Create mocks base method.
 func (m *MockMember) Create(ctx context.Context, workspaceID, userID string, status entity.MemberStatus) error {
 	m.ctrl.T.Helper()
@@ -53,6 +68,20 @@ func (m *MockMember) Create(ctx context.Context, workspaceID, userID string, sta
 func (mr *MockMemberMockRecorder) Create(ctx, workspaceID, userID, status any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockMember)(nil).Create), ctx, workspaceID, userID, status)
+}
+
+// DeleteInvited mocks base method.
+func (m *MockMember) DeleteInvited(ctx context.Context, workspaceID, userID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteInvited", ctx, workspaceID, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteInvited indicates an expected call of DeleteInvited.
+func (mr *MockMemberMockRecorder) DeleteInvited(ctx, workspaceID, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteInvited", reflect.TypeOf((*MockMember)(nil).DeleteInvited), ctx, workspaceID, userID)
 }
 
 // Get mocks base method.
@@ -98,4 +127,18 @@ func (m *MockMember) ListByWorkspace(ctx context.Context, workspaceID string) ([
 func (mr *MockMemberMockRecorder) ListByWorkspace(ctx, workspaceID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByWorkspace", reflect.TypeOf((*MockMember)(nil).ListByWorkspace), ctx, workspaceID)
+}
+
+// UpdateStatus mocks base method.
+func (m *MockMember) UpdateStatus(ctx context.Context, workspaceID, userID string, status entity.MemberStatus) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateStatus", ctx, workspaceID, userID, status)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateStatus indicates an expected call of UpdateStatus.
+func (mr *MockMemberMockRecorder) UpdateStatus(ctx, workspaceID, userID, status any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStatus", reflect.TypeOf((*MockMember)(nil).UpdateStatus), ctx, workspaceID, userID, status)
 }

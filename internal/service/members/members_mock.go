@@ -41,6 +41,34 @@ func (m *MockMembers) EXPECT() *MockMembersMockRecorder {
 	return m.recorder
 }
 
+// ChangeRole mocks base method.
+func (m *MockMembers) ChangeRole(ctx context.Context, workspaceSlug, userID string, role entity.Role) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ChangeRole", ctx, workspaceSlug, userID, role)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ChangeRole indicates an expected call of ChangeRole.
+func (mr *MockMembersMockRecorder) ChangeRole(ctx, workspaceSlug, userID, role any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangeRole", reflect.TypeOf((*MockMembers)(nil).ChangeRole), ctx, workspaceSlug, userID, role)
+}
+
+// Deactivate mocks base method.
+func (m *MockMembers) Deactivate(ctx context.Context, workspaceSlug, userID string, replacements map[string]string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Deactivate", ctx, workspaceSlug, userID, replacements)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Deactivate indicates an expected call of Deactivate.
+func (mr *MockMembersMockRecorder) Deactivate(ctx, workspaceSlug, userID, replacements any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Deactivate", reflect.TypeOf((*MockMembers)(nil).Deactivate), ctx, workspaceSlug, userID, replacements)
+}
+
 // Get mocks base method.
 func (m *MockMembers) Get(ctx context.Context, workspaceSlug, userID string) (entity.Member, error) {
 	m.ctrl.T.Helper()
@@ -56,6 +84,22 @@ func (mr *MockMembersMockRecorder) Get(ctx, workspaceSlug, userID any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockMembers)(nil).Get), ctx, workspaceSlug, userID)
 }
 
+// Invite mocks base method.
+func (m *MockMembers) Invite(ctx context.Context, workspaceSlug, email string, role entity.Role) (entity.Invite, string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Invite", ctx, workspaceSlug, email, role)
+	ret0, _ := ret[0].(entity.Invite)
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// Invite indicates an expected call of Invite.
+func (mr *MockMembersMockRecorder) Invite(ctx, workspaceSlug, email, role any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Invite", reflect.TypeOf((*MockMembers)(nil).Invite), ctx, workspaceSlug, email, role)
+}
+
 // List mocks base method.
 func (m *MockMembers) List(ctx context.Context, workspaceSlug string) ([]entity.Member, error) {
 	m.ctrl.T.Helper()
@@ -69,4 +113,78 @@ func (m *MockMembers) List(ctx context.Context, workspaceSlug string) ([]entity.
 func (mr *MockMembersMockRecorder) List(ctx, workspaceSlug any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockMembers)(nil).List), ctx, workspaceSlug)
+}
+
+// ListInvites mocks base method.
+func (m *MockMembers) ListInvites(ctx context.Context, workspaceSlug string) ([]entity.Invite, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListInvites", ctx, workspaceSlug)
+	ret0, _ := ret[0].([]entity.Invite)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListInvites indicates an expected call of ListInvites.
+func (mr *MockMembersMockRecorder) ListInvites(ctx, workspaceSlug any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListInvites", reflect.TypeOf((*MockMembers)(nil).ListInvites), ctx, workspaceSlug)
+}
+
+// Reactivate mocks base method.
+func (m *MockMembers) Reactivate(ctx context.Context, workspaceSlug, userID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Reactivate", ctx, workspaceSlug, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Reactivate indicates an expected call of Reactivate.
+func (mr *MockMembersMockRecorder) Reactivate(ctx, workspaceSlug, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reactivate", reflect.TypeOf((*MockMembers)(nil).Reactivate), ctx, workspaceSlug, userID)
+}
+
+// References mocks base method.
+func (m *MockMembers) References(ctx context.Context, workspaceSlug, userID string) ([]entity.MemberReference, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "References", ctx, workspaceSlug, userID)
+	ret0, _ := ret[0].([]entity.MemberReference)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// References indicates an expected call of References.
+func (mr *MockMembersMockRecorder) References(ctx, workspaceSlug, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "References", reflect.TypeOf((*MockMembers)(nil).References), ctx, workspaceSlug, userID)
+}
+
+// ResendInvite mocks base method.
+func (m *MockMembers) ResendInvite(ctx context.Context, workspaceSlug, userID string) (entity.Invite, string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResendInvite", ctx, workspaceSlug, userID)
+	ret0, _ := ret[0].(entity.Invite)
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ResendInvite indicates an expected call of ResendInvite.
+func (mr *MockMembersMockRecorder) ResendInvite(ctx, workspaceSlug, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResendInvite", reflect.TypeOf((*MockMembers)(nil).ResendInvite), ctx, workspaceSlug, userID)
+}
+
+// RevokeInvite mocks base method.
+func (m *MockMembers) RevokeInvite(ctx context.Context, workspaceSlug, userID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RevokeInvite", ctx, workspaceSlug, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RevokeInvite indicates an expected call of RevokeInvite.
+func (mr *MockMembersMockRecorder) RevokeInvite(ctx, workspaceSlug, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RevokeInvite", reflect.TypeOf((*MockMembers)(nil).RevokeInvite), ctx, workspaceSlug, userID)
 }

@@ -113,6 +113,7 @@ require (
 	github.com/tursodatabase/libsql-client-go v0.0.0-20251219100830-236aa1ff8acc // indirect
 	github.com/vertica/vertica-sql-go v1.3.6 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
+	github.com/wneessen/go-mail v0.8.1 // indirect
 	github.com/woodsbury/decimal128 v1.4.0 // indirect
 	github.com/ydb-platform/ydb-go-genproto v0.0.0-20260428144813-1c07baab7f7b // indirect
 	github.com/ydb-platform/ydb-go-sdk/v3 v3.141.1 // indirect

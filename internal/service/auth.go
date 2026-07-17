@@ -15,4 +15,6 @@ type Auth interface {
 	Logout(ctx context.Context) error
 	Resolve(ctx context.Context, token string) (entity.Identity, error)
 	Profile(ctx context.Context) (entity.User, error)
+	InvitePreview(ctx context.Context, token string) (entity.Invite, error)
+	AcceptInvite(ctx context.Context, in entity.AcceptInvite, ip, userAgent string) (entity.AcceptResult, error)
 }

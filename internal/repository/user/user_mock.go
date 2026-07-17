@@ -41,6 +41,20 @@ func (m *MockUser) EXPECT() *MockUserMockRecorder {
 	return m.recorder
 }
 
+// Activate mocks base method.
+func (m *MockUser) Activate(ctx context.Context, id, name, passwordHash, timezone string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Activate", ctx, id, name, passwordHash, timezone)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Activate indicates an expected call of Activate.
+func (mr *MockUserMockRecorder) Activate(ctx, id, name, passwordHash, timezone any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Activate", reflect.TypeOf((*MockUser)(nil).Activate), ctx, id, name, passwordHash, timezone)
+}
+
 // Create mocks base method.
 func (m *MockUser) Create(ctx context.Context, u entity.NewUser, passwordHash string) (entity.User, error) {
 	m.ctrl.T.Helper()
@@ -114,6 +128,21 @@ func (m *MockUser) GetByID(ctx context.Context, id string) (entity.User, error) 
 func (mr *MockUserMockRecorder) GetByID(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockUser)(nil).GetByID), ctx, id)
+}
+
+// HasPassword mocks base method.
+func (m *MockUser) HasPassword(ctx context.Context, id string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HasPassword", ctx, id)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// HasPassword indicates an expected call of HasPassword.
+func (mr *MockUserMockRecorder) HasPassword(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasPassword", reflect.TypeOf((*MockUser)(nil).HasPassword), ctx, id)
 }
 
 // PasswordHash mocks base method.

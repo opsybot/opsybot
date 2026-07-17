@@ -100,6 +100,28 @@ func (r *repo) GetByEmail(ctx context.Context, email string) (entity.User, error
 	return toEntity(m), nil
 }
 
+func (r *repo) Activate(ctx context.Context, id, name, passwordHash, timezone string) error {
+	if _, err := r.db.Querier(ctx).ExecContext(ctx,
+		`UPDATE users SET name = $2, password_hash = $3, timezone = $4, updated_at = now() WHERE id = $1`,
+		id, name, passwordHash, timezone); err != nil {
+		return fmt.Errorf("activate user: %w", err)
+	}
+	return nil
+}
+
+func (r *repo) HasPassword(ctx context.Context, id string) (bool, error) {
+	var hasPassword bool
+	err := r.db.Querier(ctx).QueryRowContext(ctx,
+		`SELECT password_hash IS NOT NULL FROM users WHERE id = $1`, id).Scan(&hasPassword)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, entity.ErrUserNotFound
+		}
+		return false, fmt.Errorf("user has password: %w", err)
+	}
+	return hasPassword, nil
+}
+
 func (r *repo) PasswordHash(ctx context.Context, id string) (string, error) {
 	var hash sql.NullString
 	err := r.db.Querier(ctx).QueryRowContext(ctx,

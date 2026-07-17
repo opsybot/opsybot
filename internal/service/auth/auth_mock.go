@@ -41,6 +41,36 @@ func (m *MockAuth) EXPECT() *MockAuthMockRecorder {
 	return m.recorder
 }
 
+// AcceptInvite mocks base method.
+func (m *MockAuth) AcceptInvite(ctx context.Context, in entity.AcceptInvite, ip, userAgent string) (entity.AcceptResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AcceptInvite", ctx, in, ip, userAgent)
+	ret0, _ := ret[0].(entity.AcceptResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AcceptInvite indicates an expected call of AcceptInvite.
+func (mr *MockAuthMockRecorder) AcceptInvite(ctx, in, ip, userAgent any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AcceptInvite", reflect.TypeOf((*MockAuth)(nil).AcceptInvite), ctx, in, ip, userAgent)
+}
+
+// InvitePreview mocks base method.
+func (m *MockAuth) InvitePreview(ctx context.Context, token string) (entity.Invite, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InvitePreview", ctx, token)
+	ret0, _ := ret[0].(entity.Invite)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// InvitePreview indicates an expected call of InvitePreview.
+func (mr *MockAuthMockRecorder) InvitePreview(ctx, token any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InvitePreview", reflect.TypeOf((*MockAuth)(nil).InvitePreview), ctx, token)
+}
+
 // Login mocks base method.
 func (m *MockAuth) Login(ctx context.Context, in entity.LoginInput) (entity.LoginResult, error) {
 	m.ctrl.T.Helper()

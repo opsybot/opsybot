@@ -22,6 +22,8 @@ type srv struct {
 	members    repository.Member
 	sessions   repository.Session
 	policy     repository.Policy
+	invites    repository.Invite
+	audit      repository.Audit
 }
 
 func New(
@@ -33,8 +35,11 @@ func New(
 	members repository.Member,
 	sessions repository.Session,
 	policy repository.Policy,
+	invites repository.Invite,
+	audit repository.Audit,
 ) service.Auth {
-	return &srv{cfg: cfg, tx: tx, lock: lock, users: users, workspaces: workspaces, members: members, sessions: sessions, policy: policy}
+	return &srv{cfg: cfg, tx: tx, lock: lock, users: users, workspaces: workspaces, members: members,
+		sessions: sessions, policy: policy, invites: invites, audit: audit}
 }
 
 func (s *srv) SetupRequired(ctx context.Context) (bool, error) {
@@ -85,7 +90,19 @@ func (s *srv) Setup(ctx context.Context, in entity.Setup, ip, userAgent string) 
 		if err := s.policy.SeedWorkspace(ctx, ws.ID); err != nil {
 			return err
 		}
-		return s.policy.AssignRole(ctx, user.ID, ws.ID, entity.RoleAdmin)
+		if err := s.policy.AssignRole(ctx, user.ID, ws.ID, entity.RoleAdmin); err != nil {
+			return err
+		}
+		if err := s.audit.Create(ctx, entity.AuditEvent{
+			ActorType: entity.AuditActorUser, ActorUserID: user.ID, ActorLabel: user.Name,
+			Action: entity.ActionInstanceSetup, Target: in.Email, IP: ip,
+		}); err != nil {
+			return err
+		}
+		return s.audit.Create(ctx, entity.AuditEvent{
+			WorkspaceID: ws.ID, ActorType: entity.AuditActorUser, ActorUserID: user.ID, ActorLabel: user.Name,
+			Action: entity.ActionWorkspaceCreated, Target: ws.Name, IP: ip,
+		})
 	})
 	if err != nil {
 		if compErr := s.policy.RemoveRole(context.WithoutCancel(ctx), user.ID, ws.ID); compErr != nil && user.ID != "" {
@@ -106,6 +123,7 @@ func (s *srv) Login(ctx context.Context, in entity.LoginInput) (entity.LoginResu
 	if err != nil {
 		if errors.Is(err, entity.ErrUserNotFound) {
 			_, _ = entity.HashPassword(in.Password)
+			s.auditLoginFailed(ctx, in, entity.LoginInvalidCredentials)
 			return entity.LoginResult{}, entity.ErrInvalidCredentials
 		}
 		return entity.LoginResult{}, err
@@ -114,11 +132,13 @@ func (s *srv) Login(ctx context.Context, in entity.LoginInput) (entity.LoginResu
 	hash, err := s.users.PasswordHash(ctx, user.ID)
 	if err != nil {
 		if errors.Is(err, entity.ErrUserNoPassword) {
+			s.auditLoginFailed(ctx, in, entity.LoginSSORequired)
 			return entity.LoginResult{}, entity.ErrSSORequired
 		}
 		return entity.LoginResult{}, err
 	}
 	if err := entity.VerifyPassword(hash, in.Password); err != nil {
+		s.auditLoginFailed(ctx, in, entity.LoginInvalidCredentials)
 		return entity.LoginResult{}, entity.ErrInvalidCredentials
 	}
 
@@ -127,6 +147,7 @@ func (s *srv) Login(ctx context.Context, in entity.LoginInput) (entity.LoginResu
 		return entity.LoginResult{}, err
 	}
 	if len(workspaces) == 0 {
+		s.auditLoginFailed(ctx, in, entity.LoginDeactivated)
 		return entity.LoginResult{}, entity.ErrUserDeactivated
 	}
 
@@ -134,7 +155,24 @@ func (s *srv) Login(ctx context.Context, in entity.LoginInput) (entity.LoginResu
 	if err != nil {
 		return entity.LoginResult{}, err
 	}
+	if err := s.audit.Create(ctx, entity.AuditEvent{
+		ActorType: entity.AuditActorUser, ActorUserID: user.ID, ActorLabel: user.Name,
+		Action: entity.ActionAuthLogin, Target: user.Email, IP: in.IP,
+	}); err != nil {
+		return entity.LoginResult{}, err
+	}
 	return entity.LoginResult{Outcome: entity.LoginOutcomeOK, Session: sess, Token: token, User: user}, nil
+}
+
+func (s *srv) auditLoginFailed(ctx context.Context, in entity.LoginInput, reason string) {
+	_ = s.audit.Create(ctx, entity.AuditEvent{
+		ActorType:  entity.AuditActorUnknown,
+		ActorLabel: entity.ActorLabelUnknown,
+		Action:     entity.ActionAuthLoginFailed,
+		Target:     entity.NormalizeEmail(in.Email),
+		IP:         in.IP,
+		Meta:       map[string]string{"reason": reason},
+	})
 }
 
 func (s *srv) Logout(ctx context.Context) error {
@@ -145,7 +183,14 @@ func (s *srv) Logout(ctx context.Context) error {
 	if id.Kind != entity.IdentityKindSession {
 		return entity.ErrForbidden
 	}
-	return s.sessions.Delete(ctx, id.SessionID)
+	if err := s.sessions.Delete(ctx, id.SessionID); err != nil {
+		return err
+	}
+	_ = s.audit.Create(ctx, entity.AuditEvent{
+		ActorType: entity.AuditActorUser, ActorUserID: id.UserID, ActorLabel: id.Label,
+		Action: entity.ActionAuthLogout, IP: id.IP,
+	})
+	return nil
 }
 
 func (s *srv) Resolve(ctx context.Context, token string) (entity.Identity, error) {
@@ -179,6 +224,83 @@ func (s *srv) Resolve(ctx context.Context, token string) (entity.Identity, error
 		SessionID: sess.ID,
 		Label:     user.Name,
 	}, nil
+}
+
+func (s *srv) InvitePreview(ctx context.Context, token string) (entity.Invite, error) {
+	inv, err := s.invites.GetByTokenHash(ctx, entity.HashToken(token))
+	if err != nil {
+		return entity.Invite{}, err
+	}
+	switch inv.Status {
+	case entity.InviteStatusAccepted:
+		return entity.Invite{}, entity.ErrInviteAlreadyAccepted
+	case entity.InviteStatusRevoked:
+		return entity.Invite{}, entity.ErrInviteRevoked
+	}
+	if inv.Expired() {
+		return entity.Invite{}, entity.ErrInviteExpired
+	}
+	return inv, nil
+}
+
+func (s *srv) AcceptInvite(ctx context.Context, in entity.AcceptInvite, ip, userAgent string) (entity.AcceptResult, error) {
+	if err := in.Validate(); err != nil {
+		return entity.AcceptResult{}, err
+	}
+	hash, err := entity.HashPassword(in.Password)
+	if err != nil {
+		return entity.AcceptResult{}, err
+	}
+
+	var inv entity.Invite
+	err = s.tx.WithTx(ctx, func(ctx context.Context) error {
+		var err error
+		inv, err = s.invites.GetByTokenHash(ctx, entity.HashToken(in.Token))
+		if err != nil {
+			return err
+		}
+		switch inv.Status {
+		case entity.InviteStatusAccepted:
+			return entity.ErrInviteAlreadyAccepted
+		case entity.InviteStatusRevoked:
+			return entity.ErrInviteRevoked
+		}
+		if inv.Expired() {
+			return entity.ErrInviteExpired
+		}
+		hasPassword, err := s.users.HasPassword(ctx, inv.UserID)
+		if err != nil {
+			return err
+		}
+		if !hasPassword {
+			if err := s.users.Activate(ctx, inv.UserID, in.Name, hash, in.Timezone); err != nil {
+				return err
+			}
+		}
+		if err := s.members.UpdateStatus(ctx, inv.WorkspaceID, inv.UserID, entity.MemberStatusActive); err != nil {
+			return err
+		}
+		if err := s.invites.MarkAccepted(ctx, inv.ID); err != nil {
+			return err
+		}
+		return s.audit.Create(ctx, entity.AuditEvent{
+			WorkspaceID: inv.WorkspaceID, ActorType: entity.AuditActorUser, ActorUserID: inv.UserID,
+			ActorLabel: in.Name, Action: entity.ActionMemberJoined, Target: inv.Email, IP: ip,
+		})
+	})
+	if err != nil {
+		return entity.AcceptResult{}, err
+	}
+
+	user, err := s.users.GetByID(ctx, inv.UserID)
+	if err != nil {
+		return entity.AcceptResult{}, err
+	}
+	sess, token, err := s.issueSession(ctx, user.ID, ip, userAgent, true)
+	if err != nil {
+		return entity.AcceptResult{}, err
+	}
+	return entity.AcceptResult{Invite: inv, Session: sess, Token: token, User: user}, nil
 }
 
 func (s *srv) Profile(ctx context.Context) (entity.User, error) {

@@ -189,6 +189,482 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+  /auth/invite/preview:
+    post:
+      operationId: previewInvite
+      summary: Preview an invitation before accepting
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TokenRequest" }
+      responses:
+        "200":
+          description: Invite preview
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InvitePreview" }
+        "400":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "410":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /auth/invite/accept:
+    post:
+      operationId: acceptInvite
+      summary: Accept an invitation and sign in
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AcceptInviteRequest" }
+      responses:
+        "200":
+          description: Invitation accepted and signed in
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SessionUser" }
+        "400":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "410":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /workspaces/{workspaceId}/members:
+    get:
+      operationId: listMembers
+      summary: List workspace members
+      tags: [members]
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Members
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MemberList" }
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "403":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /workspaces/{workspaceId}/members/invites:
+    get:
+      operationId: listInvites
+      summary: List pending invitations
+      tags: [members]
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Pending invitations
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InviteList" }
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "403":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+    post:
+      operationId: inviteMember
+      summary: Invite a member by email
+      tags: [members]
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InviteMemberRequest" }
+      responses:
+        "201":
+          description: Invitation created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InviteCreated" }
+        "400":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "403":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /workspaces/{workspaceId}/members/invites/{userId}/resend:
+    post:
+      operationId: resendInvite
+      summary: Resend a pending invitation
+      tags: [members]
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Invitation resent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InviteCreated" }
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "403":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /workspaces/{workspaceId}/members/invites/{userId}:
+    delete:
+      operationId: revokeInvite
+      summary: Revoke a pending invitation
+      tags: [members]
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Invitation revoked
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "403":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /workspaces/{workspaceId}/members/{userId}:
+    get:
+      operationId: getMember
+      summary: A single member
+      tags: [members]
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Member
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Member" }
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "403":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /workspaces/{workspaceId}/members/{userId}/role:
+    put:
+      operationId: changeMemberRole
+      summary: Change a member's role
+      tags: [members]
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChangeRoleRequest" }
+      responses:
+        "200":
+          description: Member
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Member" }
+        "400":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "403":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /workspaces/{workspaceId}/members/{userId}/deactivate:
+    post:
+      operationId: deactivateMember
+      summary: Deactivate a member (with reference reassignment)
+      tags: [members]
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DeactivateMemberRequest" }
+      responses:
+        "200":
+          description: Member
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Member" }
+        "400":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "403":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /workspaces/{workspaceId}/members/{userId}/reactivate:
+    post:
+      operationId: reactivateMember
+      summary: Reactivate a deactivated member
+      tags: [members]
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Member
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Member" }
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "403":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
 components:
   schemas:
     Health:
@@ -264,6 +740,103 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Workspace"
+    TokenRequest:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string }
+    AcceptInviteRequest:
+      type: object
+      required: [token, name, password, timezone]
+      properties:
+        token: { type: string }
+        name: { type: string }
+        password: { type: string }
+        timezone: { type: string }
+    InvitePreview:
+      type: object
+      required: [email, workspace, invitedBy, sentAt]
+      properties:
+        email: { type: string }
+        workspace: { type: string }
+        invitedBy: { type: string }
+        sentAt: { type: string, format: date-time }
+    Role:
+      type: string
+      enum: [admin, member]
+    MemberReference:
+      type: object
+      required: [id, kind, label, detail]
+      properties:
+        id: { type: string }
+        kind: { type: string }
+        icon: { type: string }
+        label: { type: string }
+        detail: { type: string }
+    Member:
+      type: object
+      required: [userId, name, email, role, status, twoFactor, authMethod, deactivated]
+      properties:
+        userId: { type: string }
+        name: { type: string }
+        email: { type: string }
+        role: { $ref: "#/components/schemas/Role" }
+        status: { type: string, enum: [invited, active, deactivated] }
+        twoFactor: { type: boolean }
+        authMethod: { type: string, enum: [password, sso, invited] }
+        deactivated: { type: boolean }
+        lastActiveAt: { type: string, format: date-time }
+        references:
+          type: array
+          items: { $ref: "#/components/schemas/MemberReference" }
+    MemberList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Member" }
+    Invite:
+      type: object
+      required: [userId, email, role, invitedBy, sentAt, expiresAt]
+      properties:
+        userId: { type: string }
+        email: { type: string }
+        role: { $ref: "#/components/schemas/Role" }
+        invitedBy: { type: string }
+        sentAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+    InviteList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Invite" }
+    InviteCreated:
+      type: object
+      required: [invite, acceptUrl]
+      properties:
+        invite: { $ref: "#/components/schemas/Invite" }
+        acceptUrl: { type: string }
+    InviteMemberRequest:
+      type: object
+      required: [email, role]
+      properties:
+        email: { type: string }
+        role: { $ref: "#/components/schemas/Role" }
+    ChangeRoleRequest:
+      type: object
+      required: [role]
+      properties:
+        role: { $ref: "#/components/schemas/Role" }
+    DeactivateMemberRequest:
+      type: object
+      required: [replacements]
+      properties:
+        replacements:
+          type: object
+          additionalProperties: { type: string }
     Problem:
       type: object
       required:

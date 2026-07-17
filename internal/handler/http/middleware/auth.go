@@ -20,6 +20,8 @@ var publicRoutes = []publicRoute{
 	{http.MethodGet, "/v1/auth/setup"},
 	{http.MethodPost, "/v1/auth/setup"},
 	{http.MethodPost, "/v1/auth/login"},
+	{http.MethodPost, "/v1/auth/invite/preview"},
+	{http.MethodPost, "/v1/auth/invite/accept"},
 }
 
 func isPublic(r *http.Request) bool {
@@ -48,6 +50,9 @@ func Authn(auth service.Auth, cfg config.Auth) func(http.Handler) http.Handler {
 				writeUnauthorized(w, "Your session is no longer valid. It may have expired or been revoked. Sign in again to continue.")
 				return
 			}
+			info := entity.RequestInfoFrom(r.Context())
+			id.IP = info.IP
+			id.UserAgent = info.UserAgent
 			next.ServeHTTP(w, r.WithContext(entity.WithIdentity(r.Context(), id)))
 		})
 	}

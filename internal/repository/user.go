@@ -13,6 +13,8 @@ type User interface {
 	CreateInvited(ctx context.Context, email string) (entity.User, error)
 	GetByID(ctx context.Context, id string) (entity.User, error)
 	GetByEmail(ctx context.Context, email string) (entity.User, error)
+	Activate(ctx context.Context, id, name, passwordHash, timezone string) error
+	HasPassword(ctx context.Context, id string) (bool, error)
 	PasswordHash(ctx context.Context, id string) (string, error)
 	ExistsAny(ctx context.Context) (bool, error)
 	TouchLastActive(ctx context.Context, id string) error

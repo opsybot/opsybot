@@ -112,3 +112,49 @@ func (r *repo) IsActive(ctx context.Context, workspaceID, userID string) (bool, 
 	}
 	return active, nil
 }
+
+func (r *repo) UpdateStatus(ctx context.Context, workspaceID, userID string, status entity.MemberStatus) error {
+	joined := ""
+	deactivated := "deactivated_at = NULL"
+	switch status {
+	case entity.MemberStatusActive:
+		joined = "joined_at = COALESCE(joined_at, now()), "
+	case entity.MemberStatusDeactivated:
+		deactivated = "deactivated_at = now()"
+	}
+	res, err := r.db.Querier(ctx).ExecContext(ctx,
+		`UPDATE workspace_members SET status = $3, `+joined+deactivated+`, updated_at = now()
+		 WHERE workspace_id = $1 AND user_id = $2`,
+		workspaceID, userID, string(status))
+	if err != nil {
+		return fmt.Errorf("update member status: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("update member status rows: %w", err)
+	}
+	if n == 0 {
+		return entity.ErrMemberNotFound
+	}
+	return nil
+}
+
+func (r *repo) DeleteInvited(ctx context.Context, workspaceID, userID string) error {
+	if _, err := r.db.Querier(ctx).ExecContext(ctx,
+		`DELETE FROM workspace_members WHERE workspace_id = $1 AND user_id = $2 AND status = 'invited'`,
+		workspaceID, userID); err != nil {
+		return fmt.Errorf("delete invited member: %w", err)
+	}
+	return nil
+}
+
+func (r *repo) CountOtherActive(ctx context.Context, userID, exceptWorkspaceID string) (int, error) {
+	var count int
+	err := r.db.Querier(ctx).QueryRowContext(ctx,
+		`SELECT count(*) FROM workspace_members WHERE user_id = $1 AND workspace_id <> $2 AND status = 'active'`,
+		userID, exceptWorkspaceID).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("count other active memberships: %w", err)
+	}
+	return count, nil
+}

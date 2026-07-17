@@ -102,15 +102,21 @@ var WorkspaceWhere = struct {
 // WorkspaceRels is where relationship names are stored.
 var WorkspaceRels = struct {
 	CreatedByUser    string
+	AuditEvents      string
+	Invites          string
 	WorkspaceMembers string
 }{
 	CreatedByUser:    "CreatedByUser",
+	AuditEvents:      "AuditEvents",
+	Invites:          "Invites",
 	WorkspaceMembers: "WorkspaceMembers",
 }
 
 // workspaceR is where relationships are stored.
 type workspaceR struct {
 	CreatedByUser    *User                `boil:"CreatedByUser" json:"CreatedByUser" toml:"CreatedByUser" yaml:"CreatedByUser"`
+	AuditEvents      AuditEventSlice      `boil:"AuditEvents" json:"AuditEvents" toml:"AuditEvents" yaml:"AuditEvents"`
+	Invites          InviteSlice          `boil:"Invites" json:"Invites" toml:"Invites" yaml:"Invites"`
 	WorkspaceMembers WorkspaceMemberSlice `boil:"WorkspaceMembers" json:"WorkspaceMembers" toml:"WorkspaceMembers" yaml:"WorkspaceMembers"`
 }
 
@@ -133,6 +139,38 @@ func (r *workspaceR) GetCreatedByUser() *User {
 	}
 
 	return r.CreatedByUser
+}
+
+func (o *Workspace) GetAuditEvents() AuditEventSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetAuditEvents()
+}
+
+func (r *workspaceR) GetAuditEvents() AuditEventSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.AuditEvents
+}
+
+func (o *Workspace) GetInvites() InviteSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetInvites()
+}
+
+func (r *workspaceR) GetInvites() InviteSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.Invites
 }
 
 func (o *Workspace) GetWorkspaceMembers() WorkspaceMemberSlice {
@@ -478,6 +516,34 @@ func (o *Workspace) CreatedByUser(mods ...qm.QueryMod) userQuery {
 	return Users(queryMods...)
 }
 
+// AuditEvents retrieves all the audit_event's AuditEvents with an executor.
+func (o *Workspace) AuditEvents(mods ...qm.QueryMod) auditEventQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"audit_events\".\"workspace_id\"=?", o.ID),
+	)
+
+	return AuditEvents(queryMods...)
+}
+
+// Invites retrieves all the invite's Invites with an executor.
+func (o *Workspace) Invites(mods ...qm.QueryMod) inviteQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"invites\".\"workspace_id\"=?", o.ID),
+	)
+
+	return Invites(queryMods...)
+}
+
 // WorkspaceMembers retrieves all the workspace_member's WorkspaceMembers with an executor.
 func (o *Workspace) WorkspaceMembers(mods ...qm.QueryMod) workspaceMemberQuery {
 	var queryMods []qm.QueryMod
@@ -608,6 +674,232 @@ func (workspaceL) LoadCreatedByUser(ctx context.Context, e boil.ContextExecutor,
 					foreign.R = &userR{}
 				}
 				foreign.R.CreatedByWorkspaces = append(foreign.R.CreatedByWorkspaces, local)
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadAuditEvents allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (workspaceL) LoadAuditEvents(ctx context.Context, e boil.ContextExecutor, singular bool, maybeWorkspace any, mods queries.Applicator) error {
+	var slice []*Workspace
+	var object *Workspace
+
+	if singular {
+		var ok bool
+		object, ok = maybeWorkspace.(*Workspace)
+		if !ok {
+			object = new(Workspace)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeWorkspace))
+			}
+		}
+	} else {
+		s, ok := maybeWorkspace.(*[]*Workspace)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeWorkspace))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &workspaceR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &workspaceR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`audit_events`),
+		qm.WhereIn(`audit_events.workspace_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load audit_events")
+	}
+
+	var resultSlice []*AuditEvent
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice audit_events")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on audit_events")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for audit_events")
+	}
+
+	if len(auditEventAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.AuditEvents = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &auditEventR{}
+			}
+			foreign.R.Workspace = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if queries.Equal(local.ID, foreign.WorkspaceID) {
+				local.R.AuditEvents = append(local.R.AuditEvents, foreign)
+				if foreign.R == nil {
+					foreign.R = &auditEventR{}
+				}
+				foreign.R.Workspace = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadInvites allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (workspaceL) LoadInvites(ctx context.Context, e boil.ContextExecutor, singular bool, maybeWorkspace any, mods queries.Applicator) error {
+	var slice []*Workspace
+	var object *Workspace
+
+	if singular {
+		var ok bool
+		object, ok = maybeWorkspace.(*Workspace)
+		if !ok {
+			object = new(Workspace)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeWorkspace))
+			}
+		}
+	} else {
+		s, ok := maybeWorkspace.(*[]*Workspace)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeWorkspace))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &workspaceR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &workspaceR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`invites`),
+		qm.WhereIn(`invites.workspace_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load invites")
+	}
+
+	var resultSlice []*Invite
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice invites")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on invites")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for invites")
+	}
+
+	if len(inviteAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.Invites = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &inviteR{}
+			}
+			foreign.R.Workspace = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.WorkspaceID {
+				local.R.Invites = append(local.R.Invites, foreign)
+				if foreign.R == nil {
+					foreign.R = &inviteR{}
+				}
+				foreign.R.Workspace = local
 				break
 			}
 		}
@@ -805,6 +1097,186 @@ func (o *Workspace) RemoveCreatedByUser(ctx context.Context, exec boil.ContextEx
 		}
 		related.R.CreatedByWorkspaces = related.R.CreatedByWorkspaces[:ln-1]
 		break
+	}
+	return nil
+}
+
+// AddAuditEvents adds the given related objects to the existing relationships
+// of the workspace, optionally inserting them as new records.
+// Appends related to o.R.AuditEvents.
+// Sets related.R.Workspace appropriately.
+func (o *Workspace) AddAuditEvents(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*AuditEvent) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			queries.Assign(&rel.WorkspaceID, o.ID)
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"audit_events\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"workspace_id"}),
+				strmangle.WhereClause("\"", "\"", 2, auditEventPrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			queries.Assign(&rel.WorkspaceID, o.ID)
+		}
+	}
+
+	if o.R == nil {
+		o.R = &workspaceR{
+			AuditEvents: related,
+		}
+	} else {
+		o.R.AuditEvents = append(o.R.AuditEvents, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &auditEventR{
+				Workspace: o,
+			}
+		} else {
+			rel.R.Workspace = o
+		}
+	}
+	return nil
+}
+
+// SetAuditEvents removes all previously related items of the
+// workspace replacing them completely with the passed
+// in related items, optionally inserting them as new records.
+// Sets o.R.Workspace's AuditEvents accordingly.
+// Replaces o.R.AuditEvents with related.
+// Sets related.R.Workspace's AuditEvents accordingly.
+func (o *Workspace) SetAuditEvents(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*AuditEvent) error {
+	query := "update \"audit_events\" set \"workspace_id\" = null where \"workspace_id\" = $1"
+	values := []any{o.ID}
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, query)
+		fmt.Fprintln(writer, values)
+	}
+	_, err := exec.ExecContext(ctx, query, values...)
+	if err != nil {
+		return errors.Wrap(err, "failed to remove relationships before set")
+	}
+
+	if o.R != nil {
+		for _, rel := range o.R.AuditEvents {
+			queries.SetScanner(&rel.WorkspaceID, nil)
+			if rel.R == nil {
+				continue
+			}
+
+			rel.R.Workspace = nil
+		}
+		o.R.AuditEvents = nil
+	}
+
+	return o.AddAuditEvents(ctx, exec, insert, related...)
+}
+
+// RemoveAuditEvents relationships from objects passed in.
+// Removes related items from R.AuditEvents (uses pointer comparison, removal does not keep order)
+// Sets related.R.Workspace.
+func (o *Workspace) RemoveAuditEvents(ctx context.Context, exec boil.ContextExecutor, related ...*AuditEvent) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	for _, rel := range related {
+		queries.SetScanner(&rel.WorkspaceID, nil)
+		if rel.R != nil {
+			rel.R.Workspace = nil
+		}
+		if _, err = rel.Update(ctx, exec, boil.Whitelist("workspace_id")); err != nil {
+			return err
+		}
+	}
+	if o.R == nil {
+		return nil
+	}
+
+	for _, rel := range related {
+		for i, ri := range o.R.AuditEvents {
+			if rel != ri {
+				continue
+			}
+
+			ln := len(o.R.AuditEvents)
+			if ln > 1 && i < ln-1 {
+				o.R.AuditEvents[i] = o.R.AuditEvents[ln-1]
+			}
+			o.R.AuditEvents = o.R.AuditEvents[:ln-1]
+			break
+		}
+	}
+
+	return nil
+}
+
+// AddInvites adds the given related objects to the existing relationships
+// of the workspace, optionally inserting them as new records.
+// Appends related to o.R.Invites.
+// Sets related.R.Workspace appropriately.
+func (o *Workspace) AddInvites(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Invite) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.WorkspaceID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"invites\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"workspace_id"}),
+				strmangle.WhereClause("\"", "\"", 2, invitePrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.WorkspaceID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &workspaceR{
+			Invites: related,
+		}
+	} else {
+		o.R.Invites = append(o.R.Invites, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &inviteR{
+				Workspace: o,
+			}
+		} else {
+			rel.R.Workspace = o
+		}
 	}
 	return nil
 }

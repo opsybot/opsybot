@@ -139,25 +139,82 @@ var UserWhere = struct {
 
 // UserRels is where relationship names are stored.
 var UserRels = struct {
-	Sessions            string
-	WorkspaceMembers    string
-	CreatedByWorkspaces string
+	ActorUserAuditEvents string
+	InvitedByInvites     string
+	Invites              string
+	Sessions             string
+	WorkspaceMembers     string
+	CreatedByWorkspaces  string
 }{
-	Sessions:            "Sessions",
-	WorkspaceMembers:    "WorkspaceMembers",
-	CreatedByWorkspaces: "CreatedByWorkspaces",
+	ActorUserAuditEvents: "ActorUserAuditEvents",
+	InvitedByInvites:     "InvitedByInvites",
+	Invites:              "Invites",
+	Sessions:             "Sessions",
+	WorkspaceMembers:     "WorkspaceMembers",
+	CreatedByWorkspaces:  "CreatedByWorkspaces",
 }
 
 // userR is where relationships are stored.
 type userR struct {
-	Sessions            SessionSlice         `boil:"Sessions" json:"Sessions" toml:"Sessions" yaml:"Sessions"`
-	WorkspaceMembers    WorkspaceMemberSlice `boil:"WorkspaceMembers" json:"WorkspaceMembers" toml:"WorkspaceMembers" yaml:"WorkspaceMembers"`
-	CreatedByWorkspaces WorkspaceSlice       `boil:"CreatedByWorkspaces" json:"CreatedByWorkspaces" toml:"CreatedByWorkspaces" yaml:"CreatedByWorkspaces"`
+	ActorUserAuditEvents AuditEventSlice      `boil:"ActorUserAuditEvents" json:"ActorUserAuditEvents" toml:"ActorUserAuditEvents" yaml:"ActorUserAuditEvents"`
+	InvitedByInvites     InviteSlice          `boil:"InvitedByInvites" json:"InvitedByInvites" toml:"InvitedByInvites" yaml:"InvitedByInvites"`
+	Invites              InviteSlice          `boil:"Invites" json:"Invites" toml:"Invites" yaml:"Invites"`
+	Sessions             SessionSlice         `boil:"Sessions" json:"Sessions" toml:"Sessions" yaml:"Sessions"`
+	WorkspaceMembers     WorkspaceMemberSlice `boil:"WorkspaceMembers" json:"WorkspaceMembers" toml:"WorkspaceMembers" yaml:"WorkspaceMembers"`
+	CreatedByWorkspaces  WorkspaceSlice       `boil:"CreatedByWorkspaces" json:"CreatedByWorkspaces" toml:"CreatedByWorkspaces" yaml:"CreatedByWorkspaces"`
 }
 
 // NewStruct creates a new relationship struct
 func (*userR) NewStruct() *userR {
 	return &userR{}
+}
+
+func (o *User) GetActorUserAuditEvents() AuditEventSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetActorUserAuditEvents()
+}
+
+func (r *userR) GetActorUserAuditEvents() AuditEventSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.ActorUserAuditEvents
+}
+
+func (o *User) GetInvitedByInvites() InviteSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetInvitedByInvites()
+}
+
+func (r *userR) GetInvitedByInvites() InviteSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.InvitedByInvites
+}
+
+func (o *User) GetInvites() InviteSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetInvites()
+}
+
+func (r *userR) GetInvites() InviteSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.Invites
 }
 
 func (o *User) GetSessions() SessionSlice {
@@ -524,6 +581,48 @@ func (q userQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (bool,
 	return count > 0, nil
 }
 
+// ActorUserAuditEvents retrieves all the audit_event's AuditEvents with an executor via actor_user_id column.
+func (o *User) ActorUserAuditEvents(mods ...qm.QueryMod) auditEventQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"audit_events\".\"actor_user_id\"=?", o.ID),
+	)
+
+	return AuditEvents(queryMods...)
+}
+
+// InvitedByInvites retrieves all the invite's Invites with an executor via invited_by column.
+func (o *User) InvitedByInvites(mods ...qm.QueryMod) inviteQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"invites\".\"invited_by\"=?", o.ID),
+	)
+
+	return Invites(queryMods...)
+}
+
+// Invites retrieves all the invite's Invites with an executor.
+func (o *User) Invites(mods ...qm.QueryMod) inviteQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"invites\".\"user_id\"=?", o.ID),
+	)
+
+	return Invites(queryMods...)
+}
+
 // Sessions retrieves all the session's Sessions with an executor.
 func (o *User) Sessions(mods ...qm.QueryMod) sessionQuery {
 	var queryMods []qm.QueryMod
@@ -564,6 +663,345 @@ func (o *User) CreatedByWorkspaces(mods ...qm.QueryMod) workspaceQuery {
 	)
 
 	return Workspaces(queryMods...)
+}
+
+// LoadActorUserAuditEvents allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (userL) LoadActorUserAuditEvents(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser any, mods queries.Applicator) error {
+	var slice []*User
+	var object *User
+
+	if singular {
+		var ok bool
+		object, ok = maybeUser.(*User)
+		if !ok {
+			object = new(User)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeUser))
+			}
+		}
+	} else {
+		s, ok := maybeUser.(*[]*User)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeUser))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &userR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`audit_events`),
+		qm.WhereIn(`audit_events.actor_user_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load audit_events")
+	}
+
+	var resultSlice []*AuditEvent
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice audit_events")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on audit_events")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for audit_events")
+	}
+
+	if len(auditEventAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.ActorUserAuditEvents = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &auditEventR{}
+			}
+			foreign.R.ActorUser = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if queries.Equal(local.ID, foreign.ActorUserID) {
+				local.R.ActorUserAuditEvents = append(local.R.ActorUserAuditEvents, foreign)
+				if foreign.R == nil {
+					foreign.R = &auditEventR{}
+				}
+				foreign.R.ActorUser = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadInvitedByInvites allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (userL) LoadInvitedByInvites(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser any, mods queries.Applicator) error {
+	var slice []*User
+	var object *User
+
+	if singular {
+		var ok bool
+		object, ok = maybeUser.(*User)
+		if !ok {
+			object = new(User)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeUser))
+			}
+		}
+	} else {
+		s, ok := maybeUser.(*[]*User)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeUser))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &userR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`invites`),
+		qm.WhereIn(`invites.invited_by in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load invites")
+	}
+
+	var resultSlice []*Invite
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice invites")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on invites")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for invites")
+	}
+
+	if len(inviteAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.InvitedByInvites = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &inviteR{}
+			}
+			foreign.R.InvitedByUser = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.InvitedBy {
+				local.R.InvitedByInvites = append(local.R.InvitedByInvites, foreign)
+				if foreign.R == nil {
+					foreign.R = &inviteR{}
+				}
+				foreign.R.InvitedByUser = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadInvites allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (userL) LoadInvites(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser any, mods queries.Applicator) error {
+	var slice []*User
+	var object *User
+
+	if singular {
+		var ok bool
+		object, ok = maybeUser.(*User)
+		if !ok {
+			object = new(User)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeUser))
+			}
+		}
+	} else {
+		s, ok := maybeUser.(*[]*User)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeUser))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &userR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`invites`),
+		qm.WhereIn(`invites.user_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load invites")
+	}
+
+	var resultSlice []*Invite
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice invites")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on invites")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for invites")
+	}
+
+	if len(inviteAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.Invites = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &inviteR{}
+			}
+			foreign.R.User = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.UserID {
+				local.R.Invites = append(local.R.Invites, foreign)
+				if foreign.R == nil {
+					foreign.R = &inviteR{}
+				}
+				foreign.R.User = local
+				break
+			}
+		}
+	}
+
+	return nil
 }
 
 // LoadSessions allows an eager lookup of values, cached into the
@@ -902,6 +1340,239 @@ func (userL) LoadCreatedByWorkspaces(ctx context.Context, e boil.ContextExecutor
 		}
 	}
 
+	return nil
+}
+
+// AddActorUserAuditEvents adds the given related objects to the existing relationships
+// of the user, optionally inserting them as new records.
+// Appends related to o.R.ActorUserAuditEvents.
+// Sets related.R.ActorUser appropriately.
+func (o *User) AddActorUserAuditEvents(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*AuditEvent) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			queries.Assign(&rel.ActorUserID, o.ID)
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"audit_events\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"actor_user_id"}),
+				strmangle.WhereClause("\"", "\"", 2, auditEventPrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			queries.Assign(&rel.ActorUserID, o.ID)
+		}
+	}
+
+	if o.R == nil {
+		o.R = &userR{
+			ActorUserAuditEvents: related,
+		}
+	} else {
+		o.R.ActorUserAuditEvents = append(o.R.ActorUserAuditEvents, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &auditEventR{
+				ActorUser: o,
+			}
+		} else {
+			rel.R.ActorUser = o
+		}
+	}
+	return nil
+}
+
+// SetActorUserAuditEvents removes all previously related items of the
+// user replacing them completely with the passed
+// in related items, optionally inserting them as new records.
+// Sets o.R.ActorUser's ActorUserAuditEvents accordingly.
+// Replaces o.R.ActorUserAuditEvents with related.
+// Sets related.R.ActorUser's ActorUserAuditEvents accordingly.
+func (o *User) SetActorUserAuditEvents(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*AuditEvent) error {
+	query := "update \"audit_events\" set \"actor_user_id\" = null where \"actor_user_id\" = $1"
+	values := []any{o.ID}
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, query)
+		fmt.Fprintln(writer, values)
+	}
+	_, err := exec.ExecContext(ctx, query, values...)
+	if err != nil {
+		return errors.Wrap(err, "failed to remove relationships before set")
+	}
+
+	if o.R != nil {
+		for _, rel := range o.R.ActorUserAuditEvents {
+			queries.SetScanner(&rel.ActorUserID, nil)
+			if rel.R == nil {
+				continue
+			}
+
+			rel.R.ActorUser = nil
+		}
+		o.R.ActorUserAuditEvents = nil
+	}
+
+	return o.AddActorUserAuditEvents(ctx, exec, insert, related...)
+}
+
+// RemoveActorUserAuditEvents relationships from objects passed in.
+// Removes related items from R.ActorUserAuditEvents (uses pointer comparison, removal does not keep order)
+// Sets related.R.ActorUser.
+func (o *User) RemoveActorUserAuditEvents(ctx context.Context, exec boil.ContextExecutor, related ...*AuditEvent) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	for _, rel := range related {
+		queries.SetScanner(&rel.ActorUserID, nil)
+		if rel.R != nil {
+			rel.R.ActorUser = nil
+		}
+		if _, err = rel.Update(ctx, exec, boil.Whitelist("actor_user_id")); err != nil {
+			return err
+		}
+	}
+	if o.R == nil {
+		return nil
+	}
+
+	for _, rel := range related {
+		for i, ri := range o.R.ActorUserAuditEvents {
+			if rel != ri {
+				continue
+			}
+
+			ln := len(o.R.ActorUserAuditEvents)
+			if ln > 1 && i < ln-1 {
+				o.R.ActorUserAuditEvents[i] = o.R.ActorUserAuditEvents[ln-1]
+			}
+			o.R.ActorUserAuditEvents = o.R.ActorUserAuditEvents[:ln-1]
+			break
+		}
+	}
+
+	return nil
+}
+
+// AddInvitedByInvites adds the given related objects to the existing relationships
+// of the user, optionally inserting them as new records.
+// Appends related to o.R.InvitedByInvites.
+// Sets related.R.InvitedByUser appropriately.
+func (o *User) AddInvitedByInvites(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Invite) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.InvitedBy = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"invites\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"invited_by"}),
+				strmangle.WhereClause("\"", "\"", 2, invitePrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.InvitedBy = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &userR{
+			InvitedByInvites: related,
+		}
+	} else {
+		o.R.InvitedByInvites = append(o.R.InvitedByInvites, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &inviteR{
+				InvitedByUser: o,
+			}
+		} else {
+			rel.R.InvitedByUser = o
+		}
+	}
+	return nil
+}
+
+// AddInvites adds the given related objects to the existing relationships
+// of the user, optionally inserting them as new records.
+// Appends related to o.R.Invites.
+// Sets related.R.User appropriately.
+func (o *User) AddInvites(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Invite) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.UserID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"invites\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"user_id"}),
+				strmangle.WhereClause("\"", "\"", 2, invitePrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.UserID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &userR{
+			Invites: related,
+		}
+	} else {
+		o.R.Invites = append(o.R.Invites, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &inviteR{
+				User: o,
+			}
+		} else {
+			rel.R.User = o
+		}
+	}
 	return nil
 }
 

@@ -15,18 +15,24 @@ import (
 	"github.com/opsybot/opsybot/internal/pkg"
 	"github.com/opsybot/opsybot/internal/pkg/casbin"
 	"github.com/opsybot/opsybot/internal/pkg/logger"
+	"github.com/opsybot/opsybot/internal/pkg/mailer"
 	"github.com/opsybot/opsybot/internal/pkg/otel"
 	"github.com/opsybot/opsybot/internal/pkg/postgres"
 	"github.com/opsybot/opsybot/internal/pkg/valkey"
+	"github.com/opsybot/opsybot/internal/repository/audit"
+	"github.com/opsybot/opsybot/internal/repository/invite"
 	"github.com/opsybot/opsybot/internal/repository/lock"
+	mailer2 "github.com/opsybot/opsybot/internal/repository/mailer"
 	"github.com/opsybot/opsybot/internal/repository/member"
 	"github.com/opsybot/opsybot/internal/repository/policy"
 	"github.com/opsybot/opsybot/internal/repository/session"
 	"github.com/opsybot/opsybot/internal/repository/transactor"
 	"github.com/opsybot/opsybot/internal/repository/user"
 	"github.com/opsybot/opsybot/internal/repository/workspace"
+	"github.com/opsybot/opsybot/internal/service"
 	"github.com/opsybot/opsybot/internal/service/auth"
 	"github.com/opsybot/opsybot/internal/service/members"
+	"github.com/opsybot/opsybot/internal/service/references"
 	"github.com/opsybot/opsybot/internal/service/workspaces"
 )
 
@@ -74,9 +80,23 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	repositoryMember := member.New(postgresClient)
 	repositorySession := session.New(postgresClient)
 	repositoryPolicy := policy.New(casbinClient, postgresClient)
-	serviceAuth := auth.New(configAuth, repositoryTransactor, repositoryLock, repositoryUser, repositoryWorkspace, repositoryMember, repositorySession, repositoryPolicy)
+	repositoryInvite := invite.New(postgresClient)
+	repositoryAudit := audit.New(postgresClient)
+	serviceAuth := auth.New(configAuth, repositoryTransactor, repositoryLock, repositoryUser, repositoryWorkspace, repositoryMember, repositorySession, repositoryPolicy, repositoryInvite, repositoryAudit)
 	serviceWorkspaces := workspaces.New(repositoryWorkspace, repositoryMember)
-	serviceMembers := members.New(repositoryWorkspace, repositoryMember, repositoryPolicy)
+	configMailer := config.NewMailer(configConfig)
+	mailerClient, err := mailer.New(configMailer)
+	if err != nil {
+		cleanup4()
+		cleanup3()
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	repositoryMailer := mailer2.New(mailerClient)
+	v := _wireValue
+	serviceReferences := references.New(v)
+	serviceMembers := members.New(configAuth, repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryUser, repositoryInvite, repositorySession, repositoryPolicy, repositoryAudit, repositoryMailer, serviceReferences)
 	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers)
 	handler := http.NewRouter(slogLogger, configAuth, serviceAuth, strictServerInterface)
 	app := &App{
@@ -94,6 +114,10 @@ func InitApp(cfgFile string) (*App, func(), error) {
 		cleanup()
 	}, nil
 }
+
+var (
+	_wireValue = []service.ReferenceSource(nil)
+)
 
 func InitMigrator(cfgFile string) (*Migrator, func(), error) {
 	configConfig, err := config.New(cfgFile)

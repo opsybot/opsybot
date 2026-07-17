@@ -91,6 +91,58 @@ func (h *handler) Logout(ctx context.Context, _ api.LogoutRequestObject) (api.Lo
 	return api.Logout204Response{Headers: api.Logout204ResponseHeaders{SetCookie: ptr(h.clearCookie())}}, nil
 }
 
+func (h *handler) PreviewInvite(ctx context.Context, request api.PreviewInviteRequestObject) (api.PreviewInviteResponseObject, error) {
+	if request.Body == nil {
+		return api.PreviewInvite400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid request", "The request body was empty.", "")), nil
+	}
+	inv, err := h.auth.InvitePreview(ctx, request.Body.Token)
+	if err != nil {
+		switch {
+		case errors.Is(err, entity.ErrInviteNotFound), errors.Is(err, entity.ErrInviteRevoked):
+			return api.PreviewInvite404ApplicationProblemPlusJSONResponse(prob(http.StatusNotFound, "Invitation not found", "This invitation link is not valid.", "")), nil
+		case errors.Is(err, entity.ErrInviteExpired), errors.Is(err, entity.ErrInviteAlreadyAccepted):
+			return api.PreviewInvite410ApplicationProblemPlusJSONResponse(prob(http.StatusGone, "Invitation unavailable", "This invitation has expired or was already used. Ask an admin to send a new one.", "token-expired")), nil
+		default:
+			return nil, err
+		}
+	}
+	return api.PreviewInvite200JSONResponse{
+		Email:     inv.Email,
+		Workspace: inv.WorkspaceName,
+		InvitedBy: inv.InvitedByName,
+		SentAt:    inv.CreatedAt,
+	}, nil
+}
+
+func (h *handler) AcceptInvite(ctx context.Context, request api.AcceptInviteRequestObject) (api.AcceptInviteResponseObject, error) {
+	if request.Body == nil {
+		return api.AcceptInvite400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid request", "The request body was empty.", "")), nil
+	}
+	b := request.Body
+	info := entity.RequestInfoFrom(ctx)
+	res, err := h.auth.AcceptInvite(ctx, entity.AcceptInvite{
+		Token: b.Token, Name: b.Name, Password: b.Password, Timezone: b.Timezone,
+	}, info.IP, info.UserAgent)
+	if err != nil {
+		switch {
+		case errors.Is(err, entity.ErrInviteNotFound), errors.Is(err, entity.ErrInviteRevoked):
+			return api.AcceptInvite404ApplicationProblemPlusJSONResponse(prob(http.StatusNotFound, "Invitation not found", "This invitation link is not valid.", "")), nil
+		case errors.Is(err, entity.ErrInviteExpired):
+			return api.AcceptInvite410ApplicationProblemPlusJSONResponse(prob(http.StatusGone, "Invitation expired", "This invitation has expired. Ask an admin to send a new one.", "token-expired")), nil
+		case errors.Is(err, entity.ErrInviteAlreadyAccepted):
+			return api.AcceptInvite409ApplicationProblemPlusJSONResponse(prob(http.StatusConflict, "Already accepted", "This invitation was already accepted. Sign in instead.", "")), nil
+		case isValidation(err):
+			return api.AcceptInvite400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid details", validationDetail(err), "")), nil
+		default:
+			return nil, err
+		}
+	}
+	return api.AcceptInvite200JSONResponse{
+		Body:    sessionUser(res.User),
+		Headers: api.AcceptInvite200ResponseHeaders{SetCookie: ptr(h.sessionCookie(res.Token, res.Session.ExpiresAt))},
+	}, nil
+}
+
 func sessionUser(u entity.User) api.SessionUser {
 	return api.SessionUser{Id: u.ID, Name: u.Name, Email: u.Email, Timezone: u.Timezone}
 }

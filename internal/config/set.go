@@ -9,6 +9,7 @@ var Set = wire.NewSet(
 	NewOTel,
 	NewEnvironment,
 	NewAuth,
+	NewMailer,
 	NewHTTP,
 	NewValkey,
 	NewCasbin,

@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/oapi-codegen/runtime"
@@ -47,6 +48,84 @@ func (e LoginResultStatus) Valid() bool {
 	}
 }
 
+// Defines values for MemberAuthMethod.
+const (
+	MemberAuthMethodInvited  MemberAuthMethod = "invited"
+	MemberAuthMethodPassword MemberAuthMethod = "password"
+	MemberAuthMethodSso      MemberAuthMethod = "sso"
+)
+
+// Valid indicates whether the value is a known member of the MemberAuthMethod enum.
+func (e MemberAuthMethod) Valid() bool {
+	switch e {
+	case MemberAuthMethodInvited:
+		return true
+	case MemberAuthMethodPassword:
+		return true
+	case MemberAuthMethodSso:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MemberStatus.
+const (
+	MemberStatusActive      MemberStatus = "active"
+	MemberStatusDeactivated MemberStatus = "deactivated"
+	MemberStatusInvited     MemberStatus = "invited"
+)
+
+// Valid indicates whether the value is a known member of the MemberStatus enum.
+func (e MemberStatus) Valid() bool {
+	switch e {
+	case MemberStatusActive:
+		return true
+	case MemberStatusDeactivated:
+		return true
+	case MemberStatusInvited:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for Role.
+const (
+	RoleAdmin  Role = "admin"
+	RoleMember Role = "member"
+)
+
+// Valid indicates whether the value is a known member of the Role enum.
+func (e Role) Valid() bool {
+	switch e {
+	case RoleAdmin:
+		return true
+	case RoleMember:
+		return true
+	default:
+		return false
+	}
+}
+
+// AcceptInviteRequest defines model for AcceptInviteRequest.
+type AcceptInviteRequest struct {
+	Name     string `json:"name"`
+	Password string `json:"password"`
+	Timezone string `json:"timezone"`
+	Token    string `json:"token"`
+}
+
+// ChangeRoleRequest defines model for ChangeRoleRequest.
+type ChangeRoleRequest struct {
+	Role Role `json:"role"`
+}
+
+// DeactivateMemberRequest defines model for DeactivateMemberRequest.
+type DeactivateMemberRequest struct {
+	Replacements map[string]string `json:"replacements"`
+}
+
 // Health defines model for Health.
 type Health struct {
 	Status HealthStatus `json:"status"`
@@ -54,6 +133,41 @@ type Health struct {
 
 // HealthStatus defines model for Health.Status.
 type HealthStatus string
+
+// Invite defines model for Invite.
+type Invite struct {
+	Email     string    `json:"email"`
+	ExpiresAt time.Time `json:"expiresAt"`
+	InvitedBy string    `json:"invitedBy"`
+	Role      Role      `json:"role"`
+	SentAt    time.Time `json:"sentAt"`
+	UserId    string    `json:"userId"`
+}
+
+// InviteCreated defines model for InviteCreated.
+type InviteCreated struct {
+	AcceptUrl string `json:"acceptUrl"`
+	Invite    Invite `json:"invite"`
+}
+
+// InviteList defines model for InviteList.
+type InviteList struct {
+	Items []Invite `json:"items"`
+}
+
+// InviteMemberRequest defines model for InviteMemberRequest.
+type InviteMemberRequest struct {
+	Email string `json:"email"`
+	Role  Role   `json:"role"`
+}
+
+// InvitePreview defines model for InvitePreview.
+type InvitePreview struct {
+	Email     string    `json:"email"`
+	InvitedBy string    `json:"invitedBy"`
+	SentAt    time.Time `json:"sentAt"`
+	Workspace string    `json:"workspace"`
+}
 
 // LoginRequest defines model for LoginRequest.
 type LoginRequest struct {
@@ -70,6 +184,40 @@ type LoginResult struct {
 
 // LoginResultStatus defines model for LoginResult.Status.
 type LoginResultStatus string
+
+// Member defines model for Member.
+type Member struct {
+	AuthMethod   MemberAuthMethod   `json:"authMethod"`
+	Deactivated  bool               `json:"deactivated"`
+	Email        string             `json:"email"`
+	LastActiveAt *time.Time         `json:"lastActiveAt,omitempty"`
+	Name         string             `json:"name"`
+	References   *[]MemberReference `json:"references,omitempty"`
+	Role         Role               `json:"role"`
+	Status       MemberStatus       `json:"status"`
+	TwoFactor    bool               `json:"twoFactor"`
+	UserId       string             `json:"userId"`
+}
+
+// MemberAuthMethod defines model for Member.AuthMethod.
+type MemberAuthMethod string
+
+// MemberStatus defines model for Member.Status.
+type MemberStatus string
+
+// MemberList defines model for MemberList.
+type MemberList struct {
+	Items []Member `json:"items"`
+}
+
+// MemberReference defines model for MemberReference.
+type MemberReference struct {
+	Detail string  `json:"detail"`
+	Icon   *string `json:"icon,omitempty"`
+	Id     string  `json:"id"`
+	Kind   string  `json:"kind"`
+	Label  string  `json:"label"`
+}
 
 // Problem defines model for Problem.
 type Problem struct {
@@ -88,6 +236,9 @@ type Profile struct {
 	Timezone         string `json:"timezone"`
 	TwoFactorEnabled bool   `json:"twoFactorEnabled"`
 }
+
+// Role defines model for Role.
+type Role string
 
 // SessionUser defines model for SessionUser.
 type SessionUser struct {
@@ -111,6 +262,11 @@ type SetupStatus struct {
 	Required bool `json:"required"`
 }
 
+// TokenRequest defines model for TokenRequest.
+type TokenRequest struct {
+	Token string `json:"token"`
+}
+
 // Workspace defines model for Workspace.
 type Workspace struct {
 	Environment *string `json:"environment,omitempty"`
@@ -124,14 +280,35 @@ type WorkspaceList struct {
 	Items []Workspace `json:"items"`
 }
 
+// AcceptInviteJSONRequestBody defines body for AcceptInvite for application/json ContentType.
+type AcceptInviteJSONRequestBody = AcceptInviteRequest
+
+// PreviewInviteJSONRequestBody defines body for PreviewInvite for application/json ContentType.
+type PreviewInviteJSONRequestBody = TokenRequest
+
 // LoginJSONRequestBody defines body for Login for application/json ContentType.
 type LoginJSONRequestBody = LoginRequest
 
 // SetupJSONRequestBody defines body for Setup for application/json ContentType.
 type SetupJSONRequestBody = SetupRequest
 
+// InviteMemberJSONRequestBody defines body for InviteMember for application/json ContentType.
+type InviteMemberJSONRequestBody = InviteMemberRequest
+
+// DeactivateMemberJSONRequestBody defines body for DeactivateMember for application/json ContentType.
+type DeactivateMemberJSONRequestBody = DeactivateMemberRequest
+
+// ChangeMemberRoleJSONRequestBody defines body for ChangeMemberRole for application/json ContentType.
+type ChangeMemberRoleJSONRequestBody = ChangeRoleRequest
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Accept an invitation and sign in
+	// (POST /auth/invite/accept)
+	AcceptInvite(w http.ResponseWriter, r *http.Request)
+	// Preview an invitation before accepting
+	// (POST /auth/invite/preview)
+	PreviewInvite(w http.ResponseWriter, r *http.Request)
 	// Sign in with email and password
 	// (POST /auth/login)
 	Login(w http.ResponseWriter, r *http.Request)
@@ -156,11 +333,50 @@ type ServerInterface interface {
 	// A single workspace
 	// (GET /workspaces/{workspaceId})
 	GetWorkspace(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// List workspace members
+	// (GET /workspaces/{workspaceId}/members)
+	ListMembers(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// List pending invitations
+	// (GET /workspaces/{workspaceId}/members/invites)
+	ListInvites(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Invite a member by email
+	// (POST /workspaces/{workspaceId}/members/invites)
+	InviteMember(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Revoke a pending invitation
+	// (DELETE /workspaces/{workspaceId}/members/invites/{userId})
+	RevokeInvite(w http.ResponseWriter, r *http.Request, workspaceId string, userId string)
+	// Resend a pending invitation
+	// (POST /workspaces/{workspaceId}/members/invites/{userId}/resend)
+	ResendInvite(w http.ResponseWriter, r *http.Request, workspaceId string, userId string)
+	// A single member
+	// (GET /workspaces/{workspaceId}/members/{userId})
+	GetMember(w http.ResponseWriter, r *http.Request, workspaceId string, userId string)
+	// Deactivate a member (with reference reassignment)
+	// (POST /workspaces/{workspaceId}/members/{userId}/deactivate)
+	DeactivateMember(w http.ResponseWriter, r *http.Request, workspaceId string, userId string)
+	// Reactivate a deactivated member
+	// (POST /workspaces/{workspaceId}/members/{userId}/reactivate)
+	ReactivateMember(w http.ResponseWriter, r *http.Request, workspaceId string, userId string)
+	// Change a member's role
+	// (PUT /workspaces/{workspaceId}/members/{userId}/role)
+	ChangeMemberRole(w http.ResponseWriter, r *http.Request, workspaceId string, userId string)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// Accept an invitation and sign in
+// (POST /auth/invite/accept)
+func (_ Unimplemented) AcceptInvite(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Preview an invitation before accepting
+// (POST /auth/invite/preview)
+func (_ Unimplemented) PreviewInvite(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // Sign in with email and password
 // (POST /auth/login)
@@ -210,6 +426,60 @@ func (_ Unimplemented) GetWorkspace(w http.ResponseWriter, r *http.Request, work
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// List workspace members
+// (GET /workspaces/{workspaceId}/members)
+func (_ Unimplemented) ListMembers(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List pending invitations
+// (GET /workspaces/{workspaceId}/members/invites)
+func (_ Unimplemented) ListInvites(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Invite a member by email
+// (POST /workspaces/{workspaceId}/members/invites)
+func (_ Unimplemented) InviteMember(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Revoke a pending invitation
+// (DELETE /workspaces/{workspaceId}/members/invites/{userId})
+func (_ Unimplemented) RevokeInvite(w http.ResponseWriter, r *http.Request, workspaceId string, userId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Resend a pending invitation
+// (POST /workspaces/{workspaceId}/members/invites/{userId}/resend)
+func (_ Unimplemented) ResendInvite(w http.ResponseWriter, r *http.Request, workspaceId string, userId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// A single member
+// (GET /workspaces/{workspaceId}/members/{userId})
+func (_ Unimplemented) GetMember(w http.ResponseWriter, r *http.Request, workspaceId string, userId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Deactivate a member (with reference reassignment)
+// (POST /workspaces/{workspaceId}/members/{userId}/deactivate)
+func (_ Unimplemented) DeactivateMember(w http.ResponseWriter, r *http.Request, workspaceId string, userId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Reactivate a deactivated member
+// (POST /workspaces/{workspaceId}/members/{userId}/reactivate)
+func (_ Unimplemented) ReactivateMember(w http.ResponseWriter, r *http.Request, workspaceId string, userId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Change a member's role
+// (PUT /workspaces/{workspaceId}/members/{userId}/role)
+func (_ Unimplemented) ChangeMemberRole(w http.ResponseWriter, r *http.Request, workspaceId string, userId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // ServerInterfaceWrapper converts contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler            ServerInterface
@@ -218,6 +488,34 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// AcceptInvite operation middleware
+func (siw *ServerInterfaceWrapper) AcceptInvite(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AcceptInvite(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PreviewInvite operation middleware
+func (siw *ServerInterfaceWrapper) PreviewInvite(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PreviewInvite(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // Login operation middleware
 func (siw *ServerInterfaceWrapper) Login(w http.ResponseWriter, r *http.Request) {
@@ -343,6 +641,294 @@ func (siw *ServerInterfaceWrapper) GetWorkspace(w http.ResponseWriter, r *http.R
 	handler.ServeHTTP(w, r)
 }
 
+// ListMembers operation middleware
+func (siw *ServerInterfaceWrapper) ListMembers(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMembers(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListInvites operation middleware
+func (siw *ServerInterfaceWrapper) ListInvites(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListInvites(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// InviteMember operation middleware
+func (siw *ServerInterfaceWrapper) InviteMember(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.InviteMember(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RevokeInvite operation middleware
+func (siw *ServerInterfaceWrapper) RevokeInvite(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "userId" -------------
+	var userId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userId", chi.URLParam(r, "userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RevokeInvite(w, r, workspaceId, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ResendInvite operation middleware
+func (siw *ServerInterfaceWrapper) ResendInvite(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "userId" -------------
+	var userId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userId", chi.URLParam(r, "userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ResendInvite(w, r, workspaceId, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMember operation middleware
+func (siw *ServerInterfaceWrapper) GetMember(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "userId" -------------
+	var userId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userId", chi.URLParam(r, "userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMember(w, r, workspaceId, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeactivateMember operation middleware
+func (siw *ServerInterfaceWrapper) DeactivateMember(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "userId" -------------
+	var userId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userId", chi.URLParam(r, "userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeactivateMember(w, r, workspaceId, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReactivateMember operation middleware
+func (siw *ServerInterfaceWrapper) ReactivateMember(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "userId" -------------
+	var userId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userId", chi.URLParam(r, "userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReactivateMember(w, r, workspaceId, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ChangeMemberRole operation middleware
+func (siw *ServerInterfaceWrapper) ChangeMemberRole(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "userId" -------------
+	var userId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userId", chi.URLParam(r, "userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ChangeMemberRole(w, r, workspaceId, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -457,6 +1043,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/auth/invite/accept", wrapper.AcceptInvite)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/auth/invite/preview", wrapper.PreviewInvite)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/auth/login", wrapper.Login)
 	})
 	r.Group(func(r chi.Router) {
@@ -480,8 +1072,187 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/workspaces/{workspaceId}", wrapper.GetWorkspace)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/members", wrapper.ListMembers)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/members/invites", wrapper.ListInvites)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/members/invites", wrapper.InviteMember)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/workspaces/{workspaceId}/members/invites/{userId}", wrapper.RevokeInvite)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/members/invites/{userId}/resend", wrapper.ResendInvite)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/members/{userId}", wrapper.GetMember)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/members/{userId}/deactivate", wrapper.DeactivateMember)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/members/{userId}/reactivate", wrapper.ReactivateMember)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/workspaces/{workspaceId}/members/{userId}/role", wrapper.ChangeMemberRole)
+	})
 
 	return r
+}
+
+type AcceptInviteRequestObject struct {
+	Body *AcceptInviteJSONRequestBody
+}
+
+type AcceptInviteResponseObject interface {
+	VisitAcceptInviteResponse(w http.ResponseWriter) error
+}
+
+type AcceptInvite200ResponseHeaders struct {
+	SetCookie *string
+}
+
+type AcceptInvite200JSONResponse struct {
+	Body    SessionUser
+	Headers AcceptInvite200ResponseHeaders
+}
+
+func (response AcceptInvite200JSONResponse) VisitAcceptInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.SetCookie != nil {
+		w.Header().Set("Set-Cookie", fmt.Sprint(*response.Headers.SetCookie))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptInvite400ApplicationProblemPlusJSONResponse Problem
+
+func (response AcceptInvite400ApplicationProblemPlusJSONResponse) VisitAcceptInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptInvite404ApplicationProblemPlusJSONResponse Problem
+
+func (response AcceptInvite404ApplicationProblemPlusJSONResponse) VisitAcceptInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptInvite409ApplicationProblemPlusJSONResponse Problem
+
+func (response AcceptInvite409ApplicationProblemPlusJSONResponse) VisitAcceptInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptInvite410ApplicationProblemPlusJSONResponse Problem
+
+func (response AcceptInvite410ApplicationProblemPlusJSONResponse) VisitAcceptInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(410)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewInviteRequestObject struct {
+	Body *PreviewInviteJSONRequestBody
+}
+
+type PreviewInviteResponseObject interface {
+	VisitPreviewInviteResponse(w http.ResponseWriter) error
+}
+
+type PreviewInvite200JSONResponse InvitePreview
+
+func (response PreviewInvite200JSONResponse) VisitPreviewInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewInvite400ApplicationProblemPlusJSONResponse Problem
+
+func (response PreviewInvite400ApplicationProblemPlusJSONResponse) VisitPreviewInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewInvite404ApplicationProblemPlusJSONResponse Problem
+
+func (response PreviewInvite404ApplicationProblemPlusJSONResponse) VisitPreviewInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewInvite410ApplicationProblemPlusJSONResponse Problem
+
+func (response PreviewInvite410ApplicationProblemPlusJSONResponse) VisitPreviewInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(410)
+	_, err := buf.WriteTo(w)
+	return err
 }
 
 type LoginRequestObject struct {
@@ -831,8 +1602,691 @@ func (response GetWorkspace404ApplicationProblemPlusJSONResponse) VisitGetWorksp
 	return err
 }
 
+type ListMembersRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+}
+
+type ListMembersResponseObject interface {
+	VisitListMembersResponse(w http.ResponseWriter) error
+}
+
+type ListMembers200JSONResponse MemberList
+
+func (response ListMembers200JSONResponse) VisitListMembersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMembers401ApplicationProblemPlusJSONResponse Problem
+
+func (response ListMembers401ApplicationProblemPlusJSONResponse) VisitListMembersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMembers403ApplicationProblemPlusJSONResponse Problem
+
+func (response ListMembers403ApplicationProblemPlusJSONResponse) VisitListMembersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMembers404ApplicationProblemPlusJSONResponse Problem
+
+func (response ListMembers404ApplicationProblemPlusJSONResponse) VisitListMembersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInvitesRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+}
+
+type ListInvitesResponseObject interface {
+	VisitListInvitesResponse(w http.ResponseWriter) error
+}
+
+type ListInvites200JSONResponse InviteList
+
+func (response ListInvites200JSONResponse) VisitListInvitesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInvites401ApplicationProblemPlusJSONResponse Problem
+
+func (response ListInvites401ApplicationProblemPlusJSONResponse) VisitListInvitesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInvites403ApplicationProblemPlusJSONResponse Problem
+
+func (response ListInvites403ApplicationProblemPlusJSONResponse) VisitListInvitesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInvites404ApplicationProblemPlusJSONResponse Problem
+
+func (response ListInvites404ApplicationProblemPlusJSONResponse) VisitListInvitesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InviteMemberRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	Body        *InviteMemberJSONRequestBody
+}
+
+type InviteMemberResponseObject interface {
+	VisitInviteMemberResponse(w http.ResponseWriter) error
+}
+
+type InviteMember201JSONResponse InviteCreated
+
+func (response InviteMember201JSONResponse) VisitInviteMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InviteMember400ApplicationProblemPlusJSONResponse Problem
+
+func (response InviteMember400ApplicationProblemPlusJSONResponse) VisitInviteMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InviteMember401ApplicationProblemPlusJSONResponse Problem
+
+func (response InviteMember401ApplicationProblemPlusJSONResponse) VisitInviteMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InviteMember403ApplicationProblemPlusJSONResponse Problem
+
+func (response InviteMember403ApplicationProblemPlusJSONResponse) VisitInviteMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InviteMember404ApplicationProblemPlusJSONResponse Problem
+
+func (response InviteMember404ApplicationProblemPlusJSONResponse) VisitInviteMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InviteMember409ApplicationProblemPlusJSONResponse Problem
+
+func (response InviteMember409ApplicationProblemPlusJSONResponse) VisitInviteMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeInviteRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	UserId      string `json:"userId"`
+}
+
+type RevokeInviteResponseObject interface {
+	VisitRevokeInviteResponse(w http.ResponseWriter) error
+}
+
+type RevokeInvite204Response struct {
+}
+
+func (response RevokeInvite204Response) VisitRevokeInviteResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RevokeInvite401ApplicationProblemPlusJSONResponse Problem
+
+func (response RevokeInvite401ApplicationProblemPlusJSONResponse) VisitRevokeInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeInvite403ApplicationProblemPlusJSONResponse Problem
+
+func (response RevokeInvite403ApplicationProblemPlusJSONResponse) VisitRevokeInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeInvite404ApplicationProblemPlusJSONResponse Problem
+
+func (response RevokeInvite404ApplicationProblemPlusJSONResponse) VisitRevokeInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResendInviteRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	UserId      string `json:"userId"`
+}
+
+type ResendInviteResponseObject interface {
+	VisitResendInviteResponse(w http.ResponseWriter) error
+}
+
+type ResendInvite200JSONResponse InviteCreated
+
+func (response ResendInvite200JSONResponse) VisitResendInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResendInvite401ApplicationProblemPlusJSONResponse Problem
+
+func (response ResendInvite401ApplicationProblemPlusJSONResponse) VisitResendInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResendInvite403ApplicationProblemPlusJSONResponse Problem
+
+func (response ResendInvite403ApplicationProblemPlusJSONResponse) VisitResendInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResendInvite404ApplicationProblemPlusJSONResponse Problem
+
+func (response ResendInvite404ApplicationProblemPlusJSONResponse) VisitResendInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMemberRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	UserId      string `json:"userId"`
+}
+
+type GetMemberResponseObject interface {
+	VisitGetMemberResponse(w http.ResponseWriter) error
+}
+
+type GetMember200JSONResponse Member
+
+func (response GetMember200JSONResponse) VisitGetMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMember401ApplicationProblemPlusJSONResponse Problem
+
+func (response GetMember401ApplicationProblemPlusJSONResponse) VisitGetMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMember403ApplicationProblemPlusJSONResponse Problem
+
+func (response GetMember403ApplicationProblemPlusJSONResponse) VisitGetMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMember404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetMember404ApplicationProblemPlusJSONResponse) VisitGetMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeactivateMemberRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	UserId      string `json:"userId"`
+	Body        *DeactivateMemberJSONRequestBody
+}
+
+type DeactivateMemberResponseObject interface {
+	VisitDeactivateMemberResponse(w http.ResponseWriter) error
+}
+
+type DeactivateMember200JSONResponse Member
+
+func (response DeactivateMember200JSONResponse) VisitDeactivateMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeactivateMember400ApplicationProblemPlusJSONResponse Problem
+
+func (response DeactivateMember400ApplicationProblemPlusJSONResponse) VisitDeactivateMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeactivateMember401ApplicationProblemPlusJSONResponse Problem
+
+func (response DeactivateMember401ApplicationProblemPlusJSONResponse) VisitDeactivateMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeactivateMember403ApplicationProblemPlusJSONResponse Problem
+
+func (response DeactivateMember403ApplicationProblemPlusJSONResponse) VisitDeactivateMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeactivateMember404ApplicationProblemPlusJSONResponse Problem
+
+func (response DeactivateMember404ApplicationProblemPlusJSONResponse) VisitDeactivateMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeactivateMember409ApplicationProblemPlusJSONResponse Problem
+
+func (response DeactivateMember409ApplicationProblemPlusJSONResponse) VisitDeactivateMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReactivateMemberRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	UserId      string `json:"userId"`
+}
+
+type ReactivateMemberResponseObject interface {
+	VisitReactivateMemberResponse(w http.ResponseWriter) error
+}
+
+type ReactivateMember200JSONResponse Member
+
+func (response ReactivateMember200JSONResponse) VisitReactivateMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReactivateMember401ApplicationProblemPlusJSONResponse Problem
+
+func (response ReactivateMember401ApplicationProblemPlusJSONResponse) VisitReactivateMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReactivateMember403ApplicationProblemPlusJSONResponse Problem
+
+func (response ReactivateMember403ApplicationProblemPlusJSONResponse) VisitReactivateMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReactivateMember404ApplicationProblemPlusJSONResponse Problem
+
+func (response ReactivateMember404ApplicationProblemPlusJSONResponse) VisitReactivateMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReactivateMember409ApplicationProblemPlusJSONResponse Problem
+
+func (response ReactivateMember409ApplicationProblemPlusJSONResponse) VisitReactivateMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeMemberRoleRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	UserId      string `json:"userId"`
+	Body        *ChangeMemberRoleJSONRequestBody
+}
+
+type ChangeMemberRoleResponseObject interface {
+	VisitChangeMemberRoleResponse(w http.ResponseWriter) error
+}
+
+type ChangeMemberRole200JSONResponse Member
+
+func (response ChangeMemberRole200JSONResponse) VisitChangeMemberRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeMemberRole400ApplicationProblemPlusJSONResponse Problem
+
+func (response ChangeMemberRole400ApplicationProblemPlusJSONResponse) VisitChangeMemberRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeMemberRole401ApplicationProblemPlusJSONResponse Problem
+
+func (response ChangeMemberRole401ApplicationProblemPlusJSONResponse) VisitChangeMemberRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeMemberRole403ApplicationProblemPlusJSONResponse Problem
+
+func (response ChangeMemberRole403ApplicationProblemPlusJSONResponse) VisitChangeMemberRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeMemberRole404ApplicationProblemPlusJSONResponse Problem
+
+func (response ChangeMemberRole404ApplicationProblemPlusJSONResponse) VisitChangeMemberRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeMemberRole409ApplicationProblemPlusJSONResponse Problem
+
+func (response ChangeMemberRole409ApplicationProblemPlusJSONResponse) VisitChangeMemberRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// Accept an invitation and sign in
+	// (POST /auth/invite/accept)
+	AcceptInvite(ctx context.Context, request AcceptInviteRequestObject) (AcceptInviteResponseObject, error)
+	// Preview an invitation before accepting
+	// (POST /auth/invite/preview)
+	PreviewInvite(ctx context.Context, request PreviewInviteRequestObject) (PreviewInviteResponseObject, error)
 	// Sign in with email and password
 	// (POST /auth/login)
 	Login(ctx context.Context, request LoginRequestObject) (LoginResponseObject, error)
@@ -857,6 +2311,33 @@ type StrictServerInterface interface {
 	// A single workspace
 	// (GET /workspaces/{workspaceId})
 	GetWorkspace(ctx context.Context, request GetWorkspaceRequestObject) (GetWorkspaceResponseObject, error)
+	// List workspace members
+	// (GET /workspaces/{workspaceId}/members)
+	ListMembers(ctx context.Context, request ListMembersRequestObject) (ListMembersResponseObject, error)
+	// List pending invitations
+	// (GET /workspaces/{workspaceId}/members/invites)
+	ListInvites(ctx context.Context, request ListInvitesRequestObject) (ListInvitesResponseObject, error)
+	// Invite a member by email
+	// (POST /workspaces/{workspaceId}/members/invites)
+	InviteMember(ctx context.Context, request InviteMemberRequestObject) (InviteMemberResponseObject, error)
+	// Revoke a pending invitation
+	// (DELETE /workspaces/{workspaceId}/members/invites/{userId})
+	RevokeInvite(ctx context.Context, request RevokeInviteRequestObject) (RevokeInviteResponseObject, error)
+	// Resend a pending invitation
+	// (POST /workspaces/{workspaceId}/members/invites/{userId}/resend)
+	ResendInvite(ctx context.Context, request ResendInviteRequestObject) (ResendInviteResponseObject, error)
+	// A single member
+	// (GET /workspaces/{workspaceId}/members/{userId})
+	GetMember(ctx context.Context, request GetMemberRequestObject) (GetMemberResponseObject, error)
+	// Deactivate a member (with reference reassignment)
+	// (POST /workspaces/{workspaceId}/members/{userId}/deactivate)
+	DeactivateMember(ctx context.Context, request DeactivateMemberRequestObject) (DeactivateMemberResponseObject, error)
+	// Reactivate a deactivated member
+	// (POST /workspaces/{workspaceId}/members/{userId}/reactivate)
+	ReactivateMember(ctx context.Context, request ReactivateMemberRequestObject) (ReactivateMemberResponseObject, error)
+	// Change a member's role
+	// (PUT /workspaces/{workspaceId}/members/{userId}/role)
+	ChangeMemberRole(ctx context.Context, request ChangeMemberRoleRequestObject) (ChangeMemberRoleResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -886,6 +2367,68 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// AcceptInvite operation middleware
+func (sh *strictHandler) AcceptInvite(w http.ResponseWriter, r *http.Request) {
+	var request AcceptInviteRequestObject
+
+	var body AcceptInviteJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AcceptInvite(ctx, request.(AcceptInviteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AcceptInvite")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AcceptInviteResponseObject); ok {
+		if err := validResponse.VisitAcceptInviteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PreviewInvite operation middleware
+func (sh *strictHandler) PreviewInvite(w http.ResponseWriter, r *http.Request) {
+	var request PreviewInviteRequestObject
+
+	var body PreviewInviteJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PreviewInvite(ctx, request.(PreviewInviteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PreviewInvite")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PreviewInviteResponseObject); ok {
+		if err := validResponse.VisitPreviewInviteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // Login operation middleware
@@ -1089,6 +2632,267 @@ func (sh *strictHandler) GetWorkspace(w http.ResponseWriter, r *http.Request, wo
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetWorkspaceResponseObject); ok {
 		if err := validResponse.VisitGetWorkspaceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMembers operation middleware
+func (sh *strictHandler) ListMembers(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request ListMembersRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMembers(ctx, request.(ListMembersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMembers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMembersResponseObject); ok {
+		if err := validResponse.VisitListMembersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListInvites operation middleware
+func (sh *strictHandler) ListInvites(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request ListInvitesRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListInvites(ctx, request.(ListInvitesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListInvites")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListInvitesResponseObject); ok {
+		if err := validResponse.VisitListInvitesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// InviteMember operation middleware
+func (sh *strictHandler) InviteMember(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request InviteMemberRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	var body InviteMemberJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.InviteMember(ctx, request.(InviteMemberRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "InviteMember")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(InviteMemberResponseObject); ok {
+		if err := validResponse.VisitInviteMemberResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RevokeInvite operation middleware
+func (sh *strictHandler) RevokeInvite(w http.ResponseWriter, r *http.Request, workspaceId string, userId string) {
+	var request RevokeInviteRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RevokeInvite(ctx, request.(RevokeInviteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RevokeInvite")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RevokeInviteResponseObject); ok {
+		if err := validResponse.VisitRevokeInviteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ResendInvite operation middleware
+func (sh *strictHandler) ResendInvite(w http.ResponseWriter, r *http.Request, workspaceId string, userId string) {
+	var request ResendInviteRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ResendInvite(ctx, request.(ResendInviteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ResendInvite")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ResendInviteResponseObject); ok {
+		if err := validResponse.VisitResendInviteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMember operation middleware
+func (sh *strictHandler) GetMember(w http.ResponseWriter, r *http.Request, workspaceId string, userId string) {
+	var request GetMemberRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMember(ctx, request.(GetMemberRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMember")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMemberResponseObject); ok {
+		if err := validResponse.VisitGetMemberResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeactivateMember operation middleware
+func (sh *strictHandler) DeactivateMember(w http.ResponseWriter, r *http.Request, workspaceId string, userId string) {
+	var request DeactivateMemberRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.UserId = userId
+
+	var body DeactivateMemberJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeactivateMember(ctx, request.(DeactivateMemberRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeactivateMember")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeactivateMemberResponseObject); ok {
+		if err := validResponse.VisitDeactivateMemberResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReactivateMember operation middleware
+func (sh *strictHandler) ReactivateMember(w http.ResponseWriter, r *http.Request, workspaceId string, userId string) {
+	var request ReactivateMemberRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReactivateMember(ctx, request.(ReactivateMemberRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReactivateMember")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReactivateMemberResponseObject); ok {
+		if err := validResponse.VisitReactivateMemberResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ChangeMemberRole operation middleware
+func (sh *strictHandler) ChangeMemberRole(w http.ResponseWriter, r *http.Request, workspaceId string, userId string) {
+	var request ChangeMemberRoleRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.UserId = userId
+
+	var body ChangeMemberRoleJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ChangeMemberRole(ctx, request.(ChangeMemberRoleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ChangeMemberRole")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ChangeMemberRoleResponseObject); ok {
+		if err := validResponse.VisitChangeMemberRoleResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

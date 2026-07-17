@@ -13,4 +13,7 @@ type Member interface {
 	Get(ctx context.Context, workspaceID, userID string) (entity.Member, error)
 	ListByWorkspace(ctx context.Context, workspaceID string) ([]entity.Member, error)
 	IsActive(ctx context.Context, workspaceID, userID string) (bool, error)
+	UpdateStatus(ctx context.Context, workspaceID, userID string, status entity.MemberStatus) error
+	DeleteInvited(ctx context.Context, workspaceID, userID string) error
+	CountOtherActive(ctx context.Context, userID, exceptWorkspaceID string) (int, error)
 }

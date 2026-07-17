@@ -4,11 +4,15 @@
 package dbpostgres
 
 var TableNames = struct {
+	AuditEvents      string
+	Invites          string
 	Sessions         string
 	Users            string
 	WorkspaceMembers string
 	Workspaces       string
 }{
+	AuditEvents:      "audit_events",
+	Invites:          "invites",
 	Sessions:         "sessions",
 	Users:            "users",
 	WorkspaceMembers: "workspace_members",
