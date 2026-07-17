@@ -56,6 +56,21 @@ func (mr *MockSSOMockRecorder) CompleteLogin(ctx, workspaceSlug, code, state, ip
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompleteLogin", reflect.TypeOf((*MockSSO)(nil).CompleteLogin), ctx, workspaceSlug, code, state, ip, userAgent)
 }
 
+// CompleteSAML mocks base method.
+func (m *MockSSO) CompleteSAML(ctx context.Context, workspaceSlug, samlResponse, relayState, ip, userAgent string) (entity.LoginResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CompleteSAML", ctx, workspaceSlug, samlResponse, relayState, ip, userAgent)
+	ret0, _ := ret[0].(entity.LoginResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CompleteSAML indicates an expected call of CompleteSAML.
+func (mr *MockSSOMockRecorder) CompleteSAML(ctx, workspaceSlug, samlResponse, relayState, ip, userAgent any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompleteSAML", reflect.TypeOf((*MockSSO)(nil).CompleteSAML), ctx, workspaceSlug, samlResponse, relayState, ip, userAgent)
+}
+
 // GetConfig mocks base method.
 func (m *MockSSO) GetConfig(ctx context.Context, workspaceSlug string) (entity.SSOConnection, error) {
 	m.ctrl.T.Helper()
@@ -69,6 +84,21 @@ func (m *MockSSO) GetConfig(ctx context.Context, workspaceSlug string) (entity.S
 func (mr *MockSSOMockRecorder) GetConfig(ctx, workspaceSlug any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfig", reflect.TypeOf((*MockSSO)(nil).GetConfig), ctx, workspaceSlug)
+}
+
+// SAMLMetadata mocks base method.
+func (m *MockSSO) SAMLMetadata(ctx context.Context, workspaceSlug string) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SAMLMetadata", ctx, workspaceSlug)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SAMLMetadata indicates an expected call of SAMLMetadata.
+func (mr *MockSSOMockRecorder) SAMLMetadata(ctx, workspaceSlug any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SAMLMetadata", reflect.TypeOf((*MockSSO)(nil).SAMLMetadata), ctx, workspaceSlug)
 }
 
 // SaveConfig mocks base method.

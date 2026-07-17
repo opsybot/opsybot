@@ -45,6 +45,39 @@ func (h *ssoRoutes) callback(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, r, err)
 		return
 	}
+	h.succeed(w, r, result)
+}
+
+func (h *ssoRoutes) samlMetadata(w http.ResponseWriter, r *http.Request) {
+	meta, err := h.sso.SAMLMetadata(r.Context(), chi.URLParam(r, "workspace"))
+	if err != nil {
+		h.fail(w, r, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/samlmetadata+xml")
+	_, _ = w.Write(meta)
+}
+
+func (h *ssoRoutes) samlACS(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		h.redirect(w, r, "invalid_state")
+		return
+	}
+	response := r.PostFormValue("SAMLResponse")
+	if response == "" {
+		h.redirect(w, r, "invalid_state")
+		return
+	}
+	info := entity.RequestInfoFrom(r.Context())
+	result, err := h.sso.CompleteSAML(r.Context(), chi.URLParam(r, "workspace"), response, r.PostFormValue("RelayState"), info.IP, info.UserAgent)
+	if err != nil {
+		h.fail(w, r, err)
+		return
+	}
+	h.succeed(w, r, result)
+}
+
+func (h *ssoRoutes) succeed(w http.ResponseWriter, r *http.Request, result entity.LoginResult) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     h.cfg.CookieName,
 		Value:    result.Token,

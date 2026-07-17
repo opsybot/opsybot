@@ -2,6 +2,8 @@ package sso
 
 import (
 	"context"
+	"crypto"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"strings"
@@ -9,6 +11,7 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/crewjam/saml"
 	"golang.org/x/oauth2"
 
 	"github.com/opsybot/opsybot/internal/config"
@@ -33,6 +36,9 @@ type srv struct {
 
 	mu        sync.Mutex
 	providers map[string]*oidc.Provider
+	samlMeta  map[string]*saml.EntityDescriptor
+	spKey     crypto.Signer
+	spCert    *x509.Certificate
 }
 
 func New(
@@ -52,6 +58,7 @@ func New(
 		cfg: cfg, tx: tx, workspaces: workspaces, members: members, users: users, policy: policy,
 		sessions: sessions, audit: audit, connections: connections, identities: identities, states: states,
 		providers: make(map[string]*oidc.Provider),
+		samlMeta:  make(map[string]*saml.EntityDescriptor),
 	}
 }
 
@@ -142,12 +149,20 @@ func (s *srv) StartLogin(ctx context.Context, workspaceSlug string) (string, err
 	if err != nil {
 		return "", err
 	}
-	if conn.Mode != entity.SSOModeOIDC {
-		return "", entity.ErrSSOInvalid
-	}
 	if !conn.Enabled {
 		return "", entity.ErrSSONotEnabled
 	}
+	switch conn.Mode {
+	case entity.SSOModeOIDC:
+		return s.startOIDC(ctx, ws, conn, workspaceSlug)
+	case entity.SSOModeSAML:
+		return s.startSAML(ctx, ws, conn, workspaceSlug)
+	default:
+		return "", entity.ErrSSOInvalid
+	}
+}
+
+func (s *srv) startOIDC(ctx context.Context, ws entity.Workspace, conn entity.SSOConnection, workspaceSlug string) (string, error) {
 	secret, err := s.connections.ClientSecret(ctx, ws.ID)
 	if err != nil {
 		return "", err
@@ -233,13 +248,17 @@ func (s *srv) CompleteLogin(ctx context.Context, workspaceSlug, code, state, ip,
 	if name == "" {
 		name = email
 	}
+	return s.finishLogin(ctx, ws, conn, idToken.Subject, email, name, ip, userAgent)
+}
 
+func (s *srv) finishLogin(ctx context.Context, ws entity.Workspace, conn entity.SSOConnection, subject, email, name, ip, userAgent string) (entity.LoginResult, error) {
 	var (
 		user     entity.User
 		assigned bool
+		err      error
 	)
 	err = s.tx.WithTx(ctx, func(ctx context.Context) error {
-		user, assigned, err = s.provision(ctx, ws, conn, idToken.Subject, email, name)
+		user, assigned, err = s.provision(ctx, ws, conn, subject, email, name)
 		return err
 	})
 	if err != nil {

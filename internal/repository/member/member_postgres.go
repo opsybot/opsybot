@@ -12,7 +12,9 @@ import (
 )
 
 const selectColumns = `m.workspace_id, m.user_id, m.status, m.joined_at, m.deactivated_at,
-	u.name, u.email, u.password_hash, u.totp_enabled_at, u.last_active_at`
+	u.name, u.email, u.password_hash, u.totp_enabled_at, u.last_active_at,
+	EXISTS (SELECT 1 FROM user_identities ui JOIN sso_connections c ON c.id = ui.connection_id
+		WHERE ui.user_id = m.user_id AND c.workspace_id = m.workspace_id)`
 
 type repo struct {
 	db postgres.Client
@@ -33,9 +35,10 @@ func scanMember(row interface {
 		passwordHash  sql.NullString
 		totpEnabledAt sql.NullTime
 		lastActiveAt  sql.NullTime
+		hasSSO        bool
 	)
 	if err := row.Scan(&m.WorkspaceID, &m.UserID, &status, &joinedAt, &deactivatedAt,
-		&m.Name, &m.Email, &passwordHash, &totpEnabledAt, &lastActiveAt); err != nil {
+		&m.Name, &m.Email, &passwordHash, &totpEnabledAt, &lastActiveAt, &hasSSO); err != nil {
 		return entity.Member{}, err
 	}
 	m.Status = entity.MemberStatus(status)
@@ -44,6 +47,7 @@ func scanMember(row interface {
 	m.HasPassword = passwordHash.Valid
 	m.TOTPEnabled = totpEnabledAt.Valid
 	m.LastActiveAt = lastActiveAt.Time
+	m.HasSSO = hasSSO
 	return m, nil
 }
 

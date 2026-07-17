@@ -33,6 +33,8 @@ func NewRouter(log *slog.Logger, cfg config.Auth, auth service.Auth, keys servic
 	ssoRoutes := &ssoRoutes{sso: sso, cfg: cfg}
 	r.Get("/v1/auth/sso/{workspace}/start", ssoRoutes.start)
 	r.Get("/v1/auth/sso/{workspace}/callback", ssoRoutes.callback)
+	r.Get("/v1/auth/sso/{workspace}/saml/metadata", ssoRoutes.samlMetadata)
+	r.Post("/v1/auth/sso/{workspace}/saml/acs", ssoRoutes.samlACS)
 
 	dashboardapi.HandlerWithOptions(
 		dashboardapi.NewStrictHandler(dashboard, nil),

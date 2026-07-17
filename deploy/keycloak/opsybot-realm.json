@@ -1,0 +1,80 @@
+{
+  "realm": "opsybot",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "clients": [
+    {
+      "clientId": "opsybot-oidc",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "opsybot-oidc-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": ["http://127.0.0.1:8099/v1/auth/sso/*"],
+      "webOrigins": ["http://127.0.0.1:8099"],
+      "attributes": {
+        "post.logout.redirect.uris": "+"
+      }
+    },
+    {
+      "clientId": "http://127.0.0.1:8099/v1/auth/sso/acme-corp/saml/metadata",
+      "name": "opsybot-saml",
+      "enabled": true,
+      "protocol": "saml",
+      "frontchannelLogout": false,
+      "redirectUris": ["http://127.0.0.1:8099/v1/auth/sso/acme-corp/saml/acs"],
+      "attributes": {
+        "saml.assertion.signature": "true",
+        "saml.server.signature": "true",
+        "saml.client.signature": "false",
+        "saml.authnstatement": "true",
+        "saml_force_name_id_format": "true",
+        "saml_name_id_format": "email",
+        "saml.force.post.binding": "true",
+        "saml_assertion_consumer_url_post": "http://127.0.0.1:8099/v1/auth/sso/acme-corp/saml/acs"
+      },
+      "protocolMappers": [
+        {
+          "name": "email",
+          "protocol": "saml",
+          "protocolMapper": "saml-user-property-mapper",
+          "config": {
+            "user.attribute": "email",
+            "attribute.name": "email",
+            "attribute.nameformat": "Basic"
+          }
+        },
+        {
+          "name": "name",
+          "protocol": "saml",
+          "protocolMapper": "saml-user-property-mapper",
+          "config": {
+            "user.attribute": "firstName",
+            "attribute.name": "name",
+            "attribute.nameformat": "Basic"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "alice",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "alice@acme.dev",
+      "firstName": "Alice",
+      "lastName": "Adams",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "correct-horse-battery",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}

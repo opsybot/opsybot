@@ -15,8 +15,9 @@ const (
 )
 
 const (
-	SSOStateTTL      = 10 * time.Minute
-	SSOStateTokenLen = 32
+	SSOStateTTL       = 10 * time.Minute
+	SSOStateTokenLen  = 32
+	SSOSPCertValidity = 10 * 365 * 24 * time.Hour
 )
 
 var SSODefaultScopes = []string{"openid", "email", "profile"}

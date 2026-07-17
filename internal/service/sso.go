@@ -13,4 +13,6 @@ type SSO interface {
 	SaveConfig(ctx context.Context, workspaceSlug string, in entity.SSOConfigInput) (entity.SSOConnection, error)
 	StartLogin(ctx context.Context, workspaceSlug string) (string, error)
 	CompleteLogin(ctx context.Context, workspaceSlug, code, state, ip, userAgent string) (entity.LoginResult, error)
+	CompleteSAML(ctx context.Context, workspaceSlug, samlResponse, relayState, ip, userAgent string) (entity.LoginResult, error)
+	SAMLMetadata(ctx context.Context, workspaceSlug string) ([]byte, error)
 }

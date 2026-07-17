@@ -50,6 +50,12 @@ infra-up: require-env
 infra-down:
 	$(COMPOSE) down
 
+sso-test-up: require-env
+	$(COMPOSE) --profile test up -d keycloak
+
+sso-test-down: require-env
+	$(COMPOSE) --profile test rm -sf keycloak
+
 infra-restart:
 	$(COMPOSE) restart $(DC_LONG_RUNNING)
 
