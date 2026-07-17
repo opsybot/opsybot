@@ -14,6 +14,126 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Health"
+  /auth/setup:
+    get:
+      operationId: getSetupStatus
+      summary: Whether first-run setup is required
+      tags: [auth]
+      responses:
+        "200":
+          description: Setup status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetupStatus"
+    post:
+      operationId: setup
+      summary: First-run setup (creates the first admin and workspace)
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetupRequest"
+      responses:
+        "201":
+          description: Instance set up and signed in
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionUser"
+        "400": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+  /auth/login:
+    post:
+      operationId: login
+      summary: Sign in with email and password
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Sign-in result
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResult"
+        "400": { $ref: "#/components/responses/Problem" }
+        "401": { $ref: "#/components/responses/Problem" }
+        "403": { $ref: "#/components/responses/Problem" }
+        "429": { $ref: "#/components/responses/Problem" }
+  /auth/logout:
+    post:
+      operationId: logout
+      summary: Sign out of the current session
+      tags: [auth]
+      responses:
+        "204":
+          description: Signed out
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+        "401": { $ref: "#/components/responses/Problem" }
+  /me:
+    get:
+      operationId: getMe
+      summary: The signed-in user's profile
+      tags: [me]
+      responses:
+        "200":
+          description: Profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "401": { $ref: "#/components/responses/Problem" }
+  /workspaces:
+    get:
+      operationId: listWorkspaces
+      summary: Workspaces the signed-in user belongs to
+      tags: [workspaces]
+      responses:
+        "200":
+          description: Workspace list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceList"
+        "401": { $ref: "#/components/responses/Problem" }
+  /workspaces/{workspaceId}:
+    get:
+      operationId: getWorkspace
+      summary: A single workspace
+      tags: [workspaces]
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workspace"
+        "401": { $ref: "#/components/responses/Problem" }
+        "404": { $ref: "#/components/responses/Problem" }
 components:
   schemas:
     Health:
@@ -25,6 +145,70 @@ components:
           type: string
           enum:
             - ok
+    SetupStatus:
+      type: object
+      required: [required]
+      properties:
+        required:
+          type: boolean
+    SetupRequest:
+      type: object
+      required: [name, email, password, workspace, timezone]
+      properties:
+        name: { type: string }
+        email: { type: string }
+        password: { type: string }
+        workspace: { type: string }
+        timezone: { type: string }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string }
+        password: { type: string }
+        remember: { type: boolean }
+    LoginResult:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok, two_factor_required]
+        user:
+          $ref: "#/components/schemas/SessionUser"
+    SessionUser:
+      type: object
+      required: [id, name, email, timezone]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string }
+        timezone: { type: string }
+    Profile:
+      type: object
+      required: [id, name, email, timezone, twoFactorEnabled]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string }
+        timezone: { type: string }
+        twoFactorEnabled: { type: boolean }
+    Workspace:
+      type: object
+      required: [id, name, timezone]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        timezone: { type: string }
+        environment: { type: string }
+    WorkspaceList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Workspace"
     Problem:
       type: object
       required:

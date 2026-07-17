@@ -1,5 +1,11 @@
 package repository
 
-import "github.com/goforj/wire"
+import (
+	"github.com/goforj/wire"
 
-var Set = wire.NewSet()
+	"github.com/opsybot/opsybot/internal/pkg/postgres"
+)
+
+var Set = wire.NewSet(
+	wire.Bind(new(Transactor), new(postgres.Client)),
+)

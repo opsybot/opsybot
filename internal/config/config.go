@@ -17,6 +17,20 @@ type Config struct {
 	Postgres        Postgres      `mapstructure:"postgres"`
 	Valkey          Valkey        `mapstructure:"valkey"`
 	Casbin          Casbin        `mapstructure:"casbin"`
+	Auth            Auth          `mapstructure:"auth"`
+}
+
+type Auth struct {
+	BaseURL            string        `mapstructure:"base_url"`
+	SecretKey          string        `mapstructure:"secret_key"`
+	SecretKeyPrevious  string        `mapstructure:"secret_key_previous"`
+	CookieName         string        `mapstructure:"cookie_name"`
+	CookieSecure       bool          `mapstructure:"cookie_secure"`
+	SessionIdleTTL     time.Duration `mapstructure:"session_idle_ttl"`
+	SessionAbsoluteTTL time.Duration `mapstructure:"session_absolute_ttl"`
+	SessionBrowserTTL  time.Duration `mapstructure:"session_browser_ttl"`
+	SessionTouchWindow time.Duration `mapstructure:"session_touch_window"`
+	TrustProxyHeaders  bool          `mapstructure:"trust_proxy_headers"`
 }
 
 type Environment string
@@ -91,6 +105,10 @@ func NewOTel(cfg Config) OTel {
 	return cfg.OTel
 }
 
+func NewAuth(cfg Config) Auth {
+	return cfg.Auth
+}
+
 func NewEnvironment(cfg Config) Environment {
 	return Environment(cfg.Environment)
 }
@@ -144,6 +162,16 @@ func New(cfgFile string) (Config, error) {
 	v.SetDefault("valkey.pool_size", 10)
 	v.SetDefault("casbin.table_name", "casbin_rule")
 	v.SetDefault("casbin.channel", "/casbin")
+	v.SetDefault("auth.base_url", "http://localhost:8080")
+	v.SetDefault("auth.secret_key", "")
+	v.SetDefault("auth.secret_key_previous", "")
+	v.SetDefault("auth.cookie_name", "opsybot_session")
+	v.SetDefault("auth.cookie_secure", true)
+	v.SetDefault("auth.session_idle_ttl", "72h")
+	v.SetDefault("auth.session_absolute_ttl", "720h")
+	v.SetDefault("auth.session_browser_ttl", "24h")
+	v.SetDefault("auth.session_touch_window", "5m")
+	v.SetDefault("auth.trust_proxy_headers", false)
 
 	v.SetEnvPrefix("OPSYBOT")
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))

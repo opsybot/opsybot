@@ -15,6 +15,8 @@ var baseSet = wire.NewSet(
 	config.Set,
 	pkg.Set,
 	repository.Set,
+	repositoryProviders,
+	serviceProviders,
 	handler.Set,
 	wire.Struct(new(App), "*"),
 	wire.Struct(new(Migrator), "*"),

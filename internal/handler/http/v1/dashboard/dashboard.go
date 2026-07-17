@@ -3,15 +3,22 @@ package dashboard
 import (
 	"context"
 
+	"github.com/opsybot/opsybot/internal/config"
+	"github.com/opsybot/opsybot/internal/service"
 	api "github.com/opsybot/opsybot/pkg/http/v1/dashboard"
 )
 
-type handler struct{}
+type handler struct {
+	cfg        config.Auth
+	auth       service.Auth
+	workspaces service.Workspaces
+	members    service.Members
+}
 
-func New() api.StrictServerInterface {
-	return &handler{}
+func New(cfg config.Auth, auth service.Auth, workspaces service.Workspaces, members service.Members) api.StrictServerInterface {
+	return &handler{cfg: cfg, auth: auth, workspaces: workspaces, members: members}
 }
 
 func (h *handler) GetHealth(_ context.Context, _ api.GetHealthRequestObject) (api.GetHealthResponseObject, error) {
-	return api.GetHealth200JSONResponse{Status: api.Ok}, nil
+	return api.GetHealth200JSONResponse{Status: api.HealthStatusOk}, nil
 }
