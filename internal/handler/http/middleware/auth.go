@@ -22,6 +22,10 @@ var publicRoutes = []publicRoute{
 	{http.MethodPost, "/v1/auth/login"},
 	{http.MethodPost, "/v1/auth/invite/preview"},
 	{http.MethodPost, "/v1/auth/invite/accept"},
+	{http.MethodPost, "/v1/auth/two-factor/verify"},
+	{http.MethodPost, "/v1/auth/two-factor/recovery"},
+	{http.MethodPost, "/v1/auth/password/forgot"},
+	{http.MethodPost, "/v1/auth/password/reset"},
 }
 
 func isPublic(r *http.Request) bool {

@@ -58,6 +58,19 @@ func RequestInfoFrom(ctx context.Context) RequestInfo {
 	return info
 }
 
+const PendingCookieName = "opsybot_2fa"
+
+type pendingTokenCtxKey struct{}
+
+func WithPendingToken(ctx context.Context, token string) context.Context {
+	return context.WithValue(ctx, pendingTokenCtxKey{}, token)
+}
+
+func PendingTokenFrom(ctx context.Context) string {
+	token, _ := ctx.Value(pendingTokenCtxKey{}).(string)
+	return token
+}
+
 func (i Identity) Subject() string {
 	if i.Kind == IdentityKindAPIKey && i.KeyKind == KeyKindWorkspace {
 		return "wsagent:" + i.WorkspaceID

@@ -17,4 +17,8 @@ type Auth interface {
 	Profile(ctx context.Context) (entity.User, error)
 	InvitePreview(ctx context.Context, token string) (entity.Invite, error)
 	AcceptInvite(ctx context.Context, in entity.AcceptInvite, ip, userAgent string) (entity.AcceptResult, error)
+	VerifyTwoFactor(ctx context.Context, pendingToken, code string) (entity.LoginResult, error)
+	VerifyRecovery(ctx context.Context, pendingToken, code string) (entity.LoginResult, error)
+	RequestPasswordReset(ctx context.Context, email, ip string) error
+	ResetPassword(ctx context.Context, token, newPassword string) error
 }

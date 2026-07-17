@@ -13,10 +13,12 @@ type handler struct {
 	auth       service.Auth
 	workspaces service.Workspaces
 	members    service.Members
+	users      service.Users
+	channels   service.Channels
 }
 
-func New(cfg config.Auth, auth service.Auth, workspaces service.Workspaces, members service.Members) api.StrictServerInterface {
-	return &handler{cfg: cfg, auth: auth, workspaces: workspaces, members: members}
+func New(cfg config.Auth, auth service.Auth, workspaces service.Workspaces, members service.Members, users service.Users, channels service.Channels) api.StrictServerInterface {
+	return &handler{cfg: cfg, auth: auth, workspaces: workspaces, members: members, users: users, channels: channels}
 }
 
 func (h *handler) GetHealth(_ context.Context, _ api.GetHealthRequestObject) (api.GetHealthResponseObject, error) {

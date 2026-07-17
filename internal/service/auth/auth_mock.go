@@ -115,6 +115,34 @@ func (mr *MockAuthMockRecorder) Profile(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Profile", reflect.TypeOf((*MockAuth)(nil).Profile), ctx)
 }
 
+// RequestPasswordReset mocks base method.
+func (m *MockAuth) RequestPasswordReset(ctx context.Context, email, ip string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RequestPasswordReset", ctx, email, ip)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RequestPasswordReset indicates an expected call of RequestPasswordReset.
+func (mr *MockAuthMockRecorder) RequestPasswordReset(ctx, email, ip any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RequestPasswordReset", reflect.TypeOf((*MockAuth)(nil).RequestPasswordReset), ctx, email, ip)
+}
+
+// ResetPassword mocks base method.
+func (m *MockAuth) ResetPassword(ctx context.Context, token, newPassword string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResetPassword", ctx, token, newPassword)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ResetPassword indicates an expected call of ResetPassword.
+func (mr *MockAuthMockRecorder) ResetPassword(ctx, token, newPassword any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetPassword", reflect.TypeOf((*MockAuth)(nil).ResetPassword), ctx, token, newPassword)
+}
+
 // Resolve mocks base method.
 func (m *MockAuth) Resolve(ctx context.Context, token string) (entity.Identity, error) {
 	m.ctrl.T.Helper()
@@ -158,4 +186,34 @@ func (m *MockAuth) SetupRequired(ctx context.Context) (bool, error) {
 func (mr *MockAuthMockRecorder) SetupRequired(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetupRequired", reflect.TypeOf((*MockAuth)(nil).SetupRequired), ctx)
+}
+
+// VerifyRecovery mocks base method.
+func (m *MockAuth) VerifyRecovery(ctx context.Context, pendingToken, code string) (entity.LoginResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VerifyRecovery", ctx, pendingToken, code)
+	ret0, _ := ret[0].(entity.LoginResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// VerifyRecovery indicates an expected call of VerifyRecovery.
+func (mr *MockAuthMockRecorder) VerifyRecovery(ctx, pendingToken, code any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyRecovery", reflect.TypeOf((*MockAuth)(nil).VerifyRecovery), ctx, pendingToken, code)
+}
+
+// VerifyTwoFactor mocks base method.
+func (m *MockAuth) VerifyTwoFactor(ctx context.Context, pendingToken, code string) (entity.LoginResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VerifyTwoFactor", ctx, pendingToken, code)
+	ret0, _ := ret[0].(entity.LoginResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// VerifyTwoFactor indicates an expected call of VerifyTwoFactor.
+func (mr *MockAuthMockRecorder) VerifyTwoFactor(ctx, pendingToken, code any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyTwoFactor", reflect.TypeOf((*MockAuth)(nil).VerifyTwoFactor), ctx, pendingToken, code)
 }

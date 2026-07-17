@@ -74,10 +74,96 @@ func (h *handler) Login(ctx context.Context, request api.LoginRequestObject) (ap
 			return nil, err
 		}
 	}
+	if res.Outcome == entity.LoginOutcomeTwoFactor {
+		return api.Login200JSONResponse{
+			Body:    api.LoginResult{Status: api.LoginResultStatusTwoFactorRequired},
+			Headers: api.Login200ResponseHeaders{SetCookie: ptr(h.pendingCookie(res.PendingToken))},
+		}, nil
+	}
 	return api.Login200JSONResponse{
 		Body:    api.LoginResult{Status: api.LoginResultStatusOk, User: ptr(sessionUser(res.User))},
 		Headers: api.Login200ResponseHeaders{SetCookie: ptr(h.sessionCookie(res.Token, res.Session.ExpiresAt))},
 	}, nil
+}
+
+func (h *handler) VerifyTwoFactor(ctx context.Context, request api.VerifyTwoFactorRequestObject) (api.VerifyTwoFactorResponseObject, error) {
+	pending := pendingFrom(ctx)
+	if request.Body == nil || pending == "" {
+		return api.VerifyTwoFactor401ApplicationProblemPlusJSONResponse(prob(http.StatusUnauthorized, "Sign-in step expired", "Your two-factor step expired. Sign in again with your password.", "")), nil
+	}
+	res, err := h.auth.VerifyTwoFactor(ctx, pending, request.Body.Code)
+	if err != nil {
+		return twoFactorLoginError(err, func(p api.Problem) api.VerifyTwoFactorResponseObject {
+			return api.VerifyTwoFactor401ApplicationProblemPlusJSONResponse(p)
+		}, func(p api.Problem) api.VerifyTwoFactorResponseObject {
+			return api.VerifyTwoFactor429ApplicationProblemPlusJSONResponse(p)
+		}), nil
+	}
+	return api.VerifyTwoFactor200JSONResponse{
+		Body:    sessionUser(res.User),
+		Headers: api.VerifyTwoFactor200ResponseHeaders{SetCookie: ptr(h.sessionCookie(res.Token, res.Session.ExpiresAt))},
+	}, nil
+}
+
+func (h *handler) VerifyRecoveryCode(ctx context.Context, request api.VerifyRecoveryCodeRequestObject) (api.VerifyRecoveryCodeResponseObject, error) {
+	pending := pendingFrom(ctx)
+	if request.Body == nil || pending == "" {
+		return api.VerifyRecoveryCode401ApplicationProblemPlusJSONResponse(prob(http.StatusUnauthorized, "Sign-in step expired", "Your two-factor step expired. Sign in again with your password.", "")), nil
+	}
+	res, err := h.auth.VerifyRecovery(ctx, pending, request.Body.Code)
+	if err != nil {
+		return twoFactorLoginError(err, func(p api.Problem) api.VerifyRecoveryCodeResponseObject {
+			return api.VerifyRecoveryCode401ApplicationProblemPlusJSONResponse(p)
+		}, func(p api.Problem) api.VerifyRecoveryCodeResponseObject {
+			return api.VerifyRecoveryCode429ApplicationProblemPlusJSONResponse(p)
+		}), nil
+	}
+	return api.VerifyRecoveryCode200JSONResponse{
+		Body:    sessionUser(res.User),
+		Headers: api.VerifyRecoveryCode200ResponseHeaders{SetCookie: ptr(h.sessionCookie(res.Token, res.Session.ExpiresAt))},
+	}, nil
+}
+
+func twoFactorLoginError[T any](err error, unauthorized, tooMany func(api.Problem) T) T {
+	if errors.Is(err, entity.ErrPendingNotFound) {
+		return tooMany(prob(http.StatusTooManyRequests, "Too many attempts", "Too many wrong codes. Sign in again with your password and a fresh code.", ""))
+	}
+	return unauthorized(prob(http.StatusUnauthorized, "Incorrect code", "That code didn't match. Codes change every 30 seconds — enter the newest one.", ""))
+}
+
+func pendingFrom(ctx context.Context) string {
+	return entity.PendingTokenFrom(ctx)
+}
+
+func (h *handler) ForgotPassword(ctx context.Context, request api.ForgotPasswordRequestObject) (api.ForgotPasswordResponseObject, error) {
+	if request.Body == nil {
+		return api.ForgotPassword400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid request", "The request body was empty.", "")), nil
+	}
+	info := entity.RequestInfoFrom(ctx)
+	if err := h.auth.RequestPasswordReset(ctx, request.Body.Email, info.IP); err != nil {
+		return nil, err
+	}
+	return api.ForgotPassword202Response{}, nil
+}
+
+func (h *handler) ResetPassword(ctx context.Context, request api.ResetPasswordRequestObject) (api.ResetPasswordResponseObject, error) {
+	if request.Body == nil {
+		return api.ResetPassword400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid request", "The request body was empty.", "")), nil
+	}
+	err := h.auth.ResetPassword(ctx, request.Body.Token, request.Body.Password)
+	if err != nil {
+		switch {
+		case errors.Is(err, entity.ErrPasswordResetNotFound):
+			return api.ResetPassword404ApplicationProblemPlusJSONResponse(prob(http.StatusNotFound, "Reset link invalid", "This reset link is not valid. Request a new one from the 'Forgot password' page.", "")), nil
+		case errors.Is(err, entity.ErrPasswordResetInvalid):
+			return api.ResetPassword410ApplicationProblemPlusJSONResponse(prob(http.StatusGone, "Reset link expired", "This reset link has expired or was already used. Request a new one.", "token-expired")), nil
+		case isValidation(err):
+			return api.ResetPassword400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Weak password", validationDetail(err), "")), nil
+		default:
+			return nil, err
+		}
+	}
+	return api.ResetPassword204Response{}, nil
 }
 
 func (h *handler) Logout(ctx context.Context, _ api.LogoutRequestObject) (api.LogoutResponseObject, error) {

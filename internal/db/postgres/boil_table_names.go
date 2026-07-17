@@ -4,17 +4,23 @@
 package dbpostgres
 
 var TableNames = struct {
-	AuditEvents      string
-	Invites          string
-	Sessions         string
-	Users            string
-	WorkspaceMembers string
-	Workspaces       string
+	AuditEvents         string
+	Invites             string
+	PasswordResetTokens string
+	Sessions            string
+	UserChannels        string
+	UserRecoveryCodes   string
+	Users               string
+	WorkspaceMembers    string
+	Workspaces          string
 }{
-	AuditEvents:      "audit_events",
-	Invites:          "invites",
-	Sessions:         "sessions",
-	Users:            "users",
-	WorkspaceMembers: "workspace_members",
-	Workspaces:       "workspaces",
+	AuditEvents:         "audit_events",
+	Invites:             "invites",
+	PasswordResetTokens: "password_reset_tokens",
+	Sessions:            "sessions",
+	UserChannels:        "user_channels",
+	UserRecoveryCodes:   "user_recovery_codes",
+	Users:               "users",
+	WorkspaceMembers:    "workspace_members",
+	Workspaces:          "workspaces",
 }

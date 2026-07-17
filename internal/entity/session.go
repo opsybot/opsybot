@@ -55,10 +55,11 @@ type LoginInput struct {
 }
 
 type LoginResult struct {
-	Outcome LoginOutcome
-	Session Session
-	Token   string
-	User    User
+	Outcome      LoginOutcome
+	Session      Session
+	Token        string
+	User         User
+	PendingToken string
 }
 
 type SetupResult struct {
@@ -67,3 +68,12 @@ type SetupResult struct {
 	Token     string
 	User      User
 }
+
+type PendingTwoFactor struct {
+	UserID    string
+	Remember  bool
+	IP        string
+	UserAgent string
+}
+
+const PendingTwoFactorMaxAttempts = 5

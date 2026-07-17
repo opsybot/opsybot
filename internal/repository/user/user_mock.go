@@ -41,6 +41,21 @@ func (m *MockUser) EXPECT() *MockUserMockRecorder {
 	return m.recorder
 }
 
+// AcceptTOTPStep mocks base method.
+func (m *MockUser) AcceptTOTPStep(ctx context.Context, id string, step int64) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AcceptTOTPStep", ctx, id, step)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AcceptTOTPStep indicates an expected call of AcceptTOTPStep.
+func (mr *MockUserMockRecorder) AcceptTOTPStep(ctx, id, step any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AcceptTOTPStep", reflect.TypeOf((*MockUser)(nil).AcceptTOTPStep), ctx, id, step)
+}
+
 // Activate mocks base method.
 func (m *MockUser) Activate(ctx context.Context, id, name, passwordHash, timezone string) error {
 	m.ctrl.T.Helper()
@@ -83,6 +98,34 @@ func (m *MockUser) CreateInvited(ctx context.Context, email string) (entity.User
 func (mr *MockUserMockRecorder) CreateInvited(ctx, email any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInvited", reflect.TypeOf((*MockUser)(nil).CreateInvited), ctx, email)
+}
+
+// DisableTOTP mocks base method.
+func (m *MockUser) DisableTOTP(ctx context.Context, id string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DisableTOTP", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DisableTOTP indicates an expected call of DisableTOTP.
+func (mr *MockUserMockRecorder) DisableTOTP(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisableTOTP", reflect.TypeOf((*MockUser)(nil).DisableTOTP), ctx, id)
+}
+
+// EnableTOTP mocks base method.
+func (m *MockUser) EnableTOTP(ctx context.Context, id string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EnableTOTP", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// EnableTOTP indicates an expected call of EnableTOTP.
+func (mr *MockUserMockRecorder) EnableTOTP(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnableTOTP", reflect.TypeOf((*MockUser)(nil).EnableTOTP), ctx, id)
 }
 
 // ExistsAny mocks base method.
@@ -160,6 +203,35 @@ func (mr *MockUserMockRecorder) PasswordHash(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PasswordHash", reflect.TypeOf((*MockUser)(nil).PasswordHash), ctx, id)
 }
 
+// SetTOTP mocks base method.
+func (m *MockUser) SetTOTP(ctx context.Context, id, secret string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetTOTP", ctx, id, secret)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetTOTP indicates an expected call of SetTOTP.
+func (mr *MockUserMockRecorder) SetTOTP(ctx, id, secret any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTOTP", reflect.TypeOf((*MockUser)(nil).SetTOTP), ctx, id, secret)
+}
+
+// TOTPSecret mocks base method.
+func (m *MockUser) TOTPSecret(ctx context.Context, id string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TOTPSecret", ctx, id)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// TOTPSecret indicates an expected call of TOTPSecret.
+func (mr *MockUserMockRecorder) TOTPSecret(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TOTPSecret", reflect.TypeOf((*MockUser)(nil).TOTPSecret), ctx, id)
+}
+
 // TouchLastActive mocks base method.
 func (m *MockUser) TouchLastActive(ctx context.Context, id string) error {
 	m.ctrl.T.Helper()
@@ -172,4 +244,32 @@ func (m *MockUser) TouchLastActive(ctx context.Context, id string) error {
 func (mr *MockUserMockRecorder) TouchLastActive(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TouchLastActive", reflect.TypeOf((*MockUser)(nil).TouchLastActive), ctx, id)
+}
+
+// UpdatePassword mocks base method.
+func (m *MockUser) UpdatePassword(ctx context.Context, id, passwordHash string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdatePassword", ctx, id, passwordHash)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdatePassword indicates an expected call of UpdatePassword.
+func (mr *MockUserMockRecorder) UpdatePassword(ctx, id, passwordHash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePassword", reflect.TypeOf((*MockUser)(nil).UpdatePassword), ctx, id, passwordHash)
+}
+
+// UpdateProfile mocks base method.
+func (m *MockUser) UpdateProfile(ctx context.Context, id string, p entity.ProfileUpdate) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateProfile", ctx, id, p)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateProfile indicates an expected call of UpdateProfile.
+func (mr *MockUserMockRecorder) UpdateProfile(ctx, id, p any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateProfile", reflect.TypeOf((*MockUser)(nil).UpdateProfile), ctx, id, p)
 }

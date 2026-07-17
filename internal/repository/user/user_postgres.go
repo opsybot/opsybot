@@ -10,17 +10,19 @@ import (
 	dbpostgres "github.com/opsybot/opsybot/internal/db/postgres"
 	"github.com/opsybot/opsybot/internal/entity"
 	"github.com/opsybot/opsybot/internal/pkg/postgres"
+	"github.com/opsybot/opsybot/internal/pkg/secretbox"
 	"github.com/opsybot/opsybot/internal/repository"
 )
 
 const selectColumns = `id, email, name, password_hash, timezone, totp_enabled_at, last_active_at, created_at`
 
 type repo struct {
-	db postgres.Client
+	db  postgres.Client
+	box secretbox.Client
 }
 
-func New(db postgres.Client) repository.User {
-	return &repo{db: db}
+func New(db postgres.Client, box secretbox.Client) repository.User {
+	return &repo{db: db, box: box}
 }
 
 func scanUser(row interface {
@@ -153,4 +155,91 @@ func (r *repo) TouchLastActive(ctx context.Context, id string) error {
 		return fmt.Errorf("touch last active: %w", err)
 	}
 	return nil
+}
+
+func (r *repo) UpdateProfile(ctx context.Context, id string, p entity.ProfileUpdate) error {
+	if _, err := r.db.Querier(ctx).ExecContext(ctx,
+		`UPDATE users SET name = $2, timezone = $3, updated_at = now() WHERE id = $1`,
+		id, p.Name, p.Timezone); err != nil {
+		return fmt.Errorf("update profile: %w", err)
+	}
+	return nil
+}
+
+func (r *repo) UpdatePassword(ctx context.Context, id, passwordHash string) error {
+	if _, err := r.db.Querier(ctx).ExecContext(ctx,
+		`UPDATE users SET password_hash = $2, updated_at = now() WHERE id = $1`,
+		id, passwordHash); err != nil {
+		return fmt.Errorf("update password: %w", err)
+	}
+	return nil
+}
+
+func (r *repo) SetTOTP(ctx context.Context, id, secret string) error {
+	enc, err := r.box.Encrypt([]byte(secret))
+	if err != nil {
+		if errors.Is(err, secretbox.ErrDisabled) {
+			return entity.ErrTOTPUnavailable
+		}
+		return err
+	}
+	if _, err := r.db.Querier(ctx).ExecContext(ctx,
+		`UPDATE users SET totp_secret_enc = $2, totp_enabled_at = NULL, totp_last_step = NULL, updated_at = now() WHERE id = $1`,
+		id, enc); err != nil {
+		return fmt.Errorf("set totp: %w", err)
+	}
+	return nil
+}
+
+func (r *repo) EnableTOTP(ctx context.Context, id string) error {
+	if _, err := r.db.Querier(ctx).ExecContext(ctx,
+		`UPDATE users SET totp_enabled_at = now(), updated_at = now() WHERE id = $1`, id); err != nil {
+		return fmt.Errorf("enable totp: %w", err)
+	}
+	return nil
+}
+
+func (r *repo) DisableTOTP(ctx context.Context, id string) error {
+	if _, err := r.db.Querier(ctx).ExecContext(ctx,
+		`UPDATE users SET totp_secret_enc = NULL, totp_enabled_at = NULL, totp_last_step = NULL, updated_at = now() WHERE id = $1`, id); err != nil {
+		return fmt.Errorf("disable totp: %w", err)
+	}
+	return nil
+}
+
+func (r *repo) TOTPSecret(ctx context.Context, id string) (string, error) {
+	var enc []byte
+	err := r.db.Querier(ctx).QueryRowContext(ctx,
+		`SELECT totp_secret_enc FROM users WHERE id = $1`, id).Scan(&enc)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", entity.ErrUserNotFound
+		}
+		return "", fmt.Errorf("get totp secret: %w", err)
+	}
+	if len(enc) == 0 {
+		return "", entity.ErrTOTPNotEnrolled
+	}
+	plain, err := r.box.Decrypt(enc)
+	if err != nil {
+		if errors.Is(err, secretbox.ErrDisabled) {
+			return "", entity.ErrTOTPUnavailable
+		}
+		return "", err
+	}
+	return string(plain), nil
+}
+
+func (r *repo) AcceptTOTPStep(ctx context.Context, id string, step int64) (bool, error) {
+	res, err := r.db.Querier(ctx).ExecContext(ctx,
+		`UPDATE users SET totp_last_step = $2 WHERE id = $1 AND (totp_last_step IS NULL OR totp_last_step < $2)`,
+		id, step)
+	if err != nil {
+		return false, fmt.Errorf("accept totp step: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("accept totp step rows: %w", err)
+	}
+	return n > 0, nil
 }

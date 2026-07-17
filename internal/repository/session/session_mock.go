@@ -85,6 +85,20 @@ func (mr *MockSessionMockRecorder) DeleteByUser(ctx, userID any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByUser", reflect.TypeOf((*MockSession)(nil).DeleteByUser), ctx, userID)
 }
 
+// DeleteOthers mocks base method.
+func (m *MockSession) DeleteOthers(ctx context.Context, userID, exceptSessionID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteOthers", ctx, userID, exceptSessionID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteOthers indicates an expected call of DeleteOthers.
+func (mr *MockSessionMockRecorder) DeleteOthers(ctx, userID, exceptSessionID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOthers", reflect.TypeOf((*MockSession)(nil).DeleteOthers), ctx, userID, exceptSessionID)
+}
+
 // GetByTokenHash mocks base method.
 func (m *MockSession) GetByTokenHash(ctx context.Context, tokenHash string) (entity.Session, error) {
 	m.ctrl.T.Helper()
@@ -98,6 +112,36 @@ func (m *MockSession) GetByTokenHash(ctx context.Context, tokenHash string) (ent
 func (mr *MockSessionMockRecorder) GetByTokenHash(ctx, tokenHash any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByTokenHash", reflect.TypeOf((*MockSession)(nil).GetByTokenHash), ctx, tokenHash)
+}
+
+// ListByUser mocks base method.
+func (m *MockSession) ListByUser(ctx context.Context, userID string) ([]entity.Session, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListByUser", ctx, userID)
+	ret0, _ := ret[0].([]entity.Session)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListByUser indicates an expected call of ListByUser.
+func (mr *MockSessionMockRecorder) ListByUser(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByUser", reflect.TypeOf((*MockSession)(nil).ListByUser), ctx, userID)
+}
+
+// OwnedBy mocks base method.
+func (m *MockSession) OwnedBy(ctx context.Context, id, userID string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OwnedBy", ctx, id, userID)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// OwnedBy indicates an expected call of OwnedBy.
+func (mr *MockSessionMockRecorder) OwnedBy(ctx, id, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OwnedBy", reflect.TypeOf((*MockSession)(nil).OwnedBy), ctx, id, userID)
 }
 
 // Touch mocks base method.

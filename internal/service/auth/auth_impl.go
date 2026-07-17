@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pquerna/otp/totp"
+
 	"github.com/opsybot/opsybot/internal/config"
 	"github.com/opsybot/opsybot/internal/entity"
 	"github.com/opsybot/opsybot/internal/pkg/logger"
@@ -24,6 +26,10 @@ type srv struct {
 	policy     repository.Policy
 	invites    repository.Invite
 	audit      repository.Audit
+	pending    repository.Pending
+	resets     repository.PasswordReset
+	recovery   repository.RecoveryCode
+	mailer     repository.Mailer
 }
 
 func New(
@@ -37,9 +43,14 @@ func New(
 	policy repository.Policy,
 	invites repository.Invite,
 	audit repository.Audit,
+	pending repository.Pending,
+	resets repository.PasswordReset,
+	recovery repository.RecoveryCode,
+	mailer repository.Mailer,
 ) service.Auth {
 	return &srv{cfg: cfg, tx: tx, lock: lock, users: users, workspaces: workspaces, members: members,
-		sessions: sessions, policy: policy, invites: invites, audit: audit}
+		sessions: sessions, policy: policy, invites: invites, audit: audit,
+		pending: pending, resets: resets, recovery: recovery, mailer: mailer}
 }
 
 func (s *srv) SetupRequired(ctx context.Context) (bool, error) {
@@ -151,17 +162,178 @@ func (s *srv) Login(ctx context.Context, in entity.LoginInput) (entity.LoginResu
 		return entity.LoginResult{}, entity.ErrUserDeactivated
 	}
 
-	sess, token, err := s.issueSession(ctx, user.ID, in.IP, in.UserAgent, in.Remember)
+	if user.TOTPEnabled {
+		pendingToken, err := entity.GenerateToken(entity.PendingTwoFactorLength)
+		if err != nil {
+			return entity.LoginResult{}, err
+		}
+		if err := s.pending.Store(ctx, entity.HashToken(pendingToken), entity.PendingTwoFactor{
+			UserID: user.ID, Remember: in.Remember, IP: in.IP, UserAgent: in.UserAgent,
+		}, entity.PendingTwoFactorTTL); err != nil {
+			return entity.LoginResult{}, err
+		}
+		return entity.LoginResult{Outcome: entity.LoginOutcomeTwoFactor, PendingToken: pendingToken, User: user}, nil
+	}
+
+	return s.completeLogin(ctx, user, in.IP, in.UserAgent, in.Remember)
+}
+
+func (s *srv) completeLogin(ctx context.Context, user entity.User, ip, userAgent string, remember bool) (entity.LoginResult, error) {
+	sess, token, err := s.issueSession(ctx, user.ID, ip, userAgent, remember)
 	if err != nil {
 		return entity.LoginResult{}, err
 	}
 	if err := s.audit.Create(ctx, entity.AuditEvent{
 		ActorType: entity.AuditActorUser, ActorUserID: user.ID, ActorLabel: user.Name,
-		Action: entity.ActionAuthLogin, Target: user.Email, IP: in.IP,
+		Action: entity.ActionAuthLogin, Target: user.Email, IP: ip,
 	}); err != nil {
 		return entity.LoginResult{}, err
 	}
 	return entity.LoginResult{Outcome: entity.LoginOutcomeOK, Session: sess, Token: token, User: user}, nil
+}
+
+func (s *srv) VerifyTwoFactor(ctx context.Context, pendingToken, code string) (entity.LoginResult, error) {
+	p, _, err := s.consumePending(ctx, pendingToken)
+	if err != nil {
+		return entity.LoginResult{}, err
+	}
+	if !entity.ValidTOTPCode(code) {
+		return entity.LoginResult{}, entity.ErrTOTPInvalidCode
+	}
+	secret, err := s.users.TOTPSecret(ctx, p.UserID)
+	if err != nil {
+		return entity.LoginResult{}, err
+	}
+	if !totp.Validate(code, secret) {
+		return entity.LoginResult{}, entity.ErrTOTPInvalidCode
+	}
+	step := time.Now().Unix() / entity.TOTPPeriodSeconds
+	accepted, err := s.users.AcceptTOTPStep(ctx, p.UserID, step)
+	if err != nil {
+		return entity.LoginResult{}, err
+	}
+	if !accepted {
+		return entity.LoginResult{}, entity.ErrTOTPInvalidCode
+	}
+	return s.finishPending(ctx, p, pendingToken)
+}
+
+func (s *srv) VerifyRecovery(ctx context.Context, pendingToken, code string) (entity.LoginResult, error) {
+	p, _, err := s.consumePending(ctx, pendingToken)
+	if err != nil {
+		return entity.LoginResult{}, err
+	}
+	normalized := entity.NormalizeRecoveryCode(code)
+	if !entity.ValidRecoveryCode(normalized) {
+		return entity.LoginResult{}, entity.ErrRecoveryInvalid
+	}
+	hashes, err := s.recovery.ListUnusedHashes(ctx, p.UserID)
+	if err != nil {
+		return entity.LoginResult{}, err
+	}
+	matched := ""
+	for _, h := range hashes {
+		if entity.VerifyPassword(h, normalized) == nil {
+			matched = h
+			break
+		}
+	}
+	if matched == "" {
+		return entity.LoginResult{}, entity.ErrRecoveryInvalid
+	}
+	if _, err := s.recovery.MarkUsed(ctx, p.UserID, matched); err != nil {
+		return entity.LoginResult{}, err
+	}
+	return s.finishPending(ctx, p, pendingToken)
+}
+
+func (s *srv) consumePending(ctx context.Context, pendingToken string) (entity.PendingTwoFactor, string, error) {
+	hash := entity.HashToken(pendingToken)
+	p, err := s.pending.Get(ctx, hash)
+	if err != nil {
+		return entity.PendingTwoFactor{}, "", err
+	}
+	attempts, err := s.pending.IncrAttempts(ctx, hash)
+	if err != nil {
+		return entity.PendingTwoFactor{}, "", err
+	}
+	if attempts > entity.PendingTwoFactorMaxAttempts {
+		_ = s.pending.Delete(ctx, hash)
+		return entity.PendingTwoFactor{}, "", entity.ErrPendingNotFound
+	}
+	return p, hash, nil
+}
+
+func (s *srv) finishPending(ctx context.Context, p entity.PendingTwoFactor, pendingToken string) (entity.LoginResult, error) {
+	_ = s.pending.Delete(ctx, entity.HashToken(pendingToken))
+	user, err := s.users.GetByID(ctx, p.UserID)
+	if err != nil {
+		return entity.LoginResult{}, err
+	}
+	return s.completeLogin(ctx, user, p.IP, p.UserAgent, p.Remember)
+}
+
+func (s *srv) RequestPasswordReset(ctx context.Context, email, ip string) error {
+	user, err := s.users.GetByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, entity.ErrUserNotFound) {
+			return nil
+		}
+		return err
+	}
+	hasPassword, err := s.users.HasPassword(ctx, user.ID)
+	if err != nil {
+		return err
+	}
+	if !hasPassword {
+		return nil
+	}
+	token, err := entity.GenerateToken(entity.PasswordResetTokenLength)
+	if err != nil {
+		return err
+	}
+	err = s.tx.WithTx(ctx, func(ctx context.Context) error {
+		if err := s.resets.DeleteUnusedByUser(ctx, user.ID); err != nil {
+			return err
+		}
+		return s.resets.Create(ctx, user.ID, entity.HashToken(token), ip, time.Now().Add(entity.PasswordResetTTL))
+	})
+	if err != nil {
+		return err
+	}
+	if mailErr := s.mailer.SendPasswordReset(ctx, user.Email, s.cfg.BaseURL+"/reset-password?token="+token); mailErr != nil {
+		logger.From(ctx).WarnContext(ctx, "password reset email failed", "error", mailErr, "user_id", user.ID)
+	}
+	return nil
+}
+
+func (s *srv) ResetPassword(ctx context.Context, token, newPassword string) error {
+	if err := entity.ValidatePassword(newPassword); err != nil {
+		return err
+	}
+	hash, err := entity.HashPassword(newPassword)
+	if err != nil {
+		return err
+	}
+	reset, err := s.resets.GetByTokenHash(ctx, entity.HashToken(token))
+	if err != nil {
+		return err
+	}
+	if !reset.Usable() {
+		return entity.ErrPasswordResetInvalid
+	}
+	return s.tx.WithTx(ctx, func(ctx context.Context) error {
+		if err := s.users.UpdatePassword(ctx, reset.UserID, hash); err != nil {
+			return err
+		}
+		if err := s.resets.MarkUsed(ctx, reset.ID); err != nil {
+			return err
+		}
+		if err := s.resets.DeleteUnusedByUser(ctx, reset.UserID); err != nil {
+			return err
+		}
+		return s.sessions.DeleteByUser(ctx, reset.UserID)
+	})
 }
 
 func (s *srv) auditLoginFailed(ctx context.Context, in entity.LoginInput, reason string) {

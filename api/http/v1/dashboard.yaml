@@ -141,6 +141,33 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+    patch:
+      operationId: updateMe
+      summary: Update the signed-in user's profile
+      tags: [me]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateProfileRequest" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Profile" }
+        "400":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /workspaces:
     get:
       operationId: listWorkspaces
@@ -665,6 +692,423 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+  /me/password:
+    put:
+      operationId: changePassword
+      summary: Change the signed-in user's password
+      tags: [me]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChangePasswordRequest" }
+      responses:
+        "204": { description: Password changed }
+        "400":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /me/sessions:
+    get:
+      operationId: listSessions
+      summary: List the signed-in user's active sessions
+      tags: [me]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SessionList" }
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /me/sessions/{sessionId}:
+    delete:
+      operationId: revokeSession
+      summary: Revoke one of the signed-in user's sessions
+      tags: [me]
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204": { description: Session revoked }
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /me/channels:
+    get:
+      operationId: listChannels
+      summary: List notification channels
+      tags: [me]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChannelList" }
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+    post:
+      operationId: createChannel
+      summary: Add a notification channel
+      tags: [me]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateChannelRequest" }
+      responses:
+        "201":
+          description: Channel created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Channel" }
+        "400":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /me/channels/{channelId}/verify:
+    post:
+      operationId: verifyChannel
+      summary: Mark a channel verified
+      tags: [me]
+      parameters:
+        - name: channelId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204": { description: Channel verified }
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /me/channels/{channelId}:
+    delete:
+      operationId: deleteChannel
+      summary: Remove a notification channel
+      tags: [me]
+      parameters:
+        - name: channelId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204": { description: Channel removed }
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /me/two-factor/enroll:
+    post:
+      operationId: enrollTwoFactor
+      summary: Begin TOTP enrollment
+      tags: [me]
+      responses:
+        "200":
+          description: Enrollment secret
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TwoFactorEnrollment" }
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /me/two-factor/verify:
+    post:
+      operationId: activateTwoFactor
+      summary: Confirm and enable TOTP
+      tags: [me]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TwoFactorCodeRequest" }
+      responses:
+        "200":
+          description: Recovery codes (shown once)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecoveryCodes" }
+        "400":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /me/two-factor/recovery-codes:
+    post:
+      operationId: regenerateRecoveryCodes
+      summary: Regenerate recovery codes
+      tags: [me]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TwoFactorCodeRequest" }
+      responses:
+        "200":
+          description: New recovery codes
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecoveryCodes" }
+        "400":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /me/two-factor/disable:
+    post:
+      operationId: disableTwoFactor
+      summary: Disable TOTP
+      tags: [me]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TwoFactorCodeRequest" }
+      responses:
+        "204": { description: Two-factor disabled }
+        "400":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /auth/two-factor/verify:
+    post:
+      operationId: verifyTwoFactor
+      summary: Complete sign-in with a TOTP code
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TwoFactorCodeRequest" }
+      responses:
+        "200":
+          description: Signed in
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SessionUser" }
+        "400":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "429":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /auth/two-factor/recovery:
+    post:
+      operationId: verifyRecoveryCode
+      summary: Complete sign-in with a recovery code
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RecoveryCodeRequest" }
+      responses:
+        "200":
+          description: Signed in
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SessionUser" }
+        "400":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "429":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /auth/password/forgot:
+    post:
+      operationId: forgotPassword
+      summary: Request a password reset link
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ForgotPasswordRequest" }
+      responses:
+        "202": { description: If the account exists, a reset link was sent }
+        "400":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "429":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /auth/password/reset:
+    post:
+      operationId: resetPassword
+      summary: Reset a password using a token
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ResetPasswordRequest" }
+      responses:
+        "204": { description: Password reset }
+        "400":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "410":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
 components:
   schemas:
     Health:
@@ -837,6 +1281,90 @@ components:
         replacements:
           type: object
           additionalProperties: { type: string }
+    UpdateProfileRequest:
+      type: object
+      required: [name, timezone]
+      properties:
+        name: { type: string }
+        timezone: { type: string }
+    ChangePasswordRequest:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword: { type: string }
+        newPassword: { type: string }
+    Session:
+      type: object
+      required: [id, createdAt, lastSeenAt, current]
+      properties:
+        id: { type: string }
+        createdAt: { type: string, format: date-time }
+        lastSeenAt: { type: string, format: date-time }
+        ip: { type: string }
+        userAgent: { type: string }
+        current: { type: boolean }
+    SessionList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Session" }
+    Channel:
+      type: object
+      required: [id, type, detail, verified]
+      properties:
+        id: { type: string }
+        type: { type: string, enum: [slack, teams, discord, telegram, ntfy, email, webhook] }
+        detail: { type: string }
+        verified: { type: boolean }
+    ChannelList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Channel" }
+    CreateChannelRequest:
+      type: object
+      required: [type, detail]
+      properties:
+        type: { type: string, enum: [slack, teams, discord, telegram, ntfy, email, webhook] }
+        detail: { type: string }
+    TwoFactorEnrollment:
+      type: object
+      required: [secret, otpauthUri]
+      properties:
+        secret: { type: string }
+        otpauthUri: { type: string }
+    RecoveryCodes:
+      type: object
+      required: [codes]
+      properties:
+        codes:
+          type: array
+          items: { type: string }
+    TwoFactorCodeRequest:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string }
+    RecoveryCodeRequest:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string }
+    ForgotPasswordRequest:
+      type: object
+      required: [email]
+      properties:
+        email: { type: string }
+    ResetPasswordRequest:
+      type: object
+      required: [token, password]
+      properties:
+        token: { type: string }
+        password: { type: string }
     Problem:
       type: object
       required:

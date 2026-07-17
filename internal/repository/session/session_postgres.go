@@ -99,3 +99,47 @@ func (r *repo) DeleteByUser(ctx context.Context, userID string) error {
 	}
 	return nil
 }
+
+func (r *repo) DeleteOthers(ctx context.Context, userID, exceptSessionID string) error {
+	if _, err := r.db.Querier(ctx).ExecContext(ctx,
+		`UPDATE sessions SET revoked_at = now() WHERE user_id = $1 AND id <> $2 AND revoked_at IS NULL`,
+		userID, exceptSessionID); err != nil {
+		return fmt.Errorf("delete other sessions: %w", err)
+	}
+	return nil
+}
+
+func (r *repo) OwnedBy(ctx context.Context, id, userID string) (bool, error) {
+	var owned bool
+	err := r.db.Querier(ctx).QueryRowContext(ctx,
+		`SELECT EXISTS (SELECT 1 FROM sessions WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL)`,
+		id, userID).Scan(&owned)
+	if err != nil {
+		return false, fmt.Errorf("session owned by: %w", err)
+	}
+	return owned, nil
+}
+
+func (r *repo) ListByUser(ctx context.Context, userID string) ([]entity.Session, error) {
+	rows, err := r.db.Querier(ctx).QueryContext(ctx,
+		`SELECT `+selectColumns+` FROM sessions
+		 WHERE user_id = $1 AND revoked_at IS NULL AND expires_at > now()
+		 ORDER BY last_seen_at DESC`, userID)
+	if err != nil {
+		return nil, fmt.Errorf("list sessions: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var out []entity.Session
+	for rows.Next() {
+		sess, err := scanSession(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan session: %w", err)
+		}
+		out = append(out, sess)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate sessions: %w", err)
+	}
+	return out, nil
+}

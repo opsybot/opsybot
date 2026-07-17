@@ -64,6 +64,26 @@ func (h *handler) sessionCookie(token string, expires time.Time) string {
 	return c.String()
 }
 
+const pendingCookieName = "opsybot_2fa"
+
+func (h *handler) pendingCookie(token string) string {
+	c := &http.Cookie{
+		Name:     pendingCookieName,
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   h.cfg.CookieSecure,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   int((5 * time.Minute).Seconds()),
+	}
+	return c.String()
+}
+
+func (h *handler) clearPendingCookie() string {
+	c := &http.Cookie{Name: pendingCookieName, Value: "", Path: "/", HttpOnly: true, Secure: h.cfg.CookieSecure, SameSite: http.SameSiteLaxMode, MaxAge: -1}
+	return c.String()
+}
+
 func (h *handler) clearCookie() string {
 	c := &http.Cookie{
 		Name:     h.cfg.CookieName,

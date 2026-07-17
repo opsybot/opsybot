@@ -18,4 +18,11 @@ type User interface {
 	PasswordHash(ctx context.Context, id string) (string, error)
 	ExistsAny(ctx context.Context) (bool, error)
 	TouchLastActive(ctx context.Context, id string) error
+	UpdateProfile(ctx context.Context, id string, p entity.ProfileUpdate) error
+	UpdatePassword(ctx context.Context, id, passwordHash string) error
+	SetTOTP(ctx context.Context, id, secret string) error
+	EnableTOTP(ctx context.Context, id string) error
+	DisableTOTP(ctx context.Context, id string) error
+	TOTPSecret(ctx context.Context, id string) (string, error)
+	AcceptTOTPStep(ctx context.Context, id string, step int64) (bool, error)
 }

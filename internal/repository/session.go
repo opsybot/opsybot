@@ -15,4 +15,7 @@ type Session interface {
 	Touch(ctx context.Context, id string, seenAt, expiresAt time.Time) error
 	Delete(ctx context.Context, id string) error
 	DeleteByUser(ctx context.Context, userID string) error
+	ListByUser(ctx context.Context, userID string) ([]entity.Session, error)
+	DeleteOthers(ctx context.Context, userID, exceptSessionID string) error
+	OwnedBy(ctx context.Context, id, userID string) (bool, error)
 }

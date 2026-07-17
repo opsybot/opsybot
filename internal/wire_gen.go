@@ -18,21 +18,28 @@ import (
 	"github.com/opsybot/opsybot/internal/pkg/mailer"
 	"github.com/opsybot/opsybot/internal/pkg/otel"
 	"github.com/opsybot/opsybot/internal/pkg/postgres"
+	"github.com/opsybot/opsybot/internal/pkg/secretbox"
 	"github.com/opsybot/opsybot/internal/pkg/valkey"
 	"github.com/opsybot/opsybot/internal/repository/audit"
+	"github.com/opsybot/opsybot/internal/repository/channel"
 	"github.com/opsybot/opsybot/internal/repository/invite"
 	"github.com/opsybot/opsybot/internal/repository/lock"
 	mailer2 "github.com/opsybot/opsybot/internal/repository/mailer"
 	"github.com/opsybot/opsybot/internal/repository/member"
+	"github.com/opsybot/opsybot/internal/repository/password_reset"
+	"github.com/opsybot/opsybot/internal/repository/pending"
 	"github.com/opsybot/opsybot/internal/repository/policy"
+	"github.com/opsybot/opsybot/internal/repository/recovery_code"
 	"github.com/opsybot/opsybot/internal/repository/session"
 	"github.com/opsybot/opsybot/internal/repository/transactor"
 	"github.com/opsybot/opsybot/internal/repository/user"
 	"github.com/opsybot/opsybot/internal/repository/workspace"
 	"github.com/opsybot/opsybot/internal/service"
 	"github.com/opsybot/opsybot/internal/service/auth"
+	"github.com/opsybot/opsybot/internal/service/channels"
 	"github.com/opsybot/opsybot/internal/service/members"
 	"github.com/opsybot/opsybot/internal/service/references"
+	"github.com/opsybot/opsybot/internal/service/users"
 	"github.com/opsybot/opsybot/internal/service/workspaces"
 )
 
@@ -75,15 +82,24 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	configAuth := config.NewAuth(configConfig)
 	repositoryTransactor := transactor.New(postgresClient)
 	repositoryLock := lock.New(postgresClient)
-	repositoryUser := user.New(postgresClient)
+	secretboxClient, err := secretbox.New(configAuth)
+	if err != nil {
+		cleanup4()
+		cleanup3()
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	repositoryUser := user.New(postgresClient, secretboxClient)
 	repositoryWorkspace := workspace.New(postgresClient)
 	repositoryMember := member.New(postgresClient)
 	repositorySession := session.New(postgresClient)
 	repositoryPolicy := policy.New(casbinClient, postgresClient)
 	repositoryInvite := invite.New(postgresClient)
 	repositoryAudit := audit.New(postgresClient)
-	serviceAuth := auth.New(configAuth, repositoryTransactor, repositoryLock, repositoryUser, repositoryWorkspace, repositoryMember, repositorySession, repositoryPolicy, repositoryInvite, repositoryAudit)
-	serviceWorkspaces := workspaces.New(repositoryWorkspace, repositoryMember)
+	repositoryPending := pending.New(valkeyClient)
+	passwordReset := password_reset.New(postgresClient)
+	recoveryCode := recovery_code.New(postgresClient)
 	configMailer := config.NewMailer(configConfig)
 	mailerClient, err := mailer.New(configMailer)
 	if err != nil {
@@ -94,10 +110,15 @@ func InitApp(cfgFile string) (*App, func(), error) {
 		return nil, nil, err
 	}
 	repositoryMailer := mailer2.New(mailerClient)
+	serviceAuth := auth.New(configAuth, repositoryTransactor, repositoryLock, repositoryUser, repositoryWorkspace, repositoryMember, repositorySession, repositoryPolicy, repositoryInvite, repositoryAudit, repositoryPending, passwordReset, recoveryCode, repositoryMailer)
+	serviceWorkspaces := workspaces.New(repositoryWorkspace, repositoryMember)
 	v := _wireValue
 	serviceReferences := references.New(v)
 	serviceMembers := members.New(configAuth, repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryUser, repositoryInvite, repositorySession, repositoryPolicy, repositoryAudit, repositoryMailer, serviceReferences)
-	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers)
+	serviceUsers := users.New(repositoryTransactor, repositoryUser, recoveryCode, repositorySession)
+	repositoryChannel := channel.New(postgresClient)
+	serviceChannels := channels.New(repositoryChannel)
+	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers, serviceUsers, serviceChannels)
 	handler := http.NewRouter(slogLogger, configAuth, serviceAuth, strictServerInterface)
 	app := &App{
 		OTel:     client,

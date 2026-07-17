@@ -15,6 +15,72 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
+// Defines values for ChannelType.
+const (
+	ChannelTypeDiscord  ChannelType = "discord"
+	ChannelTypeEmail    ChannelType = "email"
+	ChannelTypeNtfy     ChannelType = "ntfy"
+	ChannelTypeSlack    ChannelType = "slack"
+	ChannelTypeTeams    ChannelType = "teams"
+	ChannelTypeTelegram ChannelType = "telegram"
+	ChannelTypeWebhook  ChannelType = "webhook"
+)
+
+// Valid indicates whether the value is a known member of the ChannelType enum.
+func (e ChannelType) Valid() bool {
+	switch e {
+	case ChannelTypeDiscord:
+		return true
+	case ChannelTypeEmail:
+		return true
+	case ChannelTypeNtfy:
+		return true
+	case ChannelTypeSlack:
+		return true
+	case ChannelTypeTeams:
+		return true
+	case ChannelTypeTelegram:
+		return true
+	case ChannelTypeWebhook:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateChannelRequestType.
+const (
+	CreateChannelRequestTypeDiscord  CreateChannelRequestType = "discord"
+	CreateChannelRequestTypeEmail    CreateChannelRequestType = "email"
+	CreateChannelRequestTypeNtfy     CreateChannelRequestType = "ntfy"
+	CreateChannelRequestTypeSlack    CreateChannelRequestType = "slack"
+	CreateChannelRequestTypeTeams    CreateChannelRequestType = "teams"
+	CreateChannelRequestTypeTelegram CreateChannelRequestType = "telegram"
+	CreateChannelRequestTypeWebhook  CreateChannelRequestType = "webhook"
+)
+
+// Valid indicates whether the value is a known member of the CreateChannelRequestType enum.
+func (e CreateChannelRequestType) Valid() bool {
+	switch e {
+	case CreateChannelRequestTypeDiscord:
+		return true
+	case CreateChannelRequestTypeEmail:
+		return true
+	case CreateChannelRequestTypeNtfy:
+		return true
+	case CreateChannelRequestTypeSlack:
+		return true
+	case CreateChannelRequestTypeTeams:
+		return true
+	case CreateChannelRequestTypeTelegram:
+		return true
+	case CreateChannelRequestTypeWebhook:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for HealthStatus.
 const (
 	HealthStatusOk HealthStatus = "ok"
@@ -116,14 +182,50 @@ type AcceptInviteRequest struct {
 	Token    string `json:"token"`
 }
 
+// ChangePasswordRequest defines model for ChangePasswordRequest.
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"currentPassword"`
+	NewPassword     string `json:"newPassword"`
+}
+
 // ChangeRoleRequest defines model for ChangeRoleRequest.
 type ChangeRoleRequest struct {
 	Role Role `json:"role"`
 }
 
+// Channel defines model for Channel.
+type Channel struct {
+	Detail   string      `json:"detail"`
+	Id       string      `json:"id"`
+	Type     ChannelType `json:"type"`
+	Verified bool        `json:"verified"`
+}
+
+// ChannelType defines model for Channel.Type.
+type ChannelType string
+
+// ChannelList defines model for ChannelList.
+type ChannelList struct {
+	Items []Channel `json:"items"`
+}
+
+// CreateChannelRequest defines model for CreateChannelRequest.
+type CreateChannelRequest struct {
+	Detail string                   `json:"detail"`
+	Type   CreateChannelRequestType `json:"type"`
+}
+
+// CreateChannelRequestType defines model for CreateChannelRequest.Type.
+type CreateChannelRequestType string
+
 // DeactivateMemberRequest defines model for DeactivateMemberRequest.
 type DeactivateMemberRequest struct {
 	Replacements map[string]string `json:"replacements"`
+}
+
+// ForgotPasswordRequest defines model for ForgotPasswordRequest.
+type ForgotPasswordRequest struct {
+	Email string `json:"email"`
 }
 
 // Health defines model for Health.
@@ -237,8 +339,39 @@ type Profile struct {
 	TwoFactorEnabled bool   `json:"twoFactorEnabled"`
 }
 
+// RecoveryCodeRequest defines model for RecoveryCodeRequest.
+type RecoveryCodeRequest struct {
+	Code string `json:"code"`
+}
+
+// RecoveryCodes defines model for RecoveryCodes.
+type RecoveryCodes struct {
+	Codes []string `json:"codes"`
+}
+
+// ResetPasswordRequest defines model for ResetPasswordRequest.
+type ResetPasswordRequest struct {
+	Password string `json:"password"`
+	Token    string `json:"token"`
+}
+
 // Role defines model for Role.
 type Role string
+
+// Session defines model for Session.
+type Session struct {
+	CreatedAt  time.Time `json:"createdAt"`
+	Current    bool      `json:"current"`
+	Id         string    `json:"id"`
+	Ip         *string   `json:"ip,omitempty"`
+	LastSeenAt time.Time `json:"lastSeenAt"`
+	UserAgent  *string   `json:"userAgent,omitempty"`
+}
+
+// SessionList defines model for SessionList.
+type SessionList struct {
+	Items []Session `json:"items"`
+}
 
 // SessionUser defines model for SessionUser.
 type SessionUser struct {
@@ -267,6 +400,23 @@ type TokenRequest struct {
 	Token string `json:"token"`
 }
 
+// TwoFactorCodeRequest defines model for TwoFactorCodeRequest.
+type TwoFactorCodeRequest struct {
+	Code string `json:"code"`
+}
+
+// TwoFactorEnrollment defines model for TwoFactorEnrollment.
+type TwoFactorEnrollment struct {
+	OtpauthUri string `json:"otpauthUri"`
+	Secret     string `json:"secret"`
+}
+
+// UpdateProfileRequest defines model for UpdateProfileRequest.
+type UpdateProfileRequest struct {
+	Name     string `json:"name"`
+	Timezone string `json:"timezone"`
+}
+
 // Workspace defines model for Workspace.
 type Workspace struct {
 	Environment *string `json:"environment,omitempty"`
@@ -289,8 +439,38 @@ type PreviewInviteJSONRequestBody = TokenRequest
 // LoginJSONRequestBody defines body for Login for application/json ContentType.
 type LoginJSONRequestBody = LoginRequest
 
+// ForgotPasswordJSONRequestBody defines body for ForgotPassword for application/json ContentType.
+type ForgotPasswordJSONRequestBody = ForgotPasswordRequest
+
+// ResetPasswordJSONRequestBody defines body for ResetPassword for application/json ContentType.
+type ResetPasswordJSONRequestBody = ResetPasswordRequest
+
 // SetupJSONRequestBody defines body for Setup for application/json ContentType.
 type SetupJSONRequestBody = SetupRequest
+
+// VerifyRecoveryCodeJSONRequestBody defines body for VerifyRecoveryCode for application/json ContentType.
+type VerifyRecoveryCodeJSONRequestBody = RecoveryCodeRequest
+
+// VerifyTwoFactorJSONRequestBody defines body for VerifyTwoFactor for application/json ContentType.
+type VerifyTwoFactorJSONRequestBody = TwoFactorCodeRequest
+
+// UpdateMeJSONRequestBody defines body for UpdateMe for application/json ContentType.
+type UpdateMeJSONRequestBody = UpdateProfileRequest
+
+// CreateChannelJSONRequestBody defines body for CreateChannel for application/json ContentType.
+type CreateChannelJSONRequestBody = CreateChannelRequest
+
+// ChangePasswordJSONRequestBody defines body for ChangePassword for application/json ContentType.
+type ChangePasswordJSONRequestBody = ChangePasswordRequest
+
+// DisableTwoFactorJSONRequestBody defines body for DisableTwoFactor for application/json ContentType.
+type DisableTwoFactorJSONRequestBody = TwoFactorCodeRequest
+
+// RegenerateRecoveryCodesJSONRequestBody defines body for RegenerateRecoveryCodes for application/json ContentType.
+type RegenerateRecoveryCodesJSONRequestBody = TwoFactorCodeRequest
+
+// ActivateTwoFactorJSONRequestBody defines body for ActivateTwoFactor for application/json ContentType.
+type ActivateTwoFactorJSONRequestBody = TwoFactorCodeRequest
 
 // InviteMemberJSONRequestBody defines body for InviteMember for application/json ContentType.
 type InviteMemberJSONRequestBody = InviteMemberRequest
@@ -315,18 +495,66 @@ type ServerInterface interface {
 	// Sign out of the current session
 	// (POST /auth/logout)
 	Logout(w http.ResponseWriter, r *http.Request)
+	// Request a password reset link
+	// (POST /auth/password/forgot)
+	ForgotPassword(w http.ResponseWriter, r *http.Request)
+	// Reset a password using a token
+	// (POST /auth/password/reset)
+	ResetPassword(w http.ResponseWriter, r *http.Request)
 	// Whether first-run setup is required
 	// (GET /auth/setup)
 	GetSetupStatus(w http.ResponseWriter, r *http.Request)
 	// First-run setup (creates the first admin and workspace)
 	// (POST /auth/setup)
 	Setup(w http.ResponseWriter, r *http.Request)
+	// Complete sign-in with a recovery code
+	// (POST /auth/two-factor/recovery)
+	VerifyRecoveryCode(w http.ResponseWriter, r *http.Request)
+	// Complete sign-in with a TOTP code
+	// (POST /auth/two-factor/verify)
+	VerifyTwoFactor(w http.ResponseWriter, r *http.Request)
 	// Liveness probe
 	// (GET /health)
 	GetHealth(w http.ResponseWriter, r *http.Request)
 	// The signed-in user's profile
 	// (GET /me)
 	GetMe(w http.ResponseWriter, r *http.Request)
+	// Update the signed-in user's profile
+	// (PATCH /me)
+	UpdateMe(w http.ResponseWriter, r *http.Request)
+	// List notification channels
+	// (GET /me/channels)
+	ListChannels(w http.ResponseWriter, r *http.Request)
+	// Add a notification channel
+	// (POST /me/channels)
+	CreateChannel(w http.ResponseWriter, r *http.Request)
+	// Remove a notification channel
+	// (DELETE /me/channels/{channelId})
+	DeleteChannel(w http.ResponseWriter, r *http.Request, channelId string)
+	// Mark a channel verified
+	// (POST /me/channels/{channelId}/verify)
+	VerifyChannel(w http.ResponseWriter, r *http.Request, channelId string)
+	// Change the signed-in user's password
+	// (PUT /me/password)
+	ChangePassword(w http.ResponseWriter, r *http.Request)
+	// List the signed-in user's active sessions
+	// (GET /me/sessions)
+	ListSessions(w http.ResponseWriter, r *http.Request)
+	// Revoke one of the signed-in user's sessions
+	// (DELETE /me/sessions/{sessionId})
+	RevokeSession(w http.ResponseWriter, r *http.Request, sessionId string)
+	// Disable TOTP
+	// (POST /me/two-factor/disable)
+	DisableTwoFactor(w http.ResponseWriter, r *http.Request)
+	// Begin TOTP enrollment
+	// (POST /me/two-factor/enroll)
+	EnrollTwoFactor(w http.ResponseWriter, r *http.Request)
+	// Regenerate recovery codes
+	// (POST /me/two-factor/recovery-codes)
+	RegenerateRecoveryCodes(w http.ResponseWriter, r *http.Request)
+	// Confirm and enable TOTP
+	// (POST /me/two-factor/verify)
+	ActivateTwoFactor(w http.ResponseWriter, r *http.Request)
 	// Workspaces the signed-in user belongs to
 	// (GET /workspaces)
 	ListWorkspaces(w http.ResponseWriter, r *http.Request)
@@ -390,6 +618,18 @@ func (_ Unimplemented) Logout(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Request a password reset link
+// (POST /auth/password/forgot)
+func (_ Unimplemented) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Reset a password using a token
+// (POST /auth/password/reset)
+func (_ Unimplemented) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Whether first-run setup is required
 // (GET /auth/setup)
 func (_ Unimplemented) GetSetupStatus(w http.ResponseWriter, r *http.Request) {
@@ -402,6 +642,18 @@ func (_ Unimplemented) Setup(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Complete sign-in with a recovery code
+// (POST /auth/two-factor/recovery)
+func (_ Unimplemented) VerifyRecoveryCode(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Complete sign-in with a TOTP code
+// (POST /auth/two-factor/verify)
+func (_ Unimplemented) VerifyTwoFactor(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Liveness probe
 // (GET /health)
 func (_ Unimplemented) GetHealth(w http.ResponseWriter, r *http.Request) {
@@ -411,6 +663,78 @@ func (_ Unimplemented) GetHealth(w http.ResponseWriter, r *http.Request) {
 // The signed-in user's profile
 // (GET /me)
 func (_ Unimplemented) GetMe(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update the signed-in user's profile
+// (PATCH /me)
+func (_ Unimplemented) UpdateMe(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List notification channels
+// (GET /me/channels)
+func (_ Unimplemented) ListChannels(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Add a notification channel
+// (POST /me/channels)
+func (_ Unimplemented) CreateChannel(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Remove a notification channel
+// (DELETE /me/channels/{channelId})
+func (_ Unimplemented) DeleteChannel(w http.ResponseWriter, r *http.Request, channelId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Mark a channel verified
+// (POST /me/channels/{channelId}/verify)
+func (_ Unimplemented) VerifyChannel(w http.ResponseWriter, r *http.Request, channelId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Change the signed-in user's password
+// (PUT /me/password)
+func (_ Unimplemented) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List the signed-in user's active sessions
+// (GET /me/sessions)
+func (_ Unimplemented) ListSessions(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Revoke one of the signed-in user's sessions
+// (DELETE /me/sessions/{sessionId})
+func (_ Unimplemented) RevokeSession(w http.ResponseWriter, r *http.Request, sessionId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Disable TOTP
+// (POST /me/two-factor/disable)
+func (_ Unimplemented) DisableTwoFactor(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Begin TOTP enrollment
+// (POST /me/two-factor/enroll)
+func (_ Unimplemented) EnrollTwoFactor(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Regenerate recovery codes
+// (POST /me/two-factor/recovery-codes)
+func (_ Unimplemented) RegenerateRecoveryCodes(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Confirm and enable TOTP
+// (POST /me/two-factor/verify)
+func (_ Unimplemented) ActivateTwoFactor(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -545,6 +869,34 @@ func (siw *ServerInterfaceWrapper) Logout(w http.ResponseWriter, r *http.Request
 	handler.ServeHTTP(w, r)
 }
 
+// ForgotPassword operation middleware
+func (siw *ServerInterfaceWrapper) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ForgotPassword(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ResetPassword operation middleware
+func (siw *ServerInterfaceWrapper) ResetPassword(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ResetPassword(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetSetupStatus operation middleware
 func (siw *ServerInterfaceWrapper) GetSetupStatus(w http.ResponseWriter, r *http.Request) {
 
@@ -573,6 +925,34 @@ func (siw *ServerInterfaceWrapper) Setup(w http.ResponseWriter, r *http.Request)
 	handler.ServeHTTP(w, r)
 }
 
+// VerifyRecoveryCode operation middleware
+func (siw *ServerInterfaceWrapper) VerifyRecoveryCode(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VerifyRecoveryCode(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// VerifyTwoFactor operation middleware
+func (siw *ServerInterfaceWrapper) VerifyTwoFactor(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VerifyTwoFactor(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetHealth operation middleware
 func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Request) {
 
@@ -592,6 +972,210 @@ func (siw *ServerInterfaceWrapper) GetMe(w http.ResponseWriter, r *http.Request)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetMe(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateMe operation middleware
+func (siw *ServerInterfaceWrapper) UpdateMe(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateMe(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListChannels operation middleware
+func (siw *ServerInterfaceWrapper) ListChannels(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListChannels(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateChannel operation middleware
+func (siw *ServerInterfaceWrapper) CreateChannel(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateChannel(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteChannel operation middleware
+func (siw *ServerInterfaceWrapper) DeleteChannel(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "channelId" -------------
+	var channelId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "channelId", chi.URLParam(r, "channelId"), &channelId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "channelId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteChannel(w, r, channelId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// VerifyChannel operation middleware
+func (siw *ServerInterfaceWrapper) VerifyChannel(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "channelId" -------------
+	var channelId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "channelId", chi.URLParam(r, "channelId"), &channelId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "channelId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VerifyChannel(w, r, channelId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ChangePassword operation middleware
+func (siw *ServerInterfaceWrapper) ChangePassword(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ChangePassword(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSessions operation middleware
+func (siw *ServerInterfaceWrapper) ListSessions(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSessions(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RevokeSession operation middleware
+func (siw *ServerInterfaceWrapper) RevokeSession(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "sessionId" -------------
+	var sessionId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "sessionId", chi.URLParam(r, "sessionId"), &sessionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sessionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RevokeSession(w, r, sessionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DisableTwoFactor operation middleware
+func (siw *ServerInterfaceWrapper) DisableTwoFactor(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DisableTwoFactor(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// EnrollTwoFactor operation middleware
+func (siw *ServerInterfaceWrapper) EnrollTwoFactor(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.EnrollTwoFactor(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RegenerateRecoveryCodes operation middleware
+func (siw *ServerInterfaceWrapper) RegenerateRecoveryCodes(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RegenerateRecoveryCodes(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ActivateTwoFactor operation middleware
+func (siw *ServerInterfaceWrapper) ActivateTwoFactor(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ActivateTwoFactor(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1055,16 +1639,64 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/auth/logout", wrapper.Logout)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/auth/password/forgot", wrapper.ForgotPassword)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/auth/password/reset", wrapper.ResetPassword)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/auth/setup", wrapper.GetSetupStatus)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/auth/setup", wrapper.Setup)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/auth/two-factor/recovery", wrapper.VerifyRecoveryCode)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/auth/two-factor/verify", wrapper.VerifyTwoFactor)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/health", wrapper.GetHealth)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/me", wrapper.GetMe)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/me", wrapper.UpdateMe)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/me/channels", wrapper.ListChannels)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/me/channels", wrapper.CreateChannel)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/me/channels/{channelId}", wrapper.DeleteChannel)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/me/channels/{channelId}/verify", wrapper.VerifyChannel)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/me/password", wrapper.ChangePassword)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/me/sessions", wrapper.ListSessions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/me/sessions/{sessionId}", wrapper.RevokeSession)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/me/two-factor/disable", wrapper.DisableTwoFactor)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/me/two-factor/enroll", wrapper.EnrollTwoFactor)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/me/two-factor/recovery-codes", wrapper.RegenerateRecoveryCodes)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/me/two-factor/verify", wrapper.ActivateTwoFactor)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/workspaces", wrapper.ListWorkspaces)
@@ -1380,6 +2012,108 @@ func (response Logout401ApplicationProblemPlusJSONResponse) VisitLogoutResponse(
 	return err
 }
 
+type ForgotPasswordRequestObject struct {
+	Body *ForgotPasswordJSONRequestBody
+}
+
+type ForgotPasswordResponseObject interface {
+	VisitForgotPasswordResponse(w http.ResponseWriter) error
+}
+
+type ForgotPassword202Response struct {
+}
+
+func (response ForgotPassword202Response) VisitForgotPasswordResponse(w http.ResponseWriter) error {
+	w.WriteHeader(202)
+	return nil
+}
+
+type ForgotPassword400ApplicationProblemPlusJSONResponse Problem
+
+func (response ForgotPassword400ApplicationProblemPlusJSONResponse) VisitForgotPasswordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ForgotPassword429ApplicationProblemPlusJSONResponse Problem
+
+func (response ForgotPassword429ApplicationProblemPlusJSONResponse) VisitForgotPasswordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResetPasswordRequestObject struct {
+	Body *ResetPasswordJSONRequestBody
+}
+
+type ResetPasswordResponseObject interface {
+	VisitResetPasswordResponse(w http.ResponseWriter) error
+}
+
+type ResetPassword204Response struct {
+}
+
+func (response ResetPassword204Response) VisitResetPasswordResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type ResetPassword400ApplicationProblemPlusJSONResponse Problem
+
+func (response ResetPassword400ApplicationProblemPlusJSONResponse) VisitResetPasswordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResetPassword404ApplicationProblemPlusJSONResponse Problem
+
+func (response ResetPassword404ApplicationProblemPlusJSONResponse) VisitResetPasswordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResetPassword410ApplicationProblemPlusJSONResponse Problem
+
+func (response ResetPassword410ApplicationProblemPlusJSONResponse) VisitResetPasswordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(410)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetSetupStatusRequestObject struct {
 }
 
@@ -1461,6 +2195,154 @@ func (response Setup409ApplicationProblemPlusJSONResponse) VisitSetupResponse(w 
 	return err
 }
 
+type VerifyRecoveryCodeRequestObject struct {
+	Body *VerifyRecoveryCodeJSONRequestBody
+}
+
+type VerifyRecoveryCodeResponseObject interface {
+	VisitVerifyRecoveryCodeResponse(w http.ResponseWriter) error
+}
+
+type VerifyRecoveryCode200ResponseHeaders struct {
+	SetCookie *string
+}
+
+type VerifyRecoveryCode200JSONResponse struct {
+	Body    SessionUser
+	Headers VerifyRecoveryCode200ResponseHeaders
+}
+
+func (response VerifyRecoveryCode200JSONResponse) VisitVerifyRecoveryCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.SetCookie != nil {
+		w.Header().Set("Set-Cookie", fmt.Sprint(*response.Headers.SetCookie))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyRecoveryCode400ApplicationProblemPlusJSONResponse Problem
+
+func (response VerifyRecoveryCode400ApplicationProblemPlusJSONResponse) VisitVerifyRecoveryCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyRecoveryCode401ApplicationProblemPlusJSONResponse Problem
+
+func (response VerifyRecoveryCode401ApplicationProblemPlusJSONResponse) VisitVerifyRecoveryCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyRecoveryCode429ApplicationProblemPlusJSONResponse Problem
+
+func (response VerifyRecoveryCode429ApplicationProblemPlusJSONResponse) VisitVerifyRecoveryCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyTwoFactorRequestObject struct {
+	Body *VerifyTwoFactorJSONRequestBody
+}
+
+type VerifyTwoFactorResponseObject interface {
+	VisitVerifyTwoFactorResponse(w http.ResponseWriter) error
+}
+
+type VerifyTwoFactor200ResponseHeaders struct {
+	SetCookie *string
+}
+
+type VerifyTwoFactor200JSONResponse struct {
+	Body    SessionUser
+	Headers VerifyTwoFactor200ResponseHeaders
+}
+
+func (response VerifyTwoFactor200JSONResponse) VisitVerifyTwoFactorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.SetCookie != nil {
+		w.Header().Set("Set-Cookie", fmt.Sprint(*response.Headers.SetCookie))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyTwoFactor400ApplicationProblemPlusJSONResponse Problem
+
+func (response VerifyTwoFactor400ApplicationProblemPlusJSONResponse) VisitVerifyTwoFactorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyTwoFactor401ApplicationProblemPlusJSONResponse Problem
+
+func (response VerifyTwoFactor401ApplicationProblemPlusJSONResponse) VisitVerifyTwoFactorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyTwoFactor429ApplicationProblemPlusJSONResponse Problem
+
+func (response VerifyTwoFactor429ApplicationProblemPlusJSONResponse) VisitVerifyTwoFactorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetHealthRequestObject struct {
 }
 
@@ -1513,6 +2395,601 @@ func (response GetMe401ApplicationProblemPlusJSONResponse) VisitGetMeResponse(w 
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMeRequestObject struct {
+	Body *UpdateMeJSONRequestBody
+}
+
+type UpdateMeResponseObject interface {
+	VisitUpdateMeResponse(w http.ResponseWriter) error
+}
+
+type UpdateMe200JSONResponse Profile
+
+func (response UpdateMe200JSONResponse) VisitUpdateMeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMe400ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateMe400ApplicationProblemPlusJSONResponse) VisitUpdateMeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMe401ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateMe401ApplicationProblemPlusJSONResponse) VisitUpdateMeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListChannelsRequestObject struct {
+}
+
+type ListChannelsResponseObject interface {
+	VisitListChannelsResponse(w http.ResponseWriter) error
+}
+
+type ListChannels200JSONResponse ChannelList
+
+func (response ListChannels200JSONResponse) VisitListChannelsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListChannels401ApplicationProblemPlusJSONResponse Problem
+
+func (response ListChannels401ApplicationProblemPlusJSONResponse) VisitListChannelsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateChannelRequestObject struct {
+	Body *CreateChannelJSONRequestBody
+}
+
+type CreateChannelResponseObject interface {
+	VisitCreateChannelResponse(w http.ResponseWriter) error
+}
+
+type CreateChannel201JSONResponse Channel
+
+func (response CreateChannel201JSONResponse) VisitCreateChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateChannel400ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateChannel400ApplicationProblemPlusJSONResponse) VisitCreateChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateChannel401ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateChannel401ApplicationProblemPlusJSONResponse) VisitCreateChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateChannel409ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateChannel409ApplicationProblemPlusJSONResponse) VisitCreateChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteChannelRequestObject struct {
+	ChannelId string `json:"channelId"`
+}
+
+type DeleteChannelResponseObject interface {
+	VisitDeleteChannelResponse(w http.ResponseWriter) error
+}
+
+type DeleteChannel204Response struct {
+}
+
+func (response DeleteChannel204Response) VisitDeleteChannelResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteChannel401ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteChannel401ApplicationProblemPlusJSONResponse) VisitDeleteChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteChannel404ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteChannel404ApplicationProblemPlusJSONResponse) VisitDeleteChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyChannelRequestObject struct {
+	ChannelId string `json:"channelId"`
+}
+
+type VerifyChannelResponseObject interface {
+	VisitVerifyChannelResponse(w http.ResponseWriter) error
+}
+
+type VerifyChannel204Response struct {
+}
+
+func (response VerifyChannel204Response) VisitVerifyChannelResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type VerifyChannel401ApplicationProblemPlusJSONResponse Problem
+
+func (response VerifyChannel401ApplicationProblemPlusJSONResponse) VisitVerifyChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyChannel404ApplicationProblemPlusJSONResponse Problem
+
+func (response VerifyChannel404ApplicationProblemPlusJSONResponse) VisitVerifyChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangePasswordRequestObject struct {
+	Body *ChangePasswordJSONRequestBody
+}
+
+type ChangePasswordResponseObject interface {
+	VisitChangePasswordResponse(w http.ResponseWriter) error
+}
+
+type ChangePassword204Response struct {
+}
+
+func (response ChangePassword204Response) VisitChangePasswordResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type ChangePassword400ApplicationProblemPlusJSONResponse Problem
+
+func (response ChangePassword400ApplicationProblemPlusJSONResponse) VisitChangePasswordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangePassword401ApplicationProblemPlusJSONResponse Problem
+
+func (response ChangePassword401ApplicationProblemPlusJSONResponse) VisitChangePasswordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSessionsRequestObject struct {
+}
+
+type ListSessionsResponseObject interface {
+	VisitListSessionsResponse(w http.ResponseWriter) error
+}
+
+type ListSessions200JSONResponse SessionList
+
+func (response ListSessions200JSONResponse) VisitListSessionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSessions401ApplicationProblemPlusJSONResponse Problem
+
+func (response ListSessions401ApplicationProblemPlusJSONResponse) VisitListSessionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeSessionRequestObject struct {
+	SessionId string `json:"sessionId"`
+}
+
+type RevokeSessionResponseObject interface {
+	VisitRevokeSessionResponse(w http.ResponseWriter) error
+}
+
+type RevokeSession204Response struct {
+}
+
+func (response RevokeSession204Response) VisitRevokeSessionResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RevokeSession401ApplicationProblemPlusJSONResponse Problem
+
+func (response RevokeSession401ApplicationProblemPlusJSONResponse) VisitRevokeSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeSession404ApplicationProblemPlusJSONResponse Problem
+
+func (response RevokeSession404ApplicationProblemPlusJSONResponse) VisitRevokeSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DisableTwoFactorRequestObject struct {
+	Body *DisableTwoFactorJSONRequestBody
+}
+
+type DisableTwoFactorResponseObject interface {
+	VisitDisableTwoFactorResponse(w http.ResponseWriter) error
+}
+
+type DisableTwoFactor204Response struct {
+}
+
+func (response DisableTwoFactor204Response) VisitDisableTwoFactorResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DisableTwoFactor400ApplicationProblemPlusJSONResponse Problem
+
+func (response DisableTwoFactor400ApplicationProblemPlusJSONResponse) VisitDisableTwoFactorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DisableTwoFactor401ApplicationProblemPlusJSONResponse Problem
+
+func (response DisableTwoFactor401ApplicationProblemPlusJSONResponse) VisitDisableTwoFactorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DisableTwoFactor409ApplicationProblemPlusJSONResponse Problem
+
+func (response DisableTwoFactor409ApplicationProblemPlusJSONResponse) VisitDisableTwoFactorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EnrollTwoFactorRequestObject struct {
+}
+
+type EnrollTwoFactorResponseObject interface {
+	VisitEnrollTwoFactorResponse(w http.ResponseWriter) error
+}
+
+type EnrollTwoFactor200JSONResponse TwoFactorEnrollment
+
+func (response EnrollTwoFactor200JSONResponse) VisitEnrollTwoFactorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EnrollTwoFactor401ApplicationProblemPlusJSONResponse Problem
+
+func (response EnrollTwoFactor401ApplicationProblemPlusJSONResponse) VisitEnrollTwoFactorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EnrollTwoFactor409ApplicationProblemPlusJSONResponse Problem
+
+func (response EnrollTwoFactor409ApplicationProblemPlusJSONResponse) VisitEnrollTwoFactorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RegenerateRecoveryCodesRequestObject struct {
+	Body *RegenerateRecoveryCodesJSONRequestBody
+}
+
+type RegenerateRecoveryCodesResponseObject interface {
+	VisitRegenerateRecoveryCodesResponse(w http.ResponseWriter) error
+}
+
+type RegenerateRecoveryCodes200JSONResponse RecoveryCodes
+
+func (response RegenerateRecoveryCodes200JSONResponse) VisitRegenerateRecoveryCodesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RegenerateRecoveryCodes400ApplicationProblemPlusJSONResponse Problem
+
+func (response RegenerateRecoveryCodes400ApplicationProblemPlusJSONResponse) VisitRegenerateRecoveryCodesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RegenerateRecoveryCodes401ApplicationProblemPlusJSONResponse Problem
+
+func (response RegenerateRecoveryCodes401ApplicationProblemPlusJSONResponse) VisitRegenerateRecoveryCodesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RegenerateRecoveryCodes409ApplicationProblemPlusJSONResponse Problem
+
+func (response RegenerateRecoveryCodes409ApplicationProblemPlusJSONResponse) VisitRegenerateRecoveryCodesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ActivateTwoFactorRequestObject struct {
+	Body *ActivateTwoFactorJSONRequestBody
+}
+
+type ActivateTwoFactorResponseObject interface {
+	VisitActivateTwoFactorResponse(w http.ResponseWriter) error
+}
+
+type ActivateTwoFactor200JSONResponse RecoveryCodes
+
+func (response ActivateTwoFactor200JSONResponse) VisitActivateTwoFactorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ActivateTwoFactor400ApplicationProblemPlusJSONResponse Problem
+
+func (response ActivateTwoFactor400ApplicationProblemPlusJSONResponse) VisitActivateTwoFactorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ActivateTwoFactor401ApplicationProblemPlusJSONResponse Problem
+
+func (response ActivateTwoFactor401ApplicationProblemPlusJSONResponse) VisitActivateTwoFactorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ActivateTwoFactor409ApplicationProblemPlusJSONResponse Problem
+
+func (response ActivateTwoFactor409ApplicationProblemPlusJSONResponse) VisitActivateTwoFactorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -2293,18 +3770,66 @@ type StrictServerInterface interface {
 	// Sign out of the current session
 	// (POST /auth/logout)
 	Logout(ctx context.Context, request LogoutRequestObject) (LogoutResponseObject, error)
+	// Request a password reset link
+	// (POST /auth/password/forgot)
+	ForgotPassword(ctx context.Context, request ForgotPasswordRequestObject) (ForgotPasswordResponseObject, error)
+	// Reset a password using a token
+	// (POST /auth/password/reset)
+	ResetPassword(ctx context.Context, request ResetPasswordRequestObject) (ResetPasswordResponseObject, error)
 	// Whether first-run setup is required
 	// (GET /auth/setup)
 	GetSetupStatus(ctx context.Context, request GetSetupStatusRequestObject) (GetSetupStatusResponseObject, error)
 	// First-run setup (creates the first admin and workspace)
 	// (POST /auth/setup)
 	Setup(ctx context.Context, request SetupRequestObject) (SetupResponseObject, error)
+	// Complete sign-in with a recovery code
+	// (POST /auth/two-factor/recovery)
+	VerifyRecoveryCode(ctx context.Context, request VerifyRecoveryCodeRequestObject) (VerifyRecoveryCodeResponseObject, error)
+	// Complete sign-in with a TOTP code
+	// (POST /auth/two-factor/verify)
+	VerifyTwoFactor(ctx context.Context, request VerifyTwoFactorRequestObject) (VerifyTwoFactorResponseObject, error)
 	// Liveness probe
 	// (GET /health)
 	GetHealth(ctx context.Context, request GetHealthRequestObject) (GetHealthResponseObject, error)
 	// The signed-in user's profile
 	// (GET /me)
 	GetMe(ctx context.Context, request GetMeRequestObject) (GetMeResponseObject, error)
+	// Update the signed-in user's profile
+	// (PATCH /me)
+	UpdateMe(ctx context.Context, request UpdateMeRequestObject) (UpdateMeResponseObject, error)
+	// List notification channels
+	// (GET /me/channels)
+	ListChannels(ctx context.Context, request ListChannelsRequestObject) (ListChannelsResponseObject, error)
+	// Add a notification channel
+	// (POST /me/channels)
+	CreateChannel(ctx context.Context, request CreateChannelRequestObject) (CreateChannelResponseObject, error)
+	// Remove a notification channel
+	// (DELETE /me/channels/{channelId})
+	DeleteChannel(ctx context.Context, request DeleteChannelRequestObject) (DeleteChannelResponseObject, error)
+	// Mark a channel verified
+	// (POST /me/channels/{channelId}/verify)
+	VerifyChannel(ctx context.Context, request VerifyChannelRequestObject) (VerifyChannelResponseObject, error)
+	// Change the signed-in user's password
+	// (PUT /me/password)
+	ChangePassword(ctx context.Context, request ChangePasswordRequestObject) (ChangePasswordResponseObject, error)
+	// List the signed-in user's active sessions
+	// (GET /me/sessions)
+	ListSessions(ctx context.Context, request ListSessionsRequestObject) (ListSessionsResponseObject, error)
+	// Revoke one of the signed-in user's sessions
+	// (DELETE /me/sessions/{sessionId})
+	RevokeSession(ctx context.Context, request RevokeSessionRequestObject) (RevokeSessionResponseObject, error)
+	// Disable TOTP
+	// (POST /me/two-factor/disable)
+	DisableTwoFactor(ctx context.Context, request DisableTwoFactorRequestObject) (DisableTwoFactorResponseObject, error)
+	// Begin TOTP enrollment
+	// (POST /me/two-factor/enroll)
+	EnrollTwoFactor(ctx context.Context, request EnrollTwoFactorRequestObject) (EnrollTwoFactorResponseObject, error)
+	// Regenerate recovery codes
+	// (POST /me/two-factor/recovery-codes)
+	RegenerateRecoveryCodes(ctx context.Context, request RegenerateRecoveryCodesRequestObject) (RegenerateRecoveryCodesResponseObject, error)
+	// Confirm and enable TOTP
+	// (POST /me/two-factor/verify)
+	ActivateTwoFactor(ctx context.Context, request ActivateTwoFactorRequestObject) (ActivateTwoFactorResponseObject, error)
 	// Workspaces the signed-in user belongs to
 	// (GET /workspaces)
 	ListWorkspaces(ctx context.Context, request ListWorkspacesRequestObject) (ListWorkspacesResponseObject, error)
@@ -2486,6 +4011,68 @@ func (sh *strictHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ForgotPassword operation middleware
+func (sh *strictHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	var request ForgotPasswordRequestObject
+
+	var body ForgotPasswordJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ForgotPassword(ctx, request.(ForgotPasswordRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ForgotPassword")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ForgotPasswordResponseObject); ok {
+		if err := validResponse.VisitForgotPasswordResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ResetPassword operation middleware
+func (sh *strictHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	var request ResetPasswordRequestObject
+
+	var body ResetPasswordJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ResetPassword(ctx, request.(ResetPasswordRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ResetPassword")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ResetPasswordResponseObject); ok {
+		if err := validResponse.VisitResetPasswordResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetSetupStatus operation middleware
 func (sh *strictHandler) GetSetupStatus(w http.ResponseWriter, r *http.Request) {
 	var request GetSetupStatusRequestObject
@@ -2541,6 +4128,68 @@ func (sh *strictHandler) Setup(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// VerifyRecoveryCode operation middleware
+func (sh *strictHandler) VerifyRecoveryCode(w http.ResponseWriter, r *http.Request) {
+	var request VerifyRecoveryCodeRequestObject
+
+	var body VerifyRecoveryCodeJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.VerifyRecoveryCode(ctx, request.(VerifyRecoveryCodeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "VerifyRecoveryCode")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(VerifyRecoveryCodeResponseObject); ok {
+		if err := validResponse.VisitVerifyRecoveryCodeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// VerifyTwoFactor operation middleware
+func (sh *strictHandler) VerifyTwoFactor(w http.ResponseWriter, r *http.Request) {
+	var request VerifyTwoFactorRequestObject
+
+	var body VerifyTwoFactorJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.VerifyTwoFactor(ctx, request.(VerifyTwoFactorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "VerifyTwoFactor")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(VerifyTwoFactorResponseObject); ok {
+		if err := validResponse.VisitVerifyTwoFactorResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetHealth operation middleware
 func (sh *strictHandler) GetHealth(w http.ResponseWriter, r *http.Request) {
 	var request GetHealthRequestObject
@@ -2582,6 +4231,342 @@ func (sh *strictHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetMeResponseObject); ok {
 		if err := validResponse.VisitGetMeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateMe operation middleware
+func (sh *strictHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
+	var request UpdateMeRequestObject
+
+	var body UpdateMeJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateMe(ctx, request.(UpdateMeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateMe")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateMeResponseObject); ok {
+		if err := validResponse.VisitUpdateMeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListChannels operation middleware
+func (sh *strictHandler) ListChannels(w http.ResponseWriter, r *http.Request) {
+	var request ListChannelsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListChannels(ctx, request.(ListChannelsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListChannels")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListChannelsResponseObject); ok {
+		if err := validResponse.VisitListChannelsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateChannel operation middleware
+func (sh *strictHandler) CreateChannel(w http.ResponseWriter, r *http.Request) {
+	var request CreateChannelRequestObject
+
+	var body CreateChannelJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateChannel(ctx, request.(CreateChannelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateChannel")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateChannelResponseObject); ok {
+		if err := validResponse.VisitCreateChannelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteChannel operation middleware
+func (sh *strictHandler) DeleteChannel(w http.ResponseWriter, r *http.Request, channelId string) {
+	var request DeleteChannelRequestObject
+
+	request.ChannelId = channelId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteChannel(ctx, request.(DeleteChannelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteChannel")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteChannelResponseObject); ok {
+		if err := validResponse.VisitDeleteChannelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// VerifyChannel operation middleware
+func (sh *strictHandler) VerifyChannel(w http.ResponseWriter, r *http.Request, channelId string) {
+	var request VerifyChannelRequestObject
+
+	request.ChannelId = channelId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.VerifyChannel(ctx, request.(VerifyChannelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "VerifyChannel")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(VerifyChannelResponseObject); ok {
+		if err := validResponse.VisitVerifyChannelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ChangePassword operation middleware
+func (sh *strictHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	var request ChangePasswordRequestObject
+
+	var body ChangePasswordJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ChangePassword(ctx, request.(ChangePasswordRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ChangePassword")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ChangePasswordResponseObject); ok {
+		if err := validResponse.VisitChangePasswordResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSessions operation middleware
+func (sh *strictHandler) ListSessions(w http.ResponseWriter, r *http.Request) {
+	var request ListSessionsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSessions(ctx, request.(ListSessionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSessions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSessionsResponseObject); ok {
+		if err := validResponse.VisitListSessionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RevokeSession operation middleware
+func (sh *strictHandler) RevokeSession(w http.ResponseWriter, r *http.Request, sessionId string) {
+	var request RevokeSessionRequestObject
+
+	request.SessionId = sessionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RevokeSession(ctx, request.(RevokeSessionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RevokeSession")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RevokeSessionResponseObject); ok {
+		if err := validResponse.VisitRevokeSessionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DisableTwoFactor operation middleware
+func (sh *strictHandler) DisableTwoFactor(w http.ResponseWriter, r *http.Request) {
+	var request DisableTwoFactorRequestObject
+
+	var body DisableTwoFactorJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DisableTwoFactor(ctx, request.(DisableTwoFactorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DisableTwoFactor")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DisableTwoFactorResponseObject); ok {
+		if err := validResponse.VisitDisableTwoFactorResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// EnrollTwoFactor operation middleware
+func (sh *strictHandler) EnrollTwoFactor(w http.ResponseWriter, r *http.Request) {
+	var request EnrollTwoFactorRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.EnrollTwoFactor(ctx, request.(EnrollTwoFactorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "EnrollTwoFactor")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(EnrollTwoFactorResponseObject); ok {
+		if err := validResponse.VisitEnrollTwoFactorResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RegenerateRecoveryCodes operation middleware
+func (sh *strictHandler) RegenerateRecoveryCodes(w http.ResponseWriter, r *http.Request) {
+	var request RegenerateRecoveryCodesRequestObject
+
+	var body RegenerateRecoveryCodesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RegenerateRecoveryCodes(ctx, request.(RegenerateRecoveryCodesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RegenerateRecoveryCodes")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RegenerateRecoveryCodesResponseObject); ok {
+		if err := validResponse.VisitRegenerateRecoveryCodesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ActivateTwoFactor operation middleware
+func (sh *strictHandler) ActivateTwoFactor(w http.ResponseWriter, r *http.Request) {
+	var request ActivateTwoFactorRequestObject
+
+	var body ActivateTwoFactorJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ActivateTwoFactor(ctx, request.(ActivateTwoFactorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ActivateTwoFactor")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ActivateTwoFactorResponseObject); ok {
+		if err := validResponse.VisitActivateTwoFactorResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

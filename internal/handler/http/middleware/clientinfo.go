@@ -11,7 +11,11 @@ func ClientInfo(trustProxy bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			info := entity.RequestInfo{IP: clientIP(r, trustProxy), UserAgent: r.UserAgent()}
-			next.ServeHTTP(w, r.WithContext(entity.WithRequestInfo(r.Context(), info)))
+			ctx := entity.WithRequestInfo(r.Context(), info)
+			if cookie, err := r.Cookie(entity.PendingCookieName); err == nil {
+				ctx = entity.WithPendingToken(ctx, cookie.Value)
+			}
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
