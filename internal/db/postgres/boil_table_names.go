@@ -9,9 +9,11 @@ var TableNames = struct {
 	Invites             string
 	PasswordResetTokens string
 	Sessions            string
+	SsoConnections      string
 	TeamMembers         string
 	Teams               string
 	UserChannels        string
+	UserIdentities      string
 	UserRecoveryCodes   string
 	Users               string
 	WorkspaceMembers    string
@@ -22,9 +24,11 @@ var TableNames = struct {
 	Invites:             "invites",
 	PasswordResetTokens: "password_reset_tokens",
 	Sessions:            "sessions",
+	SsoConnections:      "sso_connections",
 	TeamMembers:         "team_members",
 	Teams:               "teams",
 	UserChannels:        "user_channels",
+	UserIdentities:      "user_identities",
 	UserRecoveryCodes:   "user_recovery_codes",
 	Users:               "users",
 	WorkspaceMembers:    "workspace_members",

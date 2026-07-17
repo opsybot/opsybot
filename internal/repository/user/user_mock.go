@@ -100,6 +100,21 @@ func (mr *MockUserMockRecorder) CreateInvited(ctx, email any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInvited", reflect.TypeOf((*MockUser)(nil).CreateInvited), ctx, email)
 }
 
+// CreateSSO mocks base method.
+func (m *MockUser) CreateSSO(ctx context.Context, email, name string) (entity.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateSSO", ctx, email, name)
+	ret0, _ := ret[0].(entity.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateSSO indicates an expected call of CreateSSO.
+func (mr *MockUserMockRecorder) CreateSSO(ctx, email, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSSO", reflect.TypeOf((*MockUser)(nil).CreateSSO), ctx, email, name)
+}
+
 // DisableTOTP mocks base method.
 func (m *MockUser) DisableTOTP(ctx context.Context, id string) error {
 	m.ctrl.T.Helper()

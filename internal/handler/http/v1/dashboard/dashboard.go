@@ -18,10 +18,11 @@ type handler struct {
 	teams      service.Teams
 	apikeys    service.APIKeys
 	audits     service.Audits
+	sso        service.SSO
 }
 
-func New(cfg config.Auth, auth service.Auth, workspaces service.Workspaces, members service.Members, users service.Users, channels service.Channels, teams service.Teams, apikeys service.APIKeys, audits service.Audits) api.StrictServerInterface {
-	return &handler{cfg: cfg, auth: auth, workspaces: workspaces, members: members, users: users, channels: channels, teams: teams, apikeys: apikeys, audits: audits}
+func New(cfg config.Auth, auth service.Auth, workspaces service.Workspaces, members service.Members, users service.Users, channels service.Channels, teams service.Teams, apikeys service.APIKeys, audits service.Audits, sso service.SSO) api.StrictServerInterface {
+	return &handler{cfg: cfg, auth: auth, workspaces: workspaces, members: members, users: users, channels: channels, teams: teams, apikeys: apikeys, audits: audits, sso: sso}
 }
 
 func (h *handler) GetHealth(_ context.Context, _ api.GetHealthRequestObject) (api.GetHealthResponseObject, error) {

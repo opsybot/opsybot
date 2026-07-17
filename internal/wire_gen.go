@@ -32,9 +32,12 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/policy"
 	"github.com/opsybot/opsybot/internal/repository/recovery_code"
 	"github.com/opsybot/opsybot/internal/repository/session"
+	"github.com/opsybot/opsybot/internal/repository/sso_connection"
+	"github.com/opsybot/opsybot/internal/repository/sso_state"
 	"github.com/opsybot/opsybot/internal/repository/team"
 	"github.com/opsybot/opsybot/internal/repository/transactor"
 	"github.com/opsybot/opsybot/internal/repository/user"
+	"github.com/opsybot/opsybot/internal/repository/user_identity"
 	"github.com/opsybot/opsybot/internal/repository/workspace"
 	"github.com/opsybot/opsybot/internal/service"
 	"github.com/opsybot/opsybot/internal/service/apikeys"
@@ -43,6 +46,7 @@ import (
 	"github.com/opsybot/opsybot/internal/service/channels"
 	"github.com/opsybot/opsybot/internal/service/members"
 	"github.com/opsybot/opsybot/internal/service/references"
+	"github.com/opsybot/opsybot/internal/service/sso"
 	"github.com/opsybot/opsybot/internal/service/teams"
 	"github.com/opsybot/opsybot/internal/service/users"
 	"github.com/opsybot/opsybot/internal/service/workspaces"
@@ -118,6 +122,10 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	serviceAuth := auth.New(configAuth, repositoryTransactor, repositoryLock, repositoryUser, repositoryWorkspace, repositoryMember, repositorySession, repositoryPolicy, repositoryInvite, repositoryAudit, repositoryPending, passwordReset, recoveryCode, repositoryMailer)
 	apiKey := api_key.New(postgresClient)
 	apiKeys := apikeys.New(repositoryTransactor, repositoryWorkspace, repositoryMember, apiKey, repositoryPolicy, repositoryAudit)
+	ssoConnection := sso_connection.New(postgresClient, secretboxClient)
+	userIdentity := user_identity.New(postgresClient)
+	ssoState := sso_state.New(valkeyClient)
+	serviceSSO := sso.New(configAuth, repositoryTransactor, repositoryWorkspace, repositoryMember, repositoryUser, repositoryPolicy, repositorySession, repositoryAudit, ssoConnection, userIdentity, ssoState)
 	serviceWorkspaces := workspaces.New(repositoryWorkspace, repositoryMember)
 	v := _wireValue
 	serviceReferences := references.New(v)
@@ -128,8 +136,8 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	repositoryTeam := team.New(postgresClient)
 	serviceTeams := teams.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, repositoryPolicy, repositoryAudit)
 	serviceAudits := audits.New(repositoryWorkspace, repositoryMember, repositoryPolicy, repositoryAudit)
-	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers, serviceUsers, serviceChannels, serviceTeams, apiKeys, serviceAudits)
-	handler := http.NewRouter(slogLogger, configAuth, serviceAuth, apiKeys, strictServerInterface)
+	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers, serviceUsers, serviceChannels, serviceTeams, apiKeys, serviceAudits, serviceSSO)
+	handler := http.NewRouter(slogLogger, configAuth, serviceAuth, apiKeys, serviceSSO, strictServerInterface)
 	app := &App{
 		OTel:     client,
 		Cfg:      configConfig,

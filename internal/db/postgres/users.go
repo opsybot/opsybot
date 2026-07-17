@@ -94,30 +94,6 @@ var UserTableColumns = struct {
 
 // Generated where
 
-type whereHelpernull_Bytes struct{ field string }
-
-func (w whereHelpernull_Bytes) EQ(x null.Bytes) qm.QueryMod {
-	return qmhelper.WhereNullEQ(w.field, false, x)
-}
-func (w whereHelpernull_Bytes) NEQ(x null.Bytes) qm.QueryMod {
-	return qmhelper.WhereNullEQ(w.field, true, x)
-}
-func (w whereHelpernull_Bytes) LT(x null.Bytes) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LT, x)
-}
-func (w whereHelpernull_Bytes) LTE(x null.Bytes) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LTE, x)
-}
-func (w whereHelpernull_Bytes) GT(x null.Bytes) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GT, x)
-}
-func (w whereHelpernull_Bytes) GTE(x null.Bytes) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GTE, x)
-}
-
-func (w whereHelpernull_Bytes) IsNull() qm.QueryMod    { return qmhelper.WhereIsNull(w.field) }
-func (w whereHelpernull_Bytes) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
-
 type whereHelpernull_Int64 struct{ field string }
 
 func (w whereHelpernull_Int64) EQ(x null.Int64) qm.QueryMod {
@@ -192,6 +168,7 @@ var UserRels = struct {
 	PasswordResetTokens  string
 	Sessions             string
 	UserChannels         string
+	UserIdentities       string
 	UserRecoveryCodes    string
 	WorkspaceMembers     string
 	CreatedByWorkspaces  string
@@ -204,6 +181,7 @@ var UserRels = struct {
 	PasswordResetTokens:  "PasswordResetTokens",
 	Sessions:             "Sessions",
 	UserChannels:         "UserChannels",
+	UserIdentities:       "UserIdentities",
 	UserRecoveryCodes:    "UserRecoveryCodes",
 	WorkspaceMembers:     "WorkspaceMembers",
 	CreatedByWorkspaces:  "CreatedByWorkspaces",
@@ -219,6 +197,7 @@ type userR struct {
 	PasswordResetTokens  PasswordResetTokenSlice `boil:"PasswordResetTokens" json:"PasswordResetTokens" toml:"PasswordResetTokens" yaml:"PasswordResetTokens"`
 	Sessions             SessionSlice            `boil:"Sessions" json:"Sessions" toml:"Sessions" yaml:"Sessions"`
 	UserChannels         UserChannelSlice        `boil:"UserChannels" json:"UserChannels" toml:"UserChannels" yaml:"UserChannels"`
+	UserIdentities       UserIdentitySlice       `boil:"UserIdentities" json:"UserIdentities" toml:"UserIdentities" yaml:"UserIdentities"`
 	UserRecoveryCodes    UserRecoveryCodeSlice   `boil:"UserRecoveryCodes" json:"UserRecoveryCodes" toml:"UserRecoveryCodes" yaml:"UserRecoveryCodes"`
 	WorkspaceMembers     WorkspaceMemberSlice    `boil:"WorkspaceMembers" json:"WorkspaceMembers" toml:"WorkspaceMembers" yaml:"WorkspaceMembers"`
 	CreatedByWorkspaces  WorkspaceSlice          `boil:"CreatedByWorkspaces" json:"CreatedByWorkspaces" toml:"CreatedByWorkspaces" yaml:"CreatedByWorkspaces"`
@@ -355,6 +334,22 @@ func (r *userR) GetUserChannels() UserChannelSlice {
 	}
 
 	return r.UserChannels
+}
+
+func (o *User) GetUserIdentities() UserIdentitySlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetUserIdentities()
+}
+
+func (r *userR) GetUserIdentities() UserIdentitySlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.UserIdentities
 }
 
 func (o *User) GetUserRecoveryCodes() UserRecoveryCodeSlice {
@@ -831,6 +826,20 @@ func (o *User) UserChannels(mods ...qm.QueryMod) userChannelQuery {
 	)
 
 	return UserChannels(queryMods...)
+}
+
+// UserIdentities retrieves all the user_identity's UserIdentities with an executor.
+func (o *User) UserIdentities(mods ...qm.QueryMod) userIdentityQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"user_identities\".\"user_id\"=?", o.ID),
+	)
+
+	return UserIdentities(queryMods...)
 }
 
 // UserRecoveryCodes retrieves all the user_recovery_code's UserRecoveryCodes with an executor.
@@ -1769,6 +1778,119 @@ func (userL) LoadUserChannels(ctx context.Context, e boil.ContextExecutor, singu
 				local.R.UserChannels = append(local.R.UserChannels, foreign)
 				if foreign.R == nil {
 					foreign.R = &userChannelR{}
+				}
+				foreign.R.User = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadUserIdentities allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (userL) LoadUserIdentities(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser any, mods queries.Applicator) error {
+	var slice []*User
+	var object *User
+
+	if singular {
+		var ok bool
+		object, ok = maybeUser.(*User)
+		if !ok {
+			object = new(User)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeUser))
+			}
+		}
+	} else {
+		s, ok := maybeUser.(*[]*User)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeUser))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &userR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`user_identities`),
+		qm.WhereIn(`user_identities.user_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load user_identities")
+	}
+
+	var resultSlice []*UserIdentity
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice user_identities")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on user_identities")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for user_identities")
+	}
+
+	if len(userIdentityAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.UserIdentities = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &userIdentityR{}
+			}
+			foreign.R.User = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.UserID {
+				local.R.UserIdentities = append(local.R.UserIdentities, foreign)
+				if foreign.R == nil {
+					foreign.R = &userIdentityR{}
 				}
 				foreign.R.User = local
 				break
@@ -2755,6 +2877,59 @@ func (o *User) AddUserChannels(ctx context.Context, exec boil.ContextExecutor, i
 	for _, rel := range related {
 		if rel.R == nil {
 			rel.R = &userChannelR{
+				User: o,
+			}
+		} else {
+			rel.R.User = o
+		}
+	}
+	return nil
+}
+
+// AddUserIdentities adds the given related objects to the existing relationships
+// of the user, optionally inserting them as new records.
+// Appends related to o.R.UserIdentities.
+// Sets related.R.User appropriately.
+func (o *User) AddUserIdentities(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*UserIdentity) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.UserID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"user_identities\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"user_id"}),
+				strmangle.WhereClause("\"", "\"", 2, userIdentityPrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.UserID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &userR{
+			UserIdentities: related,
+		}
+	} else {
+		o.R.UserIdentities = append(o.R.UserIdentities, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &userIdentityR{
 				User: o,
 			}
 		} else {

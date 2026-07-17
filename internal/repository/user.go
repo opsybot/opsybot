@@ -11,6 +11,7 @@ import (
 type User interface {
 	Create(ctx context.Context, u entity.NewUser, passwordHash string) (entity.User, error)
 	CreateInvited(ctx context.Context, email string) (entity.User, error)
+	CreateSSO(ctx context.Context, email, name string) (entity.User, error)
 	GetByID(ctx context.Context, id string) (entity.User, error)
 	GetByEmail(ctx context.Context, email string) (entity.User, error)
 	Activate(ctx context.Context, id, name, passwordHash, timezone string) error

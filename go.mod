@@ -10,6 +10,7 @@ require (
 	github.com/aarondl/strmangle v0.0.9
 	github.com/casbin/casbin/v3 v3.10.0
 	github.com/casbin/redis-watcher/v2 v2.8.0
+	github.com/coreos/go-oidc/v3 v3.20.0
 	github.com/friendsofgo/errors v0.9.2
 	github.com/go-chi/chi/v5 v5.3.1
 	github.com/goforj/wire v1.2.0
@@ -31,6 +32,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.44.0
 	go.uber.org/mock v0.6.0
 	golang.org/x/crypto v0.54.0
+	golang.org/x/oauth2 v0.36.0
 )
 
 require (
@@ -61,6 +63,7 @@ require (
 	github.com/getkin/kin-openapi v0.135.0 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
 	github.com/go-faster/errors v0.7.1 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.22.4 // indirect

@@ -1160,6 +1160,92 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+  /workspaces/{workspaceId}/sso:
+    get:
+      operationId: getSsoConfig
+      summary: Read the workspace SSO configuration
+      tags: [sso]
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: SSO configuration
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SsoConfig" }
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "403":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+    put:
+      operationId: putSsoConfig
+      summary: Update the workspace SSO configuration
+      tags: [sso]
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SsoConfigRequest" }
+      responses:
+        "200":
+          description: SSO configuration
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SsoConfig" }
+        "400":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "403":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /me/password:
     put:
       operationId: changePassword
@@ -1927,6 +2013,46 @@ components:
           type: array
           items: { $ref: "#/components/schemas/AuditEvent" }
         nextCursor: { type: string }
+    SsoMode:
+      type: string
+      enum: [oidc, saml]
+    SsoConfig:
+      type: object
+      required: [mode, issuer, clientId, hasClientSecret, scopes, samlMetadataUrl, enabled, required, jitProvisioning, allowedEmailDomains]
+      properties:
+        mode: { $ref: "#/components/schemas/SsoMode" }
+        issuer: { type: string }
+        clientId: { type: string }
+        hasClientSecret: { type: boolean }
+        scopes:
+          type: array
+          items: { type: string }
+        samlMetadataUrl: { type: string }
+        enabled: { type: boolean }
+        required: { type: boolean }
+        jitProvisioning: { type: boolean }
+        allowedEmailDomains:
+          type: array
+          items: { type: string }
+    SsoConfigRequest:
+      type: object
+      required: [mode, enabled, required, jitProvisioning]
+      properties:
+        mode: { $ref: "#/components/schemas/SsoMode" }
+        issuer: { type: string }
+        clientId: { type: string }
+        clientSecret: { type: string }
+        clearClientSecret: { type: boolean }
+        scopes:
+          type: array
+          items: { type: string }
+        samlMetadataUrl: { type: string }
+        enabled: { type: boolean }
+        required: { type: boolean }
+        jitProvisioning: { type: boolean }
+        allowedEmailDomains:
+          type: array
+          items: { type: string }
     Problem:
       type: object
       required:

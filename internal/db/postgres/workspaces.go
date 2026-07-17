@@ -102,6 +102,7 @@ var WorkspaceWhere = struct {
 // WorkspaceRels is where relationship names are stored.
 var WorkspaceRels = struct {
 	CreatedByUser    string
+	SsoConnection    string
 	APIKeys          string
 	AuditEvents      string
 	Invites          string
@@ -109,6 +110,7 @@ var WorkspaceRels = struct {
 	WorkspaceMembers string
 }{
 	CreatedByUser:    "CreatedByUser",
+	SsoConnection:    "SsoConnection",
 	APIKeys:          "APIKeys",
 	AuditEvents:      "AuditEvents",
 	Invites:          "Invites",
@@ -119,6 +121,7 @@ var WorkspaceRels = struct {
 // workspaceR is where relationships are stored.
 type workspaceR struct {
 	CreatedByUser    *User                `boil:"CreatedByUser" json:"CreatedByUser" toml:"CreatedByUser" yaml:"CreatedByUser"`
+	SsoConnection    *SsoConnection       `boil:"SsoConnection" json:"SsoConnection" toml:"SsoConnection" yaml:"SsoConnection"`
 	APIKeys          APIKeySlice          `boil:"APIKeys" json:"APIKeys" toml:"APIKeys" yaml:"APIKeys"`
 	AuditEvents      AuditEventSlice      `boil:"AuditEvents" json:"AuditEvents" toml:"AuditEvents" yaml:"AuditEvents"`
 	Invites          InviteSlice          `boil:"Invites" json:"Invites" toml:"Invites" yaml:"Invites"`
@@ -145,6 +148,22 @@ func (r *workspaceR) GetCreatedByUser() *User {
 	}
 
 	return r.CreatedByUser
+}
+
+func (o *Workspace) GetSsoConnection() *SsoConnection {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetSsoConnection()
+}
+
+func (r *workspaceR) GetSsoConnection() *SsoConnection {
+	if r == nil {
+		return nil
+	}
+
+	return r.SsoConnection
 }
 
 func (o *Workspace) GetAPIKeys() APIKeySlice {
@@ -554,6 +573,17 @@ func (o *Workspace) CreatedByUser(mods ...qm.QueryMod) userQuery {
 	return Users(queryMods...)
 }
 
+// SsoConnection pointed to by the foreign key.
+func (o *Workspace) SsoConnection(mods ...qm.QueryMod) ssoConnectionQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"workspace_id\" = ?", o.ID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return SsoConnections(queryMods...)
+}
+
 // APIKeys retrieves all the api_key's APIKeys with an executor.
 func (o *Workspace) APIKeys(mods ...qm.QueryMod) apiKeyQuery {
 	var queryMods []qm.QueryMod
@@ -740,6 +770,123 @@ func (workspaceL) LoadCreatedByUser(ctx context.Context, e boil.ContextExecutor,
 					foreign.R = &userR{}
 				}
 				foreign.R.CreatedByWorkspaces = append(foreign.R.CreatedByWorkspaces, local)
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadSsoConnection allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-1 relationship.
+func (workspaceL) LoadSsoConnection(ctx context.Context, e boil.ContextExecutor, singular bool, maybeWorkspace any, mods queries.Applicator) error {
+	var slice []*Workspace
+	var object *Workspace
+
+	if singular {
+		var ok bool
+		object, ok = maybeWorkspace.(*Workspace)
+		if !ok {
+			object = new(Workspace)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeWorkspace))
+			}
+		}
+	} else {
+		s, ok := maybeWorkspace.(*[]*Workspace)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeWorkspace))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &workspaceR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &workspaceR{}
+			}
+
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`sso_connections`),
+		qm.WhereIn(`sso_connections.workspace_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load SsoConnection")
+	}
+
+	var resultSlice []*SsoConnection
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice SsoConnection")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for sso_connections")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for sso_connections")
+	}
+
+	if len(ssoConnectionAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.SsoConnection = foreign
+		if foreign.R == nil {
+			foreign.R = &ssoConnectionR{}
+		}
+		foreign.R.Workspace = object
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if local.ID == foreign.WorkspaceID {
+				local.R.SsoConnection = foreign
+				if foreign.R == nil {
+					foreign.R = &ssoConnectionR{}
+				}
+				foreign.R.Workspace = local
 				break
 			}
 		}
@@ -1389,6 +1536,56 @@ func (o *Workspace) RemoveCreatedByUser(ctx context.Context, exec boil.ContextEx
 		}
 		related.R.CreatedByWorkspaces = related.R.CreatedByWorkspaces[:ln-1]
 		break
+	}
+	return nil
+}
+
+// SetSsoConnection of the workspace to the related item.
+// Sets o.R.SsoConnection to related.
+// Adds o to related.R.Workspace.
+func (o *Workspace) SetSsoConnection(ctx context.Context, exec boil.ContextExecutor, insert bool, related *SsoConnection) error {
+	var err error
+
+	if insert {
+		related.WorkspaceID = o.ID
+
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	} else {
+		updateQuery := fmt.Sprintf(
+			"UPDATE \"sso_connections\" SET %s WHERE %s",
+			strmangle.SetParamNames("\"", "\"", 1, []string{"workspace_id"}),
+			strmangle.WhereClause("\"", "\"", 2, ssoConnectionPrimaryKeyColumns),
+		)
+		values := []any{o.ID, related.ID}
+
+		if boil.IsDebug(ctx) {
+			writer := boil.DebugWriterFrom(ctx)
+			fmt.Fprintln(writer, updateQuery)
+			fmt.Fprintln(writer, values)
+		}
+		if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+			return errors.Wrap(err, "failed to update foreign table")
+		}
+
+		related.WorkspaceID = o.ID
+	}
+
+	if o.R == nil {
+		o.R = &workspaceR{
+			SsoConnection: related,
+		}
+	} else {
+		o.R.SsoConnection = related
+	}
+
+	if related.R == nil {
+		related.R = &ssoConnectionR{
+			Workspace: o,
+		}
+	} else {
+		related.R.Workspace = o
 	}
 	return nil
 }

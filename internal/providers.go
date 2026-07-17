@@ -15,9 +15,12 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/policy"
 	"github.com/opsybot/opsybot/internal/repository/recovery_code"
 	"github.com/opsybot/opsybot/internal/repository/session"
+	"github.com/opsybot/opsybot/internal/repository/sso_connection"
+	"github.com/opsybot/opsybot/internal/repository/sso_state"
 	"github.com/opsybot/opsybot/internal/repository/team"
 	"github.com/opsybot/opsybot/internal/repository/transactor"
 	"github.com/opsybot/opsybot/internal/repository/user"
+	"github.com/opsybot/opsybot/internal/repository/user_identity"
 	"github.com/opsybot/opsybot/internal/repository/workspace"
 	"github.com/opsybot/opsybot/internal/service"
 	"github.com/opsybot/opsybot/internal/service/apikeys"
@@ -26,6 +29,7 @@ import (
 	"github.com/opsybot/opsybot/internal/service/channels"
 	"github.com/opsybot/opsybot/internal/service/members"
 	"github.com/opsybot/opsybot/internal/service/references"
+	"github.com/opsybot/opsybot/internal/service/sso"
 	"github.com/opsybot/opsybot/internal/service/teams"
 	"github.com/opsybot/opsybot/internal/service/users"
 	"github.com/opsybot/opsybot/internal/service/workspaces"
@@ -42,6 +46,9 @@ var repositoryProviders = wire.NewSet(
 	invite.New,
 	team.New,
 	api_key.New,
+	sso_connection.New,
+	user_identity.New,
+	sso_state.New,
 	audit.New,
 	mailer.New,
 	password_reset.New,
@@ -61,4 +68,5 @@ var serviceProviders = wire.NewSet(
 	teams.New,
 	apikeys.New,
 	audits.New,
+	sso.New,
 )

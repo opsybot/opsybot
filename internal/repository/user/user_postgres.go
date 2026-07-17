@@ -78,6 +78,20 @@ func (r *repo) CreateInvited(ctx context.Context, email string) (entity.User, er
 	return toEntity(m), nil
 }
 
+func (r *repo) CreateSSO(ctx context.Context, email, name string) (entity.User, error) {
+	row := r.db.Querier(ctx).QueryRowContext(ctx,
+		`INSERT INTO users (email, name) VALUES ($1, $2) RETURNING `+selectColumns,
+		entity.NormalizeEmail(email), name)
+	m, err := scanUser(row)
+	if err != nil {
+		if n, ok := postgres.UniqueViolation(err); ok && n == "users_email_lower_uq" {
+			return entity.User{}, entity.ErrUserEmailTaken
+		}
+		return entity.User{}, fmt.Errorf("create sso user: %w", err)
+	}
+	return toEntity(m), nil
+}
+
 func (r *repo) GetByID(ctx context.Context, id string) (entity.User, error) {
 	m, err := scanUser(r.db.Querier(ctx).QueryRowContext(ctx,
 		`SELECT `+selectColumns+` FROM users WHERE id = $1`, id))

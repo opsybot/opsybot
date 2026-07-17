@@ -21,7 +21,7 @@ const (
 	tracerName       = "opsybot/http"
 )
 
-func NewRouter(log *slog.Logger, cfg config.Auth, auth service.Auth, keys service.APIKeys, dashboard dashboardapi.StrictServerInterface) http.Handler {
+func NewRouter(log *slog.Logger, cfg config.Auth, auth service.Auth, keys service.APIKeys, sso service.SSO, dashboard dashboardapi.StrictServerInterface) http.Handler {
 	r := chi.NewRouter()
 	r.Use(chimiddleware.RequestID)
 	r.Use(otelMiddleware)
@@ -29,6 +29,10 @@ func NewRouter(log *slog.Logger, cfg config.Auth, auth service.Auth, keys servic
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.ClientInfo(cfg.TrustProxyHeaders))
 	r.Use(middleware.Authn(auth, keys, cfg))
+
+	ssoRoutes := &ssoRoutes{sso: sso, cfg: cfg}
+	r.Get("/v1/auth/sso/{workspace}/start", ssoRoutes.start)
+	r.Get("/v1/auth/sso/{workspace}/callback", ssoRoutes.callback)
 
 	dashboardapi.HandlerWithOptions(
 		dashboardapi.NewStrictHandler(dashboard, nil),

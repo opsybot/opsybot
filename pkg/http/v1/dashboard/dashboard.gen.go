@@ -247,6 +247,24 @@ func (e Scope) Valid() bool {
 	}
 }
 
+// Defines values for SsoMode.
+const (
+	Oidc SsoMode = "oidc"
+	Saml SsoMode = "saml"
+)
+
+// Valid indicates whether the value is a known member of the SsoMode enum.
+func (e SsoMode) Valid() bool {
+	switch e {
+	case Oidc:
+		return true
+	case Saml:
+		return true
+	default:
+		return false
+	}
+}
+
 // AcceptInviteRequest defines model for AcceptInviteRequest.
 type AcceptInviteRequest struct {
 	Name     string `json:"name"`
@@ -529,6 +547,38 @@ type SetupStatus struct {
 	Required bool `json:"required"`
 }
 
+// SsoConfig defines model for SsoConfig.
+type SsoConfig struct {
+	AllowedEmailDomains []string `json:"allowedEmailDomains"`
+	ClientId            string   `json:"clientId"`
+	Enabled             bool     `json:"enabled"`
+	HasClientSecret     bool     `json:"hasClientSecret"`
+	Issuer              string   `json:"issuer"`
+	JitProvisioning     bool     `json:"jitProvisioning"`
+	Mode                SsoMode  `json:"mode"`
+	Required            bool     `json:"required"`
+	SamlMetadataUrl     string   `json:"samlMetadataUrl"`
+	Scopes              []string `json:"scopes"`
+}
+
+// SsoConfigRequest defines model for SsoConfigRequest.
+type SsoConfigRequest struct {
+	AllowedEmailDomains *[]string `json:"allowedEmailDomains,omitempty"`
+	ClearClientSecret   *bool     `json:"clearClientSecret,omitempty"`
+	ClientId            *string   `json:"clientId,omitempty"`
+	ClientSecret        *string   `json:"clientSecret,omitempty"`
+	Enabled             bool      `json:"enabled"`
+	Issuer              *string   `json:"issuer,omitempty"`
+	JitProvisioning     bool      `json:"jitProvisioning"`
+	Mode                SsoMode   `json:"mode"`
+	Required            bool      `json:"required"`
+	SamlMetadataUrl     *string   `json:"samlMetadataUrl,omitempty"`
+	Scopes              *[]string `json:"scopes,omitempty"`
+}
+
+// SsoMode defines model for SsoMode.
+type SsoMode string
+
 // Team defines model for Team.
 type Team struct {
 	Archived  bool      `json:"archived"`
@@ -652,6 +702,9 @@ type DeactivateMemberJSONRequestBody = DeactivateMemberRequest
 
 // ChangeMemberRoleJSONRequestBody defines body for ChangeMemberRole for application/json ContentType.
 type ChangeMemberRoleJSONRequestBody = ChangeRoleRequest
+
+// PutSsoConfigJSONRequestBody defines body for PutSsoConfig for application/json ContentType.
+type PutSsoConfigJSONRequestBody = SsoConfigRequest
 
 // CreateTeamJSONRequestBody defines body for CreateTeam for application/json ContentType.
 type CreateTeamJSONRequestBody = CreateTeamRequest
@@ -778,6 +831,12 @@ type ServerInterface interface {
 	// Change a member's role
 	// (PUT /workspaces/{workspaceId}/members/{userId}/role)
 	ChangeMemberRole(w http.ResponseWriter, r *http.Request, workspaceId string, userId string)
+	// Read the workspace SSO configuration
+	// (GET /workspaces/{workspaceId}/sso)
+	GetSsoConfig(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Update the workspace SSO configuration
+	// (PUT /workspaces/{workspaceId}/sso)
+	PutSsoConfig(w http.ResponseWriter, r *http.Request, workspaceId string)
 	// List teams in a workspace
 	// (GET /workspaces/{workspaceId}/teams)
 	ListTeams(w http.ResponseWriter, r *http.Request, workspaceId string, params ListTeamsParams)
@@ -1033,6 +1092,18 @@ func (_ Unimplemented) ReactivateMember(w http.ResponseWriter, r *http.Request, 
 // Change a member's role
 // (PUT /workspaces/{workspaceId}/members/{userId}/role)
 func (_ Unimplemented) ChangeMemberRole(w http.ResponseWriter, r *http.Request, workspaceId string, userId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read the workspace SSO configuration
+// (GET /workspaces/{workspaceId}/sso)
+func (_ Unimplemented) GetSsoConfig(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update the workspace SSO configuration
+// (PUT /workspaces/{workspaceId}/sso)
+func (_ Unimplemented) PutSsoConfig(w http.ResponseWriter, r *http.Request, workspaceId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1962,6 +2033,58 @@ func (siw *ServerInterfaceWrapper) ChangeMemberRole(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
+// GetSsoConfig operation middleware
+func (siw *ServerInterfaceWrapper) GetSsoConfig(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSsoConfig(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutSsoConfig operation middleware
+func (siw *ServerInterfaceWrapper) PutSsoConfig(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutSsoConfig(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListTeams operation middleware
 func (siw *ServerInterfaceWrapper) ListTeams(w http.ResponseWriter, r *http.Request) {
 
@@ -2399,6 +2522,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/workspaces/{workspaceId}/members/{userId}/role", wrapper.ChangeMemberRole)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/sso", wrapper.GetSsoConfig)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/workspaces/{workspaceId}/sso", wrapper.PutSsoConfig)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/workspaces/{workspaceId}/teams", wrapper.ListTeams)
@@ -4738,6 +4867,163 @@ func (response ChangeMemberRole409ApplicationProblemPlusJSONResponse) VisitChang
 	return err
 }
 
+type GetSsoConfigRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+}
+
+type GetSsoConfigResponseObject interface {
+	VisitGetSsoConfigResponse(w http.ResponseWriter) error
+}
+
+type GetSsoConfig200JSONResponse SsoConfig
+
+func (response GetSsoConfig200JSONResponse) VisitGetSsoConfigResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSsoConfig401ApplicationProblemPlusJSONResponse Problem
+
+func (response GetSsoConfig401ApplicationProblemPlusJSONResponse) VisitGetSsoConfigResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSsoConfig403ApplicationProblemPlusJSONResponse Problem
+
+func (response GetSsoConfig403ApplicationProblemPlusJSONResponse) VisitGetSsoConfigResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSsoConfig404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetSsoConfig404ApplicationProblemPlusJSONResponse) VisitGetSsoConfigResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutSsoConfigRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	Body        *PutSsoConfigJSONRequestBody
+}
+
+type PutSsoConfigResponseObject interface {
+	VisitPutSsoConfigResponse(w http.ResponseWriter) error
+}
+
+type PutSsoConfig200JSONResponse SsoConfig
+
+func (response PutSsoConfig200JSONResponse) VisitPutSsoConfigResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutSsoConfig400ApplicationProblemPlusJSONResponse Problem
+
+func (response PutSsoConfig400ApplicationProblemPlusJSONResponse) VisitPutSsoConfigResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutSsoConfig401ApplicationProblemPlusJSONResponse Problem
+
+func (response PutSsoConfig401ApplicationProblemPlusJSONResponse) VisitPutSsoConfigResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutSsoConfig403ApplicationProblemPlusJSONResponse Problem
+
+func (response PutSsoConfig403ApplicationProblemPlusJSONResponse) VisitPutSsoConfigResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutSsoConfig404ApplicationProblemPlusJSONResponse Problem
+
+func (response PutSsoConfig404ApplicationProblemPlusJSONResponse) VisitPutSsoConfigResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutSsoConfig409ApplicationProblemPlusJSONResponse Problem
+
+func (response PutSsoConfig409ApplicationProblemPlusJSONResponse) VisitPutSsoConfigResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListTeamsRequestObject struct {
 	WorkspaceId string `json:"workspaceId"`
 	Params      ListTeamsParams
@@ -5332,6 +5618,12 @@ type StrictServerInterface interface {
 	// Change a member's role
 	// (PUT /workspaces/{workspaceId}/members/{userId}/role)
 	ChangeMemberRole(ctx context.Context, request ChangeMemberRoleRequestObject) (ChangeMemberRoleResponseObject, error)
+	// Read the workspace SSO configuration
+	// (GET /workspaces/{workspaceId}/sso)
+	GetSsoConfig(ctx context.Context, request GetSsoConfigRequestObject) (GetSsoConfigResponseObject, error)
+	// Update the workspace SSO configuration
+	// (PUT /workspaces/{workspaceId}/sso)
+	PutSsoConfig(ctx context.Context, request PutSsoConfigRequestObject) (PutSsoConfigResponseObject, error)
 	// List teams in a workspace
 	// (GET /workspaces/{workspaceId}/teams)
 	ListTeams(ctx context.Context, request ListTeamsRequestObject) (ListTeamsResponseObject, error)
@@ -6478,6 +6770,65 @@ func (sh *strictHandler) ChangeMemberRole(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ChangeMemberRoleResponseObject); ok {
 		if err := validResponse.VisitChangeMemberRoleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSsoConfig operation middleware
+func (sh *strictHandler) GetSsoConfig(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request GetSsoConfigRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSsoConfig(ctx, request.(GetSsoConfigRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSsoConfig")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSsoConfigResponseObject); ok {
+		if err := validResponse.VisitGetSsoConfigResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutSsoConfig operation middleware
+func (sh *strictHandler) PutSsoConfig(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request PutSsoConfigRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	var body PutSsoConfigJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutSsoConfig(ctx, request.(PutSsoConfigRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutSsoConfig")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutSsoConfigResponseObject); ok {
+		if err := validResponse.VisitPutSsoConfigResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
