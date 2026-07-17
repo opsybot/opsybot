@@ -68,3 +68,8 @@ type AuditFilter struct {
 	Cursor       string
 	Limit        int
 }
+
+type AuditPage struct {
+	Events     []AuditEvent
+	NextCursor string
+}

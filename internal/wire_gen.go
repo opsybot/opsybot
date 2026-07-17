@@ -38,6 +38,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/workspace"
 	"github.com/opsybot/opsybot/internal/service"
 	"github.com/opsybot/opsybot/internal/service/apikeys"
+	"github.com/opsybot/opsybot/internal/service/audits"
 	"github.com/opsybot/opsybot/internal/service/auth"
 	"github.com/opsybot/opsybot/internal/service/channels"
 	"github.com/opsybot/opsybot/internal/service/members"
@@ -126,7 +127,8 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	serviceChannels := channels.New(repositoryChannel)
 	repositoryTeam := team.New(postgresClient)
 	serviceTeams := teams.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, repositoryPolicy, repositoryAudit)
-	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers, serviceUsers, serviceChannels, serviceTeams, apiKeys)
+	serviceAudits := audits.New(repositoryWorkspace, repositoryMember, repositoryPolicy, repositoryAudit)
+	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers, serviceUsers, serviceChannels, serviceTeams, apiKeys, serviceAudits)
 	handler := http.NewRouter(slogLogger, configAuth, serviceAuth, apiKeys, strictServerInterface)
 	app := &App{
 		OTel:     client,

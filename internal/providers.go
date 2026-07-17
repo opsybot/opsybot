@@ -21,6 +21,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/workspace"
 	"github.com/opsybot/opsybot/internal/service"
 	"github.com/opsybot/opsybot/internal/service/apikeys"
+	"github.com/opsybot/opsybot/internal/service/audits"
 	"github.com/opsybot/opsybot/internal/service/auth"
 	"github.com/opsybot/opsybot/internal/service/channels"
 	"github.com/opsybot/opsybot/internal/service/members"
@@ -59,4 +60,5 @@ var serviceProviders = wire.NewSet(
 	channels.New,
 	teams.New,
 	apikeys.New,
+	audits.New,
 )
