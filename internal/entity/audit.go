@@ -31,6 +31,8 @@ const (
 	ActionAuthLogout        = "auth.logout"
 	ActionTeamCreated       = "team.created"
 	ActionTeamUpdated       = "team.updated"
+	ActionTeamArchived      = "team.archived"
+	ActionTeamUnarchived    = "team.unarchived"
 	ActionKeyCreated        = "key.created"
 	ActionKeyRevoked        = "key.revoked"
 	ActionSettingsUpdated   = "settings.updated"

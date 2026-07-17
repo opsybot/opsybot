@@ -31,6 +31,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/policy"
 	"github.com/opsybot/opsybot/internal/repository/recovery_code"
 	"github.com/opsybot/opsybot/internal/repository/session"
+	"github.com/opsybot/opsybot/internal/repository/team"
 	"github.com/opsybot/opsybot/internal/repository/transactor"
 	"github.com/opsybot/opsybot/internal/repository/user"
 	"github.com/opsybot/opsybot/internal/repository/workspace"
@@ -39,6 +40,7 @@ import (
 	"github.com/opsybot/opsybot/internal/service/channels"
 	"github.com/opsybot/opsybot/internal/service/members"
 	"github.com/opsybot/opsybot/internal/service/references"
+	"github.com/opsybot/opsybot/internal/service/teams"
 	"github.com/opsybot/opsybot/internal/service/users"
 	"github.com/opsybot/opsybot/internal/service/workspaces"
 )
@@ -118,7 +120,9 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	serviceUsers := users.New(repositoryTransactor, repositoryUser, recoveryCode, repositorySession)
 	repositoryChannel := channel.New(postgresClient)
 	serviceChannels := channels.New(repositoryChannel)
-	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers, serviceUsers, serviceChannels)
+	repositoryTeam := team.New(postgresClient)
+	serviceTeams := teams.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, repositoryPolicy, repositoryAudit)
+	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers, serviceUsers, serviceChannels, serviceTeams)
 	handler := http.NewRouter(slogLogger, configAuth, serviceAuth, strictServerInterface)
 	app := &App{
 		OTel:     client,

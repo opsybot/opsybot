@@ -14,6 +14,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/policy"
 	"github.com/opsybot/opsybot/internal/repository/recovery_code"
 	"github.com/opsybot/opsybot/internal/repository/session"
+	"github.com/opsybot/opsybot/internal/repository/team"
 	"github.com/opsybot/opsybot/internal/repository/transactor"
 	"github.com/opsybot/opsybot/internal/repository/user"
 	"github.com/opsybot/opsybot/internal/repository/workspace"
@@ -22,6 +23,7 @@ import (
 	"github.com/opsybot/opsybot/internal/service/channels"
 	"github.com/opsybot/opsybot/internal/service/members"
 	"github.com/opsybot/opsybot/internal/service/references"
+	"github.com/opsybot/opsybot/internal/service/teams"
 	"github.com/opsybot/opsybot/internal/service/users"
 	"github.com/opsybot/opsybot/internal/service/workspaces"
 )
@@ -35,6 +37,7 @@ var repositoryProviders = wire.NewSet(
 	session.New,
 	policy.New,
 	invite.New,
+	team.New,
 	audit.New,
 	mailer.New,
 	password_reset.New,
@@ -51,4 +54,5 @@ var serviceProviders = wire.NewSet(
 	references.New,
 	users.New,
 	channels.New,
+	teams.New,
 )

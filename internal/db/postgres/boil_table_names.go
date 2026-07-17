@@ -8,6 +8,8 @@ var TableNames = struct {
 	Invites             string
 	PasswordResetTokens string
 	Sessions            string
+	TeamMembers         string
+	Teams               string
 	UserChannels        string
 	UserRecoveryCodes   string
 	Users               string
@@ -18,6 +20,8 @@ var TableNames = struct {
 	Invites:             "invites",
 	PasswordResetTokens: "password_reset_tokens",
 	Sessions:            "sessions",
+	TeamMembers:         "team_members",
+	Teams:               "teams",
 	UserChannels:        "user_channels",
 	UserRecoveryCodes:   "user_recovery_codes",
 	Users:               "users",
