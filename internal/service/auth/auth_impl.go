@@ -101,6 +101,9 @@ func (s *srv) Setup(ctx context.Context, in entity.Setup, ip, userAgent string) 
 		if err := s.policy.SeedWorkspace(ctx, ws.ID); err != nil {
 			return err
 		}
+		if err := s.policy.AssignAgentRole(ctx, ws.ID, entity.RoleAdmin); err != nil {
+			return err
+		}
 		if err := s.policy.AssignRole(ctx, user.ID, ws.ID, entity.RoleAdmin); err != nil {
 			return err
 		}

@@ -32,6 +32,7 @@ const (
 	APIKeySecretHexLength  = 24
 	APIKeyNameMaxLength    = 60
 	APIKeyHintSuffixLength = 4
+	APIKeyTouchWindow      = 5 * time.Minute
 )
 
 var AllScopes = []Scope{
@@ -57,6 +58,22 @@ type NewAPIKey struct {
 	Name   string
 	Kind   KeyKind
 	Scopes []Scope
+}
+
+type APIKeyRecord struct {
+	WorkspaceID string
+	Kind        KeyKind
+	OwnerUserID string
+	CreatedBy   string
+	Name        string
+	TokenHash   string
+	TokenHint   string
+	Scopes      []Scope
+}
+
+type APIKeyList struct {
+	Personal  []APIKey
+	Workspace []APIKey
 }
 
 var (
@@ -104,4 +121,15 @@ func KindAbbrev(k KeyKind) string {
 		return "wo"
 	}
 	return "pe"
+}
+
+func NewAPIKeySecret() (secret, hint, hash string, err error) {
+	raw, err := GenerateHexToken(APIKeySecretHexLength)
+	if err != nil {
+		return "", "", "", err
+	}
+	secret = APIKeySecretPrefix + "_" + raw
+	hint = raw[len(raw)-APIKeyHintSuffixLength:]
+	hash = HashToken(secret)
+	return secret, hint, hash, nil
 }

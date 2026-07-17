@@ -16,6 +16,24 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
+// Defines values for ApiKeyKind.
+const (
+	ApiKeyKindPersonal  ApiKeyKind = "personal"
+	ApiKeyKindWorkspace ApiKeyKind = "workspace"
+)
+
+// Valid indicates whether the value is a known member of the ApiKeyKind enum.
+func (e ApiKeyKind) Valid() bool {
+	switch e {
+	case ApiKeyKindPersonal:
+		return true
+	case ApiKeyKindWorkspace:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ChannelType.
 const (
 	ChannelTypeDiscord  ChannelType = "discord"
@@ -43,6 +61,24 @@ func (e ChannelType) Valid() bool {
 	case ChannelTypeTelegram:
 		return true
 	case ChannelTypeWebhook:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateApiKeyRequestKind.
+const (
+	CreateApiKeyRequestKindPersonal  CreateApiKeyRequestKind = "personal"
+	CreateApiKeyRequestKindWorkspace CreateApiKeyRequestKind = "workspace"
+)
+
+// Valid indicates whether the value is a known member of the CreateApiKeyRequestKind enum.
+func (e CreateApiKeyRequestKind) Valid() bool {
+	switch e {
+	case CreateApiKeyRequestKindPersonal:
+		return true
+	case CreateApiKeyRequestKindWorkspace:
 		return true
 	default:
 		return false
@@ -175,12 +211,68 @@ func (e Role) Valid() bool {
 	}
 }
 
+// Defines values for Scope.
+const (
+	AlertsRead     Scope = "alerts:read"
+	AlertsWrite    Scope = "alerts:write"
+	AuditRead      Scope = "audit:read"
+	ConfigWrite    Scope = "config:write"
+	IncidentsRead  Scope = "incidents:read"
+	IncidentsWrite Scope = "incidents:write"
+	PoliciesWrite  Scope = "policies:write"
+	SchedulesWrite Scope = "schedules:write"
+)
+
+// Valid indicates whether the value is a known member of the Scope enum.
+func (e Scope) Valid() bool {
+	switch e {
+	case AlertsRead:
+		return true
+	case AlertsWrite:
+		return true
+	case AuditRead:
+		return true
+	case ConfigWrite:
+		return true
+	case IncidentsRead:
+		return true
+	case IncidentsWrite:
+		return true
+	case PoliciesWrite:
+		return true
+	case SchedulesWrite:
+		return true
+	default:
+		return false
+	}
+}
+
 // AcceptInviteRequest defines model for AcceptInviteRequest.
 type AcceptInviteRequest struct {
 	Name     string `json:"name"`
 	Password string `json:"password"`
 	Timezone string `json:"timezone"`
 	Token    string `json:"token"`
+}
+
+// ApiKey defines model for ApiKey.
+type ApiKey struct {
+	CreatedAt  time.Time  `json:"createdAt"`
+	Hint       string     `json:"hint"`
+	Id         string     `json:"id"`
+	Kind       ApiKeyKind `json:"kind"`
+	LastUsedAt *time.Time `json:"lastUsedAt,omitempty"`
+	Name       string     `json:"name"`
+	Scopes     []Scope    `json:"scopes"`
+}
+
+// ApiKeyKind defines model for ApiKey.Kind.
+type ApiKeyKind string
+
+// ApiKeyList defines model for ApiKeyList.
+type ApiKeyList struct {
+	Personal  []ApiKey `json:"personal"`
+	Workspace []ApiKey `json:"workspace"`
 }
 
 // ChangePasswordRequest defines model for ChangePasswordRequest.
@@ -210,6 +302,16 @@ type ChannelList struct {
 	Items []Channel `json:"items"`
 }
 
+// CreateApiKeyRequest defines model for CreateApiKeyRequest.
+type CreateApiKeyRequest struct {
+	Kind   CreateApiKeyRequestKind `json:"kind"`
+	Name   string                  `json:"name"`
+	Scopes []Scope                 `json:"scopes"`
+}
+
+// CreateApiKeyRequestKind defines model for CreateApiKeyRequest.Kind.
+type CreateApiKeyRequestKind string
+
 // CreateChannelRequest defines model for CreateChannelRequest.
 type CreateChannelRequest struct {
 	Detail string                   `json:"detail"`
@@ -223,6 +325,12 @@ type CreateChannelRequestType string
 type CreateTeamRequest struct {
 	MemberIds *[]string `json:"memberIds,omitempty"`
 	Name      string    `json:"name"`
+}
+
+// CreatedApiKey defines model for CreatedApiKey.
+type CreatedApiKey struct {
+	Key    ApiKey `json:"key"`
+	Secret string `json:"secret"`
 }
 
 // DeactivateMemberRequest defines model for DeactivateMemberRequest.
@@ -365,6 +473,9 @@ type ResetPasswordRequest struct {
 // Role defines model for Role.
 type Role string
 
+// Scope defines model for Scope.
+type Scope string
+
 // Session defines model for Session.
 type Session struct {
 	CreatedAt  time.Time `json:"createdAt"`
@@ -505,6 +616,9 @@ type RegenerateRecoveryCodesJSONRequestBody = TwoFactorCodeRequest
 // ActivateTwoFactorJSONRequestBody defines body for ActivateTwoFactor for application/json ContentType.
 type ActivateTwoFactorJSONRequestBody = TwoFactorCodeRequest
 
+// CreateKeyJSONRequestBody defines body for CreateKey for application/json ContentType.
+type CreateKeyJSONRequestBody = CreateApiKeyRequest
+
 // InviteMemberJSONRequestBody defines body for InviteMember for application/json ContentType.
 type InviteMemberJSONRequestBody = InviteMemberRequest
 
@@ -600,6 +714,15 @@ type ServerInterface interface {
 	// A single workspace
 	// (GET /workspaces/{workspaceId})
 	GetWorkspace(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// List API keys in a workspace
+	// (GET /workspaces/{workspaceId}/keys)
+	ListKeys(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Create an API key
+	// (POST /workspaces/{workspaceId}/keys)
+	CreateKey(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Revoke an API key
+	// (DELETE /workspaces/{workspaceId}/keys/{keyId})
+	RevokeKey(w http.ResponseWriter, r *http.Request, workspaceId string, keyId string)
 	// List workspace members
 	// (GET /workspaces/{workspaceId}/members)
 	ListMembers(w http.ResponseWriter, r *http.Request, workspaceId string)
@@ -804,6 +927,24 @@ func (_ Unimplemented) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 // A single workspace
 // (GET /workspaces/{workspaceId})
 func (_ Unimplemented) GetWorkspace(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List API keys in a workspace
+// (GET /workspaces/{workspaceId}/keys)
+func (_ Unimplemented) ListKeys(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create an API key
+// (POST /workspaces/{workspaceId}/keys)
+func (_ Unimplemented) CreateKey(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Revoke an API key
+// (DELETE /workspaces/{workspaceId}/keys/{keyId})
+func (_ Unimplemented) RevokeKey(w http.ResponseWriter, r *http.Request, workspaceId string, keyId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1309,6 +1450,93 @@ func (siw *ServerInterfaceWrapper) GetWorkspace(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetWorkspace(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListKeys operation middleware
+func (siw *ServerInterfaceWrapper) ListKeys(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListKeys(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateKey operation middleware
+func (siw *ServerInterfaceWrapper) CreateKey(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateKey(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RevokeKey operation middleware
+func (siw *ServerInterfaceWrapper) RevokeKey(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "keyId" -------------
+	var keyId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "keyId", chi.URLParam(r, "keyId"), &keyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "keyId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RevokeKey(w, r, workspaceId, keyId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2004,6 +2232,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/workspaces/{workspaceId}", wrapper.GetWorkspace)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/keys", wrapper.ListKeys)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/keys", wrapper.CreateKey)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/workspaces/{workspaceId}/keys/{keyId}", wrapper.RevokeKey)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/workspaces/{workspaceId}/members", wrapper.ListMembers)
@@ -3398,6 +3635,222 @@ func (response GetWorkspace404ApplicationProblemPlusJSONResponse) VisitGetWorksp
 	return err
 }
 
+type ListKeysRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+}
+
+type ListKeysResponseObject interface {
+	VisitListKeysResponse(w http.ResponseWriter) error
+}
+
+type ListKeys200JSONResponse ApiKeyList
+
+func (response ListKeys200JSONResponse) VisitListKeysResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListKeys401ApplicationProblemPlusJSONResponse Problem
+
+func (response ListKeys401ApplicationProblemPlusJSONResponse) VisitListKeysResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListKeys403ApplicationProblemPlusJSONResponse Problem
+
+func (response ListKeys403ApplicationProblemPlusJSONResponse) VisitListKeysResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListKeys404ApplicationProblemPlusJSONResponse Problem
+
+func (response ListKeys404ApplicationProblemPlusJSONResponse) VisitListKeysResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateKeyRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	Body        *CreateKeyJSONRequestBody
+}
+
+type CreateKeyResponseObject interface {
+	VisitCreateKeyResponse(w http.ResponseWriter) error
+}
+
+type CreateKey201JSONResponse CreatedApiKey
+
+func (response CreateKey201JSONResponse) VisitCreateKeyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateKey400ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateKey400ApplicationProblemPlusJSONResponse) VisitCreateKeyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateKey401ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateKey401ApplicationProblemPlusJSONResponse) VisitCreateKeyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateKey403ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateKey403ApplicationProblemPlusJSONResponse) VisitCreateKeyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateKey404ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateKey404ApplicationProblemPlusJSONResponse) VisitCreateKeyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeKeyRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	KeyId       string `json:"keyId"`
+}
+
+type RevokeKeyResponseObject interface {
+	VisitRevokeKeyResponse(w http.ResponseWriter) error
+}
+
+type RevokeKey204Response struct {
+}
+
+func (response RevokeKey204Response) VisitRevokeKeyResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RevokeKey401ApplicationProblemPlusJSONResponse Problem
+
+func (response RevokeKey401ApplicationProblemPlusJSONResponse) VisitRevokeKeyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeKey403ApplicationProblemPlusJSONResponse Problem
+
+func (response RevokeKey403ApplicationProblemPlusJSONResponse) VisitRevokeKeyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeKey404ApplicationProblemPlusJSONResponse Problem
+
+func (response RevokeKey404ApplicationProblemPlusJSONResponse) VisitRevokeKeyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeKey409ApplicationProblemPlusJSONResponse Problem
+
+func (response RevokeKey409ApplicationProblemPlusJSONResponse) VisitRevokeKeyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListMembersRequestObject struct {
 	WorkspaceId string `json:"workspaceId"`
 }
@@ -4630,6 +5083,15 @@ type StrictServerInterface interface {
 	// A single workspace
 	// (GET /workspaces/{workspaceId})
 	GetWorkspace(ctx context.Context, request GetWorkspaceRequestObject) (GetWorkspaceResponseObject, error)
+	// List API keys in a workspace
+	// (GET /workspaces/{workspaceId}/keys)
+	ListKeys(ctx context.Context, request ListKeysRequestObject) (ListKeysResponseObject, error)
+	// Create an API key
+	// (POST /workspaces/{workspaceId}/keys)
+	CreateKey(ctx context.Context, request CreateKeyRequestObject) (CreateKeyResponseObject, error)
+	// Revoke an API key
+	// (DELETE /workspaces/{workspaceId}/keys/{keyId})
+	RevokeKey(ctx context.Context, request RevokeKeyRequestObject) (RevokeKeyResponseObject, error)
 	// List workspace members
 	// (GET /workspaces/{workspaceId}/members)
 	ListMembers(ctx context.Context, request ListMembersRequestObject) (ListMembersResponseObject, error)
@@ -5429,6 +5891,92 @@ func (sh *strictHandler) GetWorkspace(w http.ResponseWriter, r *http.Request, wo
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetWorkspaceResponseObject); ok {
 		if err := validResponse.VisitGetWorkspaceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListKeys operation middleware
+func (sh *strictHandler) ListKeys(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request ListKeysRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListKeys(ctx, request.(ListKeysRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListKeys")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListKeysResponseObject); ok {
+		if err := validResponse.VisitListKeysResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateKey operation middleware
+func (sh *strictHandler) CreateKey(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request CreateKeyRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	var body CreateKeyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateKey(ctx, request.(CreateKeyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateKey")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateKeyResponseObject); ok {
+		if err := validResponse.VisitCreateKeyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RevokeKey operation middleware
+func (sh *strictHandler) RevokeKey(w http.ResponseWriter, r *http.Request, workspaceId string, keyId string) {
+	var request RevokeKeyRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.KeyId = keyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RevokeKey(ctx, request.(RevokeKeyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RevokeKey")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RevokeKeyResponseObject); ok {
+		if err := validResponse.VisitRevokeKeyResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

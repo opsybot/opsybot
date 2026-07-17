@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -37,21 +38,16 @@ func isPublic(r *http.Request) bool {
 	return strings.HasPrefix(r.URL.Path, "/v1/auth/sso/")
 }
 
-func Authn(auth service.Auth, cfg config.Auth) func(http.Handler) http.Handler {
+func Authn(auth service.Auth, keys service.APIKeys, cfg config.Auth) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if isPublic(r) {
 				next.ServeHTTP(w, r)
 				return
 			}
-			cookie, err := r.Cookie(cfg.CookieName)
+			id, err := resolveIdentity(r, auth, keys, cfg)
 			if err != nil {
-				writeUnauthorized(w, "You're not signed in. This request had no valid session. Sign in again to continue.")
-				return
-			}
-			id, err := auth.Resolve(r.Context(), cookie.Value)
-			if err != nil {
-				writeUnauthorized(w, "Your session is no longer valid. It may have expired or been revoked. Sign in again to continue.")
+				writeUnauthorized(w, unauthorizedDetail(err))
 				return
 			}
 			info := entity.RequestInfoFrom(r.Context())
@@ -60,6 +56,33 @@ func Authn(auth service.Auth, cfg config.Auth) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r.WithContext(entity.WithIdentity(r.Context(), id)))
 		})
 	}
+}
+
+func resolveIdentity(r *http.Request, auth service.Auth, keys service.APIKeys, cfg config.Auth) (entity.Identity, error) {
+	if token, ok := bearerToken(r); ok {
+		return keys.Resolve(r.Context(), token)
+	}
+	cookie, err := r.Cookie(cfg.CookieName)
+	if err != nil {
+		return entity.Identity{}, entity.ErrUnauthenticated
+	}
+	return auth.Resolve(r.Context(), cookie.Value)
+}
+
+func bearerToken(r *http.Request) (string, bool) {
+	if token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer "); ok {
+		if token = strings.TrimSpace(token); token != "" {
+			return token, true
+		}
+	}
+	return "", false
+}
+
+func unauthorizedDetail(err error) string {
+	if errors.Is(err, entity.ErrUnauthenticated) {
+		return "You're not signed in. This request had no valid credential. Sign in again to continue."
+	}
+	return "Your session is no longer valid. It may have expired or been revoked. Sign in again to continue."
 }
 
 func writeUnauthorized(w http.ResponseWriter, detail string) {

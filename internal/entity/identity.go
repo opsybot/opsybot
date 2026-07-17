@@ -78,9 +78,13 @@ func (i Identity) Subject() string {
 	return "user:" + i.UserID
 }
 
-func (i Identity) ScopeAllows(scope Scope) bool {
+func (i Identity) ScopePermits(obj PolicyObject, act PolicyAction) bool {
 	if i.Kind != IdentityKindAPIKey {
 		return true
+	}
+	scope, ok := ScopeFor(obj, act)
+	if !ok {
+		return false
 	}
 	return slices.Contains(i.Scopes, scope)
 }

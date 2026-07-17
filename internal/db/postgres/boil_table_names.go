@@ -4,6 +4,7 @@
 package dbpostgres
 
 var TableNames = struct {
+	APIKeys             string
 	AuditEvents         string
 	Invites             string
 	PasswordResetTokens string
@@ -16,6 +17,7 @@ var TableNames = struct {
 	WorkspaceMembers    string
 	Workspaces          string
 }{
+	APIKeys:             "api_keys",
 	AuditEvents:         "audit_events",
 	Invites:             "invites",
 	PasswordResetTokens: "password_reset_tokens",

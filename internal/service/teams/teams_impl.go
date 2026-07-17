@@ -40,14 +40,19 @@ func (s *srv) authorize(ctx context.Context, workspaceSlug string, act entity.Po
 	if err != nil {
 		return entity.Identity{}, entity.Workspace{}, err
 	}
-	active, err := s.members.IsActive(ctx, ws.ID, id.UserID)
-	if err != nil {
-		return entity.Identity{}, entity.Workspace{}, err
+	if id.Kind == entity.IdentityKindAPIKey && id.WorkspaceID != ws.ID {
+		return entity.Identity{}, entity.Workspace{}, entity.ErrForbidden
 	}
-	if !active {
-		return entity.Identity{}, entity.Workspace{}, entity.ErrNotMember
+	if id.UserID != "" {
+		active, err := s.members.IsActive(ctx, ws.ID, id.UserID)
+		if err != nil {
+			return entity.Identity{}, entity.Workspace{}, err
+		}
+		if !active {
+			return entity.Identity{}, entity.Workspace{}, entity.ErrNotMember
+		}
 	}
-	if scope, ok := entity.ScopeFor(entity.PolicyObjectTeams, act); ok && !id.ScopeAllows(scope) {
+	if !id.ScopePermits(entity.PolicyObjectTeams, act) {
 		return entity.Identity{}, entity.Workspace{}, entity.ErrForbidden
 	}
 	allowed, err := s.policy.Allowed(ctx, id.Subject(), ws.ID, entity.PolicyObjectTeams, act)

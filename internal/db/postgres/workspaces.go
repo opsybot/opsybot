@@ -102,12 +102,14 @@ var WorkspaceWhere = struct {
 // WorkspaceRels is where relationship names are stored.
 var WorkspaceRels = struct {
 	CreatedByUser    string
+	APIKeys          string
 	AuditEvents      string
 	Invites          string
 	Teams            string
 	WorkspaceMembers string
 }{
 	CreatedByUser:    "CreatedByUser",
+	APIKeys:          "APIKeys",
 	AuditEvents:      "AuditEvents",
 	Invites:          "Invites",
 	Teams:            "Teams",
@@ -117,6 +119,7 @@ var WorkspaceRels = struct {
 // workspaceR is where relationships are stored.
 type workspaceR struct {
 	CreatedByUser    *User                `boil:"CreatedByUser" json:"CreatedByUser" toml:"CreatedByUser" yaml:"CreatedByUser"`
+	APIKeys          APIKeySlice          `boil:"APIKeys" json:"APIKeys" toml:"APIKeys" yaml:"APIKeys"`
 	AuditEvents      AuditEventSlice      `boil:"AuditEvents" json:"AuditEvents" toml:"AuditEvents" yaml:"AuditEvents"`
 	Invites          InviteSlice          `boil:"Invites" json:"Invites" toml:"Invites" yaml:"Invites"`
 	Teams            TeamSlice            `boil:"Teams" json:"Teams" toml:"Teams" yaml:"Teams"`
@@ -142,6 +145,22 @@ func (r *workspaceR) GetCreatedByUser() *User {
 	}
 
 	return r.CreatedByUser
+}
+
+func (o *Workspace) GetAPIKeys() APIKeySlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetAPIKeys()
+}
+
+func (r *workspaceR) GetAPIKeys() APIKeySlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.APIKeys
 }
 
 func (o *Workspace) GetAuditEvents() AuditEventSlice {
@@ -535,6 +554,20 @@ func (o *Workspace) CreatedByUser(mods ...qm.QueryMod) userQuery {
 	return Users(queryMods...)
 }
 
+// APIKeys retrieves all the api_key's APIKeys with an executor.
+func (o *Workspace) APIKeys(mods ...qm.QueryMod) apiKeyQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"api_keys\".\"workspace_id\"=?", o.ID),
+	)
+
+	return APIKeys(queryMods...)
+}
+
 // AuditEvents retrieves all the audit_event's AuditEvents with an executor.
 func (o *Workspace) AuditEvents(mods ...qm.QueryMod) auditEventQuery {
 	var queryMods []qm.QueryMod
@@ -707,6 +740,119 @@ func (workspaceL) LoadCreatedByUser(ctx context.Context, e boil.ContextExecutor,
 					foreign.R = &userR{}
 				}
 				foreign.R.CreatedByWorkspaces = append(foreign.R.CreatedByWorkspaces, local)
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadAPIKeys allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (workspaceL) LoadAPIKeys(ctx context.Context, e boil.ContextExecutor, singular bool, maybeWorkspace any, mods queries.Applicator) error {
+	var slice []*Workspace
+	var object *Workspace
+
+	if singular {
+		var ok bool
+		object, ok = maybeWorkspace.(*Workspace)
+		if !ok {
+			object = new(Workspace)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeWorkspace))
+			}
+		}
+	} else {
+		s, ok := maybeWorkspace.(*[]*Workspace)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeWorkspace))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &workspaceR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &workspaceR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`api_keys`),
+		qm.WhereIn(`api_keys.workspace_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load api_keys")
+	}
+
+	var resultSlice []*APIKey
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice api_keys")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on api_keys")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for api_keys")
+	}
+
+	if len(apiKeyAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.APIKeys = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &apiKeyR{}
+			}
+			foreign.R.Workspace = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.WorkspaceID {
+				local.R.APIKeys = append(local.R.APIKeys, foreign)
+				if foreign.R == nil {
+					foreign.R = &apiKeyR{}
+				}
+				foreign.R.Workspace = local
 				break
 			}
 		}
@@ -1243,6 +1389,59 @@ func (o *Workspace) RemoveCreatedByUser(ctx context.Context, exec boil.ContextEx
 		}
 		related.R.CreatedByWorkspaces = related.R.CreatedByWorkspaces[:ln-1]
 		break
+	}
+	return nil
+}
+
+// AddAPIKeys adds the given related objects to the existing relationships
+// of the workspace, optionally inserting them as new records.
+// Appends related to o.R.APIKeys.
+// Sets related.R.Workspace appropriately.
+func (o *Workspace) AddAPIKeys(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*APIKey) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.WorkspaceID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"api_keys\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"workspace_id"}),
+				strmangle.WhereClause("\"", "\"", 2, apiKeyPrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.WorkspaceID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &workspaceR{
+			APIKeys: related,
+		}
+	} else {
+		o.R.APIKeys = append(o.R.APIKeys, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &apiKeyR{
+				Workspace: o,
+			}
+		} else {
+			rel.R.Workspace = o
+		}
 	}
 	return nil
 }

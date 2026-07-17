@@ -971,6 +971,129 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+  /workspaces/{workspaceId}/keys:
+    get:
+      operationId: listKeys
+      summary: List API keys in a workspace
+      tags: [keys]
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: API keys
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiKeyList" }
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "403":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+    post:
+      operationId: createKey
+      summary: Create an API key
+      tags: [keys]
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateApiKeyRequest" }
+      responses:
+        "201":
+          description: API key created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CreatedApiKey" }
+        "400":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "403":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /workspaces/{workspaceId}/keys/{keyId}:
+    delete:
+      operationId: revokeKey
+      summary: Revoke an API key
+      tags: [keys]
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: keyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Revoked
+        "401":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "403":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /me/password:
     put:
       operationId: changePassword
@@ -1679,6 +1802,47 @@ components:
         memberIds:
           type: array
           items: { type: string }
+    Scope:
+      type: string
+      enum: [incidents:read, incidents:write, alerts:read, alerts:write, schedules:write, policies:write, config:write, audit:read]
+    ApiKey:
+      type: object
+      required: [id, name, kind, scopes, hint, createdAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        kind: { type: string, enum: [personal, workspace] }
+        scopes:
+          type: array
+          items: { $ref: "#/components/schemas/Scope" }
+        hint: { type: string }
+        createdAt: { type: string, format: date-time }
+        lastUsedAt: { type: string, format: date-time }
+    ApiKeyList:
+      type: object
+      required: [personal, workspace]
+      properties:
+        personal:
+          type: array
+          items: { $ref: "#/components/schemas/ApiKey" }
+        workspace:
+          type: array
+          items: { $ref: "#/components/schemas/ApiKey" }
+    CreateApiKeyRequest:
+      type: object
+      required: [name, kind, scopes]
+      properties:
+        name: { type: string }
+        kind: { type: string, enum: [personal, workspace] }
+        scopes:
+          type: array
+          items: { $ref: "#/components/schemas/Scope" }
+    CreatedApiKey:
+      type: object
+      required: [key, secret]
+      properties:
+        key: { $ref: "#/components/schemas/ApiKey" }
+        secret: { type: string }
     Problem:
       type: object
       required:

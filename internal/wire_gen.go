@@ -20,6 +20,7 @@ import (
 	"github.com/opsybot/opsybot/internal/pkg/postgres"
 	"github.com/opsybot/opsybot/internal/pkg/secretbox"
 	"github.com/opsybot/opsybot/internal/pkg/valkey"
+	"github.com/opsybot/opsybot/internal/repository/api_key"
 	"github.com/opsybot/opsybot/internal/repository/audit"
 	"github.com/opsybot/opsybot/internal/repository/channel"
 	"github.com/opsybot/opsybot/internal/repository/invite"
@@ -36,6 +37,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/user"
 	"github.com/opsybot/opsybot/internal/repository/workspace"
 	"github.com/opsybot/opsybot/internal/service"
+	"github.com/opsybot/opsybot/internal/service/apikeys"
 	"github.com/opsybot/opsybot/internal/service/auth"
 	"github.com/opsybot/opsybot/internal/service/channels"
 	"github.com/opsybot/opsybot/internal/service/members"
@@ -113,6 +115,8 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	}
 	repositoryMailer := mailer2.New(mailerClient)
 	serviceAuth := auth.New(configAuth, repositoryTransactor, repositoryLock, repositoryUser, repositoryWorkspace, repositoryMember, repositorySession, repositoryPolicy, repositoryInvite, repositoryAudit, repositoryPending, passwordReset, recoveryCode, repositoryMailer)
+	apiKey := api_key.New(postgresClient)
+	apiKeys := apikeys.New(repositoryTransactor, repositoryWorkspace, repositoryMember, apiKey, repositoryPolicy, repositoryAudit)
 	serviceWorkspaces := workspaces.New(repositoryWorkspace, repositoryMember)
 	v := _wireValue
 	serviceReferences := references.New(v)
@@ -122,8 +126,8 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	serviceChannels := channels.New(repositoryChannel)
 	repositoryTeam := team.New(postgresClient)
 	serviceTeams := teams.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, repositoryPolicy, repositoryAudit)
-	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers, serviceUsers, serviceChannels, serviceTeams)
-	handler := http.NewRouter(slogLogger, configAuth, serviceAuth, strictServerInterface)
+	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers, serviceUsers, serviceChannels, serviceTeams, apiKeys)
+	handler := http.NewRouter(slogLogger, configAuth, serviceAuth, apiKeys, strictServerInterface)
 	app := &App{
 		OTel:     client,
 		Cfg:      configConfig,

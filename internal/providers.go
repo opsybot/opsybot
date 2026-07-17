@@ -3,6 +3,7 @@ package internal
 import (
 	"github.com/goforj/wire"
 
+	"github.com/opsybot/opsybot/internal/repository/api_key"
 	"github.com/opsybot/opsybot/internal/repository/audit"
 	"github.com/opsybot/opsybot/internal/repository/channel"
 	"github.com/opsybot/opsybot/internal/repository/invite"
@@ -19,6 +20,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/user"
 	"github.com/opsybot/opsybot/internal/repository/workspace"
 	"github.com/opsybot/opsybot/internal/service"
+	"github.com/opsybot/opsybot/internal/service/apikeys"
 	"github.com/opsybot/opsybot/internal/service/auth"
 	"github.com/opsybot/opsybot/internal/service/channels"
 	"github.com/opsybot/opsybot/internal/service/members"
@@ -38,6 +40,7 @@ var repositoryProviders = wire.NewSet(
 	policy.New,
 	invite.New,
 	team.New,
+	api_key.New,
 	audit.New,
 	mailer.New,
 	password_reset.New,
@@ -55,4 +58,5 @@ var serviceProviders = wire.NewSet(
 	users.New,
 	channels.New,
 	teams.New,
+	apikeys.New,
 )

@@ -22,6 +22,16 @@ func (s *srv) List(ctx context.Context) ([]entity.Workspace, error) {
 	if !ok {
 		return nil, entity.ErrUnauthenticated
 	}
+	if id.UserID == "" {
+		if id.WorkspaceID == "" {
+			return []entity.Workspace{}, nil
+		}
+		ws, err := s.workspaces.GetByID(ctx, id.WorkspaceID)
+		if err != nil {
+			return nil, err
+		}
+		return []entity.Workspace{ws}, nil
+	}
 	return s.workspaces.ListActiveByUser(ctx, id.UserID)
 }
 
@@ -33,6 +43,12 @@ func (s *srv) Get(ctx context.Context, slug string) (entity.Workspace, error) {
 	ws, err := s.workspaces.GetBySlug(ctx, slug)
 	if err != nil {
 		return entity.Workspace{}, err
+	}
+	if id.UserID == "" {
+		if id.Kind == entity.IdentityKindAPIKey && id.WorkspaceID == ws.ID {
+			return ws, nil
+		}
+		return entity.Workspace{}, entity.ErrNotMember
 	}
 	active, err := s.members.IsActive(ctx, ws.ID, id.UserID)
 	if err != nil {
