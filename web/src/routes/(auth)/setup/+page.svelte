@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import OctagonAlertIcon from '@lucide/svelte/icons/octagon-alert';
 	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
@@ -14,6 +15,7 @@
 	let { data }: PageProps = $props();
 
 	const form = superForm(untrack(() => data.form), { validators: zod4Client(setupSchema) });
+	const { message } = form;
 </script>
 
 <AuthShell
@@ -31,6 +33,15 @@
 				</Alert.Description>
 			</Alert.Content>
 		</Alert.Root>
+
+		{#if $message}
+			<Alert.Root tone="critical">
+				<OctagonAlertIcon />
+				<Alert.Content>
+					<Alert.Description>{$message}</Alert.Description>
+				</Alert.Content>
+			</Alert.Root>
+		{/if}
 
 		<form method="POST" use:form.enhance class="flex flex-col gap-4">
 			<TextField {form} name="name" label="Name" placeholder="Maya Chen" autocomplete="name" />

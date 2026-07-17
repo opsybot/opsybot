@@ -24,6 +24,6 @@ export const actions: Actions = {
 	workspace: async ({ request }) => {
 		const form = await superValidate(request, zod4(workspaceSchema));
 		if (!form.valid) return fail(400, { form });
-		redirect(303, '/two-factor/setup');
+		redirect(303, '/login');
 	}
 };

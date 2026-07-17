@@ -60,6 +60,22 @@ export const recoveryCodeSchema = z.object({
 		.regex(/^[a-z0-9]{4}-[a-z0-9]{4}$/, 'A recovery code is two groups of four, like k7f2-9mqa.')
 });
 
+export const profileSchema = z.object({
+	name: z.string().min(1, 'Enter your name.'),
+	timezone
+});
+
+export const changePasswordSchema = z
+	.object({
+		currentPassword: z.string().min(1, 'Enter your current password.'),
+		newPassword: password,
+		confirm: z.string().min(1, 'Repeat the new password.')
+	})
+	.refine((fields) => fields.newPassword === fields.confirm, {
+		message: 'Both passwords must match.',
+		path: ['confirm']
+	});
+
 export type LoginSchema = typeof loginSchema;
 export type SignupAccountSchema = typeof signupAccountSchema;
 export type WorkspaceSchema = typeof workspaceSchema;

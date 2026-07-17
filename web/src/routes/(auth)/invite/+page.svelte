@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import OctagonAlertIcon from '@lucide/svelte/icons/octagon-alert';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
@@ -15,6 +16,7 @@
 	let { data }: PageProps = $props();
 
 	const form = superForm(untrack(() => data.form), { validators: zod4Client(inviteSchema) });
+	const { message } = form;
 
 	const invite = $derived(data.invite);
 	const initials = $derived(
@@ -75,6 +77,15 @@
 					<span class="font-mono text-[12.5px]">{invite.email}</span>
 				</span>
 			</div>
+
+			{#if $message}
+				<Alert.Root tone="critical">
+					<OctagonAlertIcon />
+					<Alert.Content>
+						<Alert.Description>{$message}</Alert.Description>
+					</Alert.Content>
+				</Alert.Root>
+			{/if}
 
 			<form method="POST" use:form.enhance class="flex flex-col gap-4">
 				<TextField {form} name="name" label="Name" placeholder="Jordan Okafor" autocomplete="name" />
