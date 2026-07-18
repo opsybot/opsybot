@@ -15,8 +15,8 @@ export function slugify(value: string): string {
 		.slice(0, 40);
 }
 
-export type Role = 'admin' | 'responder' | 'viewer';
-export const ROLES: Role[] = ['admin', 'responder', 'viewer'];
+export type Role = 'admin' | 'member';
+export const ROLES: Role[] = ['admin', 'member'];
 
 export type MemberReference = { id: string; kind: string; icon: string; label: string; detail: string };
 
@@ -52,6 +52,7 @@ export type Team = {
 	id: string;
 	name: string;
 	members: string[];
+	archived: boolean;
 	schedules: string[];
 	policies: string[];
 	services: string[];
@@ -123,18 +124,6 @@ export function isFailure(action: string): boolean {
 	return action.includes('failed');
 }
 
-export function auditActionPrefix(action: string): string {
-	return action.split('.')[0];
-}
-
-export function auditMatches(entry: AuditEntry, filter: { q: string; actor: string; action: string }): boolean {
-	return (
-		(!filter.actor || entry.actor === filter.actor) &&
-		(!filter.action || entry.action.startsWith(filter.action)) &&
-		(!filter.q || `${entry.action} ${entry.target}`.toLowerCase().includes(filter.q.toLowerCase()))
-	);
-}
-
 export type Severity = { id: string; def: string };
 export const SEVERITY_TONE: Record<string, Tone> = { SEV1: 'critical', SEV2: 'high', SEV3: 'warning', SEV4: 'info' };
 
@@ -157,8 +146,23 @@ export type WorkspaceSettings = {
 	postmortemThreshold: string;
 	fields: CustomField[];
 	cadence: Record<string, string>;
-	sso: { mode: 'oidc' | 'saml'; issuer: string; clientId: string };
+	sso: SsoSettings;
 	retention: { alerts: string; incidents: string; audit: string };
+};
+
+export type SsoSettings = {
+	mode: 'oidc' | 'saml';
+	issuer: string;
+	clientId: string;
+	hasClientSecret: boolean;
+	clientSecret: string;
+	clearClientSecret: boolean;
+	samlMetadataUrl: string;
+	scopes: string;
+	allowedEmailDomains: string;
+	enabled: boolean;
+	required: boolean;
+	jitProvisioning: boolean;
 };
 
 const inList = (value: unknown, options: readonly string[], fallback: string) =>
@@ -197,7 +201,17 @@ export function parseSettings(raw: string, current: WorkspaceSettings): Workspac
 		sso: {
 			mode: sso.mode === 'saml' ? 'saml' : 'oidc',
 			issuer: typeof sso.issuer === 'string' ? sso.issuer.slice(0, 200) : current.sso.issuer,
-			clientId: typeof sso.clientId === 'string' ? sso.clientId.slice(0, 120) : current.sso.clientId
+			clientId: typeof sso.clientId === 'string' ? sso.clientId.slice(0, 120) : current.sso.clientId,
+			hasClientSecret: current.sso.hasClientSecret,
+			clientSecret: typeof sso.clientSecret === 'string' ? sso.clientSecret.slice(0, 400) : '',
+			clearClientSecret: sso.clearClientSecret === true,
+			samlMetadataUrl: typeof sso.samlMetadataUrl === 'string' ? sso.samlMetadataUrl.slice(0, 300) : current.sso.samlMetadataUrl,
+			scopes: typeof sso.scopes === 'string' ? sso.scopes.slice(0, 300) : current.sso.scopes,
+			allowedEmailDomains:
+				typeof sso.allowedEmailDomains === 'string' ? sso.allowedEmailDomains.slice(0, 500) : current.sso.allowedEmailDomains,
+			enabled: sso.enabled === true,
+			required: sso.required === true,
+			jitProvisioning: sso.jitProvisioning === true
 		},
 		retention: {
 			alerts: inList(retention.alerts, RETENTION_OPTIONS.alerts, current.retention.alerts),

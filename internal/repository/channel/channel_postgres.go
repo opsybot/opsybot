@@ -1,0 +1,97 @@
+package channel
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
+
+	dbpostgres "github.com/opsybot/opsybot/internal/db/postgres"
+	"github.com/opsybot/opsybot/internal/entity"
+	"github.com/opsybot/opsybot/internal/pkg/postgres"
+	"github.com/opsybot/opsybot/internal/repository"
+)
+
+type repo struct {
+	db postgres.Client
+}
+
+func New(db postgres.Client) repository.Channel {
+	return &repo{db: db}
+}
+
+func toEntity(m *dbpostgres.UserChannel) entity.Channel {
+	return entity.Channel{
+		ID:        m.ID,
+		UserID:    m.UserID,
+		Type:      entity.ChannelType(m.Type),
+		Detail:    m.Detail,
+		Verified:  m.VerifiedAt.Valid,
+		CreatedAt: m.CreatedAt,
+	}
+}
+
+func (r *repo) Create(ctx context.Context, userID string, c entity.NewChannel) (entity.Channel, error) {
+	m := &dbpostgres.UserChannel{UserID: userID, Type: string(c.Type), Detail: c.Detail}
+	if err := m.Insert(ctx, r.db.Querier(ctx), boil.Whitelist("user_id", "type", "detail")); err != nil {
+		if _, ok := postgres.UniqueViolation(err); ok {
+			return entity.Channel{}, entity.ErrChannelDuplicate
+		}
+		return entity.Channel{}, fmt.Errorf("create channel: %w", err)
+	}
+	return toEntity(m), nil
+}
+
+func (r *repo) ListByUser(ctx context.Context, userID string) ([]entity.Channel, error) {
+	rows, err := dbpostgres.UserChannels(
+		qm.Where("user_id = ?", userID),
+		qm.OrderBy("created_at"),
+	).All(ctx, r.db.Querier(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("list channels: %w", err)
+	}
+	out := make([]entity.Channel, 0, len(rows))
+	for _, m := range rows {
+		out = append(out, toEntity(m))
+	}
+	return out, nil
+}
+
+func (r *repo) Get(ctx context.Context, id, userID string) (entity.Channel, error) {
+	m, err := dbpostgres.UserChannels(qm.Where("id = ? AND user_id = ?", id, userID)).One(ctx, r.db.Querier(ctx))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return entity.Channel{}, entity.ErrChannelNotFound
+		}
+		return entity.Channel{}, fmt.Errorf("get channel: %w", err)
+	}
+	return toEntity(m), nil
+}
+
+func (r *repo) MarkVerified(ctx context.Context, id, userID string) error {
+	now := time.Now()
+	n, err := dbpostgres.UserChannels(qm.Where("id = ? AND user_id = ?", id, userID)).
+		UpdateAll(ctx, r.db.Querier(ctx), dbpostgres.M{"verified_at": now, "updated_at": now})
+	if err != nil {
+		return fmt.Errorf("verify channel: %w", err)
+	}
+	if n == 0 {
+		return entity.ErrChannelNotFound
+	}
+	return nil
+}
+
+func (r *repo) Delete(ctx context.Context, id, userID string) error {
+	n, err := dbpostgres.UserChannels(qm.Where("id = ? AND user_id = ?", id, userID)).DeleteAll(ctx, r.db.Querier(ctx))
+	if err != nil {
+		return fmt.Errorf("delete channel: %w", err)
+	}
+	if n == 0 {
+		return entity.ErrChannelNotFound
+	}
+	return nil
+}

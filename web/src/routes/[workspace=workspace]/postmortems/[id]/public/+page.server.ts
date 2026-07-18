@@ -2,7 +2,6 @@ import { error } from '@sveltejs/kit';
 import { formatDuration, impactWindow } from '$lib/postmortems';
 import { listFollowUps } from '$lib/server/incidents';
 import { getPostmortem } from '$lib/server/postmortems';
-import { getSession } from '$lib/server/session';
 import type { PageServerLoad } from './$types';
 
 // Internal fields are omitted from the payload here, not hidden by CSS
@@ -15,7 +14,7 @@ export const load: PageServerLoad = ({ params }) => {
 	return {
 		id: postmortem.id,
 		title: incident.name,
-		organization: (getSession(params.workspace)?.organization ?? '').toLowerCase(),
+		organization: params.workspace.toLowerCase(),
 		date: (postmortem.publishedAt ?? incident.declaredAt).slice(0, 10),
 		window: impactWindow(incident),
 		resolved: incident.status === 'resolved',

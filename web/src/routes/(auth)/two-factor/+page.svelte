@@ -1,6 +1,6 @@
 <script lang="ts">
 	import AuthShell from '$lib/components/auth/auth-shell.svelte';
-	import CodeForm from './code-form.svelte';
+	import CodeForm from '$lib/components/auth/code-form.svelte';
 	import RecoveryForm from './recovery-form.svelte';
 	import type { PageProps } from './$types';
 

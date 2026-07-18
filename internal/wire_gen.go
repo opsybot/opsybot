@@ -9,15 +9,160 @@ package internal
 import (
 	"github.com/goforj/wire"
 	"github.com/opsybot/opsybot/internal/config"
+	"github.com/opsybot/opsybot/internal/handler"
+	"github.com/opsybot/opsybot/internal/handler/http"
+	"github.com/opsybot/opsybot/internal/handler/http/v1/dashboard"
 	"github.com/opsybot/opsybot/internal/pkg"
+	"github.com/opsybot/opsybot/internal/pkg/casbin"
 	"github.com/opsybot/opsybot/internal/pkg/logger"
+	"github.com/opsybot/opsybot/internal/pkg/mailer"
+	"github.com/opsybot/opsybot/internal/pkg/otel"
 	"github.com/opsybot/opsybot/internal/pkg/postgres"
-	"github.com/opsybot/opsybot/internal/repository"
+	"github.com/opsybot/opsybot/internal/pkg/secretbox"
+	"github.com/opsybot/opsybot/internal/pkg/valkey"
+	"github.com/opsybot/opsybot/internal/repository/api_key"
+	"github.com/opsybot/opsybot/internal/repository/audit"
+	"github.com/opsybot/opsybot/internal/repository/channel"
+	"github.com/opsybot/opsybot/internal/repository/invite"
+	"github.com/opsybot/opsybot/internal/repository/lock"
+	mailer2 "github.com/opsybot/opsybot/internal/repository/mailer"
+	"github.com/opsybot/opsybot/internal/repository/member"
+	"github.com/opsybot/opsybot/internal/repository/password_reset"
+	"github.com/opsybot/opsybot/internal/repository/pending"
+	"github.com/opsybot/opsybot/internal/repository/policy"
+	"github.com/opsybot/opsybot/internal/repository/ratelimit"
+	"github.com/opsybot/opsybot/internal/repository/recovery_code"
+	"github.com/opsybot/opsybot/internal/repository/session"
+	"github.com/opsybot/opsybot/internal/repository/sso_connection"
+	"github.com/opsybot/opsybot/internal/repository/sso_state"
+	"github.com/opsybot/opsybot/internal/repository/team"
+	"github.com/opsybot/opsybot/internal/repository/transactor"
+	"github.com/opsybot/opsybot/internal/repository/user"
+	"github.com/opsybot/opsybot/internal/repository/user_identity"
+	"github.com/opsybot/opsybot/internal/repository/workspace"
+	"github.com/opsybot/opsybot/internal/service"
+	"github.com/opsybot/opsybot/internal/service/apikeys"
+	"github.com/opsybot/opsybot/internal/service/audits"
+	"github.com/opsybot/opsybot/internal/service/auth"
+	"github.com/opsybot/opsybot/internal/service/channels"
+	"github.com/opsybot/opsybot/internal/service/members"
+	"github.com/opsybot/opsybot/internal/service/ratelimiter"
+	"github.com/opsybot/opsybot/internal/service/references"
+	"github.com/opsybot/opsybot/internal/service/sso"
+	"github.com/opsybot/opsybot/internal/service/teams"
+	"github.com/opsybot/opsybot/internal/service/users"
+	"github.com/opsybot/opsybot/internal/service/workspaces"
 )
 
 // Injectors from wire.go:
 
 func InitApp(cfgFile string) (*App, func(), error) {
+	configConfig, err := config.New(cfgFile)
+	if err != nil {
+		return nil, nil, err
+	}
+	oTel := config.NewOTel(configConfig)
+	environment := config.NewEnvironment(configConfig)
+	client, cleanup, err := otel.New(oTel, environment)
+	if err != nil {
+		return nil, nil, err
+	}
+	log := config.NewLog(configConfig)
+	slogLogger := logger.New(log)
+	configPostgres := config.NewPostgres(configConfig)
+	postgresClient, cleanup2, err := postgres.New(configPostgres)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	configCasbin := config.NewCasbin(configConfig)
+	configValkey := config.NewValkey(configConfig)
+	valkeyClient, cleanup3, err := valkey.New(configValkey)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	casbinClient, cleanup4, err := casbin.New(configCasbin, postgresClient, valkeyClient)
+	if err != nil {
+		cleanup3()
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	configAuth := config.NewAuth(configConfig)
+	repositoryTransactor := transactor.New(postgresClient)
+	repositoryLock := lock.New(postgresClient)
+	secretboxClient, err := secretbox.New(configAuth)
+	if err != nil {
+		cleanup4()
+		cleanup3()
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	repositoryUser := user.New(postgresClient, secretboxClient)
+	repositoryWorkspace := workspace.New(postgresClient)
+	repositoryMember := member.New(postgresClient)
+	repositorySession := session.New(postgresClient)
+	repositoryPolicy := policy.New(casbinClient, postgresClient)
+	repositoryInvite := invite.New(postgresClient)
+	repositoryAudit := audit.New(postgresClient)
+	repositoryPending := pending.New(valkeyClient)
+	passwordReset := password_reset.New(postgresClient)
+	recoveryCode := recovery_code.New(postgresClient)
+	configMailer := config.NewMailer(configConfig)
+	mailerClient, err := mailer.New(configMailer)
+	if err != nil {
+		cleanup4()
+		cleanup3()
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	repositoryMailer := mailer2.New(mailerClient)
+	serviceAuth := auth.New(configAuth, repositoryTransactor, repositoryLock, repositoryUser, repositoryWorkspace, repositoryMember, repositorySession, repositoryPolicy, repositoryInvite, repositoryAudit, repositoryPending, passwordReset, recoveryCode, repositoryMailer)
+	apiKey := api_key.New(postgresClient)
+	apiKeys := apikeys.New(repositoryTransactor, repositoryWorkspace, repositoryMember, apiKey, repositoryPolicy, repositoryAudit)
+	ssoConnection := sso_connection.New(postgresClient, secretboxClient)
+	userIdentity := user_identity.New(postgresClient)
+	ssoState := sso_state.New(valkeyClient)
+	serviceSSO := sso.New(configAuth, repositoryTransactor, repositoryWorkspace, repositoryMember, repositoryUser, repositoryPolicy, repositorySession, repositoryAudit, ssoConnection, userIdentity, ssoState)
+	rateLimiter := ratelimit.New(valkeyClient)
+	serviceRateLimiter := ratelimiter.New(configAuth, rateLimiter)
+	serviceWorkspaces := workspaces.New(repositoryWorkspace, repositoryMember)
+	v := _wireValue
+	serviceReferences := references.New(v)
+	serviceMembers := members.New(configAuth, repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryUser, repositoryInvite, repositorySession, repositoryPolicy, repositoryAudit, repositoryMailer, serviceReferences)
+	serviceUsers := users.New(repositoryTransactor, repositoryUser, recoveryCode, repositorySession)
+	repositoryChannel := channel.New(postgresClient)
+	serviceChannels := channels.New(repositoryChannel, repositoryAudit)
+	repositoryTeam := team.New(postgresClient)
+	serviceTeams := teams.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, repositoryPolicy, repositoryAudit)
+	serviceAudits := audits.New(repositoryWorkspace, repositoryMember, repositoryPolicy, repositoryAudit)
+	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers, serviceUsers, serviceChannels, serviceTeams, apiKeys, serviceAudits, serviceSSO)
+	handler := http.NewRouter(slogLogger, configAuth, serviceAuth, apiKeys, serviceSSO, serviceRateLimiter, strictServerInterface)
+	app := &App{
+		OTel:     client,
+		Cfg:      configConfig,
+		Log:      slogLogger,
+		PG:       postgresClient,
+		Enforcer: casbinClient,
+		Router:   handler,
+	}
+	return app, func() {
+		cleanup4()
+		cleanup3()
+		cleanup2()
+		cleanup()
+	}, nil
+}
+
+var (
+	_wireValue = []service.ReferenceSource(nil)
+)
+
+func InitMigrator(cfgFile string) (*Migrator, func(), error) {
 	configConfig, err := config.New(cfgFile)
 	if err != nil {
 		return nil, nil, err
@@ -29,16 +174,17 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	app := &App{
-		Cfg: configConfig,
+	migrator := &Migrator{
 		Log: slogLogger,
 		PG:  client,
 	}
-	return app, func() {
+	return migrator, func() {
 		cleanup()
 	}, nil
 }
 
 // wire.go:
 
-var baseSet = wire.NewSet(config.Set, pkg.Set, repository.Set, wire.Struct(new(App), "*"))
+var baseSet = wire.NewSet(config.Set, pkg.Set, repositoryProviders,
+	serviceProviders, handler.Set, wire.Struct(new(App), "*"), wire.Struct(new(Migrator), "*"),
+)

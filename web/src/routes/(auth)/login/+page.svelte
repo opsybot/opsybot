@@ -3,7 +3,6 @@
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import KeyRoundIcon from '@lucide/svelte/icons/key-round';
 	import OctagonAlertIcon from '@lucide/svelte/icons/octagon-alert';
-	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
 	import AuthShell from '$lib/components/auth/auth-shell.svelte';
@@ -13,7 +12,9 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import * as Form from '$lib/components/ui/form';
+	import { Input } from '$lib/components/ui/input';
 	import { loginSchema } from '$lib/schemas/auth';
+	import { slugify } from '$lib/slug';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -24,7 +25,37 @@
 	const wrong = $derived($message === 'invalid');
 	const deactivated = $derived($message === 'deactivated');
 	const ssoRequired = $derived($message === 'sso-required');
+
+	let ssoWorkspace = $state('');
+	const ssoSlug = $derived(ssoWorkspace.trim() ? slugify(ssoWorkspace) : '');
 </script>
+
+{#snippet ssoStart()}
+	<div class="flex flex-col gap-2">
+		<label class="text-muted-foreground text-[13px] font-medium" for="sso-ws">Workspace URL</label>
+		<div class="flex gap-2">
+			<Input
+				id="sso-ws"
+				bind:value={ssoWorkspace}
+				placeholder="acme"
+				autocapitalize="none"
+				autocorrect="off"
+				spellcheck={false}
+				class="flex-1"
+			/>
+			<Button
+				href={ssoSlug ? `/sso/${ssoSlug}/start` : undefined}
+				data-sveltekit-reload
+				variant="secondary"
+				aria-disabled={!ssoSlug}
+				class={ssoSlug ? '' : 'pointer-events-none opacity-50'}
+			>
+				<KeyRoundIcon data-icon="inline-start" />
+				Continue with SSO
+			</Button>
+		</div>
+	</div>
+{/snippet}
 
 <AuthShell title="Log in">
 	{#snippet footer()}
@@ -68,22 +99,13 @@
 				<Alert.Content>
 					<Alert.Title>Single sign-on required</Alert.Title>
 					<Alert.Description>
-						Acme Corp requires SSO for all members. Password login is disabled for this workspace —
-						you'll be redirected to your identity provider.
+						This account's workspace requires SSO. Password login is disabled — enter your workspace
+						URL to continue to your identity provider.
 					</Alert.Description>
 				</Alert.Content>
 			</Alert.Root>
 
-			<Button href="/sso-error" class="w-full">
-				<KeyRoundIcon data-icon="inline-start" />
-				Continue with SSO
-			</Button>
-
-			<div class="text-center">
-				<a href="/login" class="text-brand-foreground text-[13px] hover:underline">
-					Log in to a different workspace
-				</a>
-			</div>
+			{@render ssoStart()}
 		</div>
 	{:else}
 		<form method="POST" use:enhance class="flex flex-col gap-4">
@@ -126,19 +148,10 @@
 
 			<OrDivider />
 
-			<div class="flex flex-col gap-2.5">
-				<Button href="/sso-error" variant="secondary" class="w-full">
-					<KeyRoundIcon data-icon="inline-start" />
-					Log in with SSO (OIDC)
-				</Button>
-				<Button href="/sso-error" variant="secondary" class="w-full">
-					<ShieldCheckIcon data-icon="inline-start" />
-					Log in with SAML
-				</Button>
-			</div>
+			{@render ssoStart()}
 
 			<p class="text-subtle-foreground m-0 text-xs leading-[1.5]">
-				SSO options appear when your workspace has an identity provider configured.
+				Enter your workspace URL to sign in with your identity provider (OIDC or SAML).
 			</p>
 		</form>
 	{/if}

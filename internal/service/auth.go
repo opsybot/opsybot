@@ -1,0 +1,26 @@
+package service
+
+//go:generate go tool mockgen -source=auth.go -destination=./auth/auth_mock.go -package=auth
+
+import (
+	"context"
+
+	"github.com/opsybot/opsybot/internal/entity"
+)
+
+type Auth interface {
+	SetupRequired(ctx context.Context) (bool, error)
+	Setup(ctx context.Context, in entity.Setup, ip, userAgent string) (entity.SetupResult, error)
+	Signup(ctx context.Context, in entity.Signup, ip, userAgent string) (entity.SetupResult, error)
+	CheckSlug(ctx context.Context, slug string) (bool, string, error)
+	Login(ctx context.Context, in entity.LoginInput) (entity.LoginResult, error)
+	Logout(ctx context.Context) error
+	Resolve(ctx context.Context, token string) (entity.Identity, error)
+	Profile(ctx context.Context) (entity.User, error)
+	InvitePreview(ctx context.Context, token string) (entity.Invite, error)
+	AcceptInvite(ctx context.Context, in entity.AcceptInvite, ip, userAgent string) (entity.AcceptResult, error)
+	VerifyTwoFactor(ctx context.Context, pendingToken, code string) (entity.LoginResult, error)
+	VerifyRecovery(ctx context.Context, pendingToken, code string) (entity.LoginResult, error)
+	RequestPasswordReset(ctx context.Context, email, ip string) error
+	ResetPassword(ctx context.Context, token, newPassword string) error
+}

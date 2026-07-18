@@ -13,11 +13,13 @@
 
 	let editOpen = $state(false);
 	const roster = $derived(data.members.filter((member) => !member.deactivated));
+	const active = $derived(data.teams.filter((team) => !team.archived));
+	const archived = $derived(data.teams.filter((team) => team.archived));
 </script>
 
 <div class="flex max-w-[760px] flex-col gap-3.5">
 	<div class="flex items-center">
-		<span class="text-subtle-foreground text-[13px]">{data.teams.length} teams</span>
+		<span class="text-subtle-foreground text-[13px]">{active.length} teams</span>
 		<div class="flex-1"></div>
 		<Button size="sm" onclick={() => (editOpen = true)}>
 			<PlusIcon data-icon="inline-start" />
@@ -26,7 +28,7 @@
 	</div>
 
 	<div class="bg-card overflow-hidden rounded-xl border">
-		{#each data.teams as team (team.id)}
+		{#each active as team (team.id)}
 			<a
 				href={ws(`/workspace/teams/${team.id}`)}
 				data-team={team.id}
@@ -54,6 +56,34 @@
 			</p>
 		{/each}
 	</div>
+
+	{#if archived.length > 0}
+		<div class="mt-2 flex flex-col gap-2">
+			<span class="text-subtle-foreground text-[11px] font-medium tracking-wide uppercase">
+				Archived · {archived.length}
+			</span>
+			<div class="bg-card overflow-hidden rounded-xl border">
+				{#each archived as team (team.id)}
+					<a
+						href={ws(`/workspace/teams/${team.id}`)}
+						data-team={team.id}
+						class="hover:bg-accent flex items-center gap-3 border-t px-4 py-[13px] opacity-60 first:border-t-0"
+					>
+						<span
+							class="bg-inset text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-sm border"
+						>
+							<UsersIcon class="size-[15px]" />
+						</span>
+						<div class="min-w-0 flex-1">
+							<span class="text-foreground font-mono text-[13.5px] font-medium">{team.name}</span>
+							<div class="text-subtle-foreground mt-0.5 font-mono text-[11px]">Archived · restore to edit</div>
+						</div>
+						<ChevronRightIcon class="text-subtle-foreground size-4 shrink-0" />
+					</a>
+				{/each}
+			</div>
+		</div>
+	{/if}
 </div>
 
 <TeamEditDialog bind:open={editOpen} isNew action="?/create" {roster} />

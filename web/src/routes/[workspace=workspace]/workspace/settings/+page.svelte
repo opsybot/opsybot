@@ -2,19 +2,19 @@
 	import { tick, untrack } from 'svelte';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import PlusIcon from '@lucide/svelte/icons/plus';
-	import SendIcon from '@lucide/svelte/icons/send';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import { toast } from 'svelte-sonner';
 	import { enhance } from '$app/forms';
+	import { page } from '$app/state';
 	import CopyField from '$lib/components/alertsources/copy-field.svelte';
 	import SegmentedToggle from '$lib/components/admin/segmented-toggle.svelte';
 	import SettingsSection from '$lib/components/admin/settings-section.svelte';
-	import * as Alert from '$lib/components/ui/alert';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as Field from '$lib/components/ui/field';
 	import { Input } from '$lib/components/ui/input';
 	import * as Select from '$lib/components/ui/select';
+	import { Switch } from '$lib/components/ui/switch';
 	import Tag from '$lib/components/tag.svelte';
 	import {
 		CADENCE_OPTIONS,
@@ -24,7 +24,6 @@
 		THRESHOLD_OPTIONS,
 		TIMEZONE_OPTIONS
 	} from '$lib/admin';
-	import { onDestroy } from 'svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -37,6 +36,18 @@
 	let ssoMode = $state<'oidc' | 'saml'>(untrack(() => data.sso.mode));
 	let issuer = $state(untrack(() => data.sso.issuer));
 	let clientId = $state(untrack(() => data.sso.clientId));
+	let clientSecret = $state('');
+	let clearClientSecret = $state(false);
+	let samlMetadataUrl = $state(untrack(() => data.sso.samlMetadataUrl));
+	let scopes = $state(untrack(() => data.sso.scopes));
+	let allowedEmailDomains = $state(untrack(() => data.sso.allowedEmailDomains));
+	let ssoEnabled = $state(untrack(() => data.sso.enabled));
+	let ssoRequired = $state(untrack(() => data.sso.required));
+	let jitProvisioning = $state(untrack(() => data.sso.jitProvisioning));
+	const hasClientSecret = $derived(data.sso.hasClientSecret);
+	const samlMetadataOut = $derived(
+		`${page.url.origin}/v1/auth/sso/${page.params.workspace}/saml/metadata`
+	);
 	let retention = $state(untrack(() => ({ ...data.retention })));
 
 	let threshold = $state(untrack(() => data.postmortemThreshold));
@@ -50,25 +61,6 @@
 		thresholdForm.requestSubmit();
 	}
 
-	let ssoTest = $state<'idle' | 'running' | 'ok'>('idle');
-	let ssoTimer: ReturnType<typeof setTimeout>;
-	$effect(() => {
-		void [ssoMode, issuer, clientId];
-		untrack(() => {
-			// Cancel an in-flight test on edit or its timer marks the edited config ok
-			if (ssoTest !== 'idle') {
-				clearTimeout(ssoTimer);
-				ssoTest = 'idle';
-			}
-		});
-	});
-	function runSsoTest() {
-		ssoTest = 'running';
-		clearTimeout(ssoTimer);
-		ssoTimer = setTimeout(() => (ssoTest = 'ok'), 1800);
-	}
-	onDestroy(() => clearTimeout(ssoTimer));
-
 	let newFieldName = $state('');
 	let newFieldType = $state('text');
 	let addForm: HTMLFormElement;
@@ -79,7 +71,19 @@
 			timezone,
 			severities: severities.map((sev) => ({ def: sev.def })),
 			cadence,
-			sso: { mode: ssoMode, issuer, clientId },
+			sso: {
+				mode: ssoMode,
+				issuer,
+				clientId,
+				clientSecret,
+				clearClientSecret,
+				samlMetadataUrl,
+				scopes,
+				allowedEmailDomains,
+				enabled: ssoEnabled,
+				required: ssoRequired,
+				jitProvisioning
+			},
 			retention
 		})
 	);
@@ -225,11 +229,36 @@
 				{ value: 'saml', label: 'SAML' }
 			]}
 		/>
+
+		<div class="flex flex-col gap-2.5">
+			<label class="flex items-center justify-between gap-3" for="sso-enabled">
+				<span class="flex flex-col">
+					<span class="text-[13px] font-medium">Enabled</span>
+					<span class="text-subtle-foreground text-[11.5px]">Turn on this workspace's SSO login.</span>
+				</span>
+				<Switch id="sso-enabled" bind:checked={ssoEnabled} aria-label="SSO enabled" />
+			</label>
+			<label class="flex items-center justify-between gap-3" for="sso-required">
+				<span class="flex flex-col">
+					<span class="text-[13px] font-medium">Require SSO</span>
+					<span class="text-subtle-foreground text-[11.5px]">Members must sign in through the identity provider.</span>
+				</span>
+				<Switch id="sso-required" bind:checked={ssoRequired} aria-label="Require SSO" />
+			</label>
+			<label class="flex items-center justify-between gap-3" for="sso-jit">
+				<span class="flex flex-col">
+					<span class="text-[13px] font-medium">Create accounts on first sign-in</span>
+					<span class="text-subtle-foreground text-[11.5px]">Just-in-time provision members the first time they log in.</span>
+				</span>
+				<Switch id="sso-jit" bind:checked={jitProvisioning} aria-label="Just-in-time provisioning" />
+			</label>
+		</div>
+
 		{#if ssoMode === 'oidc'}
 			<div class="flex flex-col gap-2.5">
 				<Field.Field class="gap-1.5 space-y-0">
 					<Field.FieldLabel for="sso-issuer" class="text-muted-foreground text-[13px] font-medium">Issuer URL</Field.FieldLabel>
-					<Input id="sso-issuer" class="font-mono text-[12px]" bind:value={issuer} />
+					<Input id="sso-issuer" class="font-mono text-[12px]" bind:value={issuer} placeholder="https://idp.example.com" />
 				</Field.Field>
 				<div class="flex flex-wrap gap-2.5">
 					<Field.Field class="min-w-[180px] flex-1 gap-1.5 space-y-0">
@@ -238,48 +267,53 @@
 					</Field.Field>
 					<Field.Field class="min-w-[180px] flex-1 gap-1.5 space-y-0">
 						<Field.FieldLabel for="sso-secret" class="text-muted-foreground text-[13px] font-medium">Client secret</Field.FieldLabel>
-						<Input id="sso-secret" type="password" value="••••••••••••" />
+						<Input
+							id="sso-secret"
+							type="password"
+							bind:value={clientSecret}
+							disabled={clearClientSecret}
+							autocomplete="off"
+							placeholder={hasClientSecret ? 'Stored — leave blank to keep it' : 'Client secret'}
+						/>
 					</Field.Field>
 				</div>
+				{#if hasClientSecret}
+					<label class="text-muted-foreground flex items-center gap-2 text-[12px]">
+						<input type="checkbox" bind:checked={clearClientSecret} class="accent-primary size-3.5" />
+						Remove the stored client secret
+					</label>
+				{/if}
+				<Field.Field class="gap-1.5 space-y-0">
+					<Field.FieldLabel for="sso-scopes" class="text-muted-foreground text-[13px] font-medium">Scopes</Field.FieldLabel>
+					<Input id="sso-scopes" class="font-mono text-[12px]" bind:value={scopes} placeholder="openid email profile" />
+					<Field.FieldDescription class="text-subtle-foreground text-[11.5px]">
+						Space- or comma-separated. Leave blank for the defaults.
+					</Field.FieldDescription>
+				</Field.Field>
 			</div>
 		{:else}
 			<div class="flex flex-col gap-2.5">
 				<Field.Field class="gap-1.5 space-y-0">
 					<Field.FieldLabel for="sso-meta" class="text-muted-foreground text-[13px] font-medium">IdP metadata URL</Field.FieldLabel>
-					<Input id="sso-meta" class="font-mono text-[12px]" placeholder="https://sso.acme.dev/saml/metadata" />
+					<Input id="sso-meta" class="font-mono text-[12px]" bind:value={samlMetadataUrl} placeholder="https://sso.example.com/saml/metadata" />
 				</Field.Field>
-				<CopyField label="Opsybot metadata — give this to your IdP" value="https://opsy.bot/saml/acme/metadata.xml" />
+				<CopyField label="Opsybot metadata — give this to your IdP" value={samlMetadataOut} />
 			</div>
 		{/if}
-		<div role="status" aria-live="polite">
-			{#if ssoTest === 'ok'}
-				<Alert.Root tone="success">
-					<CheckIcon />
-					<Alert.Content>
-						<Alert.Title>Test connection succeeded</Alert.Title>
-						<Alert.Description>
-							Signed in as maya@acme.dev via {ssoMode.toUpperCase()} · attributes mapped: email, name, groups.
-						</Alert.Description>
-					</Alert.Content>
-				</Alert.Root>
-			{:else}
-				<div class="flex items-center gap-2.5">
-					<Button size="sm" variant="secondary" disabled={ssoTest === 'running'} onclick={runSsoTest}>
-						<SendIcon data-icon="inline-start" />
-						{ssoTest === 'running' ? 'Testing…' : 'Test connection'}
-					</Button>
-					{#if ssoTest === 'running'}
-						<span
-							class="border-border border-t-primary size-4 shrink-0 animate-spin rounded-full border-2 [animation-duration:0.8s] motion-reduce:animate-none"
-							aria-hidden="true"
-						></span>
-					{/if}
-					<span class="text-subtle-foreground text-[11.5px]">
-						Runs a full handshake in a popup — nothing changes until it passes.
-					</span>
-				</div>
-			{/if}
-		</div>
+
+		<Field.Field class="gap-1.5 space-y-0">
+			<Field.FieldLabel for="sso-domains" class="text-muted-foreground text-[13px] font-medium">Allowed email domains</Field.FieldLabel>
+			<textarea
+				id="sso-domains"
+				bind:value={allowedEmailDomains}
+				rows="2"
+				placeholder="acme.com"
+				class="border-border-strong bg-inset text-foreground focus-visible:border-primary focus-visible:shadow-[var(--focus-ring)] w-full rounded-sm border px-3 py-2 font-mono text-[12px] outline-none"
+			></textarea>
+			<Field.FieldDescription class="text-subtle-foreground text-[11.5px]">
+				One per line. Leave blank to allow any domain.
+			</Field.FieldDescription>
+		</Field.Field>
 	</SettingsSection>
 
 	<SettingsSection title="Data retention" note="self-hosted — you own the disk">
@@ -305,6 +339,14 @@
 			ssoMode = data.sso.mode;
 			issuer = data.sso.issuer;
 			clientId = data.sso.clientId;
+			clientSecret = '';
+			clearClientSecret = false;
+			samlMetadataUrl = data.sso.samlMetadataUrl;
+			scopes = data.sso.scopes;
+			allowedEmailDomains = data.sso.allowedEmailDomains;
+			ssoEnabled = data.sso.enabled;
+			ssoRequired = data.sso.required;
+			jitProvisioning = data.sso.jitProvisioning;
 			retention = { ...data.retention };
 			toast.success('Workspace settings saved.');
 		}}

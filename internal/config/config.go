@@ -12,7 +12,63 @@ type Config struct {
 	Environment     string        `mapstructure:"environment"`
 	ShutdownTimeout time.Duration `mapstructure:"shutdown_timeout"`
 	Log             Log           `mapstructure:"log"`
+	OTel            OTel          `mapstructure:"otel"`
+	HTTP            HTTP          `mapstructure:"http"`
 	Postgres        Postgres      `mapstructure:"postgres"`
+	Valkey          Valkey        `mapstructure:"valkey"`
+	Casbin          Casbin        `mapstructure:"casbin"`
+	Auth            Auth          `mapstructure:"auth"`
+	Mailer          Mailer        `mapstructure:"mailer"`
+}
+
+type Mailer struct {
+	Host       string        `mapstructure:"host"`
+	Port       int           `mapstructure:"port"`
+	Username   string        `mapstructure:"username"`
+	Password   string        `mapstructure:"password"`
+	Encryption string        `mapstructure:"encryption"`
+	From       string        `mapstructure:"from"`
+	FromName   string        `mapstructure:"from_name"`
+	Timeout    time.Duration `mapstructure:"timeout"`
+}
+
+type Auth struct {
+	BaseURL             string        `mapstructure:"base_url"`
+	SecretKey           string        `mapstructure:"secret_key"`
+	SecretKeyPrevious   string        `mapstructure:"secret_key_previous"`
+	CookieName          string        `mapstructure:"cookie_name"`
+	CookieSecure        bool          `mapstructure:"cookie_secure"`
+	SessionIdleTTL      time.Duration `mapstructure:"session_idle_ttl"`
+	SessionAbsoluteTTL  time.Duration `mapstructure:"session_absolute_ttl"`
+	SessionBrowserTTL   time.Duration `mapstructure:"session_browser_ttl"`
+	SessionTouchWindow  time.Duration `mapstructure:"session_touch_window"`
+	TrustProxyHeaders   bool          `mapstructure:"trust_proxy_headers"`
+	InviteTTL           time.Duration `mapstructure:"invite_ttl"`
+	RateLoginPerMin     int           `mapstructure:"rate_login_per_min"`
+	RateSignupPerHour   int           `mapstructure:"rate_signup_per_hour"`
+	RateSlugCheckPerMin int           `mapstructure:"rate_slug_check_per_min"`
+	RateResetPerHour    int           `mapstructure:"rate_reset_per_hour"`
+	RateSSOPerMin       int           `mapstructure:"rate_sso_per_min"`
+}
+
+type Environment string
+
+type OTel struct {
+	Endpoint       string        `mapstructure:"endpoint"`
+	Insecure       bool          `mapstructure:"insecure"`
+	ServiceName    string        `mapstructure:"service_name"`
+	SampleRatio    float64       `mapstructure:"sample_ratio"`
+	MetricInterval time.Duration `mapstructure:"metric_interval"`
+	ExportTimeout  time.Duration `mapstructure:"export_timeout"`
+}
+
+type HTTP struct {
+	Host              string        `mapstructure:"host"`
+	Port              int           `mapstructure:"port"`
+	ReadHeaderTimeout time.Duration `mapstructure:"read_header_timeout"`
+	ReadTimeout       time.Duration `mapstructure:"read_timeout"`
+	WriteTimeout      time.Duration `mapstructure:"write_timeout"`
+	IdleTimeout       time.Duration `mapstructure:"idle_timeout"`
 }
 
 type Log struct {
@@ -35,12 +91,56 @@ type Postgres struct {
 	ConnectTimeout  time.Duration `mapstructure:"connect_timeout"`
 }
 
+type Valkey struct {
+	Addrs        []string      `mapstructure:"addrs"`
+	Username     string        `mapstructure:"username"`
+	Password     string        `mapstructure:"password"`
+	DB           int           `mapstructure:"db"`
+	DialTimeout  time.Duration `mapstructure:"dial_timeout"`
+	ReadTimeout  time.Duration `mapstructure:"read_timeout"`
+	WriteTimeout time.Duration `mapstructure:"write_timeout"`
+	PoolSize     int           `mapstructure:"pool_size"`
+}
+
+type Casbin struct {
+	TableName string `mapstructure:"table_name"`
+	Channel   string `mapstructure:"channel"`
+}
+
 func NewPostgres(cfg Config) Postgres {
 	return cfg.Postgres
 }
 
 func NewLog(cfg Config) Log {
 	return cfg.Log
+}
+
+func NewHTTP(cfg Config) HTTP {
+	return cfg.HTTP
+}
+
+func NewOTel(cfg Config) OTel {
+	return cfg.OTel
+}
+
+func NewAuth(cfg Config) Auth {
+	return cfg.Auth
+}
+
+func NewMailer(cfg Config) Mailer {
+	return cfg.Mailer
+}
+
+func NewEnvironment(cfg Config) Environment {
+	return Environment(cfg.Environment)
+}
+
+func NewValkey(cfg Config) Valkey {
+	return cfg.Valkey
+}
+
+func NewCasbin(cfg Config) Casbin {
+	return cfg.Casbin
 }
 
 func New(cfgFile string) (Config, error) {
@@ -50,6 +150,18 @@ func New(cfgFile string) (Config, error) {
 	v.SetDefault("shutdown_timeout", "15s")
 	v.SetDefault("log.level", "info")
 	v.SetDefault("log.format", "json")
+	v.SetDefault("otel.endpoint", "")
+	v.SetDefault("otel.insecure", true)
+	v.SetDefault("otel.service_name", "opsybot")
+	v.SetDefault("otel.sample_ratio", 1.0)
+	v.SetDefault("otel.metric_interval", "60s")
+	v.SetDefault("otel.export_timeout", "10s")
+	v.SetDefault("http.host", "")
+	v.SetDefault("http.port", 8080)
+	v.SetDefault("http.read_header_timeout", "5s")
+	v.SetDefault("http.read_timeout", "30s")
+	v.SetDefault("http.write_timeout", "30s")
+	v.SetDefault("http.idle_timeout", "120s")
 	v.SetDefault("postgres.url", "")
 	v.SetDefault("postgres.host", "localhost")
 	v.SetDefault("postgres.port", 5432)
@@ -62,6 +174,40 @@ func New(cfgFile string) (Config, error) {
 	v.SetDefault("postgres.conn_max_lifetime", "5m")
 	v.SetDefault("postgres.conn_max_idle_time", "5m")
 	v.SetDefault("postgres.connect_timeout", "5s")
+	v.SetDefault("valkey.addrs", []string{"localhost:6379"})
+	v.SetDefault("valkey.username", "")
+	v.SetDefault("valkey.password", "")
+	v.SetDefault("valkey.db", 0)
+	v.SetDefault("valkey.dial_timeout", "5s")
+	v.SetDefault("valkey.read_timeout", "3s")
+	v.SetDefault("valkey.write_timeout", "3s")
+	v.SetDefault("valkey.pool_size", 10)
+	v.SetDefault("casbin.table_name", "casbin_rule")
+	v.SetDefault("casbin.channel", "/casbin")
+	v.SetDefault("auth.base_url", "http://localhost:8080")
+	v.SetDefault("auth.secret_key", "")
+	v.SetDefault("auth.secret_key_previous", "")
+	v.SetDefault("auth.cookie_name", "opsybot_session")
+	v.SetDefault("auth.cookie_secure", true)
+	v.SetDefault("auth.session_idle_ttl", "72h")
+	v.SetDefault("auth.session_absolute_ttl", "720h")
+	v.SetDefault("auth.session_browser_ttl", "24h")
+	v.SetDefault("auth.session_touch_window", "5m")
+	v.SetDefault("auth.trust_proxy_headers", false)
+	v.SetDefault("auth.invite_ttl", "336h")
+	v.SetDefault("auth.rate_login_per_min", 10)
+	v.SetDefault("auth.rate_signup_per_hour", 5)
+	v.SetDefault("auth.rate_slug_check_per_min", 60)
+	v.SetDefault("auth.rate_reset_per_hour", 5)
+	v.SetDefault("auth.rate_sso_per_min", 20)
+	v.SetDefault("mailer.host", "")
+	v.SetDefault("mailer.port", 587)
+	v.SetDefault("mailer.username", "")
+	v.SetDefault("mailer.password", "")
+	v.SetDefault("mailer.encryption", "starttls")
+	v.SetDefault("mailer.from", "opsybot@localhost")
+	v.SetDefault("mailer.from_name", "Opsybot")
+	v.SetDefault("mailer.timeout", "10s")
 
 	v.SetEnvPrefix("OPSYBOT")
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
