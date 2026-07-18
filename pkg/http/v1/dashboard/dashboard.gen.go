@@ -535,11 +535,12 @@ type SessionUser struct {
 
 // SetupRequest defines model for SetupRequest.
 type SetupRequest struct {
-	Email     string `json:"email"`
-	Name      string `json:"name"`
-	Password  string `json:"password"`
-	Timezone  string `json:"timezone"`
-	Workspace string `json:"workspace"`
+	Email     string  `json:"email"`
+	Name      string  `json:"name"`
+	Password  string  `json:"password"`
+	Slug      *string `json:"slug,omitempty"`
+	Timezone  string  `json:"timezone"`
+	Workspace string  `json:"workspace"`
 }
 
 // SetupStatus defines model for SetupStatus.
@@ -549,11 +550,18 @@ type SetupStatus struct {
 
 // SignupRequest defines model for SignupRequest.
 type SignupRequest struct {
-	Email     string `json:"email"`
-	Name      string `json:"name"`
-	Password  string `json:"password"`
-	Timezone  string `json:"timezone"`
-	Workspace string `json:"workspace"`
+	Email     string  `json:"email"`
+	Name      string  `json:"name"`
+	Password  string  `json:"password"`
+	Slug      *string `json:"slug,omitempty"`
+	Timezone  string  `json:"timezone"`
+	Workspace string  `json:"workspace"`
+}
+
+// SlugAvailability defines model for SlugAvailability.
+type SlugAvailability struct {
+	Available  bool    `json:"available"`
+	Suggestion *string `json:"suggestion,omitempty"`
 }
 
 // SsoConfig defines model for SsoConfig.
@@ -642,6 +650,11 @@ type Workspace struct {
 // WorkspaceList defines model for WorkspaceList.
 type WorkspaceList struct {
 	Items []Workspace `json:"items"`
+}
+
+// SlugAvailableParams defines parameters for SlugAvailable.
+type SlugAvailableParams struct {
+	Slug string `form:"slug" json:"slug"`
 }
 
 // ListAuditParams defines parameters for ListAudit.
@@ -753,6 +766,9 @@ type ServerInterface interface {
 	// Create a new account and workspace
 	// (POST /auth/signup)
 	Signup(w http.ResponseWriter, r *http.Request)
+	// Check whether a workspace URL is available
+	// (GET /auth/slug-available)
+	SlugAvailable(w http.ResponseWriter, r *http.Request, params SlugAvailableParams)
 	// Complete sign-in with a recovery code
 	// (POST /auth/two-factor/recovery)
 	VerifyRecoveryCode(w http.ResponseWriter, r *http.Request)
@@ -927,6 +943,12 @@ func (_ Unimplemented) Setup(w http.ResponseWriter, r *http.Request) {
 // Create a new account and workspace
 // (POST /auth/signup)
 func (_ Unimplemented) Signup(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Check whether a workspace URL is available
+// (GET /auth/slug-available)
+func (_ Unimplemented) SlugAvailable(w http.ResponseWriter, r *http.Request, params SlugAvailableParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1290,6 +1312,39 @@ func (siw *ServerInterfaceWrapper) Signup(w http.ResponseWriter, r *http.Request
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.Signup(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SlugAvailable operation middleware
+func (siw *ServerInterfaceWrapper) SlugAvailable(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SlugAvailableParams
+
+	// ------------- Required query parameter "slug" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "slug", r.URL.Query(), &params.Slug, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "slug"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "slug", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SlugAvailable(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2469,6 +2524,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/auth/signup", wrapper.Signup)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/auth/slug-available", wrapper.SlugAvailable)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/auth/two-factor/recovery", wrapper.VerifyRecoveryCode)
 	})
 	r.Group(func(r chi.Router) {
@@ -3105,6 +3163,42 @@ func (response Signup409ApplicationProblemPlusJSONResponse) VisitSignupResponse(
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SlugAvailableRequestObject struct {
+	Params SlugAvailableParams
+}
+
+type SlugAvailableResponseObject interface {
+	VisitSlugAvailableResponse(w http.ResponseWriter) error
+}
+
+type SlugAvailable200JSONResponse SlugAvailability
+
+func (response SlugAvailable200JSONResponse) VisitSlugAvailableResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SlugAvailable400ApplicationProblemPlusJSONResponse Problem
+
+func (response SlugAvailable400ApplicationProblemPlusJSONResponse) VisitSlugAvailableResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -5626,6 +5720,9 @@ type StrictServerInterface interface {
 	// Create a new account and workspace
 	// (POST /auth/signup)
 	Signup(ctx context.Context, request SignupRequestObject) (SignupResponseObject, error)
+	// Check whether a workspace URL is available
+	// (GET /auth/slug-available)
+	SlugAvailable(ctx context.Context, request SlugAvailableRequestObject) (SlugAvailableResponseObject, error)
 	// Complete sign-in with a recovery code
 	// (POST /auth/two-factor/recovery)
 	VerifyRecoveryCode(ctx context.Context, request VerifyRecoveryCodeRequestObject) (VerifyRecoveryCodeResponseObject, error)
@@ -6032,6 +6129,32 @@ func (sh *strictHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SignupResponseObject); ok {
 		if err := validResponse.VisitSignupResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SlugAvailable operation middleware
+func (sh *strictHandler) SlugAvailable(w http.ResponseWriter, r *http.Request, params SlugAvailableParams) {
+	var request SlugAvailableRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SlugAvailable(ctx, request.(SlugAvailableRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SlugAvailable")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SlugAvailableResponseObject); ok {
+		if err := validResponse.VisitSlugAvailableResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

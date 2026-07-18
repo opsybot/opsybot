@@ -5,7 +5,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
+	"github.com/aarondl/null/v8"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
+
+	dbpostgres "github.com/opsybot/opsybot/internal/db/postgres"
 	"github.com/opsybot/opsybot/internal/entity"
 	"github.com/opsybot/opsybot/internal/pkg/postgres"
 	"github.com/opsybot/opsybot/internal/repository"
@@ -52,14 +58,11 @@ func scanMember(row interface {
 }
 
 func (r *repo) Create(ctx context.Context, workspaceID, userID string, status entity.MemberStatus) error {
-	joined := "NULL"
+	m := &dbpostgres.WorkspaceMember{WorkspaceID: workspaceID, UserID: userID, Status: string(status)}
 	if status != entity.MemberStatusInvited {
-		joined = "now()"
+		m.JoinedAt = null.TimeFrom(time.Now())
 	}
-	_, err := r.db.Querier(ctx).ExecContext(ctx,
-		`INSERT INTO workspace_members (workspace_id, user_id, status, joined_at) VALUES ($1, $2, $3, `+joined+`)`,
-		workspaceID, userID, string(status))
-	if err != nil {
+	if err := m.Insert(ctx, r.db.Querier(ctx), boil.Whitelist("workspace_id", "user_id", "status", "joined_at")); err != nil {
 		if _, ok := postgres.UniqueViolation(err); ok {
 			return entity.ErrMemberAlreadyExists
 		}
@@ -107,10 +110,9 @@ func (r *repo) ListByWorkspace(ctx context.Context, workspaceID string) ([]entit
 }
 
 func (r *repo) IsActive(ctx context.Context, workspaceID, userID string) (bool, error) {
-	var active bool
-	err := r.db.Querier(ctx).QueryRowContext(ctx,
-		`SELECT EXISTS (SELECT 1 FROM workspace_members WHERE workspace_id = $1 AND user_id = $2 AND status = 'active')`,
-		workspaceID, userID).Scan(&active)
+	active, err := dbpostgres.WorkspaceMembers(
+		qm.Where("workspace_id = ? AND user_id = ? AND status = 'active'", workspaceID, userID),
+	).Exists(ctx, r.db.Querier(ctx))
 	if err != nil {
 		return false, fmt.Errorf("member is active: %w", err)
 	}
@@ -144,21 +146,20 @@ func (r *repo) UpdateStatus(ctx context.Context, workspaceID, userID string, sta
 }
 
 func (r *repo) DeleteInvited(ctx context.Context, workspaceID, userID string) error {
-	if _, err := r.db.Querier(ctx).ExecContext(ctx,
-		`DELETE FROM workspace_members WHERE workspace_id = $1 AND user_id = $2 AND status = 'invited'`,
-		workspaceID, userID); err != nil {
+	if _, err := dbpostgres.WorkspaceMembers(
+		qm.Where("workspace_id = ? AND user_id = ? AND status = 'invited'", workspaceID, userID),
+	).DeleteAll(ctx, r.db.Querier(ctx)); err != nil {
 		return fmt.Errorf("delete invited member: %w", err)
 	}
 	return nil
 }
 
 func (r *repo) CountOtherActive(ctx context.Context, userID, exceptWorkspaceID string) (int, error) {
-	var count int
-	err := r.db.Querier(ctx).QueryRowContext(ctx,
-		`SELECT count(*) FROM workspace_members WHERE user_id = $1 AND workspace_id <> $2 AND status = 'active'`,
-		userID, exceptWorkspaceID).Scan(&count)
+	count, err := dbpostgres.WorkspaceMembers(
+		qm.Where("user_id = ? AND workspace_id <> ? AND status = 'active'", userID, exceptWorkspaceID),
+	).Count(ctx, r.db.Querier(ctx))
 	if err != nil {
 		return 0, fmt.Errorf("count other active memberships: %w", err)
 	}
-	return count, nil
+	return int(count), nil
 }

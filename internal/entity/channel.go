@@ -2,9 +2,9 @@ package entity
 
 import (
 	"errors"
-	"net/url"
-	"strings"
 	"time"
+
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
 type ChannelType string
@@ -38,7 +38,6 @@ type NewChannel struct {
 var (
 	ErrChannelNotFound  = errors.New("channel not found")
 	ErrChannelDuplicate = errors.New("channel duplicate")
-	ErrChannelInvalid   = errors.New("channel invalid")
 )
 
 func (t ChannelType) Valid() bool {
@@ -52,23 +51,10 @@ func (t ChannelType) Valid() bool {
 }
 
 func (n NewChannel) Validate() error {
-	if !n.Type.Valid() {
-		return ErrChannelInvalid
-	}
-	detail := strings.TrimSpace(n.Detail)
-	if detail == "" || len(detail) > ChannelDetailMaxLength {
-		return ErrChannelInvalid
-	}
-	switch n.Type {
-	case ChannelTypeEmail:
-		if err := ValidateEmail(detail); err != nil {
-			return ErrChannelInvalid
-		}
-	case ChannelTypeWebhook, ChannelTypeNtfy:
-		u, err := url.ParseRequestURI(detail)
-		if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
-			return ErrChannelInvalid
-		}
-	}
-	return nil
+	return validation.ValidateStruct(&n,
+		validation.Field(&n.Type, validation.By(channelTypeField)),
+		validation.Field(&n.Detail, validation.By(func(value any) error {
+			return channelDetailFor(n.Type, value)
+		})),
+	)
 }

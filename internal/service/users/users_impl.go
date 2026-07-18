@@ -121,7 +121,15 @@ func (s *srv) ConfirmTOTP(ctx context.Context, code string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !totp.Validate(code, secret) {
+	step, ok := acceptedTOTPStep(code, secret)
+	if !ok {
+		return nil, entity.ErrTOTPInvalidCode
+	}
+	accepted, err := s.users.AcceptTOTPStep(ctx, id.UserID, step)
+	if err != nil {
+		return nil, err
+	}
+	if !accepted {
 		return nil, entity.ErrTOTPInvalidCode
 	}
 	return s.enableWithRecovery(ctx, id, func(ctx context.Context) error {

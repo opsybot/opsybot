@@ -28,8 +28,8 @@ func (h *handler) CreateChannel(ctx context.Context, request api.CreateChannelRe
 	ch, err := h.channels.Add(ctx, entity.NewChannel{Type: entity.ChannelType(request.Body.Type), Detail: request.Body.Detail})
 	if err != nil {
 		switch {
-		case errors.Is(err, entity.ErrChannelInvalid):
-			return api.CreateChannel400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid channel", "That channel type or detail isn't valid.", "")), nil
+		case isValidation(err):
+			return api.CreateChannel400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid channel", validationDetail(err), "")), nil
 		case errors.Is(err, entity.ErrChannelDuplicate):
 			return api.CreateChannel409ApplicationProblemPlusJSONResponse(prob(http.StatusConflict, "Already added", "You've already added that channel.", "")), nil
 		default:

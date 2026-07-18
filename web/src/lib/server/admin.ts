@@ -1,4 +1,5 @@
 import type { Cookies } from '@sveltejs/kit';
+import type { components } from '$lib/api/schema';
 import type {
 	ApiKey,
 	AuditEntry,
@@ -12,7 +13,9 @@ import type {
 	WorkspaceSettings
 } from '$lib/admin';
 import { uid } from '$lib/admin';
-import { api } from './api';
+import { apiClient } from './api';
+
+type Schemas = components['schemas'];
 
 function ago(iso?: string | null): string {
 	if (!iso) return 'never';
@@ -30,20 +33,7 @@ function ago(iso?: string | null): string {
 
 // ---- Members -------------------------------------------------------------
 
-type MemberDTO = {
-	userId: string;
-	name: string;
-	email: string;
-	role: Role;
-	status: 'invited' | 'active' | 'deactivated';
-	twoFactor: boolean;
-	authMethod: 'password' | 'sso' | 'invited';
-	deactivated: boolean;
-	lastActiveAt?: string;
-	references?: { id: string; kind: string; icon?: string; label: string; detail: string }[];
-};
-
-function mapMember(dto: MemberDTO): Member {
+function mapMember(dto: Schemas['Member']): Member {
 	const auth = dto.authMethod === 'sso' ? 'SSO' : dto.authMethod === 'invited' ? 'invited' : 'password';
 	const references: MemberReference[] = (dto.references ?? []).map((ref) => ({
 		id: ref.id,
@@ -66,8 +56,10 @@ function mapMember(dto: MemberDTO): Member {
 }
 
 export async function listMembers(cookies: Cookies, workspace: string): Promise<Member[]> {
-	const res = await api.get<{ items: MemberDTO[] }>(`/workspaces/${workspace}/members`, cookies);
-	return (res.data?.items ?? []).map(mapMember);
+	const { data } = await apiClient(cookies).GET('/workspaces/{workspaceId}/members', {
+		params: { path: { workspaceId: workspace } }
+	});
+	return (data?.items ?? []).map(mapMember);
 }
 
 export async function inviteMember(
@@ -76,10 +68,11 @@ export async function inviteMember(
 	email: string,
 	role: Role
 ): Promise<{ error?: string }> {
-	const res = await api.post(`/workspaces/${workspace}/members/invites`, cookies, {
+	const { error } = await apiClient(cookies).POST('/workspaces/{workspaceId}/members/invites', {
+		params: { path: { workspaceId: workspace } },
 		body: { email, role }
 	});
-	return res.ok ? {} : { error: res.problem?.detail ?? 'Could not invite that person.' };
+	return error ? { error: error.detail ?? 'Could not invite that person.' } : {};
 }
 
 export async function changeRole(
@@ -88,10 +81,11 @@ export async function changeRole(
 	userId: string,
 	role: Role
 ): Promise<boolean> {
-	const res = await api.patch(`/workspaces/${workspace}/members/${userId}/role`, cookies, {
+	const { error } = await apiClient(cookies).PUT('/workspaces/{workspaceId}/members/{userId}/role', {
+		params: { path: { workspaceId: workspace, userId } },
 		body: { role }
 	});
-	return res.ok;
+	return !error;
 }
 
 export async function deactivateMember(
@@ -100,10 +94,11 @@ export async function deactivateMember(
 	userId: string,
 	replacements: Record<string, string>
 ): Promise<boolean> {
-	const res = await api.post(`/workspaces/${workspace}/members/${userId}/deactivate`, cookies, {
-		body: { replacements }
-	});
-	return res.ok;
+	const { error } = await apiClient(cookies).POST(
+		'/workspaces/{workspaceId}/members/{userId}/deactivate',
+		{ params: { path: { workspaceId: workspace, userId } }, body: { replacements } }
+	);
+	return !error;
 }
 
 export async function reactivateMember(
@@ -111,13 +106,14 @@ export async function reactivateMember(
 	workspace: string,
 	userId: string
 ): Promise<boolean> {
-	const res = await api.post(`/workspaces/${workspace}/members/${userId}/reactivate`, cookies, {});
-	return res.ok;
+	const { error } = await apiClient(cookies).POST(
+		'/workspaces/{workspaceId}/members/{userId}/reactivate',
+		{ params: { path: { workspaceId: workspace, userId } } }
+	);
+	return !error;
 }
 
 // ---- Teams ---------------------------------------------------------------
-
-type TeamDTO = { id: string; slug: string; name: string; memberIds: string[]; archived: boolean };
 
 async function memberNameIndex(cookies: Cookies, workspace: string) {
 	const members = await listMembers(cookies, workspace);
@@ -126,23 +122,44 @@ async function memberNameIndex(cookies: Cookies, workspace: string) {
 	return { byId, byName };
 }
 
-function mapTeam(dto: TeamDTO, byId: Map<string, string>): Team {
+function mapTeam(dto: Schemas['Team'], byId: Map<string, string>): Team {
 	return {
 		id: dto.slug,
 		name: dto.name,
 		members: dto.memberIds.map((id) => byId.get(id) ?? id),
+		archived: dto.archived,
 		schedules: [],
 		policies: [],
 		services: []
 	};
 }
 
-export async function listTeams(cookies: Cookies, workspace: string): Promise<Team[]> {
-	const [res, { byId }] = await Promise.all([
-		api.get<{ items: TeamDTO[] }>(`/workspaces/${workspace}/teams`, cookies),
+export async function listTeams(
+	cookies: Cookies,
+	workspace: string,
+	includeArchived = false
+): Promise<Team[]> {
+	const [{ data }, { byId }] = await Promise.all([
+		apiClient(cookies).GET('/workspaces/{workspaceId}/teams', {
+			params: { path: { workspaceId: workspace }, query: { includeArchived: includeArchived || undefined } }
+		}),
 		memberNameIndex(cookies, workspace)
 	]);
-	return (res.data?.items ?? []).map((team) => mapTeam(team, byId));
+	return (data?.items ?? []).map((team) => mapTeam(team, byId));
+}
+
+export async function archiveTeam(cookies: Cookies, workspace: string, slug: string): Promise<boolean> {
+	const { error } = await apiClient(cookies).POST('/workspaces/{workspaceId}/teams/{teamSlug}/archive', {
+		params: { path: { workspaceId: workspace, teamSlug: slug } }
+	});
+	return !error;
+}
+
+export async function unarchiveTeam(cookies: Cookies, workspace: string, slug: string): Promise<boolean> {
+	const { error } = await apiClient(cookies).POST('/workspaces/{workspaceId}/teams/{teamSlug}/unarchive', {
+		params: { path: { workspaceId: workspace, teamSlug: slug } }
+	});
+	return !error;
 }
 
 export async function getTeam(
@@ -150,11 +167,13 @@ export async function getTeam(
 	workspace: string,
 	slug: string
 ): Promise<Team | undefined> {
-	const [res, { byId }] = await Promise.all([
-		api.get<TeamDTO>(`/workspaces/${workspace}/teams/${slug}`, cookies),
+	const [{ data }, { byId }] = await Promise.all([
+		apiClient(cookies).GET('/workspaces/{workspaceId}/teams/{teamSlug}', {
+			params: { path: { workspaceId: workspace, teamSlug: slug } }
+		}),
 		memberNameIndex(cookies, workspace)
 	]);
-	return res.ok && res.data ? mapTeam(res.data, byId) : undefined;
+	return data ? mapTeam(data, byId) : undefined;
 }
 
 export async function createTeam(
@@ -165,11 +184,12 @@ export async function createTeam(
 ): Promise<{ id?: string; error?: string }> {
 	const { byName } = await memberNameIndex(cookies, workspace);
 	const memberIds = memberNames.map((n) => byName.get(n)).filter((id): id is string => Boolean(id));
-	const res = await api.post<TeamDTO>(`/workspaces/${workspace}/teams`, cookies, {
+	const { data, error } = await apiClient(cookies).POST('/workspaces/{workspaceId}/teams', {
+		params: { path: { workspaceId: workspace } },
 		body: { name, memberIds }
 	});
-	if (!res.ok || !res.data) return { error: res.problem?.detail ?? 'Could not create the team.' };
-	return { id: res.data.slug };
+	if (error || !data) return { error: error?.detail ?? 'Could not create the team.' };
+	return { id: data.slug };
 }
 
 export async function updateTeam(
@@ -181,25 +201,16 @@ export async function updateTeam(
 ): Promise<boolean> {
 	const { byName } = await memberNameIndex(cookies, workspace);
 	const memberIds = memberNames.map((n) => byName.get(n)).filter((id): id is string => Boolean(id));
-	const res = await api.patch(`/workspaces/${workspace}/teams/${slug}`, cookies, {
+	const { error } = await apiClient(cookies).PATCH('/workspaces/{workspaceId}/teams/{teamSlug}', {
+		params: { path: { workspaceId: workspace, teamSlug: slug } },
 		body: { name, memberIds }
 	});
-	return res.ok;
+	return !error;
 }
 
 // ---- API keys ------------------------------------------------------------
 
-type ApiKeyDTO = {
-	id: string;
-	name: string;
-	kind: KeyKind;
-	scopes: string[];
-	hint: string;
-	createdAt: string;
-	lastUsedAt?: string;
-};
-
-function mapKey(dto: ApiKeyDTO): ApiKey {
+function mapKey(dto: Schemas['ApiKey']): ApiKey {
 	return {
 		id: dto.id,
 		name: dto.name,
@@ -213,13 +224,12 @@ export async function listKeys(
 	cookies: Cookies,
 	workspace: string
 ): Promise<{ personal: ApiKey[]; workspace: ApiKey[] }> {
-	const res = await api.get<{ personal: ApiKeyDTO[]; workspace: ApiKeyDTO[] }>(
-		`/workspaces/${workspace}/keys`,
-		cookies
-	);
+	const { data } = await apiClient(cookies).GET('/workspaces/{workspaceId}/keys', {
+		params: { path: { workspaceId: workspace } }
+	});
 	return {
-		personal: (res.data?.personal ?? []).map(mapKey),
-		workspace: (res.data?.workspace ?? []).map(mapKey)
+		personal: (data?.personal ?? []).map(mapKey),
+		workspace: (data?.workspace ?? []).map(mapKey)
 	};
 }
 
@@ -230,32 +240,53 @@ export async function createKey(
 	scopes: string[],
 	kind: KeyKind
 ): Promise<{ secret?: string; error?: string }> {
-	const res = await api.post<{ secret: string }>(`/workspaces/${workspace}/keys`, cookies, {
-		body: { name, kind, scopes }
+	const { data, error } = await apiClient(cookies).POST('/workspaces/{workspaceId}/keys', {
+		params: { path: { workspaceId: workspace } },
+		body: { name, kind, scopes: scopes as Schemas['Scope'][] }
 	});
-	if (!res.ok || !res.data) return { error: res.problem?.detail ?? 'Could not create the key.' };
-	return { secret: res.data.secret };
+	if (error || !data) return { error: error?.detail ?? 'Could not create the key.' };
+	return { secret: data.secret };
 }
 
 export async function revokeKey(cookies: Cookies, workspace: string, id: string): Promise<boolean> {
-	const res = await api.del(`/workspaces/${workspace}/keys/${id}`, cookies);
-	return res.ok;
+	const { error } = await apiClient(cookies).DELETE('/workspaces/{workspaceId}/keys/{keyId}', {
+		params: { path: { workspaceId: workspace, keyId: id } }
+	});
+	return !error;
 }
 
 // ---- Audit ---------------------------------------------------------------
 
-type AuditDTO = { id: string; at: string; actor: string; action: string; target: string; ip: string };
+export type AuditQuery = { q?: string; actor?: string; action?: string; cursor?: string };
 
-export async function listAudit(cookies: Cookies, workspace: string): Promise<AuditEntry[]> {
-	const res = await api.get<{ items: AuditDTO[] }>(`/workspaces/${workspace}/audit?limit=100`, cookies);
-	return (res.data?.items ?? []).map((entry) => ({
-		id: entry.id,
-		at: entry.at.replace('T', ' ').slice(0, 19) + ' UTC',
-		actor: entry.actor || 'system',
-		action: entry.action,
-		target: entry.target,
-		ip: entry.ip || '—'
-	}));
+export async function listAudit(
+	cookies: Cookies,
+	workspace: string,
+	query: AuditQuery = {}
+): Promise<{ entries: AuditEntry[]; nextCursor: string }> {
+	const { data } = await apiClient(cookies).GET('/workspaces/{workspaceId}/audit', {
+		params: {
+			path: { workspaceId: workspace },
+			query: {
+				limit: 50,
+				q: query.q || undefined,
+				actor: query.actor || undefined,
+				action: query.action || undefined,
+				cursor: query.cursor || undefined
+			}
+		}
+	});
+	return {
+		entries: (data?.items ?? []).map((entry) => ({
+			id: entry.id,
+			at: entry.at.replace('T', ' ').slice(0, 19) + ' UTC',
+			actor: entry.actor || 'system',
+			action: entry.action,
+			target: entry.target,
+			ip: entry.ip || '—'
+		})),
+		nextCursor: data?.nextCursor ?? ''
+	};
 }
 
 // ---- Workspace settings (incident config is a deferred domain: fixture) ----
@@ -276,7 +307,20 @@ const DEFAULT_SETTINGS = (): WorkspaceSettings => ({
 		{ id: 'f3', name: 'Regions affected', type: 'multi-select', options: 'eu-west-1, us-east-1, ap-southeast-2' }
 	],
 	cadence: { SEV1: '15 min', SEV2: '30 min', SEV3: '2 h', SEV4: 'none' },
-	sso: { mode: 'oidc', issuer: '', clientId: '' },
+	sso: {
+		mode: 'oidc',
+		issuer: '',
+		clientId: '',
+		hasClientSecret: false,
+		clientSecret: '',
+		clearClientSecret: false,
+		samlMetadataUrl: '',
+		scopes: '',
+		allowedEmailDomains: '',
+		enabled: false,
+		required: false,
+		jitProvisioning: false
+	},
 	retention: { alerts: '1 year', incidents: 'forever', audit: '2 years' }
 });
 
@@ -297,12 +341,32 @@ const CONFIG_DIFF: ConfigDiff = {
 
 let settings = DEFAULT_SETTINGS();
 
-type SsoConfigDTO = { mode: 'oidc' | 'saml'; issuer: string; clientId: string };
+function splitList(raw: string): string[] {
+	return raw
+		.split(/[\s,]+/)
+		.map((value) => value.trim())
+		.filter(Boolean);
+}
 
 export async function getSettings(cookies: Cookies, workspace: string): Promise<WorkspaceSettings> {
-	const res = await api.get<SsoConfigDTO>(`/workspaces/${workspace}/sso`, cookies);
-	if (res.ok && res.data) {
-		settings.sso = { mode: res.data.mode === 'saml' ? 'saml' : 'oidc', issuer: res.data.issuer, clientId: res.data.clientId };
+	const { data } = await apiClient(cookies).GET('/workspaces/{workspaceId}/sso', {
+		params: { path: { workspaceId: workspace } }
+	});
+	if (data) {
+		settings.sso = {
+			mode: data.mode === 'saml' ? 'saml' : 'oidc',
+			issuer: data.issuer,
+			clientId: data.clientId,
+			hasClientSecret: data.hasClientSecret,
+			clientSecret: '',
+			clearClientSecret: false,
+			samlMetadataUrl: data.samlMetadataUrl,
+			scopes: (data.scopes ?? []).join(', '),
+			allowedEmailDomains: (data.allowedEmailDomains ?? []).join('\n'),
+			enabled: data.enabled,
+			required: data.required,
+			jitProvisioning: data.jitProvisioning
+		};
 	}
 	return settings;
 }
@@ -313,15 +377,23 @@ export async function saveSettings(
 	next: WorkspaceSettings
 ): Promise<void> {
 	settings = { ...next, fields: settings.fields };
-	await api.put(`/workspaces/${workspace}/sso`, cookies, {
-		body: {
-			mode: next.sso.mode,
-			issuer: next.sso.issuer,
-			clientId: next.sso.clientId,
-			enabled: true,
-			required: false,
-			jitProvisioning: false
-		}
+	const s = next.sso;
+	const body: Schemas['SsoConfigRequest'] = {
+		mode: s.mode,
+		issuer: s.issuer,
+		clientId: s.clientId,
+		samlMetadataUrl: s.samlMetadataUrl,
+		scopes: splitList(s.scopes),
+		allowedEmailDomains: splitList(s.allowedEmailDomains),
+		enabled: s.enabled,
+		required: s.required,
+		jitProvisioning: s.jitProvisioning,
+		clearClientSecret: s.clearClientSecret,
+		...(s.clientSecret ? { clientSecret: s.clientSecret } : {})
+	};
+	await apiClient(cookies).PUT('/workspaces/{workspaceId}/sso', {
+		params: { path: { workspaceId: workspace } },
+		body
 	});
 }
 

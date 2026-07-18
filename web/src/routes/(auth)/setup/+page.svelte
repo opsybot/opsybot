@@ -5,6 +5,7 @@
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
 	import AuthShell from '$lib/components/auth/auth-shell.svelte';
+	import SlugField from '$lib/components/auth/slug-field.svelte';
 	import TextField from '$lib/components/text-field.svelte';
 	import TimezoneSelect from '$lib/components/timezone-select.svelte';
 	import * as Alert from '$lib/components/ui/alert';
@@ -15,7 +16,7 @@
 	let { data }: PageProps = $props();
 
 	const form = superForm(untrack(() => data.form), { validators: zod4Client(setupSchema) });
-	const { message } = form;
+	const { form: formData, message } = form;
 </script>
 
 <AuthShell
@@ -71,6 +72,7 @@
 				autocomplete="new-password"
 			/>
 			<TextField {form} name="workspace" label="Workspace name" placeholder="Acme Corp" />
+			<SlugField {form} name="slug" workspace={$formData.workspace} />
 			<TimezoneSelect {form} name="timezone" label="Workspace timezone" />
 
 			<Button type="submit" class="w-full">Create admin account</Button>

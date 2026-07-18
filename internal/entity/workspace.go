@@ -3,10 +3,11 @@ package entity
 import (
 	"errors"
 	"regexp"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
+
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
 const (
@@ -14,6 +15,8 @@ const (
 	SlugMaxLength              = 40
 	WorkspaceNameMaxLength     = 80
 	WorkspaceSlugMaxCandidates = 100
+	SlugSuffixMin              = 1000
+	SlugSuffixSpan             = 9000
 )
 
 var slugRe = regexp.MustCompile(SlugPattern)
@@ -51,23 +54,19 @@ type Signup struct {
 	Email         string
 	Password      string
 	WorkspaceName string
+	WorkspaceSlug string
 	Timezone      string
 }
 
 func (s Signup) Validate() error {
-	if err := ValidateName(s.UserName); err != nil {
-		return err
-	}
-	if err := ValidateEmail(s.Email); err != nil {
-		return err
-	}
-	if err := ValidatePassword(s.Password); err != nil {
-		return err
-	}
-	if err := ValidateWorkspaceName(s.WorkspaceName); err != nil {
-		return err
-	}
-	return ValidateTimezone(s.Timezone)
+	return validation.ValidateStruct(&s,
+		validation.Field(&s.UserName, validation.By(nameField)),
+		validation.Field(&s.Email, validation.By(emailField)),
+		validation.Field(&s.Password, validation.By(passwordField)),
+		validation.Field(&s.WorkspaceName, validation.By(workspaceNameField)),
+		validation.Field(&s.WorkspaceSlug, validation.By(slugField)),
+		validation.Field(&s.Timezone, validation.By(timezoneField)),
+	)
 }
 
 func WorkspaceSlugCandidate(base string, n int) string {
@@ -91,67 +90,41 @@ type Setup struct {
 }
 
 var (
-	ErrWorkspaceNotFound     = errors.New("workspace not found")
-	ErrWorkspaceSlugTaken    = errors.New("workspace slug taken")
-	ErrWorkspaceSlugInvalid  = errors.New("workspace slug invalid")
-	ErrWorkspaceSlugReserved = errors.New("workspace slug reserved")
-	ErrWorkspaceNameInvalid  = errors.New("workspace name invalid")
-	ErrSetupAlreadyDone      = errors.New("setup already done")
-	ErrNotMember             = errors.New("not a workspace member")
+	ErrWorkspaceNotFound    = errors.New("workspace not found")
+	ErrWorkspaceSlugTaken   = errors.New("workspace slug taken")
+	ErrWorkspaceSlugInvalid = errors.New("workspace slug invalid")
+	ErrSetupAlreadyDone     = errors.New("setup already done")
+	ErrNotMember            = errors.New("not a workspace member")
 )
 
-func ValidateSlug(slug string, reserved []string) error {
-	if !slugRe.MatchString(slug) {
-		return ErrWorkspaceSlugInvalid
-	}
-	if slices.Contains(reserved, slug) {
-		return ErrWorkspaceSlugReserved
-	}
-	return nil
-}
-
-func ValidateWorkspaceName(name string) error {
-	name = strings.TrimSpace(name)
-	if name == "" || len(name) > WorkspaceNameMaxLength {
-		return ErrWorkspaceNameInvalid
-	}
-	return nil
+func ValidSlugFormat(slug string) bool {
+	return slugRe.MatchString(slug)
 }
 
 func (n NewWorkspace) Validate() error {
-	if err := ValidateSlug(n.Slug, WorkspaceReservedSlugs); err != nil {
-		return err
-	}
-	if err := ValidateWorkspaceName(n.Name); err != nil {
-		return err
-	}
-	return ValidateTimezone(n.Timezone)
+	return validation.ValidateStruct(&n,
+		validation.Field(&n.Slug, validation.By(slugField)),
+		validation.Field(&n.Name, validation.By(workspaceNameField)),
+		validation.Field(&n.Timezone, validation.By(timezoneField)),
+	)
 }
 
 func (u WorkspaceUpdate) Validate() error {
-	if err := ValidateWorkspaceName(u.Name); err != nil {
-		return err
-	}
-	return ValidateTimezone(u.Timezone)
+	return validation.ValidateStruct(&u,
+		validation.Field(&u.Name, validation.By(workspaceNameField)),
+		validation.Field(&u.Timezone, validation.By(timezoneField)),
+	)
 }
 
 func (s Setup) Validate() error {
-	if err := ValidateName(s.UserName); err != nil {
-		return err
-	}
-	if err := ValidateEmail(s.Email); err != nil {
-		return err
-	}
-	if err := ValidatePassword(s.Password); err != nil {
-		return err
-	}
-	if err := ValidateWorkspaceName(s.WorkspaceName); err != nil {
-		return err
-	}
-	if err := ValidateSlug(s.WorkspaceSlug, WorkspaceReservedSlugs); err != nil {
-		return err
-	}
-	return ValidateTimezone(s.Timezone)
+	return validation.ValidateStruct(&s,
+		validation.Field(&s.UserName, validation.By(nameField)),
+		validation.Field(&s.Email, validation.By(emailField)),
+		validation.Field(&s.Password, validation.By(passwordField)),
+		validation.Field(&s.WorkspaceName, validation.By(workspaceNameField)),
+		validation.Field(&s.WorkspaceSlug, validation.By(slugField)),
+		validation.Field(&s.Timezone, validation.By(timezoneField)),
+	)
 }
 
 func Slugify(name string) string {

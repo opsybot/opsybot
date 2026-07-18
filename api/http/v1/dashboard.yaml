@@ -93,6 +93,30 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+  /auth/slug-available:
+    get:
+      operationId: slugAvailable
+      summary: Check whether a workspace URL is available
+      tags: [auth]
+      parameters:
+        - name: slug
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Availability result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SlugAvailability"
+        "400":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /auth/login:
     post:
       operationId: login
@@ -1722,6 +1746,7 @@ components:
         email: { type: string }
         password: { type: string }
         workspace: { type: string }
+        slug: { type: string }
         timezone: { type: string }
     SignupRequest:
       type: object
@@ -1731,7 +1756,14 @@ components:
         email: { type: string }
         password: { type: string }
         workspace: { type: string }
+        slug: { type: string }
         timezone: { type: string }
+    SlugAvailability:
+      type: object
+      required: [available]
+      properties:
+        available: { type: boolean }
+        suggestion: { type: string }
     LoginRequest:
       type: object
       required: [email, password]

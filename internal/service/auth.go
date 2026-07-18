@@ -12,6 +12,7 @@ type Auth interface {
 	SetupRequired(ctx context.Context) (bool, error)
 	Setup(ctx context.Context, in entity.Setup, ip, userAgent string) (entity.SetupResult, error)
 	Signup(ctx context.Context, in entity.Signup, ip, userAgent string) (entity.SetupResult, error)
+	CheckSlug(ctx context.Context, slug string) (bool, string, error)
 	Login(ctx context.Context, in entity.LoginInput) (entity.LoginResult, error)
 	Logout(ctx context.Context) error
 	Resolve(ctx context.Context, token string) (entity.Identity, error)

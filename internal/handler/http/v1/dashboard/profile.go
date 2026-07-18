@@ -46,7 +46,7 @@ func (h *handler) ChangePassword(ctx context.Context, request api.ChangePassword
 		switch {
 		case errors.Is(err, entity.ErrInvalidCredentials):
 			return api.ChangePassword400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Wrong current password", "The current password is incorrect. Check it and try again.", "")), nil
-		case errors.Is(err, entity.ErrUserWeakPassword):
+		case isValidation(err):
 			return api.ChangePassword400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Weak password", validationDetail(err), "")), nil
 		default:
 			return nil, err

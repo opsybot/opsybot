@@ -5,7 +5,6 @@
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import LogInIcon from '@lucide/svelte/icons/log-in';
 	import MailIcon from '@lucide/svelte/icons/mail';
-	import UploadIcon from '@lucide/svelte/icons/upload';
 	import { toast } from 'svelte-sonner';
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
@@ -38,8 +37,6 @@
 			.join('')
 			.toUpperCase() || 'U'
 	);
-
-	const soon = () => toast('Coming soon in a later release.');
 </script>
 
 <div style="display: flex; flex-direction: column; gap: 18px">
@@ -55,20 +52,6 @@
 	<div class="acct-card">
 		<header class="acct-card-head"><span class="acct-card-title">Personal details</span></header>
 		<form method="POST" action="?/save" use:enhance class="acct-card-body">
-			<div style="display: flex; align-items: center; gap: 14px">
-				<span class="acct-crest" style="width: 56px; height: 56px; font-size: 19px">{initials}</span>
-				<div style="display: flex; flex-direction: column; gap: 6px">
-					<div style="display: flex; gap: 8px">
-						<Button type="button" size="sm" variant="secondary" onclick={soon}>
-							<UploadIcon class="size-3.5" />
-							Change photo
-						</Button>
-						<Button type="button" size="sm" variant="ghost" onclick={soon}>Remove</Button>
-					</div>
-					<span style="font-size: 11.5px; color: var(--text-tertiary)">PNG or JPG, at least 256×256.</span>
-				</div>
-			</div>
-
 			<div class="acct-grid2">
 				<div>
 					<label class="acct-field-label" for="acct-name">Full name</label>
@@ -100,7 +83,6 @@
 					sign-in address · used for password resets and pages
 				</div>
 			</div>
-			<Button size="sm" variant="secondary" onclick={soon}>Change email</Button>
 		</div>
 	</div>
 

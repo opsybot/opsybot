@@ -7,6 +7,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
+
+	dbpostgres "github.com/opsybot/opsybot/internal/db/postgres"
 	"github.com/opsybot/opsybot/internal/entity"
 	"github.com/opsybot/opsybot/internal/pkg/postgres"
 	"github.com/opsybot/opsybot/internal/repository"
@@ -54,18 +58,21 @@ func (r *repo) get(ctx context.Context, where string, args ...any) (entity.Invit
 }
 
 func (r *repo) Create(ctx context.Context, workspaceID, userID, invitedBy, tokenHash string, expiresAt time.Time) (entity.Invite, error) {
-	var id string
-	err := r.db.Querier(ctx).QueryRowContext(ctx,
-		`INSERT INTO invites (workspace_id, user_id, invited_by, token_hash, expires_at)
-		 VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-		workspaceID, userID, invitedBy, tokenHash, expiresAt).Scan(&id)
-	if err != nil {
+	m := &dbpostgres.Invite{
+		WorkspaceID: workspaceID,
+		UserID:      userID,
+		InvitedBy:   invitedBy,
+		TokenHash:   tokenHash,
+		ExpiresAt:   expiresAt,
+	}
+	if err := m.Insert(ctx, r.db.Querier(ctx),
+		boil.Whitelist("workspace_id", "user_id", "invited_by", "token_hash", "expires_at")); err != nil {
 		if _, ok := postgres.UniqueViolation(err); ok {
 			return entity.Invite{}, entity.ErrInvitePending
 		}
 		return entity.Invite{}, fmt.Errorf("create invite: %w", err)
 	}
-	return r.get(ctx, "i.id = $1", id)
+	return r.get(ctx, "i.id = $1", m.ID)
 }
 
 func (r *repo) GetByTokenHash(ctx context.Context, tokenHash string) (entity.Invite, error) {
@@ -105,25 +112,25 @@ func (r *repo) ListPending(ctx context.Context, workspaceID string) ([]entity.In
 }
 
 func (r *repo) RotateToken(ctx context.Context, id, tokenHash string, expiresAt time.Time) error {
-	if _, err := r.db.Querier(ctx).ExecContext(ctx,
-		`UPDATE invites SET token_hash = $2, expires_at = $3, updated_at = now() WHERE id = $1`,
-		id, tokenHash, expiresAt); err != nil {
+	if _, err := dbpostgres.Invites(qm.Where("id = ?", id)).UpdateAll(ctx, r.db.Querier(ctx),
+		dbpostgres.M{"token_hash": tokenHash, "expires_at": expiresAt, "updated_at": time.Now()}); err != nil {
 		return fmt.Errorf("rotate invite token: %w", err)
 	}
 	return nil
 }
 
 func (r *repo) MarkAccepted(ctx context.Context, id string) error {
-	if _, err := r.db.Querier(ctx).ExecContext(ctx,
-		`UPDATE invites SET status = 'accepted', accepted_at = now(), updated_at = now() WHERE id = $1`, id); err != nil {
+	now := time.Now()
+	if _, err := dbpostgres.Invites(qm.Where("id = ?", id)).UpdateAll(ctx, r.db.Querier(ctx),
+		dbpostgres.M{"status": "accepted", "accepted_at": now, "updated_at": now}); err != nil {
 		return fmt.Errorf("mark invite accepted: %w", err)
 	}
 	return nil
 }
 
 func (r *repo) MarkRevoked(ctx context.Context, id string) error {
-	if _, err := r.db.Querier(ctx).ExecContext(ctx,
-		`UPDATE invites SET status = 'revoked', updated_at = now() WHERE id = $1`, id); err != nil {
+	if _, err := dbpostgres.Invites(qm.Where("id = ?", id)).UpdateAll(ctx, r.db.Querier(ctx),
+		dbpostgres.M{"status": "revoked", "updated_at": time.Now()}); err != nil {
 		return fmt.Errorf("mark invite revoked: %w", err)
 	}
 	return nil

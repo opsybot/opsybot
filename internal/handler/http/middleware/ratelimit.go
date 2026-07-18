@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/opsybot/opsybot/internal/entity"
+	"github.com/opsybot/opsybot/internal/pkg/logger"
 	"github.com/opsybot/opsybot/internal/service"
 )
 
@@ -20,6 +21,7 @@ type rateRule struct {
 var rateRules = []rateRule{
 	{http.MethodPost, "/v1/auth/login", entity.RateScopeLogin},
 	{http.MethodPost, "/v1/auth/signup", entity.RateScopeSignup},
+	{http.MethodGet, "/v1/auth/slug-available", entity.RateScopeSlugCheck},
 	{http.MethodPost, "/v1/auth/setup", entity.RateScopeLogin},
 	{http.MethodPost, "/v1/auth/two-factor/verify", entity.RateScopeLogin},
 	{http.MethodPost, "/v1/auth/two-factor/recovery", entity.RateScopeLogin},
@@ -53,7 +55,16 @@ func RateLimit(limiter service.RateLimiter) func(http.Handler) http.Handler {
 				key = r.RemoteAddr
 			}
 			res, err := limiter.Allow(r.Context(), scope, key)
-			if err == nil && !res.Allowed {
+			if err != nil {
+				logger.From(r.Context()).ErrorContext(r.Context(), "rate limiter unavailable", "error", err, "scope", string(scope))
+				if scope != entity.RateScopeSlugCheck {
+					writeRateLimited(w, entity.RateLimitFailClosedRetry)
+					return
+				}
+				next.ServeHTTP(w, r)
+				return
+			}
+			if !res.Allowed {
 				writeRateLimited(w, res.RetryAfter)
 				return
 			}

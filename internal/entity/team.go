@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
 const (
@@ -38,41 +40,25 @@ type TeamUpdate struct {
 }
 
 var (
-	ErrTeamNotFound       = errors.New("team not found")
-	ErrTeamSlugTaken      = errors.New("team slug taken")
-	ErrTeamNameInvalid    = errors.New("team name invalid")
-	ErrTeamArchived       = errors.New("team archived")
-	ErrTeamNotArchived    = errors.New("team not archived")
-	ErrTeamTooManyMembers = errors.New("team too many members")
-	ErrTeamMemberInvalid  = errors.New("team member invalid")
+	ErrTeamNotFound      = errors.New("team not found")
+	ErrTeamSlugTaken     = errors.New("team slug taken")
+	ErrTeamArchived      = errors.New("team archived")
+	ErrTeamNotArchived   = errors.New("team not archived")
+	ErrTeamMemberInvalid = errors.New("team member invalid")
 )
 
-func ValidateTeamName(name string) error {
-	name = strings.TrimSpace(name)
-	if name == "" || len(name) > TeamNameMaxLength {
-		return ErrTeamNameInvalid
-	}
-	return nil
-}
-
 func (n NewTeam) Validate() error {
-	if err := ValidateTeamName(n.Name); err != nil {
-		return err
-	}
-	if len(n.MemberIDs) > TeamMaxMembers {
-		return ErrTeamTooManyMembers
-	}
-	return nil
+	return validation.ValidateStruct(&n,
+		validation.Field(&n.Name, validation.By(teamNameField)),
+		validation.Field(&n.MemberIDs, validation.By(teamMembersField)),
+	)
 }
 
 func (u TeamUpdate) Validate() error {
-	if err := ValidateTeamName(u.Name); err != nil {
-		return err
-	}
-	if len(u.MemberIDs) > TeamMaxMembers {
-		return ErrTeamTooManyMembers
-	}
-	return nil
+	return validation.ValidateStruct(&u,
+		validation.Field(&u.Name, validation.By(teamNameField)),
+		validation.Field(&u.MemberIDs, validation.By(teamMembersField)),
+	)
 }
 
 func TeamSlugCandidate(base string, n int) string {

@@ -167,12 +167,8 @@ func (s *srv) Signup(ctx context.Context, in entity.Signup, ip, userAgent string
 		if err != nil {
 			return err
 		}
-		slug, err := s.uniqueWorkspaceSlug(ctx, in.WorkspaceName)
-		if err != nil {
-			return err
-		}
 		ws, err = s.workspaces.Create(ctx, entity.NewWorkspace{
-			Slug: slug, Name: in.WorkspaceName, Timezone: in.Timezone,
+			Slug: in.WorkspaceSlug, Name: in.WorkspaceName, Timezone: in.Timezone,
 		}, user.ID)
 		if err != nil {
 			return err
@@ -208,14 +204,37 @@ func (s *srv) Signup(ctx context.Context, in entity.Signup, ip, userAgent string
 	return entity.SetupResult{Workspace: ws, Session: sess, Token: token, User: user}, nil
 }
 
-func (s *srv) uniqueWorkspaceSlug(ctx context.Context, name string) (string, error) {
-	base := entity.Slugify(name)
-	for n := 1; n <= entity.WorkspaceSlugMaxCandidates; n++ {
-		candidate := entity.WorkspaceSlugCandidate(base, n)
+func (s *srv) CheckSlug(ctx context.Context, slug string) (bool, string, error) {
+	if !entity.ValidSlugFormat(slug) {
+		return false, "", entity.ErrWorkspaceSlugInvalid
+	}
+	if !slices.Contains(entity.WorkspaceReservedSlugs, slug) {
+		_, err := s.workspaces.GetBySlug(ctx, slug)
+		if errors.Is(err, entity.ErrWorkspaceNotFound) {
+			return true, "", nil
+		}
+		if err != nil {
+			return false, "", err
+		}
+	}
+	suggestion, err := s.suggestSlug(ctx, slug)
+	if err != nil {
+		return false, "", err
+	}
+	return false, suggestion, nil
+}
+
+func (s *srv) suggestSlug(ctx context.Context, base string) (string, error) {
+	for range entity.WorkspaceSlugMaxCandidates {
+		suffix, err := entity.RandomSlugSuffix()
+		if err != nil {
+			return "", err
+		}
+		candidate := entity.WorkspaceSlugCandidate(base, suffix)
 		if slices.Contains(entity.WorkspaceReservedSlugs, candidate) {
 			continue
 		}
-		_, err := s.workspaces.GetBySlug(ctx, candidate)
+		_, err = s.workspaces.GetBySlug(ctx, candidate)
 		if errors.Is(err, entity.ErrWorkspaceNotFound) {
 			return candidate, nil
 		}
@@ -393,7 +412,13 @@ func (s *srv) RequestPasswordReset(ctx context.Context, email, ip string) error 
 		if err := s.resets.DeleteUnusedByUser(ctx, user.ID); err != nil {
 			return err
 		}
-		return s.resets.Create(ctx, user.ID, entity.HashToken(token), ip, time.Now().Add(entity.PasswordResetTTL))
+		if err := s.resets.Create(ctx, user.ID, entity.HashToken(token), ip, time.Now().Add(entity.PasswordResetTTL)); err != nil {
+			return err
+		}
+		return s.audit.Create(ctx, entity.AuditEvent{
+			ActorType: entity.AuditActorUser, ActorUserID: user.ID, ActorLabel: user.Name,
+			Action: entity.ActionPasswordResetRequested, Target: user.Email, IP: ip,
+		})
 	})
 	if err != nil {
 		return err
@@ -423,6 +448,10 @@ func (s *srv) ResetPassword(ctx context.Context, token, newPassword string) erro
 	if !reset.Usable() {
 		return entity.ErrPasswordResetInvalid
 	}
+	user, err := s.users.GetByID(ctx, reset.UserID)
+	if err != nil {
+		return err
+	}
 	return s.tx.WithTx(ctx, func(ctx context.Context) error {
 		if err := s.users.UpdatePassword(ctx, reset.UserID, hash); err != nil {
 			return err
@@ -433,7 +462,13 @@ func (s *srv) ResetPassword(ctx context.Context, token, newPassword string) erro
 		if err := s.resets.DeleteUnusedByUser(ctx, reset.UserID); err != nil {
 			return err
 		}
-		return s.sessions.DeleteByUser(ctx, reset.UserID)
+		if err := s.sessions.DeleteByUser(ctx, reset.UserID); err != nil {
+			return err
+		}
+		return s.audit.Create(ctx, entity.AuditEvent{
+			ActorType: entity.AuditActorUser, ActorUserID: user.ID, ActorLabel: user.Name,
+			Action: entity.ActionPasswordResetCompleted, Target: user.Email,
+		})
 	})
 }
 

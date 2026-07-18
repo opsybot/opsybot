@@ -13,6 +13,11 @@ const confirmMatches = (fields: { password: string; confirm: string }) =>
 	fields.password === fields.confirm;
 const confirmMessage = { message: 'Both passwords must match.', path: ['confirm'] };
 
+const slug = z
+	.string()
+	.min(1, 'Choose a workspace URL.')
+	.regex(/^[a-z][a-z0-9-]{0,39}$/, 'Lowercase letters, numbers, and hyphens; start with a letter.');
+
 export const signupSchema = z
 	.object({
 		name: z.string().min(1, 'Enter your name.'),
@@ -20,6 +25,7 @@ export const signupSchema = z
 		password,
 		confirm: z.string().min(1, 'Repeat the password.'),
 		workspace: z.string().min(1, 'Name the workspace.'),
+		slug,
 		timezone
 	})
 	.refine(confirmMatches, confirmMessage);
@@ -31,6 +37,7 @@ export const setupSchema = z
 		password,
 		confirm: z.string().min(1, 'Repeat the password.'),
 		workspace: z.string().min(1, 'Name the workspace.'),
+		slug,
 		timezone
 	})
 	.refine(confirmMatches, confirmMessage);
@@ -75,6 +82,11 @@ export const profileSchema = z.object({
 	timezone
 });
 
+export const channelSchema = z.object({
+	type: z.enum(['slack', 'teams', 'discord', 'telegram', 'ntfy', 'email', 'webhook']),
+	detail: z.string().trim().min(1, 'Enter the address or URL.').max(200, 'Keep it under 200 characters.')
+});
+
 export const changePasswordSchema = z
 	.object({
 		currentPassword: z.string().min(1, 'Enter your current password.'),
@@ -94,3 +106,4 @@ export type ForgotPasswordSchema = typeof forgotPasswordSchema;
 export type ResetPasswordSchema = typeof resetPasswordSchema;
 export type TotpSchema = typeof totpSchema;
 export type RecoveryCodeSchema = typeof recoveryCodeSchema;
+export type ChannelSchema = typeof channelSchema;

@@ -67,8 +67,10 @@ func (h *handler) UpdateTeam(ctx context.Context, request api.UpdateTeamRequestO
 		switch {
 		case errors.Is(err, entity.ErrForbidden):
 			return api.UpdateTeam403ApplicationProblemPlusJSONResponse(prob(http.StatusForbidden, "Forbidden", "Only admins can change teams.", "")), nil
-		case errors.Is(err, entity.ErrTeamNameInvalid), errors.Is(err, entity.ErrTeamTooManyMembers), errors.Is(err, entity.ErrTeamMemberInvalid):
-			return api.UpdateTeam400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid team", teamValidationDetail(err), "")), nil
+		case isValidation(err):
+			return api.UpdateTeam400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid team", validationDetail(err), "")), nil
+		case errors.Is(err, entity.ErrTeamMemberInvalid):
+			return api.UpdateTeam400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid team", "Every team member must be an active member of this workspace.", "")), nil
 		case errors.Is(err, entity.ErrTeamNotFound), errors.Is(err, entity.ErrWorkspaceNotFound), errors.Is(err, entity.ErrNotMember):
 			return api.UpdateTeam404ApplicationProblemPlusJSONResponse(prob(http.StatusNotFound, "Not found", "No such team.", "")), nil
 		case errors.Is(err, entity.ErrTeamArchived):
@@ -118,25 +120,16 @@ func createTeamError(err error) api.CreateTeamResponseObject {
 	switch {
 	case errors.Is(err, entity.ErrForbidden):
 		return api.CreateTeam403ApplicationProblemPlusJSONResponse(prob(http.StatusForbidden, "Forbidden", "Only admins can create teams.", ""))
-	case errors.Is(err, entity.ErrTeamNameInvalid), errors.Is(err, entity.ErrTeamTooManyMembers), errors.Is(err, entity.ErrTeamMemberInvalid):
-		return api.CreateTeam400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid team", teamValidationDetail(err), ""))
+	case isValidation(err):
+		return api.CreateTeam400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid team", validationDetail(err), ""))
+	case errors.Is(err, entity.ErrTeamMemberInvalid):
+		return api.CreateTeam400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid team", "Every team member must be an active member of this workspace.", ""))
 	case errors.Is(err, entity.ErrWorkspaceNotFound), errors.Is(err, entity.ErrNotMember):
 		return api.CreateTeam404ApplicationProblemPlusJSONResponse(prob(http.StatusNotFound, "Not found", "No such workspace.", ""))
 	case errors.Is(err, entity.ErrTeamSlugTaken):
 		return api.CreateTeam409ApplicationProblemPlusJSONResponse(prob(http.StatusConflict, "Name taken", "A team with a similar name already exists. Pick a different name.", ""))
 	default:
 		return nil
-	}
-}
-
-func teamValidationDetail(err error) string {
-	switch {
-	case errors.Is(err, entity.ErrTeamTooManyMembers):
-		return "A team can have at most 50 members."
-	case errors.Is(err, entity.ErrTeamMemberInvalid):
-		return "Every team member must be an active member of this workspace."
-	default:
-		return "Give the team a name of 60 characters or fewer."
 	}
 }
 

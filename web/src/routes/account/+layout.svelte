@@ -22,14 +22,17 @@
 	const tab = $derived(
 		path.startsWith('/account/security')
 			? 'security'
-			: path.startsWith('/account/sessions')
-				? 'sessions'
-				: 'profile'
+			: path.startsWith('/account/channels')
+				? 'channels'
+				: path.startsWith('/account/sessions')
+					? 'sessions'
+					: 'profile'
 	);
 
 	const tabs = [
 		['profile', 'Profile', '/account'],
 		['security', 'Security', '/account/security'],
+		['channels', 'Channels', '/account/channels'],
 		['sessions', 'Sessions', '/account/sessions']
 	] as const;
 </script>

@@ -3,20 +3,17 @@ import { toString as qrToString } from 'qrcode';
 import { message, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { changePasswordSchema, totpSchema } from '$lib/schemas/auth';
-import { api } from '$lib/server/api';
+import { apiClient } from '$lib/server/api';
 import type { Actions, PageServerLoad } from './$types';
-
-type Profile = { twoFactorEnabled: boolean };
-type Enrollment = { secret: string; otpauthUri: string };
-type RecoveryCodes = { codes: string[] };
 
 function groupSecret(secret: string): string {
 	return secret.replace(/(.{4})/g, '$1 ').trim();
 }
 
 export const load: PageServerLoad = async ({ cookies }) => {
-	const me = await api.get<Profile>('/me', cookies);
-	const enabled = me.data?.twoFactorEnabled ?? false;
+	const client = apiClient(cookies);
+	const { data: me } = await client.GET('/me');
+	const enabled = me?.twoFactorEnabled ?? false;
 
 	const base = {
 		enabled,
@@ -30,10 +27,10 @@ export const load: PageServerLoad = async ({ cookies }) => {
 		return { ...base, secret: '', groupedSecret: '', qr: '', unavailable: false, unavailableDetail: '' };
 	}
 
-	const enroll = await api.post<Enrollment>('/me/two-factor/enroll', cookies);
-	const secret = enroll.data?.secret ?? '';
-	const qr = enroll.data?.otpauthUri
-		? await qrToString(enroll.data.otpauthUri, {
+	const { data: enroll, error: enrollError } = await client.POST('/me/two-factor/enroll');
+	const secret = enroll?.secret ?? '';
+	const qr = enroll?.otpauthUri
+		? await qrToString(enroll.otpauthUri, {
 				type: 'svg',
 				margin: 1,
 				width: 150,
@@ -46,8 +43,8 @@ export const load: PageServerLoad = async ({ cookies }) => {
 		secret,
 		groupedSecret: groupSecret(secret),
 		qr,
-		unavailable: !enroll.ok,
-		unavailableDetail: enroll.problem?.detail ?? ''
+		unavailable: !!enrollError,
+		unavailableDetail: enrollError?.detail ?? ''
 	};
 };
 
@@ -55,35 +52,37 @@ export const actions: Actions = {
 	changePassword: async ({ request, cookies }) => {
 		const form = await superValidate(request, zod4(changePasswordSchema), { id: 'password' });
 		if (!form.valid) return fail(400, { form });
-		const res = await api.put('/me/password', cookies, {
+		const { error } = await apiClient(cookies).PUT('/me/password', {
 			body: { currentPassword: form.data.currentPassword, newPassword: form.data.newPassword }
 		});
-		if (!res.ok) return message(form, 'wrong', { status: 400 });
+		if (error) return message(form, 'wrong', { status: 400 });
 		return message(form, 'changed');
 	},
 	verify: async ({ request, cookies }) => {
 		const form = await superValidate(request, zod4(totpSchema), { id: 'verify' });
 		if (!form.valid) return fail(400, { form });
-		const res = await api.post<RecoveryCodes>('/me/two-factor/verify', cookies, {
+		const { data, error } = await apiClient(cookies).POST('/me/two-factor/verify', {
 			body: { code: form.data.code }
 		});
-		if (!res.ok) return message(form, 'wrong', { status: 400 });
-		return { form, recoveryCodes: res.data?.codes ?? [] };
+		if (error) return message(form, 'wrong', { status: 400 });
+		return { form, recoveryCodes: data?.codes ?? [] };
 	},
 	regenerate: async ({ request, cookies }) => {
 		const form = await superValidate(request, zod4(totpSchema), { id: 'regenerate' });
 		if (!form.valid) return fail(400, { form });
-		const res = await api.post<RecoveryCodes>('/me/two-factor/recovery-codes', cookies, {
+		const { data, error } = await apiClient(cookies).POST('/me/two-factor/recovery-codes', {
 			body: { code: form.data.code }
 		});
-		if (!res.ok) return message(form, 'wrong', { status: 400 });
-		return { form, recoveryCodes: res.data?.codes ?? [] };
+		if (error) return message(form, 'wrong', { status: 400 });
+		return { form, recoveryCodes: data?.codes ?? [] };
 	},
 	disable: async ({ request, cookies }) => {
 		const form = await superValidate(request, zod4(totpSchema), { id: 'disable' });
 		if (!form.valid) return fail(400, { form });
-		const res = await api.post('/me/two-factor/disable', cookies, { body: { code: form.data.code } });
-		if (!res.ok) return message(form, 'wrong', { status: 400 });
+		const { error } = await apiClient(cookies).POST('/me/two-factor/disable', {
+			body: { code: form.data.code }
+		});
+		if (error) return message(form, 'wrong', { status: 400 });
 		redirect(303, '/account/security');
 	}
 };

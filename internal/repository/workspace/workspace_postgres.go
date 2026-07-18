@@ -5,14 +5,17 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
+
+	"github.com/aarondl/null/v8"
+	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
 
 	dbpostgres "github.com/opsybot/opsybot/internal/db/postgres"
 	"github.com/opsybot/opsybot/internal/entity"
 	"github.com/opsybot/opsybot/internal/pkg/postgres"
 	"github.com/opsybot/opsybot/internal/repository"
 )
-
-const selectColumns = `id, slug, name, timezone, environment, created_by, created_at`
 
 const selectColumnsW = `w.id, w.slug, w.name, w.timezone, w.environment, w.created_by, w.created_at`
 
@@ -45,53 +48,50 @@ func toEntity(m dbpostgres.Workspace) entity.Workspace {
 }
 
 func (r *repo) Create(ctx context.Context, w entity.NewWorkspace, createdBy string) (entity.Workspace, error) {
-	m, err := scanWorkspace(r.db.Querier(ctx).QueryRowContext(ctx,
-		`INSERT INTO workspaces (slug, name, timezone, environment, created_by)
-		 VALUES ($1, $2, $3, $4, $5) RETURNING `+selectColumns,
-		w.Slug, w.Name, w.Timezone, w.Environment, createdBy))
-	if err != nil {
+	m := &dbpostgres.Workspace{
+		Slug:        w.Slug,
+		Name:        w.Name,
+		Timezone:    w.Timezone,
+		Environment: w.Environment,
+		CreatedBy:   null.StringFrom(createdBy),
+	}
+	if err := m.Insert(ctx, r.db.Querier(ctx),
+		boil.Whitelist("slug", "name", "timezone", "environment", "created_by")); err != nil {
 		if name, ok := postgres.UniqueViolation(err); ok && name == "workspaces_slug_uq" {
 			return entity.Workspace{}, entity.ErrWorkspaceSlugTaken
 		}
 		return entity.Workspace{}, fmt.Errorf("create workspace: %w", err)
 	}
-	return toEntity(m), nil
+	return toEntity(*m), nil
 }
 
 func (r *repo) GetByID(ctx context.Context, id string) (entity.Workspace, error) {
-	m, err := scanWorkspace(r.db.Querier(ctx).QueryRowContext(ctx,
-		`SELECT `+selectColumns+` FROM workspaces WHERE id = $1`, id))
+	m, err := dbpostgres.FindWorkspace(ctx, r.db.Querier(ctx), id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return entity.Workspace{}, entity.ErrWorkspaceNotFound
 		}
 		return entity.Workspace{}, fmt.Errorf("get workspace by id: %w", err)
 	}
-	return toEntity(m), nil
+	return toEntity(*m), nil
 }
 
 func (r *repo) GetBySlug(ctx context.Context, slug string) (entity.Workspace, error) {
-	m, err := scanWorkspace(r.db.Querier(ctx).QueryRowContext(ctx,
-		`SELECT `+selectColumns+` FROM workspaces WHERE slug = $1`, slug))
+	m, err := dbpostgres.Workspaces(qm.Where("slug = ?", slug)).One(ctx, r.db.Querier(ctx))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return entity.Workspace{}, entity.ErrWorkspaceNotFound
 		}
 		return entity.Workspace{}, fmt.Errorf("get workspace by slug: %w", err)
 	}
-	return toEntity(m), nil
+	return toEntity(*m), nil
 }
 
 func (r *repo) Update(ctx context.Context, id string, u entity.WorkspaceUpdate) error {
-	res, err := r.db.Querier(ctx).ExecContext(ctx,
-		`UPDATE workspaces SET name = $2, timezone = $3, environment = $4, updated_at = now() WHERE id = $1`,
-		id, u.Name, u.Timezone, u.Environment)
+	n, err := dbpostgres.Workspaces(qm.Where("id = ?", id)).UpdateAll(ctx, r.db.Querier(ctx),
+		dbpostgres.M{"name": u.Name, "timezone": u.Timezone, "environment": u.Environment, "updated_at": time.Now()})
 	if err != nil {
 		return fmt.Errorf("update workspace: %w", err)
-	}
-	n, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("update workspace rows: %w", err)
 	}
 	if n == 0 {
 		return entity.ErrWorkspaceNotFound

@@ -1,6 +1,6 @@
 import { error, fail } from '@sveltejs/kit';
 import { parseTeam } from '$lib/admin';
-import { getTeam, listMembers, updateTeam } from '$lib/server/admin';
+import { archiveTeam, getTeam, listMembers, unarchiveTeam, updateTeam } from '$lib/server/admin';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ cookies, params }) => {
@@ -17,5 +17,15 @@ export const actions: Actions = {
 		if (!(await updateTeam(cookies, params.workspace, params.id, parsed.name, parsed.members)))
 			return fail(404, { error: 'That team no longer exists.' });
 		return { saved: true };
+	},
+	archive: async ({ cookies, params }) => {
+		if (!(await archiveTeam(cookies, params.workspace, params.id)))
+			return fail(400, { error: 'Could not archive the team.' });
+		return { archived: true };
+	},
+	unarchive: async ({ cookies, params }) => {
+		if (!(await unarchiveTeam(cookies, params.workspace, params.id)))
+			return fail(400, { error: 'Could not restore the team.' });
+		return { unarchived: true };
 	}
 };

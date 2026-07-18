@@ -2,18 +2,16 @@ import { fail, redirect } from '@sveltejs/kit';
 import { message, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { inviteSchema } from '$lib/schemas/auth';
-import { api, cookieValue, SESSION_COOKIE } from '$lib/server/api';
+import { apiClient, cookieValue, SESSION_COOKIE } from '$lib/server/api';
 import type { Actions, PageServerLoad } from './$types';
-
-type InvitePreview = { email: string; workspace: string; invitedBy: string; sentAt: string };
 
 export const load: PageServerLoad = async ({ url, cookies }) => {
 	const token = url.searchParams.get('token') ?? '';
-	const res = await api.post<InvitePreview>('/auth/invite/preview', cookies, { body: { token } });
+	const { data } = await apiClient(cookies).POST('/auth/invite/preview', { body: { token } });
 	const form = await superValidate(zod4(inviteSchema));
 
-	if (res.ok && res.data) {
-		return { state: 'valid' as const, invite: res.data, form };
+	if (data) {
+		return { state: 'valid' as const, invite: data, form };
 	}
 	return {
 		state: 'expired' as const,
@@ -28,7 +26,7 @@ export const actions: Actions = {
 		if (!form.valid) return fail(400, { form });
 
 		const token = url.searchParams.get('token') ?? '';
-		const res = await api.post('/auth/invite/accept', cookies, {
+		const { error, response } = await apiClient(cookies).POST('/auth/invite/accept', {
 			body: {
 				token,
 				name: form.data.name,
@@ -37,17 +35,17 @@ export const actions: Actions = {
 			}
 		});
 
-		if (res.ok) {
-			const sessionToken = cookieValue(res.setCookie, SESSION_COOKIE);
+		if (!error) {
+			const sessionToken = cookieValue(response.headers.get('set-cookie'), SESSION_COOKIE);
 			if (sessionToken)
 				cookies.set(SESSION_COOKIE, sessionToken, { path: '/', httpOnly: true, sameSite: 'lax' });
 			redirect(303, '/');
 		}
 
 		const detail =
-			res.status === 410
+			response.status === 410
 				? 'This invite is no longer valid. Ask an admin to send a new one.'
-				: (res.problem?.detail ?? 'Check your details and try again.');
-		return message(form, detail, { status: res.status === 410 ? 410 : 400 });
+				: (error.detail ?? 'Check your details and try again.');
+		return message(form, detail, { status: response.status === 410 ? 410 : 400 });
 	}
 };

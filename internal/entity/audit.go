@@ -29,16 +29,21 @@ const (
 	ActionAuthLogin         = "auth.login"
 	ActionAuthLoginFailed   = "auth.login.failed"
 	ActionAuthLogout        = "auth.logout"
-	ActionTeamCreated       = "team.created"
-	ActionTeamUpdated       = "team.updated"
-	ActionTeamArchived      = "team.archived"
-	ActionTeamUnarchived    = "team.unarchived"
-	ActionKeyCreated        = "key.created"
-	ActionKeyRevoked        = "key.revoked"
-	ActionSettingsUpdated   = "settings.updated"
-	ActionSSOUpdated        = "sso.updated"
-	ActionChannelAdded      = "channel.added"
-	ActionChannelRemoved    = "channel.removed"
+
+	ActionPasswordResetRequested = "auth.password.reset.requested"
+	ActionPasswordResetCompleted = "auth.password.reset.completed"
+	ActionKeyUsed                = "key.used"
+
+	ActionTeamCreated     = "team.created"
+	ActionTeamUpdated     = "team.updated"
+	ActionTeamArchived    = "team.archived"
+	ActionTeamUnarchived  = "team.unarchived"
+	ActionKeyCreated      = "key.created"
+	ActionKeyRevoked      = "key.revoked"
+	ActionSettingsUpdated = "settings.updated"
+	ActionSSOUpdated      = "sso.updated"
+	ActionChannelAdded    = "channel.added"
+	ActionChannelRemoved  = "channel.removed"
 )
 
 const (

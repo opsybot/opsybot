@@ -183,6 +183,14 @@ func (s *srv) Resolve(ctx context.Context, secret string) (entity.Identity, erro
 		if err := s.keys.TouchLastUsed(ctx, key.ID, now); err != nil {
 			return entity.Identity{}, err
 		}
+		_ = s.audit.Create(ctx, entity.AuditEvent{
+			WorkspaceID: key.WorkspaceID,
+			ActorType:   entity.AuditActorAPIKey,
+			ActorUserID: key.OwnerUserID,
+			ActorLabel:  key.Name,
+			Action:      entity.ActionKeyUsed,
+			Target:      key.TokenHint,
+		})
 	}
 	id := entity.Identity{
 		Kind:        entity.IdentityKindAPIKey,

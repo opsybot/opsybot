@@ -9,34 +9,18 @@ import (
 	api "github.com/opsybot/opsybot/pkg/http/v1/dashboard"
 )
 
-var validationErrors = []error{
-	entity.ErrUserInvalidEmail, entity.ErrUserInvalidName, entity.ErrUserWeakPassword,
-	entity.ErrUserInvalidTimezone, entity.ErrWorkspaceSlugInvalid, entity.ErrWorkspaceSlugReserved,
-	entity.ErrWorkspaceNameInvalid, entity.ErrRoleInvalid,
-}
-
 func isValidation(err error) bool {
-	for _, v := range validationErrors {
-		if errors.Is(err, v) {
-			return true
-		}
-	}
-	return false
+	return entity.IsValidationError(err) || errors.Is(err, entity.ErrWorkspaceSlugInvalid)
 }
 
 func validationDetail(err error) string {
-	switch {
-	case errors.Is(err, entity.ErrUserWeakPassword):
-		return "Password must be at least 12 characters. Choose a longer password and try again."
-	case errors.Is(err, entity.ErrUserInvalidEmail):
-		return "That email address isn't valid. Enter a valid address like name@example.com."
-	case errors.Is(err, entity.ErrUserInvalidTimezone):
-		return "That timezone isn't recognised. Pick an IANA timezone such as Europe/Berlin."
-	case errors.Is(err, entity.ErrWorkspaceSlugReserved):
-		return "That workspace name is reserved. Choose a different name."
-	default:
-		return "One or more fields are invalid. Check your input and try again."
+	if entity.IsValidationError(err) {
+		return entity.ValidationMessage(err)
 	}
+	if errors.Is(err, entity.ErrWorkspaceSlugInvalid) {
+		return "A workspace URL uses lowercase letters, numbers, and hyphens, and starts with a letter."
+	}
+	return "One or more fields are invalid. Check your input and try again."
 }
 
 const problemBase = "https://opsybot.dev/problems/"

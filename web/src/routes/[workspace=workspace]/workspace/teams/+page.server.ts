@@ -4,7 +4,7 @@ import { createTeam, listMembers, listTeams } from '$lib/server/admin';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ cookies, params }) => ({
-	teams: await listTeams(cookies, params.workspace),
+	teams: await listTeams(cookies, params.workspace, true),
 	members: await listMembers(cookies, params.workspace)
 });
 

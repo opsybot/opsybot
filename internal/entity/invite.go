@@ -3,6 +3,8 @@ package entity
 import (
 	"errors"
 	"time"
+
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
 type InviteStatus string
@@ -61,11 +63,9 @@ var (
 )
 
 func (a AcceptInvite) Validate() error {
-	if err := ValidateName(a.Name); err != nil {
-		return err
-	}
-	if err := ValidatePassword(a.Password); err != nil {
-		return err
-	}
-	return ValidateTimezone(a.Timezone)
+	return validation.ValidateStruct(&a,
+		validation.Field(&a.Name, validation.By(nameField)),
+		validation.Field(&a.Password, validation.By(passwordField)),
+		validation.Field(&a.Timezone, validation.By(timezoneField)),
+	)
 }

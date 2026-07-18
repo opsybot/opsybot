@@ -10,9 +10,12 @@ type RateScope string
 const (
 	RateScopeLogin         RateScope = "login"
 	RateScopeSignup        RateScope = "signup"
+	RateScopeSlugCheck     RateScope = "slug_check"
 	RateScopePasswordReset RateScope = "password_reset"
 	RateScopeSSO           RateScope = "sso"
 )
+
+const RateLimitFailClosedRetry = 5 * time.Second
 
 type RateLimit struct {
 	Rate   int

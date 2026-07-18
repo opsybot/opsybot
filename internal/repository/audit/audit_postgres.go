@@ -9,6 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aarondl/null/v8"
+	"github.com/aarondl/sqlboiler/v4/boil"
+
+	dbpostgres "github.com/opsybot/opsybot/internal/db/postgres"
 	"github.com/opsybot/opsybot/internal/entity"
 	"github.com/opsybot/opsybot/internal/pkg/postgres"
 	"github.com/opsybot/opsybot/internal/repository"
@@ -22,13 +26,6 @@ type repo struct {
 
 func New(db postgres.Client) repository.Audit {
 	return &repo{db: db}
-}
-
-func nullable(s string) any {
-	if s == "" {
-		return nil
-	}
-	return s
 }
 
 func scanEvent(row interface {
@@ -54,19 +51,23 @@ func scanEvent(row interface {
 }
 
 func (r *repo) Create(ctx context.Context, e entity.AuditEvent) error {
-	var meta any
+	m := &dbpostgres.AuditEvent{
+		WorkspaceID: null.NewString(e.WorkspaceID, e.WorkspaceID != ""),
+		ActorUserID: null.NewString(e.ActorUserID, e.ActorUserID != ""),
+		ActorLabel:  e.ActorLabel,
+		Action:      e.Action,
+		Target:      e.Target,
+		IP:          null.NewString(e.IP, e.IP != ""),
+	}
 	if len(e.Meta) > 0 {
 		raw, err := json.Marshal(e.Meta)
 		if err != nil {
 			return fmt.Errorf("marshal audit meta: %w", err)
 		}
-		meta = raw
+		m.Meta = null.JSONFrom(raw)
 	}
-	_, err := r.db.Querier(ctx).ExecContext(ctx,
-		`INSERT INTO audit_events (workspace_id, actor_user_id, actor_label, action, target, ip, meta)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-		nullable(e.WorkspaceID), nullable(e.ActorUserID), e.ActorLabel, e.Action, e.Target, nullable(e.IP), meta)
-	if err != nil {
+	if err := m.Insert(ctx, r.db.Querier(ctx),
+		boil.Whitelist("workspace_id", "actor_user_id", "actor_label", "action", "target", "ip", "meta")); err != nil {
 		return fmt.Errorf("create audit event: %w", err)
 	}
 	return nil

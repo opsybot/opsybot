@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/aarondl/sqlboiler/v4/queries/qm"
+
+	dbpostgres "github.com/opsybot/opsybot/internal/db/postgres"
 	"github.com/opsybot/opsybot/internal/entity"
 	"github.com/opsybot/opsybot/internal/pkg/postgres"
 	"github.com/opsybot/opsybot/internal/pkg/secretbox"
@@ -52,32 +55,57 @@ func scanConnection(row interface {
 	return c, nil
 }
 
+func toEntity(m *dbpostgres.SsoConnection) entity.SSOConnection {
+	return entity.SSOConnection{
+		ID:                  m.ID,
+		WorkspaceID:         m.WorkspaceID,
+		Mode:                entity.SSOMode(m.Mode),
+		Issuer:              m.Issuer,
+		ClientID:            m.ClientID,
+		HasClientSecret:     m.ClientSecretEnc.Valid,
+		Scopes:              splitArray(m.Scopes),
+		SAMLMetadataURL:     m.SamlMetadataURL,
+		Enabled:             m.Enabled,
+		Required:            m.Required,
+		JITProvisioning:     m.JitProvisioning,
+		AllowedEmailDomains: splitArray(m.AllowedEmailDomains),
+		UpdatedAt:           m.UpdatedAt,
+	}
+}
+
+func splitArray(a []string) []string {
+	if len(a) == 0 {
+		return nil
+	}
+	return a
+}
+
 func (r *repo) Get(ctx context.Context, workspaceID string) (entity.SSOConnection, error) {
-	c, err := scanConnection(r.db.Querier(ctx).QueryRowContext(ctx,
-		`SELECT `+columns+` FROM sso_connections WHERE workspace_id = $1`, workspaceID))
+	m, err := dbpostgres.SsoConnections(qm.Where("workspace_id = ?", workspaceID)).One(ctx, r.db.Querier(ctx))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return entity.SSOConnection{}, entity.ErrSSONotConfigured
 		}
 		return entity.SSOConnection{}, fmt.Errorf("get sso connection: %w", err)
 	}
-	return c, nil
+	return toEntity(m), nil
 }
 
 func (r *repo) ClientSecret(ctx context.Context, workspaceID string) (string, error) {
-	var enc []byte
-	err := r.db.Querier(ctx).QueryRowContext(ctx,
-		`SELECT client_secret_enc FROM sso_connections WHERE workspace_id = $1`, workspaceID).Scan(&enc)
+	m, err := dbpostgres.SsoConnections(
+		qm.Select("client_secret_enc"),
+		qm.Where("workspace_id = ?", workspaceID),
+	).One(ctx, r.db.Querier(ctx))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", entity.ErrSSONotConfigured
 		}
 		return "", fmt.Errorf("get sso client secret: %w", err)
 	}
-	if len(enc) == 0 {
+	if len(m.ClientSecretEnc.Bytes) == 0 {
 		return "", nil
 	}
-	plain, err := r.box.Decrypt(enc)
+	plain, err := r.box.Decrypt(m.ClientSecretEnc.Bytes)
 	if err != nil {
 		return "", fmt.Errorf("decrypt sso client secret: %w", err)
 	}

@@ -45,8 +45,8 @@ func (h *handler) PutSsoConfig(ctx context.Context, request api.PutSsoConfigRequ
 		switch {
 		case errors.Is(err, entity.ErrForbidden):
 			return api.PutSsoConfig403ApplicationProblemPlusJSONResponse(prob(http.StatusForbidden, "Forbidden", "Only admins can change SSO settings.", "")), nil
-		case errors.Is(err, entity.ErrSSOInvalid):
-			return api.PutSsoConfig400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid SSO settings", "Check the issuer URL, client ID, and email domains, then try again.", "")), nil
+		case isValidation(err):
+			return api.PutSsoConfig400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid SSO settings", validationDetail(err), "")), nil
 		case errors.Is(err, entity.ErrSSOUnavailable):
 			return api.PutSsoConfig409ApplicationProblemPlusJSONResponse(prob(http.StatusConflict, "Secret storage unavailable", "This instance has no auth secret key configured, so the client secret can't be stored. Ask an admin to set OPSYBOT_AUTH_SECRET_KEY.", "")), nil
 		case errors.Is(err, entity.ErrWorkspaceNotFound), errors.Is(err, entity.ErrNotMember):

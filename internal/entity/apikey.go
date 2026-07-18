@@ -3,8 +3,9 @@ package entity
 import (
 	"errors"
 	"slices"
-	"strings"
 	"time"
+
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
 type KeyKind string
@@ -77,20 +78,12 @@ type APIKeyList struct {
 }
 
 var (
-	ErrAPIKeyNotFound     = errors.New("api key not found")
-	ErrAPIKeyRevoked      = errors.New("api key revoked")
-	ErrAPIKeyInvalidScope = errors.New("api key invalid scope")
-	ErrAPIKeyInvalidKind  = errors.New("api key invalid kind")
-	ErrAPIKeyInvalidName  = errors.New("api key invalid name")
+	ErrAPIKeyNotFound = errors.New("api key not found")
+	ErrAPIKeyRevoked  = errors.New("api key revoked")
 )
 
 func (k KeyKind) Validate() error {
-	switch k {
-	case KeyKindPersonal, KeyKindWorkspace:
-		return nil
-	default:
-		return ErrAPIKeyInvalidKind
-	}
+	return keyKindField(k)
 }
 
 func ScopeValid(s Scope) bool {
@@ -98,22 +91,11 @@ func ScopeValid(s Scope) bool {
 }
 
 func (n NewAPIKey) Validate() error {
-	name := strings.TrimSpace(n.Name)
-	if name == "" || len(name) > APIKeyNameMaxLength {
-		return ErrAPIKeyInvalidName
-	}
-	if err := n.Kind.Validate(); err != nil {
-		return err
-	}
-	if len(n.Scopes) == 0 {
-		return ErrAPIKeyInvalidScope
-	}
-	for _, s := range n.Scopes {
-		if !ScopeValid(s) {
-			return ErrAPIKeyInvalidScope
-		}
-	}
-	return nil
+	return validation.ValidateStruct(&n,
+		validation.Field(&n.Name, validation.By(keyNameField)),
+		validation.Field(&n.Kind, validation.By(keyKindField)),
+		validation.Field(&n.Scopes, validation.By(keyScopesField)),
+	)
 }
 
 func KindAbbrev(k KeyKind) string {

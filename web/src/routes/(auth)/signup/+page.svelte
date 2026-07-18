@@ -4,6 +4,7 @@
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
 	import AuthShell from '$lib/components/auth/auth-shell.svelte';
+	import SlugField from '$lib/components/auth/slug-field.svelte';
 	import StepDots from '$lib/components/auth/step-dots.svelte';
 	import TextField from '$lib/components/text-field.svelte';
 	import TimezoneSelect from '$lib/components/timezone-select.svelte';
@@ -15,7 +16,7 @@
 	let { data }: PageProps = $props();
 
 	const form = superForm(untrack(() => data.form), { validators: zod4Client(signupSchema) });
-	const { message, errors, validateForm, submitting } = form;
+	const { form: formData, message, errors, validateForm, submitting } = form;
 
 	let step = $state(1);
 
@@ -94,6 +95,7 @@
 				placeholder="Acme Corp"
 				hint="Usually your company or team name."
 			/>
+			<SlugField {form} name="slug" workspace={$formData.workspace} />
 			<TimezoneSelect {form} name="timezone" label="Workspace timezone" />
 			<Button type="submit" class="w-full" disabled={$submitting}>Create workspace</Button>
 			<button

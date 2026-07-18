@@ -136,7 +136,7 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	serviceMembers := members.New(configAuth, repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryUser, repositoryInvite, repositorySession, repositoryPolicy, repositoryAudit, repositoryMailer, serviceReferences)
 	serviceUsers := users.New(repositoryTransactor, repositoryUser, recoveryCode, repositorySession)
 	repositoryChannel := channel.New(postgresClient)
-	serviceChannels := channels.New(repositoryChannel)
+	serviceChannels := channels.New(repositoryChannel, repositoryAudit)
 	repositoryTeam := team.New(postgresClient)
 	serviceTeams := teams.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, repositoryPolicy, repositoryAudit)
 	serviceAudits := audits.New(repositoryWorkspace, repositoryMember, repositoryPolicy, repositoryAudit)

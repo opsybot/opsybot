@@ -8,16 +8,10 @@
 	import ConfirmDialog from '$lib/components/account/confirm-dialog.svelte';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
+	import type { components } from '$lib/api/schema';
 	import type { PageProps } from './$types';
 
-	type SessionDTO = {
-		id: string;
-		createdAt: string;
-		lastSeenAt: string;
-		ip?: string;
-		userAgent?: string;
-		current: boolean;
-	};
+	type SessionRow = components['schemas']['Session'];
 
 	let { data }: PageProps = $props();
 
@@ -38,7 +32,7 @@
 		return { label: [os, browser].filter(Boolean).join(' · ') || 'Device', mobile };
 	}
 
-	function fmtLast(s: SessionDTO): string {
+	function fmtLast(s: SessionRow): string {
 		if (s.current) return 'Active now';
 		const d = new Date(s.lastSeenAt);
 		if (Number.isNaN(d.getTime())) return 'recently';
@@ -50,7 +44,7 @@
 	);
 	const others = $derived(data.sessions.filter((s) => !s.current).length);
 
-	let revoking = $state<(SessionDTO & { label: string }) | null>(null);
+	let revoking = $state<(SessionRow & { label: string }) | null>(null);
 	let allOpen = $state(false);
 	let revokeForm: HTMLFormElement;
 	let revokeId = $state('');

@@ -37,8 +37,8 @@ func (h *handler) CreateKey(ctx context.Context, request api.CreateKeyRequestObj
 		switch {
 		case errors.Is(err, entity.ErrForbidden):
 			return api.CreateKey403ApplicationProblemPlusJSONResponse(prob(http.StatusForbidden, "Forbidden", "You don't have permission to create that kind of key.", "")), nil
-		case errors.Is(err, entity.ErrAPIKeyInvalidName), errors.Is(err, entity.ErrAPIKeyInvalidKind), errors.Is(err, entity.ErrAPIKeyInvalidScope):
-			return api.CreateKey400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid key", keyValidationDetail(err), "")), nil
+		case isValidation(err):
+			return api.CreateKey400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid key", validationDetail(err), "")), nil
 		case errors.Is(err, entity.ErrWorkspaceNotFound), errors.Is(err, entity.ErrNotMember):
 			return api.CreateKey404ApplicationProblemPlusJSONResponse(prob(http.StatusNotFound, "Not found", "No such workspace.", "")), nil
 		default:
@@ -63,17 +63,6 @@ func (h *handler) RevokeKey(ctx context.Context, request api.RevokeKeyRequestObj
 		}
 	}
 	return api.RevokeKey204Response{}, nil
-}
-
-func keyValidationDetail(err error) string {
-	switch {
-	case errors.Is(err, entity.ErrAPIKeyInvalidName):
-		return "Give the key a name of 60 characters or fewer."
-	case errors.Is(err, entity.ErrAPIKeyInvalidKind):
-		return "Key kind must be personal or workspace."
-	default:
-		return "Pick at least one valid scope."
-	}
 }
 
 func toScopes(in []api.Scope) []entity.Scope {

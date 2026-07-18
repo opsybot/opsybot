@@ -5,27 +5,38 @@
 	import * as InputGroup from '$lib/components/ui/input-group';
 	import * as Select from '$lib/components/ui/select';
 	import * as Table from '$lib/components/ui/table';
-	import { auditActionPrefix, auditMatches, isFailure } from '$lib/admin';
+	import { Button } from '$lib/components/ui/button';
+	import { isFailure } from '$lib/admin';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
+
+	const ACTION_TYPES = [
+		['auth', 'Authentication'],
+		['member', 'Members'],
+		['team', 'Teams'],
+		['key', 'API keys'],
+		['sso', 'SSO'],
+		['channel', 'Channels'],
+		['workspace', 'Workspace']
+	] as const;
+	const ACTION_LABELS: Record<string, string> = Object.fromEntries(ACTION_TYPES);
 
 	const params = $derived(page.url.searchParams);
 	const filter = $derived({
 		q: params.get('q') ?? '',
 		actor: params.get('actor') ?? '',
-		action: params.get('action') ?? ''
+		action: params.get('action') ?? '',
+		cursor: params.get('cursor') ?? ''
 	});
 	const dirty = $derived(!!(filter.q || filter.actor || filter.action));
-
-	const actors = $derived([...new Set(data.entries.map((entry) => entry.actor))]);
-	const actions = $derived([...new Set(data.entries.map((entry) => auditActionPrefix(entry.action)))]);
-	const visible = $derived(data.entries.filter((entry) => auditMatches(entry, filter)));
+	const actorName = $derived(data.members.find((member) => member.id === filter.actor)?.name ?? '');
 
 	function set(key: string, value: string | undefined) {
 		const next = new URLSearchParams(params);
 		if (value) next.set(key, value);
 		else next.delete(key);
+		if (key !== 'cursor') next.delete('cursor');
 		goto(`?${next}`, { keepFocus: true, noScroll: true, replaceState: true });
 	}
 	function clear() {
@@ -47,18 +58,24 @@
 			</InputGroup.Addon>
 		</InputGroup.Root>
 		<Select.Root type="single" value={filter.actor} onValueChange={(value) => set('actor', value || undefined)}>
-			<Select.Trigger size="sm" class="w-[160px]" aria-label="Actor">{filter.actor || 'Actor'}</Select.Trigger>
+			<Select.Trigger size="sm" class="w-[170px]" aria-label="Actor">{actorName || 'Any actor'}</Select.Trigger>
 			<Select.Content>
 				<Select.Group>
-					{#each actors as actor (actor)}<Select.Item value={actor} label={actor}>{actor}</Select.Item>{/each}
+					{#each data.members as member (member.id)}
+						<Select.Item value={member.id} label={member.name}>{member.name}</Select.Item>
+					{/each}
 				</Select.Group>
 			</Select.Content>
 		</Select.Root>
 		<Select.Root type="single" value={filter.action} onValueChange={(value) => set('action', value || undefined)}>
-			<Select.Trigger size="sm" class="w-[150px]" aria-label="Action type">{filter.action || 'Action type'}</Select.Trigger>
+			<Select.Trigger size="sm" class="w-[160px]" aria-label="Action type">
+				{ACTION_LABELS[filter.action] ?? 'Any action'}
+			</Select.Trigger>
 			<Select.Content>
 				<Select.Group>
-					{#each actions as action (action)}<Select.Item value={action} label={action}>{action}</Select.Item>{/each}
+					{#each ACTION_TYPES as [value, label] (value)}
+						<Select.Item {value} {label}>{label}</Select.Item>
+					{/each}
 				</Select.Group>
 			</Select.Content>
 		</Select.Root>
@@ -83,7 +100,7 @@
 				</Table.Row>
 			</Table.Header>
 			<Table.Body>
-				{#each visible as entry (entry.id)}
+				{#each data.entries as entry (entry.id)}
 					<Table.Row data-audit={entry.id}>
 						<Table.Cell class="text-muted-foreground pl-[18px] font-mono text-[12px] whitespace-nowrap">{entry.at}</Table.Cell>
 						<Table.Cell class="text-[12.5px] font-medium">{entry.actor}</Table.Cell>
@@ -104,5 +121,16 @@
 				{/each}
 			</Table.Body>
 		</Table.Root>
+		{#if data.nextCursor || filter.cursor}
+			<div class="flex items-center gap-2 border-t px-[18px] py-2.5">
+				{#if filter.cursor}
+					<Button size="sm" variant="ghost" onclick={() => set('cursor', undefined)}>Back to latest</Button>
+				{/if}
+				<div class="flex-1"></div>
+				{#if data.nextCursor}
+					<Button size="sm" variant="secondary" onclick={() => set('cursor', data.nextCursor)}>Older →</Button>
+				{/if}
+			</div>
+		{/if}
 	</section>
 </div>

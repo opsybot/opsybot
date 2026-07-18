@@ -4,6 +4,8 @@
 	import BoxesIcon from '@lucide/svelte/icons/boxes';
 	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
+	import { toast } from 'svelte-sonner';
+	import { enhance } from '$app/forms';
 	import UserAvatar from '$lib/components/layout/user-avatar.svelte';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
@@ -15,6 +17,16 @@
 
 	let editOpen = $state(false);
 	const roster = $derived(data.members.filter((member) => !member.deactivated));
+
+	function onArchiveAction(msg: string) {
+		return () =>
+			async ({ result, update }: { result: { type: string; data?: Record<string, unknown> }; update: () => Promise<void> }) => {
+				await update();
+				if (result.type === 'success') toast.success(msg);
+				else if (result.type === 'failure') toast.error(String(result.data?.error ?? 'Something went wrong.'));
+				else if (result.type === 'error') toast.error('Something went wrong. Try again.');
+			};
+	}
 	const rails = $derived([
 		{ label: 'Schedules', icon: CalendarClockIcon, items: data.team.schedules, href: '/on-call' },
 		{ label: 'Escalation policies', icon: ArrowUpRightIcon, items: data.team.policies, href: '/escalation-policies' },
@@ -34,11 +46,21 @@
 	<div class="flex items-center gap-2.5">
 		<h2 class="text-foreground m-0 font-mono text-[18px] font-semibold">{data.team.name}</h2>
 		<Badge tone="neutral" size="sm">{data.team.members.length} members</Badge>
+		{#if data.team.archived}<Badge tone="warning" size="sm">archived</Badge>{/if}
 		<div class="flex-1"></div>
-		<Button size="sm" variant="secondary" onclick={() => (editOpen = true)}>
-			<PencilIcon data-icon="inline-start" />
-			Edit team
-		</Button>
+		{#if data.team.archived}
+			<form method="POST" action="?/unarchive" use:enhance={onArchiveAction('Team restored.')}>
+				<Button size="sm" variant="secondary" type="submit">Restore team</Button>
+			</form>
+		{:else}
+			<form method="POST" action="?/archive" use:enhance={onArchiveAction('Team archived.')}>
+				<Button size="sm" variant="ghost" type="submit">Archive</Button>
+			</form>
+			<Button size="sm" variant="secondary" onclick={() => (editOpen = true)}>
+				<PencilIcon data-icon="inline-start" />
+				Edit team
+			</Button>
+		{/if}
 	</div>
 
 	<div class="grid items-start gap-3.5 [grid-template-columns:1fr_1fr] max-[900px]:grid-cols-1">

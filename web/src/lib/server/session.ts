@@ -1,12 +1,10 @@
 import type { Cookies } from '@sveltejs/kit';
 import { WORKSPACE_COOKIE, type AuthUser, type Session, type Workspace } from '$lib/session';
-import { api } from './api';
-
-type WorkspaceDTO = { id: string; name: string; timezone: string; environment: string };
+import { apiClient } from './api';
 
 async function listWorkspaces(cookies: Cookies): Promise<Workspace[]> {
-	const res = await api.get<{ items: WorkspaceDTO[] }>('/workspaces', cookies);
-	const items = res.data?.items ?? [];
+	const { data } = await apiClient(cookies).GET('/workspaces');
+	const items = data?.items ?? [];
 	return items.map((workspace) => ({
 		id: workspace.id,
 		name: workspace.name,

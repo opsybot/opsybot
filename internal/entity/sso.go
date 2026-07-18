@@ -5,6 +5,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
 type SSOMode string
@@ -90,32 +92,17 @@ var (
 )
 
 func (m SSOMode) Validate() error {
-	switch m {
-	case SSOModeOIDC, SSOModeSAML:
-		return nil
-	default:
-		return ErrSSOInvalid
-	}
+	return ssoModeField(m)
 }
 
 func (in SSOConfigInput) Validate() error {
-	if err := in.Mode.Validate(); err != nil {
-		return err
-	}
-	if in.Mode == SSOModeOIDC {
-		if !validHTTPSURL(in.Issuer) || strings.TrimSpace(in.ClientID) == "" {
-			return ErrSSOInvalid
-		}
-	}
-	if in.Mode == SSOModeSAML && !validHTTPSURL(in.SAMLMetadataURL) {
-		return ErrSSOInvalid
-	}
-	for _, d := range in.AllowedEmailDomains {
-		if strings.TrimSpace(d) == "" || strings.ContainsAny(d, "@ ") {
-			return ErrSSOInvalid
-		}
-	}
-	return nil
+	return validation.ValidateStruct(&in,
+		validation.Field(&in.Mode, validation.By(ssoModeField)),
+		validation.Field(&in.Issuer, validation.When(in.Mode == SSOModeOIDC, validation.By(httpsURLField))),
+		validation.Field(&in.ClientID, validation.When(in.Mode == SSOModeOIDC, validation.By(clientIDField))),
+		validation.Field(&in.SAMLMetadataURL, validation.When(in.Mode == SSOModeSAML, validation.By(httpsURLField))),
+		validation.Field(&in.AllowedEmailDomains, validation.Each(validation.By(domainField))),
+	)
 }
 
 func validHTTPSURL(s string) bool {

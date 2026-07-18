@@ -56,6 +56,22 @@ func (mr *MockAuthMockRecorder) AcceptInvite(ctx, in, ip, userAgent any) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AcceptInvite", reflect.TypeOf((*MockAuth)(nil).AcceptInvite), ctx, in, ip, userAgent)
 }
 
+// CheckSlug mocks base method.
+func (m *MockAuth) CheckSlug(ctx context.Context, slug string) (bool, string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckSlug", ctx, slug)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// CheckSlug indicates an expected call of CheckSlug.
+func (mr *MockAuthMockRecorder) CheckSlug(ctx, slug any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckSlug", reflect.TypeOf((*MockAuth)(nil).CheckSlug), ctx, slug)
+}
+
 // InvitePreview mocks base method.
 func (m *MockAuth) InvitePreview(ctx context.Context, token string) (entity.Invite, error) {
 	m.ctrl.T.Helper()

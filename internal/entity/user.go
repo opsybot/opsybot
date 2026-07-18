@@ -2,9 +2,10 @@ package entity
 
 import (
 	"errors"
-	"net/mail"
 	"strings"
 	"time"
+
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
 const (
@@ -44,70 +45,33 @@ type ProfileUpdate struct {
 }
 
 var (
-	ErrUserNotFound        = errors.New("user not found")
-	ErrUserEmailTaken      = errors.New("user email taken")
-	ErrUserInvalidEmail    = errors.New("user invalid email")
-	ErrUserInvalidName     = errors.New("user invalid name")
-	ErrUserWeakPassword    = errors.New("user weak password")
-	ErrUserInvalidTimezone = errors.New("user invalid timezone")
-	ErrUserNoPassword      = errors.New("user has no password")
+	ErrUserNotFound   = errors.New("user not found")
+	ErrUserEmailTaken = errors.New("user email taken")
+	ErrUserNoPassword = errors.New("user has no password")
 )
 
 func ValidateEmail(email string) error {
-	email = strings.TrimSpace(email)
-	if email == "" || len(email) > EmailMaxLength {
-		return ErrUserInvalidEmail
-	}
-	addr, err := mail.ParseAddress(email)
-	if err != nil || addr.Name != "" || addr.Address != email {
-		return ErrUserInvalidEmail
-	}
-	return nil
-}
-
-func ValidateName(name string) error {
-	name = strings.TrimSpace(name)
-	if name == "" || len(name) > NameMaxLength {
-		return ErrUserInvalidName
-	}
-	return nil
+	return validation.Validate(email, validation.By(emailField))
 }
 
 func ValidatePassword(password string) error {
-	if len(password) < PasswordMinLength || len(password) > PasswordMaxLength {
-		return ErrUserWeakPassword
-	}
-	return nil
-}
-
-func ValidateTimezone(tz string) error {
-	if strings.TrimSpace(tz) == "" {
-		return ErrUserInvalidTimezone
-	}
-	if _, err := time.LoadLocation(tz); err != nil {
-		return ErrUserInvalidTimezone
-	}
-	return nil
+	return validation.Validate(password, validation.By(passwordField))
 }
 
 func (n NewUser) Validate() error {
-	if err := ValidateEmail(n.Email); err != nil {
-		return err
-	}
-	if err := ValidateName(n.Name); err != nil {
-		return err
-	}
-	if err := ValidatePassword(n.Password); err != nil {
-		return err
-	}
-	return ValidateTimezone(n.Timezone)
+	return validation.ValidateStruct(&n,
+		validation.Field(&n.Email, validation.By(emailField)),
+		validation.Field(&n.Name, validation.By(nameField)),
+		validation.Field(&n.Password, validation.By(passwordField)),
+		validation.Field(&n.Timezone, validation.By(timezoneField)),
+	)
 }
 
 func (p ProfileUpdate) Validate() error {
-	if err := ValidateName(p.Name); err != nil {
-		return err
-	}
-	return ValidateTimezone(p.Timezone)
+	return validation.ValidateStruct(&p,
+		validation.Field(&p.Name, validation.By(nameField)),
+		validation.Field(&p.Timezone, validation.By(timezoneField)),
+	)
 }
 
 func NormalizeEmail(email string) string {

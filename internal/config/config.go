@@ -33,21 +33,22 @@ type Mailer struct {
 }
 
 type Auth struct {
-	BaseURL            string        `mapstructure:"base_url"`
-	SecretKey          string        `mapstructure:"secret_key"`
-	SecretKeyPrevious  string        `mapstructure:"secret_key_previous"`
-	CookieName         string        `mapstructure:"cookie_name"`
-	CookieSecure       bool          `mapstructure:"cookie_secure"`
-	SessionIdleTTL     time.Duration `mapstructure:"session_idle_ttl"`
-	SessionAbsoluteTTL time.Duration `mapstructure:"session_absolute_ttl"`
-	SessionBrowserTTL  time.Duration `mapstructure:"session_browser_ttl"`
-	SessionTouchWindow time.Duration `mapstructure:"session_touch_window"`
-	TrustProxyHeaders  bool          `mapstructure:"trust_proxy_headers"`
-	InviteTTL          time.Duration `mapstructure:"invite_ttl"`
-	RateLoginPerMin    int           `mapstructure:"rate_login_per_min"`
-	RateSignupPerHour  int           `mapstructure:"rate_signup_per_hour"`
-	RateResetPerHour   int           `mapstructure:"rate_reset_per_hour"`
-	RateSSOPerMin      int           `mapstructure:"rate_sso_per_min"`
+	BaseURL             string        `mapstructure:"base_url"`
+	SecretKey           string        `mapstructure:"secret_key"`
+	SecretKeyPrevious   string        `mapstructure:"secret_key_previous"`
+	CookieName          string        `mapstructure:"cookie_name"`
+	CookieSecure        bool          `mapstructure:"cookie_secure"`
+	SessionIdleTTL      time.Duration `mapstructure:"session_idle_ttl"`
+	SessionAbsoluteTTL  time.Duration `mapstructure:"session_absolute_ttl"`
+	SessionBrowserTTL   time.Duration `mapstructure:"session_browser_ttl"`
+	SessionTouchWindow  time.Duration `mapstructure:"session_touch_window"`
+	TrustProxyHeaders   bool          `mapstructure:"trust_proxy_headers"`
+	InviteTTL           time.Duration `mapstructure:"invite_ttl"`
+	RateLoginPerMin     int           `mapstructure:"rate_login_per_min"`
+	RateSignupPerHour   int           `mapstructure:"rate_signup_per_hour"`
+	RateSlugCheckPerMin int           `mapstructure:"rate_slug_check_per_min"`
+	RateResetPerHour    int           `mapstructure:"rate_reset_per_hour"`
+	RateSSOPerMin       int           `mapstructure:"rate_sso_per_min"`
 }
 
 type Environment string
@@ -196,6 +197,7 @@ func New(cfgFile string) (Config, error) {
 	v.SetDefault("auth.invite_ttl", "336h")
 	v.SetDefault("auth.rate_login_per_min", 10)
 	v.SetDefault("auth.rate_signup_per_hour", 5)
+	v.SetDefault("auth.rate_slug_check_per_min", 60)
 	v.SetDefault("auth.rate_reset_per_hour", 5)
 	v.SetDefault("auth.rate_sso_per_min", 20)
 	v.SetDefault("mailer.host", "")

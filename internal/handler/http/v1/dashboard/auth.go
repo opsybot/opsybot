@@ -28,7 +28,7 @@ func (h *handler) Setup(ctx context.Context, request api.SetupRequestObject) (ap
 		Email:         b.Email,
 		Password:      b.Password,
 		WorkspaceName: b.Workspace,
-		WorkspaceSlug: entity.Slugify(b.Workspace),
+		WorkspaceSlug: slugOrDefault(b.Slug, b.Workspace),
 		Timezone:      b.Timezone,
 	}, info.IP, info.UserAgent)
 	if err != nil {
@@ -60,6 +60,7 @@ func (h *handler) Signup(ctx context.Context, request api.SignupRequestObject) (
 		Email:         b.Email,
 		Password:      b.Password,
 		WorkspaceName: b.Workspace,
+		WorkspaceSlug: slugOrDefault(b.Slug, b.Workspace),
 		Timezone:      b.Timezone,
 	}, info.IP, info.UserAgent)
 	if err != nil {
@@ -81,6 +82,29 @@ func (h *handler) Signup(ctx context.Context, request api.SignupRequestObject) (
 		Body:    sessionUser(res.User),
 		Headers: api.Signup201ResponseHeaders{SetCookie: ptr(h.sessionCookie(res.Token, res.Session.ExpiresAt))},
 	}, nil
+}
+
+func (h *handler) SlugAvailable(ctx context.Context, request api.SlugAvailableRequestObject) (api.SlugAvailableResponseObject, error) {
+	available, suggestion, err := h.auth.CheckSlug(ctx, request.Params.Slug)
+	if err != nil {
+		if isValidation(err) {
+			return api.SlugAvailable400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid workspace URL",
+				"A workspace URL uses lowercase letters, numbers, and hyphens, and starts with a letter.", "")), nil
+		}
+		return nil, err
+	}
+	body := api.SlugAvailability{Available: available}
+	if suggestion != "" {
+		body.Suggestion = ptr(suggestion)
+	}
+	return api.SlugAvailable200JSONResponse(body), nil
+}
+
+func slugOrDefault(slug *string, workspace string) string {
+	if slug != nil && *slug != "" {
+		return *slug
+	}
+	return entity.Slugify(workspace)
 }
 
 func (h *handler) Login(ctx context.Context, request api.LoginRequestObject) (api.LoginResponseObject, error) {

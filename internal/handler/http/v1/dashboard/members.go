@@ -77,7 +77,7 @@ func (h *handler) InviteMember(ctx context.Context, request api.InviteMemberRequ
 			return api.InviteMember409ApplicationProblemPlusJSONResponse(prob(http.StatusConflict, "Already a member", "That person is already a member of this workspace.", "")), nil
 		case errors.Is(err, entity.ErrInvitePending), errors.Is(err, entity.ErrMemberDeactivated):
 			return api.InviteMember409ApplicationProblemPlusJSONResponse(prob(http.StatusConflict, "Invite exists", "That email already has a pending or deactivated membership here.", "")), nil
-		case isValidation(err), errors.Is(err, entity.ErrRoleInvalid):
+		case isValidation(err):
 			return api.InviteMember400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid invitation", validationDetail(err), "")), nil
 		default:
 			return nil, err
@@ -129,7 +129,9 @@ func (h *handler) ChangeMemberRole(ctx context.Context, request api.ChangeMember
 			return api.ChangeMemberRole409ApplicationProblemPlusJSONResponse(prob(http.StatusConflict, "Last admin", "You can't remove the last admin. Promote another member to admin first.", "last-admin")), nil
 		case errors.Is(err, entity.ErrMemberNotFound), errors.Is(err, entity.ErrWorkspaceNotFound), errors.Is(err, entity.ErrNotMember):
 			return api.ChangeMemberRole404ApplicationProblemPlusJSONResponse(prob(http.StatusNotFound, "Not found", "No such member.", "")), nil
-		case errors.Is(err, entity.ErrRoleInvalid), errors.Is(err, entity.ErrMemberDeactivated):
+		case isValidation(err):
+			return api.ChangeMemberRole400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid role change", validationDetail(err), "")), nil
+		case errors.Is(err, entity.ErrMemberDeactivated):
 			return api.ChangeMemberRole400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid role change", "That role change isn't allowed.", "")), nil
 		default:
 			return nil, err

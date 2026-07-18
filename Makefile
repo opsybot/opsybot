@@ -11,7 +11,10 @@ DC_LONG_RUNNING := postgres valkey garage mailpit
 
 MIGRATIONS_DIR := db/migrations/postgres
 
-.PHONY: help env require-env infra infra-up infra-down infra-restart infra-reset infra-ps infra-logs psql migration gen wire db-gen
+TEST_POSTGRES_URL ?= postgres://opsybot:opsybot@localhost:5432/opsybot_test?sslmode=disable
+TEST_VALKEY_ADDRS ?= localhost:6379
+
+.PHONY: help env require-env infra infra-up infra-down infra-restart infra-reset infra-ps infra-logs psql migration gen wire db-gen test test-integration
 
 help:
 	@printf "Targets:\n"
@@ -26,9 +29,11 @@ help:
 	@printf "  make psql            Open a psql shell on the dev database\n"
 	@printf "  make migration name=create_users\n"
 	@printf "                       Create a new goose migration (never hand-write one)\n"
-	@printf "  make gen             Run all go:generate directives (oapi-codegen, mockgen)\n"
+	@printf "  make gen             Run all go:generate (oapi-codegen, mockgen) + frontend openapi types\n"
 	@printf "  make wire            Regenerate the DI graph\n"
 	@printf "  make db-gen          Regenerate sqlboiler DAO models from the local database\n"
+	@printf "  make test            Run unit tests (integration tests self-skip without infra)\n"
+	@printf "  make test-integration  Run all tests against the local Postgres/Valkey stack\n"
 
 env:
 	@if [ -f .env ]; then \
@@ -80,9 +85,17 @@ migration:
 
 gen:
 	go generate ./...
+	cd web && pnpm gen:api
 
 wire:
 	go tool wire gen ./internal
 
 db-gen: require-env
 	go tool sqlboiler psql -c sqlboiler.toml
+
+test:
+	go test ./...
+
+test-integration:
+	-PGPASSWORD="$${OPSYBOT_POSTGRES_PASSWORD:-opsybot}" createdb -h "$${OPSYBOT_POSTGRES_HOST:-localhost}" -p "$${OPSYBOT_POSTGRES_PORT:-5432}" -U "$${OPSYBOT_POSTGRES_USER:-opsybot}" opsybot_test
+	OPSYBOT_TEST_POSTGRES_URL="$(TEST_POSTGRES_URL)" OPSYBOT_TEST_VALKEY_ADDRS="$(TEST_VALKEY_ADDRS)" go test ./...

@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math/big"
 	"strings"
 
 	"golang.org/x/crypto/argon2"
@@ -21,6 +22,14 @@ func randomBytes(n int) ([]byte, error) {
 		return nil, fmt.Errorf("random bytes: %w", err)
 	}
 	return b, nil
+}
+
+func RandomSlugSuffix() (int, error) {
+	n, err := rand.Int(rand.Reader, big.NewInt(SlugSuffixSpan))
+	if err != nil {
+		return 0, fmt.Errorf("random slug suffix: %w", err)
+	}
+	return SlugSuffixMin + int(n.Int64()), nil
 }
 
 func GenerateToken(byteLen int) (string, error) {

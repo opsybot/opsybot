@@ -14,6 +14,8 @@ require (
 	github.com/crewjam/saml v0.5.1
 	github.com/friendsofgo/errors v0.9.2
 	github.com/go-chi/chi/v5 v5.3.1
+	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
+	github.com/go-redis/redis_rate/v10 v10.0.1
 	github.com/goforj/wire v1.2.0
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/oapi-codegen/runtime v1.6.0
@@ -70,7 +72,6 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.22.4 // indirect
 	github.com/go-openapi/swag/jsonname v0.25.4 // indirect
-	github.com/go-redis/redis_rate/v10 v10.0.1 // indirect
 	github.com/go-sql-driver/mysql v1.10.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gofrs/uuid v4.2.0+incompatible // indirect
