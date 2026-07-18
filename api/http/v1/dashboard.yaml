@@ -59,6 +59,40 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+  /auth/signup:
+    post:
+      operationId: signup
+      summary: Create a new account and workspace
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignupRequest"
+      responses:
+        "201":
+          description: Account created and signed in
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionUser"
+        "400":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: The request failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /auth/login:
     post:
       operationId: login
@@ -1681,6 +1715,15 @@ components:
         required:
           type: boolean
     SetupRequest:
+      type: object
+      required: [name, email, password, workspace, timezone]
+      properties:
+        name: { type: string }
+        email: { type: string }
+        password: { type: string }
+        workspace: { type: string }
+        timezone: { type: string }
+    SignupRequest:
       type: object
       required: [name, email, password, workspace, timezone]
       properties:

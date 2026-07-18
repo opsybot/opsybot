@@ -19,6 +19,7 @@ type rateRule struct {
 
 var rateRules = []rateRule{
 	{http.MethodPost, "/v1/auth/login", entity.RateScopeLogin},
+	{http.MethodPost, "/v1/auth/signup", entity.RateScopeSignup},
 	{http.MethodPost, "/v1/auth/setup", entity.RateScopeLogin},
 	{http.MethodPost, "/v1/auth/two-factor/verify", entity.RateScopeLogin},
 	{http.MethodPost, "/v1/auth/two-factor/recovery", entity.RateScopeLogin},

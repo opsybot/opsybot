@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/pquerna/otp/totp"
@@ -146,6 +147,83 @@ func (s *srv) Setup(ctx context.Context, in entity.Setup, ip, userAgent string) 
 		return entity.SetupResult{}, err
 	}
 	return entity.SetupResult{Workspace: ws, Session: sess, Token: token, User: user}, nil
+}
+
+func (s *srv) Signup(ctx context.Context, in entity.Signup, ip, userAgent string) (entity.SetupResult, error) {
+	if err := in.Validate(); err != nil {
+		return entity.SetupResult{}, err
+	}
+	hash, err := entity.HashPassword(in.Password)
+	if err != nil {
+		return entity.SetupResult{}, err
+	}
+
+	var (
+		user entity.User
+		ws   entity.Workspace
+	)
+	err = s.tx.WithTx(ctx, func(ctx context.Context) error {
+		user, err = s.users.Create(ctx, entity.NewUser{Email: in.Email, Name: in.UserName, Timezone: in.Timezone}, hash)
+		if err != nil {
+			return err
+		}
+		slug, err := s.uniqueWorkspaceSlug(ctx, in.WorkspaceName)
+		if err != nil {
+			return err
+		}
+		ws, err = s.workspaces.Create(ctx, entity.NewWorkspace{
+			Slug: slug, Name: in.WorkspaceName, Timezone: in.Timezone,
+		}, user.ID)
+		if err != nil {
+			return err
+		}
+		if err := s.members.Create(ctx, ws.ID, user.ID, entity.MemberStatusActive); err != nil {
+			return err
+		}
+		if err := s.policy.SeedWorkspace(ctx, ws.ID); err != nil {
+			return err
+		}
+		if err := s.policy.AssignAgentRole(ctx, ws.ID, entity.RoleAdmin); err != nil {
+			return err
+		}
+		if err := s.policy.AssignRole(ctx, user.ID, ws.ID, entity.RoleAdmin); err != nil {
+			return err
+		}
+		return s.audit.Create(ctx, entity.AuditEvent{
+			WorkspaceID: ws.ID, ActorType: entity.AuditActorUser, ActorUserID: user.ID, ActorLabel: user.Name,
+			Action: entity.ActionWorkspaceCreated, Target: ws.Name, IP: ip,
+		})
+	})
+	if err != nil {
+		if compErr := s.policy.RemoveRole(context.WithoutCancel(ctx), user.ID, ws.ID); compErr != nil && user.ID != "" {
+			logger.From(ctx).ErrorContext(ctx, "signup casbin compensation failed", "error", compErr, "user_id", user.ID, "workspace_id", ws.ID)
+		}
+		return entity.SetupResult{}, err
+	}
+
+	sess, token, err := s.issueSession(ctx, user.ID, ip, userAgent, true)
+	if err != nil {
+		return entity.SetupResult{}, err
+	}
+	return entity.SetupResult{Workspace: ws, Session: sess, Token: token, User: user}, nil
+}
+
+func (s *srv) uniqueWorkspaceSlug(ctx context.Context, name string) (string, error) {
+	base := entity.Slugify(name)
+	for n := 1; n <= entity.WorkspaceSlugMaxCandidates; n++ {
+		candidate := entity.WorkspaceSlugCandidate(base, n)
+		if slices.Contains(entity.WorkspaceReservedSlugs, candidate) {
+			continue
+		}
+		_, err := s.workspaces.GetBySlug(ctx, candidate)
+		if errors.Is(err, entity.ErrWorkspaceNotFound) {
+			return candidate, nil
+		}
+		if err != nil {
+			return "", err
+		}
+	}
+	return "", entity.ErrWorkspaceSlugTaken
 }
 
 func (s *srv) Login(ctx context.Context, in entity.LoginInput) (entity.LoginResult, error) {

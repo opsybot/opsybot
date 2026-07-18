@@ -20,6 +20,7 @@ var publicRoutes = []publicRoute{
 	{http.MethodGet, "/v1/health"},
 	{http.MethodGet, "/v1/auth/setup"},
 	{http.MethodPost, "/v1/auth/setup"},
+	{http.MethodPost, "/v1/auth/signup"},
 	{http.MethodPost, "/v1/auth/login"},
 	{http.MethodPost, "/v1/auth/invite/preview"},
 	{http.MethodPost, "/v1/auth/invite/accept"},

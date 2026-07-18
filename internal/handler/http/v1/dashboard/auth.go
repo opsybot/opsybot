@@ -49,6 +49,40 @@ func (h *handler) Setup(ctx context.Context, request api.SetupRequestObject) (ap
 	}, nil
 }
 
+func (h *handler) Signup(ctx context.Context, request api.SignupRequestObject) (api.SignupResponseObject, error) {
+	if request.Body == nil {
+		return api.Signup400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid request", "The request body was empty.", "")), nil
+	}
+	b := request.Body
+	info := entity.RequestInfoFrom(ctx)
+	res, err := h.auth.Signup(ctx, entity.Signup{
+		UserName:      b.Name,
+		Email:         b.Email,
+		Password:      b.Password,
+		WorkspaceName: b.Workspace,
+		Timezone:      b.Timezone,
+	}, info.IP, info.UserAgent)
+	if err != nil {
+		switch {
+		case errors.Is(err, entity.ErrUserEmailTaken):
+			return api.Signup409ApplicationProblemPlusJSONResponse(prob(http.StatusConflict, "Email already registered",
+				"That email already has an account. Log in instead.", "email-taken")), nil
+		case errors.Is(err, entity.ErrWorkspaceSlugTaken):
+			return api.Signup409ApplicationProblemPlusJSONResponse(prob(http.StatusConflict, "Workspace name taken",
+				"That workspace name is taken. Pick another.", "")), nil
+		case isValidation(err):
+			return api.Signup400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid signup details",
+				validationDetail(err), "")), nil
+		default:
+			return nil, err
+		}
+	}
+	return api.Signup201JSONResponse{
+		Body:    sessionUser(res.User),
+		Headers: api.Signup201ResponseHeaders{SetCookie: ptr(h.sessionCookie(res.Token, res.Session.ExpiresAt))},
+	}, nil
+}
+
 func (h *handler) Login(ctx context.Context, request api.LoginRequestObject) (api.LoginResponseObject, error) {
 	if request.Body == nil {
 		return api.Login400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid request", "The request body was empty.", "")), nil

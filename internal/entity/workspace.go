@@ -4,13 +4,16 @@ import (
 	"errors"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 )
 
 const (
-	SlugPattern            = `^[a-z][a-z0-9-]{0,39}$`
-	WorkspaceNameMaxLength = 80
+	SlugPattern                = `^[a-z][a-z0-9-]{0,39}$`
+	SlugMaxLength              = 40
+	WorkspaceNameMaxLength     = 80
+	WorkspaceSlugMaxCandidates = 100
 )
 
 var slugRe = regexp.MustCompile(SlugPattern)
@@ -41,6 +44,41 @@ type WorkspaceUpdate struct {
 	Name        string
 	Timezone    string
 	Environment string
+}
+
+type Signup struct {
+	UserName      string
+	Email         string
+	Password      string
+	WorkspaceName string
+	Timezone      string
+}
+
+func (s Signup) Validate() error {
+	if err := ValidateName(s.UserName); err != nil {
+		return err
+	}
+	if err := ValidateEmail(s.Email); err != nil {
+		return err
+	}
+	if err := ValidatePassword(s.Password); err != nil {
+		return err
+	}
+	if err := ValidateWorkspaceName(s.WorkspaceName); err != nil {
+		return err
+	}
+	return ValidateTimezone(s.Timezone)
+}
+
+func WorkspaceSlugCandidate(base string, n int) string {
+	if n <= 1 {
+		return base
+	}
+	suffix := "-" + strconv.Itoa(n)
+	if max := SlugMaxLength - len(suffix); len(base) > max {
+		base = base[:max]
+	}
+	return strings.TrimRight(base, "-") + suffix
 }
 
 type Setup struct {

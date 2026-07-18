@@ -188,6 +188,21 @@ func (mr *MockAuthMockRecorder) SetupRequired(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetupRequired", reflect.TypeOf((*MockAuth)(nil).SetupRequired), ctx)
 }
 
+// Signup mocks base method.
+func (m *MockAuth) Signup(ctx context.Context, in entity.Signup, ip, userAgent string) (entity.SetupResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Signup", ctx, in, ip, userAgent)
+	ret0, _ := ret[0].(entity.SetupResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Signup indicates an expected call of Signup.
+func (mr *MockAuthMockRecorder) Signup(ctx, in, ip, userAgent any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Signup", reflect.TypeOf((*MockAuth)(nil).Signup), ctx, in, ip, userAgent)
+}
+
 // VerifyRecovery mocks base method.
 func (m *MockAuth) VerifyRecovery(ctx context.Context, pendingToken, code string) (entity.LoginResult, error) {
 	m.ctrl.T.Helper()

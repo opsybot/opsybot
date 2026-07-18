@@ -45,6 +45,7 @@ type Auth struct {
 	TrustProxyHeaders  bool          `mapstructure:"trust_proxy_headers"`
 	InviteTTL          time.Duration `mapstructure:"invite_ttl"`
 	RateLoginPerMin    int           `mapstructure:"rate_login_per_min"`
+	RateSignupPerHour  int           `mapstructure:"rate_signup_per_hour"`
 	RateResetPerHour   int           `mapstructure:"rate_reset_per_hour"`
 	RateSSOPerMin      int           `mapstructure:"rate_sso_per_min"`
 }
@@ -194,6 +195,7 @@ func New(cfgFile string) (Config, error) {
 	v.SetDefault("auth.trust_proxy_headers", false)
 	v.SetDefault("auth.invite_ttl", "336h")
 	v.SetDefault("auth.rate_login_per_min", 10)
+	v.SetDefault("auth.rate_signup_per_hour", 5)
 	v.SetDefault("auth.rate_reset_per_hour", 5)
 	v.SetDefault("auth.rate_sso_per_min", 20)
 	v.SetDefault("mailer.host", "")

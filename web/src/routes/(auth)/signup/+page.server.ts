@@ -1,29 +1,41 @@
 import { error, fail, redirect } from '@sveltejs/kit';
-import { superValidate } from 'sveltekit-superforms';
+import { message, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
-import { signupAccountSchema, workspaceSchema } from '$lib/schemas/auth';
+import { signupSchema } from '$lib/schemas/auth';
 import { deployment } from '$lib/server/fixtures';
+import { api, cookieValue, SESSION_COOKIE } from '$lib/server/api';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async () => {
 	if (deployment() === 'self-hosted') error(404, 'This instance does not accept public sign-ups.');
-
-	if (url.searchParams.get('step') === 'workspace') {
-		return { step: 'workspace' as const, form: await superValidate(zod4(workspaceSchema)) };
-	}
-
-	return { step: 'account' as const, form: await superValidate(zod4(signupAccountSchema)) };
+	return { form: await superValidate(zod4(signupSchema)) };
 };
 
 export const actions: Actions = {
-	account: async ({ request }) => {
-		const form = await superValidate(request, zod4(signupAccountSchema));
+	default: async ({ request, cookies }) => {
+		const form = await superValidate(request, zod4(signupSchema));
 		if (!form.valid) return fail(400, { form });
-		redirect(303, '/signup?step=workspace');
-	},
-	workspace: async ({ request }) => {
-		const form = await superValidate(request, zod4(workspaceSchema));
-		if (!form.valid) return fail(400, { form });
-		redirect(303, '/login');
+
+		const res = await api.post('/auth/signup', cookies, {
+			body: {
+				name: form.data.name,
+				email: form.data.email,
+				password: form.data.password,
+				workspace: form.data.workspace,
+				timezone: form.data.timezone
+			}
+		});
+
+		if (res.ok) {
+			const token = cookieValue(res.setCookie, SESSION_COOKIE);
+			if (token) cookies.set(SESSION_COOKIE, token, { path: '/', httpOnly: true, sameSite: 'lax' });
+			redirect(303, '/');
+		}
+
+		const type = res.problem?.type ?? '';
+		const detail = type.endsWith('email-taken')
+			? 'That email already has an account. Log in instead.'
+			: (res.problem?.detail ?? 'Check your details and try again.');
+		return message(form, detail, { status: res.status === 409 ? 409 : 400 });
 	}
 };

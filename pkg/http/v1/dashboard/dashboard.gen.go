@@ -547,6 +547,15 @@ type SetupStatus struct {
 	Required bool `json:"required"`
 }
 
+// SignupRequest defines model for SignupRequest.
+type SignupRequest struct {
+	Email     string `json:"email"`
+	Name      string `json:"name"`
+	Password  string `json:"password"`
+	Timezone  string `json:"timezone"`
+	Workspace string `json:"workspace"`
+}
+
 // SsoConfig defines model for SsoConfig.
 type SsoConfig struct {
 	AllowedEmailDomains []string `json:"allowedEmailDomains"`
@@ -667,6 +676,9 @@ type ResetPasswordJSONRequestBody = ResetPasswordRequest
 // SetupJSONRequestBody defines body for Setup for application/json ContentType.
 type SetupJSONRequestBody = SetupRequest
 
+// SignupJSONRequestBody defines body for Signup for application/json ContentType.
+type SignupJSONRequestBody = SignupRequest
+
 // VerifyRecoveryCodeJSONRequestBody defines body for VerifyRecoveryCode for application/json ContentType.
 type VerifyRecoveryCodeJSONRequestBody = RecoveryCodeRequest
 
@@ -738,6 +750,9 @@ type ServerInterface interface {
 	// First-run setup (creates the first admin and workspace)
 	// (POST /auth/setup)
 	Setup(w http.ResponseWriter, r *http.Request)
+	// Create a new account and workspace
+	// (POST /auth/signup)
+	Signup(w http.ResponseWriter, r *http.Request)
 	// Complete sign-in with a recovery code
 	// (POST /auth/two-factor/recovery)
 	VerifyRecoveryCode(w http.ResponseWriter, r *http.Request)
@@ -906,6 +921,12 @@ func (_ Unimplemented) GetSetupStatus(w http.ResponseWriter, r *http.Request) {
 // First-run setup (creates the first admin and workspace)
 // (POST /auth/setup)
 func (_ Unimplemented) Setup(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create a new account and workspace
+// (POST /auth/signup)
+func (_ Unimplemented) Signup(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1255,6 +1276,20 @@ func (siw *ServerInterfaceWrapper) Setup(w http.ResponseWriter, r *http.Request)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.Setup(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// Signup operation middleware
+func (siw *ServerInterfaceWrapper) Signup(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.Signup(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2431,6 +2466,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/auth/setup", wrapper.Setup)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/auth/signup", wrapper.Signup)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/auth/two-factor/recovery", wrapper.VerifyRecoveryCode)
 	})
 	r.Group(func(r chi.Router) {
@@ -3000,6 +3038,66 @@ func (response Setup400ApplicationProblemPlusJSONResponse) VisitSetupResponse(w 
 type Setup409ApplicationProblemPlusJSONResponse Problem
 
 func (response Setup409ApplicationProblemPlusJSONResponse) VisitSetupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SignupRequestObject struct {
+	Body *SignupJSONRequestBody
+}
+
+type SignupResponseObject interface {
+	VisitSignupResponse(w http.ResponseWriter) error
+}
+
+type Signup201ResponseHeaders struct {
+	SetCookie *string
+}
+
+type Signup201JSONResponse struct {
+	Body    SessionUser
+	Headers Signup201ResponseHeaders
+}
+
+func (response Signup201JSONResponse) VisitSignupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.SetCookie != nil {
+		w.Header().Set("Set-Cookie", fmt.Sprint(*response.Headers.SetCookie))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type Signup400ApplicationProblemPlusJSONResponse Problem
+
+func (response Signup400ApplicationProblemPlusJSONResponse) VisitSignupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type Signup409ApplicationProblemPlusJSONResponse Problem
+
+func (response Signup409ApplicationProblemPlusJSONResponse) VisitSignupResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -5525,6 +5623,9 @@ type StrictServerInterface interface {
 	// First-run setup (creates the first admin and workspace)
 	// (POST /auth/setup)
 	Setup(ctx context.Context, request SetupRequestObject) (SetupResponseObject, error)
+	// Create a new account and workspace
+	// (POST /auth/signup)
+	Signup(ctx context.Context, request SignupRequestObject) (SignupResponseObject, error)
 	// Complete sign-in with a recovery code
 	// (POST /auth/two-factor/recovery)
 	VerifyRecoveryCode(ctx context.Context, request VerifyRecoveryCodeRequestObject) (VerifyRecoveryCodeResponseObject, error)
@@ -5900,6 +6001,37 @@ func (sh *strictHandler) Setup(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SetupResponseObject); ok {
 		if err := validResponse.VisitSetupResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// Signup operation middleware
+func (sh *strictHandler) Signup(w http.ResponseWriter, r *http.Request) {
+	var request SignupRequestObject
+
+	var body SignupJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.Signup(ctx, request.(SignupRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "Signup")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SignupResponseObject); ok {
+		if err := validResponse.VisitSignupResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

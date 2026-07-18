@@ -9,6 +9,7 @@ type RateScope string
 
 const (
 	RateScopeLogin         RateScope = "login"
+	RateScopeSignup        RateScope = "signup"
 	RateScopePasswordReset RateScope = "password_reset"
 	RateScopeSSO           RateScope = "sso"
 )

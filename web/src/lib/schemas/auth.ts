@@ -9,30 +9,40 @@ export const loginSchema = z.object({
 	remember: z.boolean().default(true)
 });
 
-export const signupAccountSchema = z.object({
-	name: z.string().min(1, 'Enter your name.'),
-	email: z.email('Enter a valid work email address.'),
-	password
-});
+const confirmMatches = (fields: { password: string; confirm: string }) =>
+	fields.password === fields.confirm;
+const confirmMessage = { message: 'Both passwords must match.', path: ['confirm'] };
 
-export const workspaceSchema = z.object({
-	workspace: z.string().min(1, 'Name the workspace.'),
-	timezone
-});
+export const signupSchema = z
+	.object({
+		name: z.string().min(1, 'Enter your name.'),
+		email: z.email('Enter a valid work email address.'),
+		password,
+		confirm: z.string().min(1, 'Repeat the password.'),
+		workspace: z.string().min(1, 'Name the workspace.'),
+		timezone
+	})
+	.refine(confirmMatches, confirmMessage);
 
-export const setupSchema = z.object({
-	name: z.string().min(1, 'Enter your name.'),
-	email: z.email('Enter a valid email address.'),
-	password,
-	workspace: z.string().min(1, 'Name the workspace.'),
-	timezone
-});
+export const setupSchema = z
+	.object({
+		name: z.string().min(1, 'Enter your name.'),
+		email: z.email('Enter a valid email address.'),
+		password,
+		confirm: z.string().min(1, 'Repeat the password.'),
+		workspace: z.string().min(1, 'Name the workspace.'),
+		timezone
+	})
+	.refine(confirmMatches, confirmMessage);
 
-export const inviteSchema = z.object({
-	name: z.string().min(1, 'Enter your name.'),
-	password,
-	timezone
-});
+export const inviteSchema = z
+	.object({
+		name: z.string().min(1, 'Enter your name.'),
+		password,
+		confirm: z.string().min(1, 'Repeat the password.'),
+		timezone
+	})
+	.refine(confirmMatches, confirmMessage);
 
 export const forgotPasswordSchema = z.object({
 	email: z.email('Enter the email you log in with.')
@@ -77,8 +87,7 @@ export const changePasswordSchema = z
 	});
 
 export type LoginSchema = typeof loginSchema;
-export type SignupAccountSchema = typeof signupAccountSchema;
-export type WorkspaceSchema = typeof workspaceSchema;
+export type SignupSchema = typeof signupSchema;
 export type SetupSchema = typeof setupSchema;
 export type InviteSchema = typeof inviteSchema;
 export type ForgotPasswordSchema = typeof forgotPasswordSchema;

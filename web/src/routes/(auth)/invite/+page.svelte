@@ -98,6 +98,14 @@
 					hint="12 characters minimum."
 					autocomplete="new-password"
 				/>
+				<TextField
+					{form}
+					name="confirm"
+					label="Confirm password"
+					type="password"
+					placeholder="Repeat it"
+					autocomplete="new-password"
+				/>
 				<TimezoneSelect {form} name="timezone" label="Your timezone" />
 
 				<Button type="submit" class="w-full">Join workspace</Button>

@@ -62,6 +62,14 @@
 				hint="12 characters minimum."
 				autocomplete="new-password"
 			/>
+			<TextField
+				{form}
+				name="confirm"
+				label="Confirm password"
+				type="password"
+				placeholder="Repeat it"
+				autocomplete="new-password"
+			/>
 			<TextField {form} name="workspace" label="Workspace name" placeholder="Acme Corp" />
 			<TimezoneSelect {form} name="timezone" label="Workspace timezone" />
 
