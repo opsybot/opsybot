@@ -1,13 +1,26 @@
-import type { AuditEntry, Layer, Override, Schedule, SwapRequest } from '$lib/oncall';
-import { coverageAt, segments } from '$lib/oncall';
-import { scenario } from './fixtures';
+import type { Cookies } from '@sveltejs/kit';
+import type { components } from '$lib/api/schema';
+import {
+	clipSegments,
+	daySummaryFromSegments,
+	dayWindow,
+	formatDuty,
+	formatGap,
+	layerName,
+	type Handover,
+	type Layer,
+	type Override,
+	type Schedule,
+	type Segment
+} from '$lib/oncall';
+import { apiClient } from './api';
 
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
+type Schemas = components['schemas'];
 
-const id = (prefix: string) => prefix + Math.random().toString(36).slice(2, 8);
+const DAY = 86_400_000;
+const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-// UTC Monday of the current week; rotation startsOn anchors to it
+// UTC Monday of the current week; the create form anchors previews to it
 export function thisMonday(): string {
 	const now = new Date();
 	const monday = new Date(
@@ -16,352 +29,472 @@ export function thisMonday(): string {
 	return monday.toISOString().slice(0, 10);
 }
 
-// Next occurrence of this UTC weekday, strictly after today
-function nextWeekday(day: number): Date {
-	const at = new Date();
-	at.setUTCHours(0, 0, 0, 0);
-	at.setUTCDate(at.getUTCDate() + ((day - at.getUTCDay() + 7) % 7 || 7));
-	return at;
-}
+type MemberIndex = { byId: Map<string, string>; byName: Map<string, string> };
 
-const around = (days: number[]): Layer['restrictions'] =>
-	days.map((day) => ({ day, start: 0, end: 24 }));
-
-const between = (days: number[], start: number, end: number): Layer['restrictions'] =>
-	days.map((day) => ({ day, start, end }));
-
-const WEEKDAYS = [1, 2, 3, 4, 5];
-
-function seed() {
-	const monday = thisMonday();
-
-	const sundayWithAGap = [
-		...around([1, 2, 3, 4, 5, 6]),
-		{ day: 0, start: 0, end: 18 },
-		{ day: 0, start: 22, end: 24 }
-	];
-
-	const payments: Schedule = {
-		id: 'payments-primary',
-		name: 'payments-primary',
-		team: 'payments',
-		layers: [
-			{
-				id: 'l-pay-2',
-				participants: ['Priya Nair'],
-				rotation: 'weekly',
-				intervalDays: 7,
-				handoverHour: 9,
-				startsOn: monday,
-				restrictions: between(WEEKDAYS, 9, 18)
-			},
-			{
-				id: 'l-pay-1',
-				participants: ['Maya Chen', 'Marcus Lee'],
-				rotation: 'weekly',
-				intervalDays: 7,
-				handoverHour: 9,
-				startsOn: monday,
-				restrictions: sundayWithAGap
-			}
-		],
-		overrides: [],
-		audit: [],
-		feedToken: 'f31c9a2e',
-		archived: false,
-		paused: false
-	};
-
-	const saturday = nextWeekday(6);
-	payments.overrides.push({
-		id: 'ov-1',
-		person: 'Sana Ito',
-		startsAt: new Date(saturday.getTime() + 9 * HOUR).toISOString(),
-		endsAt: new Date(saturday.getTime() + 18 * HOUR).toISOString(),
-		reason: "Covering Maya's Saturday",
-		createdBy: 'Sana Ito',
-		createdAt: new Date(Date.now() - 4 * DAY).toISOString()
+async function memberIndex(cookies: Cookies, workspace: string): Promise<MemberIndex> {
+	const { data } = await apiClient(cookies).GET('/workspaces/{workspaceId}/members', {
+		params: { path: { workspaceId: workspace } }
 	});
-
-	const platform: Schedule = {
-		id: 'platform-default',
-		name: 'platform-default',
-		team: 'platform',
-		layers: [
-			{
-				id: 'l-plat-2',
-				participants: ['Priya Nair'],
-				rotation: 'weekly',
-				intervalDays: 7,
-				handoverHour: 9,
-				startsOn: monday,
-				restrictions: between(WEEKDAYS, 9, 20)
-			},
-			{
-				id: 'l-plat-1',
-				participants: ['Dev Patel', 'Sana Ito'],
-				rotation: 'weekly',
-				intervalDays: 7,
-				handoverHour: 9,
-				startsOn: monday,
-				restrictions: []
-			}
-		],
-		overrides: [],
-		audit: [],
-		feedToken: 'a7d40b16',
-		archived: false,
-		paused: false
+	const members = data?.items ?? [];
+	return {
+		byId: new Map(members.map((m) => [m.userId, m.name])),
+		byName: new Map(members.map((m) => [m.name, m.userId]))
 	};
+}
 
-	const thursday = nextWeekday(4);
-	platform.overrides.push({
-		id: 'ov-2',
-		person: 'Maya Chen',
-		startsAt: new Date(thursday.getTime() + 18 * HOUR).toISOString(),
-		endsAt: new Date(thursday.getTime() + 33 * HOUR).toISOString(),
-		reason: 'Platform cover',
-		createdBy: 'Priya Nair',
-		createdAt: new Date(Date.now() - 2 * DAY).toISOString()
+async function teamSlugs(cookies: Cookies, workspace: string): Promise<string[]> {
+	const { data } = await apiClient(cookies).GET('/workspaces/{workspaceId}/teams', {
+		params: { path: { workspaceId: workspace } }
 	});
+	return (data?.items ?? []).map((t) => t.slug);
+}
 
-	const frontend: Schedule = {
-		id: 'frontend-daytime',
-		name: 'frontend-daytime',
-		team: 'frontend',
-		layers: [
-			{
-				id: 'l-front-1',
-				participants: ['Dev Patel', 'Sana Ito'],
-				rotation: 'daily',
-				intervalDays: 1,
-				handoverHour: 9,
-				startsOn: monday,
-				restrictions: []
-			}
-		],
-		overrides: [],
-		audit: [],
-		feedToken: 'c904e57b',
-		archived: false,
-		paused: false
+function name(byId: Map<string, string>, id?: string | null): string {
+	if (!id) return '';
+	return byId.get(id) ?? id;
+}
+
+function toSegment(dto: Schemas['Segment'], byId: Map<string, string>): Segment {
+	return {
+		startsAt: dto.startsAt,
+		endsAt: dto.endsAt,
+		person: dto.userId ? name(byId, dto.userId) : null,
+		via: dto.via ?? null,
+		override: dto.override
 	};
-
-	payments.audit = [
-		{
-			id: 'a-1',
-			at: new Date(Date.now() - 4 * DAY).toISOString(),
-			by: 'Sana Ito',
-			what: `Added override: Sana Ito takes Sat ${saturday.toISOString().slice(0, 10)} 09:00–18:00 UTC — covering Maya's Saturday`
-		},
-		{
-			id: 'a-2',
-			at: new Date(Date.now() - 32 * DAY).toISOString(),
-			by: 'Priya Nair',
-			what: 'Added a weekday daytime layer above the rotation'
-		},
-		{
-			id: 'a-3',
-			at: new Date(Date.now() - 72 * DAY).toISOString(),
-			by: 'Maya Chen',
-			what: 'Created the schedule with one weekly rotation'
-		}
-	];
-
-	const requests: SwapRequest[] = [
-		{
-			id: 'rq-1',
-			text: `Swap ${nextWeekday(0).toISOString().slice(0, 10)} day shift with Dev Patel`,
-			message: 'Family thing on Sunday — can you take the day part?',
-			status: 'pending'
-		},
-		{
-			id: 'rq-2',
-			text: 'Handed last Saturday day shift to Sana Ito',
-			message: '',
-			status: 'approved'
-		}
-	];
-
-	return { schedules: [payments, platform, frontend], requests };
 }
 
-const store = seed();
-
-if (scenario() === 'empty') {
-	store.schedules.length = 0;
-	store.requests.length = 0;
+function toHandover(dto: Schemas['Handover'], byId: Map<string, string>): Handover {
+	return { at: dto.at, from: name(byId, dto.fromUserId), to: name(byId, dto.toUserId) };
 }
 
-function record(schedule: Schedule, what: string, by = 'Maya Chen') {
-	const entry: AuditEntry = { id: id('a-'), at: new Date().toISOString(), by, what };
-	schedule.audit.unshift(entry);
-}
-
-export function listSchedules(): Schedule[] {
-	return store.schedules.filter((schedule) => !schedule.archived);
-}
-
-export function getSchedule(scheduleId: string): Schedule | undefined {
-	return store.schedules.find((schedule) => schedule.id === scheduleId);
-}
-
-// Schedule names are URL segments; these collide with routes
-const RESERVED = ['new', 'mine'];
-
-export function nameTaken(name: string, exceptId?: string): boolean {
-	if (RESERVED.includes(name)) return true;
-	return store.schedules.some((schedule) => schedule.id === name && schedule.id !== exceptId);
-}
-
-function freeId(base: string): string {
-	if (!nameTaken(base)) return base;
-	for (let suffix = 2; ; suffix++) {
-		const candidate = `${base}-${suffix}`;
-		if (!nameTaken(candidate)) return candidate;
-	}
-}
-
-export type ScheduleInput = {
-	name: string;
-	team: string;
-	layers: Layer[];
-};
-
-export function createSchedule(input: ScheduleInput, by = 'Maya Chen'): Schedule {
-	const schedule: Schedule = {
-		id: input.name,
-		name: input.name,
-		team: input.team,
-		layers: input.layers,
-		overrides: [],
-		audit: [],
-		feedToken: Math.random().toString(16).slice(2, 10),
-		archived: false,
-		paused: false
+function toOverride(dto: Schemas['ScheduleOverride'], byId: Map<string, string>): Override {
+	return {
+		id: dto.id,
+		person: name(byId, dto.userId),
+		startsAt: dto.startsAt,
+		endsAt: dto.endsAt,
+		reason: dto.reason,
+		createdBy: name(byId, dto.createdByUserId),
+		createdAt: dto.createdAt
 	};
-
-	record(schedule, `Created the schedule with ${input.layers.length} layer(s)`, by);
-
-	store.schedules.push(schedule);
-	return schedule;
 }
 
-export function updateSchedule(scheduleId: string, input: ScheduleInput, by = 'Maya Chen') {
-	const schedule = getSchedule(scheduleId);
-	if (!schedule) return;
+function toLayer(dto: Schemas['ScheduleLayer'], byId: Map<string, string>): Layer {
+	return {
+		id: dto.id,
+		participants: dto.participants.map((id) => name(byId, id)),
+		rotation: dto.rotation,
+		intervalDays: dto.intervalDays,
+		handoverHour: dto.handoverHour,
+		startsOn: dto.startsOn,
+		restrictions: dto.restrictions.map((r) => ({
+			day: r.weekday,
+			start: r.startMinute / 60,
+			end: r.endMinute / 60
+		}))
+	};
+}
 
-	const renamed = input.name !== schedule.name;
+function toSchedule(dto: Schemas['Schedule'], byId: Map<string, string>): Schedule {
+	return {
+		id: dto.slug,
+		name: dto.slug,
+		team: dto.team,
+		timezone: dto.timezone,
+		layers: dto.layers.map((l) => toLayer(l, byId)),
+		overrides: dto.overrides.map((o) => toOverride(o, byId)),
+		feedUrl: dto.feedUrl,
+		archived: dto.archived,
+		paused: dto.paused
+	};
+}
 
-	schedule.id = input.name;
-	schedule.name = input.name;
-	schedule.team = input.team;
-	schedule.layers = input.layers;
+type ApiLayer = Schemas['ScheduleLayerInput'];
 
-	record(
-		schedule,
-		renamed
-			? `Renamed to ${input.name}. The old calendar feed URL stops working.`
-			: `Edited the schedule — ${input.layers.length} layer(s)`,
-		by
+function toApiLayers(layers: Layer[], byName: Map<string, string>): ApiLayer[] {
+	return layers.map((layer) => ({
+		participants: layer.participants
+			.map((n) => byName.get(n))
+			.filter((id): id is string => Boolean(id)),
+		rotation: layer.rotation,
+		intervalDays: layer.intervalDays,
+		handoverHour: layer.handoverHour,
+		startsOn: layer.startsOn,
+		restrictions: layer.restrictions.map((r) => ({
+			weekday: r.day,
+			startMinute: Math.round(r.start * 60),
+			endMinute: Math.round(r.end * 60)
+		}))
+	}));
+}
+
+const utcDay = (at: Date) => new Date(Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate()));
+
+export type ScheduleInput = { name: string; team: string; timezone: string; layers: Layer[] };
+export type OverrideInput = { person: string; startsAt: string; endsAt: string; reason: string };
+
+// ---- List ----------------------------------------------------------------
+
+export async function scheduleList(cookies: Cookies, workspace: string) {
+	const client = apiClient(cookies);
+	const [listRes, index] = await Promise.all([
+		client.GET('/workspaces/{workspaceId}/schedules', { params: { path: { workspaceId: workspace } } }),
+		memberIndex(cookies, workspace)
+	]);
+	const items = listRes.data?.items ?? [];
+	const now = Date.now();
+	const from = new Date(now).toISOString();
+	const to = new Date(now + 14 * DAY).toISOString();
+
+	const schedules = await Promise.all(
+		items.map(async (s) => {
+			const cal = await client.GET(
+				'/workspaces/{workspaceId}/schedules/{scheduleSlug}/calendar',
+				{ params: { path: { workspaceId: workspace, scheduleSlug: s.slug }, query: { from, to } } }
+			);
+			const gaps = (cal.data?.gaps ?? []).map((seg) => toSegment(seg, index.byId));
+			const handovers = (cal.data?.handovers ?? []).map((h) => toHandover(h, index.byId));
+			return {
+				id: s.slug,
+				name: s.slug,
+				team: s.team,
+				paused: s.paused,
+				gap: gaps[0] ? formatGap(gaps[0]) : null,
+				handover: handovers[0] ?? null,
+				person: s.onCallUserId ? name(index.byId, s.onCallUserId) : null,
+				until: s.onCallUntil ?? null
+			};
+		})
 	);
+	return { now, schedules };
 }
 
-export function duplicateSchedule(scheduleId: string, by = 'Maya Chen'): Schedule | undefined {
-	const schedule = getSchedule(scheduleId);
-	if (!schedule) return;
+// ---- Detail --------------------------------------------------------------
 
-	const id = freeId(`${schedule.id}-copy`);
+type DetailOptions = { view: 'week' | 'month'; zone: 'utc' | 'local'; date?: string; time?: string };
 
-	const copy: Schedule = {
-		...structuredClone(schedule),
-		id,
-		name: id,
-		overrides: [],
-		audit: [],
-		feedToken: Math.random().toString(16).slice(2, 10),
-		paused: true
+export async function scheduleDetail(
+	cookies: Cookies,
+	workspace: string,
+	slug: string,
+	opts: DetailOptions
+) {
+	const client = apiClient(cookies);
+	const path = { workspaceId: workspace, scheduleSlug: slug };
+	const now = new Date();
+
+	const weekStart = utcDay(new Date(now.getTime() - DAY));
+	const weekRange = { from: weekStart.toISOString(), to: new Date(weekStart.getTime() + 8 * DAY).toISOString() };
+	const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+	const monthLength = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)).getUTCDate();
+	const monthRange = {
+		from: monthStart.toISOString(),
+		to: new Date(monthStart.getTime() + (monthLength + 1) * DAY).toISOString()
+	};
+	const upcomingRange = { from: now.toISOString(), to: new Date(now.getTime() + 14 * DAY).toISOString() };
+
+	const date = opts.date ?? now.toISOString().slice(0, 10);
+	const time = opts.time ?? `${String(now.getUTCHours()).padStart(2, '0')}:00`;
+	const at = new Date(`${date}T${time}:00Z`);
+
+	const [schedRes, weekCal, monthCal, upcomingCal, onCallRes, index] = await Promise.all([
+		client.GET('/workspaces/{workspaceId}/schedules/{scheduleSlug}', { params: { path } }),
+		client.GET('/workspaces/{workspaceId}/schedules/{scheduleSlug}/calendar', { params: { path, query: weekRange } }),
+		client.GET('/workspaces/{workspaceId}/schedules/{scheduleSlug}/calendar', { params: { path, query: monthRange } }),
+		client.GET('/workspaces/{workspaceId}/schedules/{scheduleSlug}/calendar', { params: { path, query: upcomingRange } }),
+		client.GET('/workspaces/{workspaceId}/schedules/{scheduleSlug}/on-call', {
+			params: { path, query: { at: Number.isNaN(at.getTime()) ? now.toISOString() : at.toISOString() } }
+		}),
+		memberIndex(cookies, workspace)
+	]);
+	if (!schedRes.data) return null;
+
+	const schedule = toSchedule(schedRes.data, index.byId);
+	const weekEffective = (weekCal.data?.effective ?? []).map((s) => toSegment(s, index.byId));
+	const weekLayers = (weekCal.data?.layers ?? []).map((l) => ({
+		index: l.index,
+		segments: l.segments.map((s) => toSegment(s, index.byId))
+	}));
+	const monthEffective = (monthCal.data?.effective ?? []).map((s) => toSegment(s, index.byId));
+	const upcomingEffective = (upcomingCal.data?.effective ?? []).map((s) => toSegment(s, index.byId));
+	const handovers = (upcomingCal.data?.handovers ?? []).map((h) => toHandover(h, index.byId)).slice(0, 8);
+	const gaps = (upcomingCal.data?.gaps ?? []).map((s) => toSegment(s, index.byId));
+
+	const week = Array.from({ length: 7 }, (_, i) => {
+		const day = new Date(weekStart.getTime() + i * DAY);
+		const { from, to } = dayWindow(schedule, day);
+		return {
+			label: WEEKDAY[day.getUTCDay()],
+			num: day.getUTCDate(),
+			today: day.getTime() === utcDay(now).getTime(),
+			from,
+			to
+		};
+	});
+
+	const monthDays = Array.from({ length: monthLength }, (_, i) => {
+		const day = new Date(monthStart.getTime() + i * DAY);
+		const { from, to } = dayWindow(schedule, day);
+		return daySummaryFromSegments(clipSegments(monthEffective, from, to), from);
+	});
+
+	const target =
+		upcomingEffective.find((run) => Date.parse(run.startsAt) > now.getTime()) ?? upcomingEffective[0];
+
+	const onCall = onCallRes.data;
+	const coverage = {
+		person: onCall?.userId ? name(index.byId, onCall.userId) : null,
+		via: onCall?.via ?? null,
+		override: onCall?.override ?? false
 	};
 
-	record(copy, `Duplicated from ${schedule.name}. It starts paused.`, by);
-	store.schedules.push(copy);
-	return copy;
+	return {
+		now: now.getTime(),
+		view: opts.view,
+		zone: opts.zone,
+		id: schedule.id,
+		name: schedule.name,
+		team: schedule.team,
+		timezone: schedule.timezone,
+		paused: schedule.paused,
+		archived: schedule.archived,
+		gap: gaps[0] ? formatGap(gaps[0]) : null,
+		weekLabel: `${week[0].label} ${week[0].num} – ${week[6].label} ${week[6].num}`,
+		days: week.map(({ label, num, today }) => ({ label, num, today })),
+		effective: week.map((day) => clipSegments(weekEffective, day.from, day.to)),
+		reasons: Object.fromEntries(schedule.overrides.map((o) => [o.startsAt, o.reason])),
+		layers: schedule.layers.map((layer, i) => ({
+			layer,
+			name: layerName(schedule.layers.length, i),
+			duty: formatDuty(layer),
+			days: week.map((day) =>
+				clipSegments(weekLayers.find((l) => l.index === i)?.segments ?? [], day.from, day.to)
+			)
+		})),
+		month: {
+			blanks: (monthStart.getUTCDay() + 6) % 7,
+			label: monthStart.toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }),
+			days: monthDays
+		},
+		handovers,
+		resolver: { date, time, coverage },
+		target: target
+			? { startsAt: target.startsAt, endsAt: target.endsAt, person: target.person }
+			: {
+					startsAt: now.toISOString(),
+					endsAt: new Date(now.getTime() + DAY).toISOString(),
+					person: null
+				},
+		people: [...index.byId.values()].sort((a, b) => a.localeCompare(b)),
+		feedUrl: schedule.feedUrl,
+		audit: await scheduleAudit(cookies, workspace, slug)
+	};
 }
 
-export function resumeSchedule(scheduleId: string, by = 'Maya Chen') {
-	const schedule = getSchedule(scheduleId);
-	if (!schedule) return;
-
-	schedule.paused = false;
-	record(schedule, 'Resumed the schedule. It pages again from the next handover.', by);
-}
-
-export function archiveSchedule(scheduleId: string, by = 'Maya Chen') {
-	const schedule = getSchedule(scheduleId);
-	if (!schedule) return;
-
-	schedule.archived = true;
-	record(schedule, 'Archived the schedule', by);
-}
-
-export type OverrideInput = {
-	person: string;
-	startsAt: string;
-	endsAt: string;
-	reason: string;
+const AUDIT_TEXT: Record<string, string> = {
+	'schedule.created': 'Created the schedule',
+	'schedule.updated': 'Edited the schedule',
+	'schedule.duplicated': 'Duplicated the schedule',
+	'schedule.archived': 'Archived the schedule',
+	'schedule.unarchived': 'Restored the schedule',
+	'schedule.paused': 'Paused the schedule',
+	'schedule.resumed': 'Resumed the schedule',
+	'schedule.override.added': 'Added an override',
+	'schedule.reassigned': 'Reassigned a participant'
 };
 
-export function addOverride(
-	scheduleId: string,
-	input: OverrideInput,
-	by = 'Maya Chen'
-): { error: string } | { override: Override } {
-	const schedule = getSchedule(scheduleId);
-	if (!schedule) return { error: 'That schedule no longer exists.' };
+async function scheduleAudit(cookies: Cookies, workspace: string, slug: string) {
+	const { data } = await apiClient(cookies).GET('/workspaces/{workspaceId}/audit', {
+		params: { path: { workspaceId: workspace }, query: { action: 'schedule', limit: 50 } }
+	});
+	return (data?.items ?? [])
+		.filter((entry) => entry.target === slug)
+		.map((entry) => ({
+			id: entry.id,
+			at: entry.at,
+			by: entry.actor || 'system',
+			what: AUDIT_TEXT[entry.action] ?? entry.action
+		}));
+}
 
-	const from = new Date(input.startsAt);
-	const to = new Date(input.endsAt);
-	if (!(to > from)) return { error: 'The override has to end after it starts.' };
+// ---- Form data (new / edit) ----------------------------------------------
 
-	const covered = segments(schedule, from, to);
-	if (covered.every((run) => run.person === input.person)) {
-		return {
-			error: `${input.person} already holds this shift. Pick someone else, or change the window.`
-		};
-	}
+export async function formOptions(cookies: Cookies, workspace: string) {
+	const [index, teams] = await Promise.all([memberIndex(cookies, workspace), teamSlugs(cookies, workspace)]);
+	return { people: [...index.byId.values()].sort((a, b) => a.localeCompare(b)), teams };
+}
 
-	const override: Override = {
-		id: id('ov-'),
-		person: input.person,
-		startsAt: from.toISOString(),
-		endsAt: to.toISOString(),
-		reason: input.reason,
-		createdBy: by,
-		createdAt: new Date().toISOString()
+export async function editSchedule(cookies: Cookies, workspace: string, slug: string) {
+	const [{ data }, index] = await Promise.all([
+		apiClient(cookies).GET('/workspaces/{workspaceId}/schedules/{scheduleSlug}', {
+			params: { path: { workspaceId: workspace, scheduleSlug: slug } }
+		}),
+		memberIndex(cookies, workspace)
+	]);
+	if (!data) return null;
+	const schedule = toSchedule(data, index.byId);
+	return { name: schedule.name, team: schedule.team, timezone: schedule.timezone, layers: schedule.layers };
+}
+
+// ---- Preview -------------------------------------------------------------
+
+export async function previewRows(cookies: Cookies, workspace: string, input: ScheduleInput, from: string) {
+	const { byName, byId } = await memberIndex(cookies, workspace);
+	const fromDate = new Date(`${from}T00:00:00Z`);
+	const to = new Date(fromDate.getTime() + 7 * DAY);
+
+	const { data } = await apiClient(cookies).POST('/workspaces/{workspaceId}/schedules/preview', {
+		params: { path: { workspaceId: workspace } },
+		body: {
+			timezone: input.timezone,
+			layers: toApiLayers(input.layers, byName),
+			from: fromDate.toISOString(),
+			to: to.toISOString()
+		}
+	});
+
+	const effectiveSegments = (data?.effective ?? []).map((s) => toSegment(s, byId));
+	const layerSegments = (data?.layers ?? []).map((l) => ({
+		index: l.index,
+		segments: l.segments.map((s) => toSegment(s, byId))
+	}));
+
+	const dayStart = input.layers[input.layers.length - 1]?.handoverHour ?? 0;
+	const days = Array.from({ length: 7 }, (_, i) => new Date(fromDate.getTime() + i * DAY));
+	const windowOf = (day: Date) => {
+		const f = new Date(day);
+		f.setUTCHours(dayStart, 0, 0, 0);
+		return { from: f, to: new Date(f.getTime() + DAY) };
 	};
 
-	schedule.overrides.push(override);
-
-	const window = `${from.toISOString().slice(0, 16).replace('T', ' ')}–${to.toISOString().slice(11, 16)} UTC`;
-	record(schedule, `Added override: ${input.person} takes ${window} — ${override.reason}`, by);
-
-	return { override };
+	return {
+		days: days.map((d) => ({ label: WEEKDAY[d.getUTCDay()], num: d.getUTCDate(), iso: d.toISOString() })),
+		effective: days.map((d) => {
+			const w = windowOf(d);
+			return daySummaryFromSegments(clipSegments(effectiveSegments, w.from, w.to), w.from);
+		}),
+		rows: input.layers.map((layer, i) => ({
+			label: `L${input.layers.length - i}`,
+			title: layerName(input.layers.length, i),
+			days: days.map((d) => {
+				const w = windowOf(d);
+				const segs = layerSegments.find((l) => l.index === i)?.segments ?? [];
+				return daySummaryFromSegments(clipSegments(segs, w.from, w.to), w.from);
+			})
+		}))
+	};
 }
 
-export function onCallNow(schedule: Schedule, now: Date) {
-	if (schedule.paused) return { person: null, until: null };
+// ---- Mine ----------------------------------------------------------------
 
-	const cover = coverageAt(schedule, now);
-	if (!cover.person) return { person: null, until: null };
-
-	const [run] = segments(schedule, now, new Date(now.getTime() + 14 * DAY));
-	return { person: cover.person, until: run?.endsAt ?? null };
+export async function myShifts(cookies: Cookies, workspace: string, from: string, to: string) {
+	const { data } = await apiClient(cookies).GET('/workspaces/{workspaceId}/on-call', {
+		params: { path: { workspaceId: workspace }, query: { from, to } }
+	});
+	return (data?.items ?? []).map((shift) => ({
+		startsAt: shift.startsAt,
+		endsAt: shift.endsAt,
+		scheduleSlug: shift.scheduleSlug
+	}));
 }
 
-export function listSwapRequests(): SwapRequest[] {
-	return store.requests;
+// ---- Mutations -----------------------------------------------------------
+
+type SaveResult = { slug?: string; nameError?: string; error?: string };
+
+export async function createSchedule(
+	cookies: Cookies,
+	workspace: string,
+	input: ScheduleInput
+): Promise<SaveResult> {
+	const { byName } = await memberIndex(cookies, workspace);
+	const { data, error, response } = await apiClient(cookies).POST('/workspaces/{workspaceId}/schedules', {
+		params: { path: { workspaceId: workspace } },
+		body: { name: input.name, team: input.team, timezone: input.timezone, layers: toApiLayers(input.layers, byName) }
+	});
+	if (data) return { slug: data.slug };
+	if (response?.status === 409) return { nameError: error?.detail ?? 'A schedule already goes by that name.' };
+	return { error: error?.detail ?? 'Could not create the schedule.' };
 }
 
-export function requestSwap(text: string, message: string) {
-	store.requests.unshift({ id: id('rq-'), text, message, status: 'pending' });
+export async function updateSchedule(
+	cookies: Cookies,
+	workspace: string,
+	slug: string,
+	input: ScheduleInput
+): Promise<SaveResult> {
+	const { byName } = await memberIndex(cookies, workspace);
+	const { data, error, response } = await apiClient(cookies).PUT(
+		'/workspaces/{workspaceId}/schedules/{scheduleSlug}',
+		{
+			params: { path: { workspaceId: workspace, scheduleSlug: slug } },
+			body: { name: input.name, team: input.team, timezone: input.timezone, layers: toApiLayers(input.layers, byName) }
+		}
+	);
+	if (data) return { slug: data.slug };
+	if (response?.status === 409) return { nameError: error?.detail ?? 'A schedule already goes by that name.' };
+	return { error: error?.detail ?? 'Could not save the schedule.' };
+}
+
+export async function duplicateSchedule(
+	cookies: Cookies,
+	workspace: string,
+	slug: string
+): Promise<{ slug?: string; error?: string }> {
+	const { data, error } = await apiClient(cookies).POST(
+		'/workspaces/{workspaceId}/schedules/{scheduleSlug}/duplicate',
+		{ params: { path: { workspaceId: workspace, scheduleSlug: slug } } }
+	);
+	if (data) return { slug: data.slug };
+	return { error: error?.detail ?? 'Could not duplicate the schedule.' };
+}
+
+async function scheduleAction(
+	cookies: Cookies,
+	workspace: string,
+	slug: string,
+	action: 'archive' | 'unarchive' | 'pause' | 'resume'
+): Promise<boolean> {
+	const paths = {
+		archive: '/workspaces/{workspaceId}/schedules/{scheduleSlug}/archive',
+		unarchive: '/workspaces/{workspaceId}/schedules/{scheduleSlug}/unarchive',
+		pause: '/workspaces/{workspaceId}/schedules/{scheduleSlug}/pause',
+		resume: '/workspaces/{workspaceId}/schedules/{scheduleSlug}/resume'
+	} as const;
+	const { error } = await apiClient(cookies).POST(paths[action], {
+		params: { path: { workspaceId: workspace, scheduleSlug: slug } }
+	});
+	return !error;
+}
+
+export const archiveSchedule = (c: Cookies, w: string, s: string) => scheduleAction(c, w, s, 'archive');
+export const unarchiveSchedule = (c: Cookies, w: string, s: string) => scheduleAction(c, w, s, 'unarchive');
+export const pauseSchedule = (c: Cookies, w: string, s: string) => scheduleAction(c, w, s, 'pause');
+export const resumeSchedule = (c: Cookies, w: string, s: string) => scheduleAction(c, w, s, 'resume');
+
+export async function deleteSchedule(cookies: Cookies, workspace: string, slug: string): Promise<boolean> {
+	const { error } = await apiClient(cookies).DELETE('/workspaces/{workspaceId}/schedules/{scheduleSlug}', {
+		params: { path: { workspaceId: workspace, scheduleSlug: slug } }
+	});
+	return !error;
+}
+
+export async function addOverride(
+	cookies: Cookies,
+	workspace: string,
+	slug: string,
+	input: OverrideInput
+): Promise<{ error?: string }> {
+	const { byName } = await memberIndex(cookies, workspace);
+	const userId = byName.get(input.person);
+	if (!userId) return { error: 'Pick a person from the workspace.' };
+	const { error } = await apiClient(cookies).POST(
+		'/workspaces/{workspaceId}/schedules/{scheduleSlug}/overrides',
+		{
+			params: { path: { workspaceId: workspace, scheduleSlug: slug } },
+			body: { userId, startsAt: input.startsAt, endsAt: input.endsAt, reason: input.reason }
+		}
+	);
+	return error ? { error: error.detail ?? 'Could not add the override.' } : {};
 }

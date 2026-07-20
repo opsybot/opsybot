@@ -3,19 +3,19 @@
 	import ChevronUpIcon from '@lucide/svelte/icons/chevron-up';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import XIcon from '@lucide/svelte/icons/x';
-	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as Field from '$lib/components/ui/field';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import * as RadioGroup from '$lib/components/ui/radio-group';
 	import * as Select from '$lib/components/ui/select';
-	import { ASSIGNABLE, formatDuty, layerName, ROTATIONS, UNREACHABLE, type Layer } from '$lib/oncall';
+	import { formatDuty, layerName, ROTATIONS, type Layer } from '$lib/oncall';
 
 	let {
 		layer,
 		index,
 		total,
+		people,
 		errors,
 		update,
 		move,
@@ -24,13 +24,14 @@
 		layer: Layer;
 		index: number;
 		total: number;
+		people: string[];
 		errors?: { participants?: string[]; intervalDays?: string[]; startsOn?: string[] };
 		update: (index: number, patch: Partial<Layer>) => void;
 		move: (index: number, by: number) => void;
 		remove: (index: number) => void;
 	} = $props();
 
-	const addable = $derived(ASSIGNABLE.filter((person) => !layer.participants.includes(person)));
+	const addable = $derived(people.filter((person) => !layer.participants.includes(person)));
 	const nobody = $derived(layer.participants.length === 0);
 
 	let adding = $state('');
@@ -115,11 +116,6 @@
 								{position + 1}
 							</span>
 							<span class="text-[13px] font-medium">{person}</span>
-							{#if UNREACHABLE.includes(person)}
-								<Badge tone="warning" size="sm" title="No notification channel connected">
-									unreachable
-								</Badge>
-							{/if}
 
 							<div class="flex-1"></div>
 
@@ -253,7 +249,7 @@
 						</Select.Content>
 					</Select.Root>
 					<Field.FieldDescription class="text-subtle-foreground text-xs">
-						UTC, 24-hour.
+						Local to the schedule, 24-hour.
 					</Field.FieldDescription>
 				</Field.Field>
 

@@ -158,4 +158,4 @@
 	</div>
 </Page>
 
-<SwapDialog bind:open shift={swapping} me={data.me} />
+<SwapDialog bind:open shift={swapping} me={data.me} people={data.people} />

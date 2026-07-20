@@ -1,26 +1,28 @@
 <script lang="ts">
 	import RepeatIcon from '@lucide/svelte/icons/repeat';
+	import { untrack } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Field from '$lib/components/ui/field';
 	import { Input } from '$lib/components/ui/input';
 	import * as Select from '$lib/components/ui/select';
-	import { PEOPLE } from '$lib/oncall';
 
 	let {
 		open = $bindable(false),
 		shift,
-		me
+		me,
+		people
 	}: {
 		open?: boolean;
 		shift: { when: string; schedule: string } | null;
 		me: string;
+		people: string[];
 	} = $props();
 
-	const others = PEOPLE.filter((person) => person !== me);
+	const others = $derived(people.filter((person) => person !== me));
 
-	let person = $state(others[0]);
+	let person = $state(untrack(() => people.find((name) => name !== me) ?? people[0] ?? ''));
 	let message = $state('');
 </script>
 

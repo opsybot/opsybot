@@ -1,6 +1,10 @@
 package main
 
-import "github.com/opsybot/opsybot/cmd"
+import (
+	_ "time/tzdata"
+
+	"github.com/opsybot/opsybot/cmd"
+)
 
 func main() {
 	cmd.Execute()

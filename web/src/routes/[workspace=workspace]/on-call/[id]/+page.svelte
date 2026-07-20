@@ -223,6 +223,7 @@
 	bind:open={overriding}
 	schedule={data.name}
 	target={data.target}
+	people={data.people}
 	now={data.now}
 	error={form?.error}
 />

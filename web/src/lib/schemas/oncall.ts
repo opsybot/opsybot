@@ -20,10 +20,14 @@ export const scheduleSchema = z.object({
 	name: z
 		.string()
 		.min(1, 'Give the schedule a name.')
-		.regex(/^[a-z0-9-]+$/, 'Lower case letters, numbers and dashes — it is used in the feed URL.')
-		// 'new' and 'mine' are already route segments
-		.refine((name) => !['new', 'mine'].includes(name), 'That name is reserved. Pick another.'),
+		.regex(
+			/^[a-z][a-z0-9-]{0,39}$/,
+			'Start with a letter; lower case letters, numbers and dashes — it is used in the feed URL.'
+		)
+		// these collide with route segments and the preview endpoint
+		.refine((name) => !['new', 'mine', 'preview'].includes(name), 'That name is reserved. Pick another.'),
 	team: z.string().min(1, 'Pick a team.'),
+	timezone: z.string().min(1, 'Pick a timezone.'),
 	layers: z.array(layerSchema).min(1, 'A schedule needs at least one layer.')
 });
 

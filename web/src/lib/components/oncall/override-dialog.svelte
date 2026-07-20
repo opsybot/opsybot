@@ -10,23 +10,25 @@
 	import * as RadioGroup from '$lib/components/ui/radio-group';
 	import * as Select from '$lib/components/ui/select';
 	import { Label } from '$lib/components/ui/label';
-	import { PEOPLE, formatShift, weekdayName } from '$lib/oncall';
+	import { formatShift, weekdayName } from '$lib/oncall';
 
 	let {
 		open = $bindable(false),
 		schedule,
 		target,
+		people,
 		now,
 		error
 	}: {
 		open?: boolean;
 		schedule: string;
 		target: { startsAt: string; endsAt: string; person: string | null };
+		people: string[];
 		now: number;
 		error?: string;
 	} = $props();
 
-	let person = $state(PEOPLE.find((name) => name !== target.person) ?? PEOPLE[0]);
+	let person = $state(untrack(() => people.find((name) => name !== target.person) ?? people[0] ?? ''));
 	let mode = $state('full');
 	let reason = $state('');
 
@@ -81,7 +83,7 @@
 							<Select.Trigger>{person}</Select.Trigger>
 							<Select.Content>
 								<Select.Group>
-									{#each PEOPLE as name (name)}
+									{#each people as name (name)}
 										<Select.Item value={name} label={name}>{name}</Select.Item>
 									{/each}
 								</Select.Group>
