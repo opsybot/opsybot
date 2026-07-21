@@ -161,7 +161,6 @@ export type ServiceInput = {
 
 const RESERVED = ['new'];
 
-// The name is the route segment, so it cannot take a reserved segment or an existing id
 export function nameTaken(name: string, exceptId?: string): boolean {
 	if (RESERVED.includes(name)) return true;
 	return store.some((service) => service.id === name && service.id !== exceptId);
@@ -189,7 +188,6 @@ export function updateService(serviceId: string, input: ServiceInput) {
 	service.team = input.team;
 	service.description = input.description;
 	service.links = input.links;
-	// Exclude old and new names so a rename cannot leave a self-dependency
 	service.deps = validDeps(input.deps, [serviceId, input.name]);
 
 	if (input.name !== serviceId) {

@@ -28,6 +28,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { ws } from '$lib/navigation';
+	import { isSoloLayer } from '$lib/oncall';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
@@ -36,7 +37,10 @@
 	let archiving = $state(false);
 	let deleting = $state(false);
 
-	// Local zone is browser-only; SSR renders UTC to avoid hydration mismatch
+	const everyLayerSolo = $derived(
+		data.layers.length > 0 && data.layers.every((entry) => isSoloLayer(entry.layer))
+	);
+
 	let mounted = $state(false);
 	let localZone = $state('');
 
@@ -107,7 +111,6 @@
 					method="POST"
 					action="?/duplicate"
 					use:enhance={() => {
-						// Capture the name before the redirect swaps data to the copy
 						const from = data.name;
 						return async ({ result, update }) => {
 							await update();
@@ -133,7 +136,7 @@
 					action="?/unarchive"
 					use:enhance={() => async ({ result, update }) => {
 						await update();
-						if (result.type === 'success') toast.success(`${data.name} is live again.`);
+						if (result.type === 'success') toast.success(`Restored ${data.name}. It pages again.`);
 						else if (result.type === 'failure')
 							toast.error(String(result.data?.error ?? 'Could not restore the schedule.'));
 					}}
@@ -222,14 +225,14 @@
 					</span>
 					<span class="text-warning-ink inline-flex items-center gap-[5px]">
 						<TriangleAlertIcon class="size-[11px]" />
-						gap — no coverage
+						gap: no coverage
 					</span>
 					<span class="ml-auto">higher layers take precedence</span>
 				</div>
 			</section>
 
 			<div class="flex flex-col gap-3.5">
-				<HandoversCard handovers={data.handovers} now={data.now} />
+				<HandoversCard handovers={data.handovers} now={data.now} solo={everyLayerSolo} />
 				<ResolverCard
 					date={data.resolver.date}
 					time={data.resolver.time}

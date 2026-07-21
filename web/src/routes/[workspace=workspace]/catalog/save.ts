@@ -12,7 +12,7 @@ export async function save(
 
 	if (!name) return { error: 'Give the service a name.' };
 	if (!/^[a-z0-9-]+$/.test(name)) {
-		return { error: 'Lower case letters, numbers and dashes — it is used in the URL.' };
+		return { error: 'Lower case letters, numbers and dashes. It is used in the URL.' };
 	}
 	if (nameTaken(name, editingId ?? undefined)) {
 		return { error: 'A service already goes by that name.' };

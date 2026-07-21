@@ -10,7 +10,7 @@
 </script>
 
 {#if !enabled}
-	<SurfaceOff>Related-incident hints need a model — currently unavailable.</SurfaceOff>
+	<SurfaceOff>Related-incident hints need a model: currently unavailable.</SurfaceOff>
 {:else}
 	<div class="bg-card rounded-xl border px-4 py-3.5">
 		<header class="mb-1.5 flex items-center gap-2">

@@ -122,7 +122,7 @@
 	{:else}
 		<div class="bg-card flex flex-col gap-4 rounded-xl border p-[18px]">
 			<p class="text-muted-foreground m-0 text-[13.5px] leading-[1.6]">
-				Fire a test alert from {name} at the endpoint — or let Opsybot send one for you — and watch it
+				Fire a test alert from {name} at the endpoint, or let Opsybot send one for you, and watch it
 				arrive.
 			</p>
 			{#if testState === 'idle'}
@@ -144,7 +144,7 @@
 					<Alert.Content>
 						<Alert.Title>Test event received</Alert.Title>
 						<Alert.Description>
-							2026-07-11 09:58:12 UTC · signature valid · parsed OK — title, severity, and service all
+							2026-07-11 09:58:12 UTC · signature valid · parsed OK: title, severity, and service all
 							mapped. It would route through your rules; no one was paged.
 						</Alert.Description>
 					</Alert.Content>

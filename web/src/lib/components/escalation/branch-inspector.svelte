@@ -60,7 +60,7 @@
 		</Select.Content>
 	</Select.Root>
 	<p class="text-subtle-foreground mt-2 text-[11.5px] leading-[1.5]">
-		The escalation follows whichever lane matches the incident. Lanes don't rejoin — each ends on its
+		The escalation follows whichever lane matches the incident. Lanes don't rejoin. Each ends on its
 		own.
 	</p>
 </div>

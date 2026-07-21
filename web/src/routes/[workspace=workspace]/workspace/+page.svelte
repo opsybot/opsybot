@@ -118,6 +118,6 @@
 >
 	<input type="hidden" name="id" value={confirmMember?.id ?? ''} />
 	<input type="hidden" name="replacements" value={'{}'} />
-	Nothing references {confirmMember?.name}, so this is safe. They lose access immediately — reactivate any
+	Nothing references {confirmMember?.name}, so this is safe. They lose access immediately: reactivate any
 	time.
 </ConfirmDialog>

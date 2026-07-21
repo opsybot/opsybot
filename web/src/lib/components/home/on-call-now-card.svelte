@@ -9,7 +9,6 @@
 
 	const today = $derived(formatUtcDate(new Date(now).toISOString()));
 
-	// Mark handovers that land on a later UTC day so 09:00 is not read as today
 	function until(iso: string): string {
 		const suffix = formatUtcDate(iso) === today ? '' : ' tomorrow';
 		return `until ${formatUtcTime(iso)}${suffix}`;

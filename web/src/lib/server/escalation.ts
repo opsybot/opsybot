@@ -81,7 +81,7 @@ function seed(): Policy[] {
 			recent: [
 				{ id: 'INC-2481', alert: 'Synthetic checkout failing from us-east-1', at: '2026-07-11 09:12 UTC', outcome: 'acked at level 2', tone: 'success', by: 'Priya Nair', duration: '7 m 08 s' },
 				{ id: null, alert: 'payments-api p99 above 800 ms', at: '2026-07-11 06:40 UTC', outcome: 'acked at level 1', tone: 'success', by: 'Maya Chen', duration: '1 m 44 s' },
-				{ id: null, alert: 'Queue depth above 10k', at: '2026-07-10 22:15 UTC', outcome: 'exhausted — unacked', tone: 'critical', by: null, duration: '35 m' },
+				{ id: null, alert: 'Queue depth above 10k', at: '2026-07-10 22:15 UTC', outcome: 'exhausted: unacked', tone: 'critical', by: null, duration: '35 m' },
 				{ id: null, alert: 'Disk usage 85% on db-3', at: '2026-07-10 14:02 UTC', outcome: 'resolved before level 2', tone: 'neutral', by: null, duration: '4 m 51 s' }
 			]
 		},
@@ -138,7 +138,6 @@ function seed(): Policy[] {
 const store = { policies: seed() };
 if (scenario() === 'empty') store.policies = [];
 
-// Route segments beside [id]; a policy id must not shadow them
 const RESERVED = new Set(['new']);
 
 const slugify = (name: string): string =>

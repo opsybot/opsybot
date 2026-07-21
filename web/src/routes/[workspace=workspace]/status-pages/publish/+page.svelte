@@ -241,7 +241,7 @@
 				<Alert tone="info">
 					<LockIcon />
 					<AlertContent>
-						Updates are append-only. To correct something, publish a new update — visitors and
+						Updates are append-only. To correct something, publish a new update: visitors and
 						auditors see the full history.
 					</AlertContent>
 				</Alert>
@@ -289,7 +289,7 @@
 						</Field.FieldLabel>
 						<Textarea id="upd" name="text" bind:value={updateText} rows={3} />
 						<Field.FieldDescription class="text-subtle-foreground text-xs">
-							Pre-filled with the stage-appropriate template — replace the brackets.
+							Pre-filled with the stage-appropriate template: replace the brackets.
 						</Field.FieldDescription>
 					</Field.Field>
 

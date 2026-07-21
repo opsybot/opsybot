@@ -21,7 +21,6 @@
 
 	let step = $state(1);
 
-	// dataType 'json' so step one still posts once its inputs leave the DOM
 	const form = superForm(untrack(() => data.form), {
 		dataType: 'json',
 		validators: zod4Client(signupSchema),

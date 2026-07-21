@@ -24,7 +24,7 @@
 			<Button
 				size="sm"
 				variant="secondary"
-				onclick={() => toast('Custom roles start as a copy of an existing one — pick permissions row by row.')}
+				onclick={() => toast('Custom roles start as a copy of an existing one. Pick permissions row by row.')}
 			>
 				<PlusIcon data-icon="inline-start" />
 				New custom role
@@ -52,7 +52,7 @@
 											<CheckIcon class="mx-auto size-[14px] text-[var(--mint-500)]" />
 											<span class="sr-only">granted</span>
 										{:else}
-											<span class="text-subtle-foreground text-[12px]" aria-hidden="true">—</span>
+											<span class="text-subtle-foreground text-[12px]" aria-hidden="true">: </span>
 											<span class="sr-only">not granted</span>
 										{/if}
 									</td>
@@ -63,7 +63,7 @@
 				</table>
 			</div>
 			<div class="text-subtle-foreground border-t px-4 py-[9px] text-[11.5px]">
-				SSO, SCIM, and security policies stay with workspace admins — no role can grant them.
+				SSO, SCIM, and security policies stay with workspace admins: no role can grant them.
 			</div>
 		</div>
 	</div>

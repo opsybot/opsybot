@@ -12,7 +12,6 @@ export const TEAMS = ['payments', 'platform', 'frontend'];
 export const SERVICES = ['payments-api', 'gateway', 'database'];
 export const SEVERITIES = ['SEV1', 'SEV2', 'SEV3'];
 
-// K-anonymity floor: below this cohort size, on-call load is withheld
 export const COHORT_FLOOR = 5;
 
 export type Filters = {
@@ -69,14 +68,14 @@ export type Definition = {
 export const DEFINITIONS: Definition[] = [
 	{
 		key: 'MTTA',
-		term: 'MTTA — mean time to acknowledge',
+		term: 'MTTA: mean time to acknowledge',
 		blurb: 'From page sent to a human acknowledging. Measures how fast someone picks up.',
 		definition:
 			'Median duration from the first page sent to a human acknowledging it. Excludes auto-resolved alerts that never paged.'
 	},
 	{
 		key: 'MTTR',
-		term: 'MTTR — mean time to resolve',
+		term: 'MTTR: mean time to resolve',
 		blurb: 'From declare to resolved. The headline recovery number.',
 		definition:
 			'Median from incident declared to resolved. Reopened incidents count the full span including the reopen.'
@@ -84,7 +83,7 @@ export const DEFINITIONS: Definition[] = [
 	{
 		key: 'TTID',
 		term: 'Time to identified',
-		blurb: 'From investigating to identified — how long root-causing takes.',
+		blurb: 'From investigating to identified: how long root-causing takes.',
 		definition:
 			'From the investigating stage to identified. Only incidents that reached identified are included.'
 	},

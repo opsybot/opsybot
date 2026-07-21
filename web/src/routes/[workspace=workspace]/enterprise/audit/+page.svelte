@@ -21,7 +21,6 @@
 	let format = $state(untrack(() => data.audit?.format ?? 'JSON lines'));
 	let retention = $state(untrack(() => data.audit?.retention ?? '7 years'));
 
-	// A test proves one destination; editing the endpoint or format resets it
 	let streamTest = $state<'idle' | 'running' | 'ok'>('idle');
 	let testTimer: ReturnType<typeof setTimeout>;
 	let okAlert = $state<HTMLElement | null>(null);
@@ -40,8 +39,7 @@
 		clearTimeout(testTimer);
 		testTimer = setTimeout(async () => {
 			streamTest = 'ok';
-			toast.success('Test event delivered — 200 in 0.4 s.');
-			// The focused button unmounts; move focus to the result alert
+			toast.success('Test event delivered: 200 in 0.4 s.');
 			await tick();
 			okAlert?.focus();
 		}, 1500);
@@ -74,11 +72,11 @@
 				<span class="text-[13.5px] font-semibold">Saved filters</span>
 				<span class="text-subtle-foreground text-[11.5px]">one click back to a saved audit view</span>
 				<div class="flex-1"></div>
-				<Button size="sm" variant="ghost" onclick={() => toast.success('Export started — filtered events as JSONL.')}>
+				<Button size="sm" variant="ghost" onclick={() => toast.success('Export started: filtered events as JSONL.')}>
 					<DownloadIcon data-icon="inline-start" />
 					Export JSONL
 				</Button>
-				<Button size="sm" variant="ghost" onclick={() => toast.success('Export started — filtered events as CSV.')}>
+				<Button size="sm" variant="ghost" onclick={() => toast.success('Export started: filtered events as CSV.')}>
 					<DownloadIcon data-icon="inline-start" />
 					Export CSV
 				</Button>
@@ -97,7 +95,7 @@
 			</div>
 			<p class="text-subtle-foreground m-0 text-[11.5px]">
 				The event list itself lives in
-				<a href={ws('/workspace/audit')} class="text-brand-foreground hover:underline">Workspace admin → Audit log</a> — these
+				<a href={ws('/workspace/audit')} class="text-brand-foreground hover:underline">Workspace admin → Audit log</a>. These
 				tools extend it.
 			</p>
 		</div>
@@ -116,7 +114,7 @@
 					<CheckIcon />
 					<Alert.Content>
 						<Alert.Description>
-							Streaming live — every audit event ships within seconds. Failures retry with backoff for 24 h.
+							Streaming live: every audit event ships within seconds. Failures retry with backoff for 24 h.
 						</Alert.Description>
 					</Alert.Content>
 				</Alert.Root>

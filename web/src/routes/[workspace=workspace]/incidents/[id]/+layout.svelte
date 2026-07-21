@@ -172,7 +172,7 @@
 					Next update
 				</span>
 				{#if resolved || !incident.nextUpdateAt}
-					<span class="text-subtle-foreground text-[12.5px]">Resolved — no updates due.</span>
+					<span class="text-subtle-foreground text-[12.5px]">Resolved: no updates due.</span>
 				{:else}
 					<form method="POST" action="{base}?/post-update" use:enhance>
 						<UpdateCountdown dueAt={incident.nextUpdateAt} now={data.now} />

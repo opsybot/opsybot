@@ -1,8 +1,6 @@
 <script lang="ts" module>
 	import { type VariantProps, tv } from "tailwind-variants";
 
-	// The Opsybot design system's Badge: a tone (what it means) crossed with a variant (how loud).
-	// Soft is a wash with a hairline; solid fills with the tone and flips the text.
 	export const badgeVariants = tv({
 		base: "inline-flex w-fit shrink-0 items-center justify-center gap-[5px] overflow-hidden rounded-sm border leading-none font-semibold tracking-[0.01em] whitespace-nowrap [&>svg]:pointer-events-none [&>svg]:size-3",
 		variants: {

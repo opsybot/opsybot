@@ -30,7 +30,7 @@
 				</div>
 				<p class="text-muted-foreground m-0 text-[13.5px] leading-[1.65]">{incident.summary}</p>
 				<p class="text-subtle-foreground mt-2.5 mb-0 text-[11px]">
-					Drafted by Opsybot from the timeline — review before sharing.
+					Drafted by Opsybot from the timeline. Review before sharing.
 				</p>
 			</Panel>
 		{/if}
@@ -67,8 +67,7 @@
 					<LinkIcon class="text-subtle-foreground size-3.5 shrink-0" />
 					<span class="flex-1 text-[13px]">
 						<Badge tone="neutral" size="sm">{related.relation}</Badge>
-						<span class="text-foreground font-mono text-xs">{related.id}</span>
-						— {related.name}
+						<span class="text-foreground font-mono text-xs">{related.id}</span>: {related.name}
 					</span>
 				</div>
 			{/each}

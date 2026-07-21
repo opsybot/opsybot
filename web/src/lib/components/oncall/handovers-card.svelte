@@ -1,8 +1,12 @@
 <script lang="ts">
 	import ArrowRightLeftIcon from '@lucide/svelte/icons/arrow-right-left';
-	import { formatWhen, type Handover } from '$lib/oncall';
+	import { formatWhen, SOLO_LAYER_NOTE, type Handover } from '$lib/oncall';
 
-	let { handovers, now }: { handovers: Handover[]; now: number } = $props();
+	let {
+		handovers,
+		now,
+		solo = false
+	}: { handovers: Handover[]; now: number; solo?: boolean } = $props();
 </script>
 
 <section class="bg-card overflow-hidden rounded-xl border">
@@ -24,7 +28,11 @@
 		</div>
 	{:else}
 		<p class="text-subtle-foreground m-0 px-3.5 py-3 text-[12.5px]">
-			No handovers in the next two weeks.
+			{#if solo}
+				{SOLO_LAYER_NOTE}
+			{:else}
+				No handovers in the next two weeks.
+			{/if}
 		</p>
 	{/each}
 </section>

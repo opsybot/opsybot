@@ -90,9 +90,9 @@ if (state === 'empty') {
 	store.license = {
 		plan: 'Community (AGPL core)',
 		capacity: 'unlimited responders · unrestricted paging',
-		licensee: '—',
-		issued: '—',
-		expires: '—',
+		licensee: '–',
+		issued: '–',
+		expires: '–',
 		status: 'none',
 		daysLeft: 0
 	};

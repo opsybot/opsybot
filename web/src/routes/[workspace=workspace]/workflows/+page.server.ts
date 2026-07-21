@@ -14,7 +14,6 @@ export const actions: Actions = {
 	toggle: async ({ request }) => {
 		const form = await request.formData();
 		const workflow = getWorkflow(String(form.get('id')));
-		// Invert the stored state, not a form-supplied value
 		if (!workflow || !setEnabled(workflow.id, !workflow.enabled)) {
 			return fail(404, { error: 'That workflow no longer exists.' });
 		}

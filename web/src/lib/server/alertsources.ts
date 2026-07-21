@@ -64,19 +64,17 @@ if (empty) {
 const EVENTS: DeliveryEvent[] = [
 	{ at: '2026-07-11 09:48:11 UTC', title: 'payments-api p99 above 800 ms', outcome: 'deduped ×12', tone: 'neutral' },
 	{ at: '2026-07-11 09:41:03 UTC', title: 'Disk usage 85% on db-3', outcome: 'alert created', tone: 'success' },
-	{ at: '2026-07-11 08:02:14 UTC', title: '— unparseable —', outcome: 'parse failed', tone: 'critical' },
+	{ at: '2026-07-11 08:02:14 UTC', title: 'unparseable', outcome: 'parse failed', tone: 'critical' },
 	{ at: '2026-07-11 06:40:52 UTC', title: 'payments-api p99 above 800 ms', outcome: 'alert created', tone: 'success' },
 	{ at: '2026-07-10 23:19:40 UTC', title: 'Node exporter down on worker-7', outcome: 'alert created', tone: 'success' }
 ];
 
-// Always 16 lowercase hex chars so a minted secret passes its own length check
 function id16(): string {
 	let hex = '';
 	while (hex.length < 16) hex += Math.floor(Math.random() * 16).toString(16);
 	return hex.slice(0, 16);
 }
 
-// Route segments beside [id]; a slug taking one would shadow its detail page
 const RESERVED = new Set(['new', 'routing']);
 
 export function sanitizeMapping(raw: string): Mapping[] {
@@ -117,7 +115,6 @@ export function createSource(input: {
 	secret: string;
 }): Source {
 	const format = FORMATS.find((entry) => entry.id === input.formatId) ?? FORMATS[FORMATS.length - 1];
-	// Slug is the inbox address and route segment; unique across ids, slugs and RESERVED
 	const base = slugify(input.name) || format.id;
 	let unique = base;
 	for (

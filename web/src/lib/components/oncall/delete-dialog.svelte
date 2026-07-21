@@ -33,8 +33,8 @@
 							Delete {name}?
 						</Dialog.Title>
 						<Dialog.Description class="text-muted-foreground text-sm leading-[1.55]">
-							Its layers, participants, and overrides go with it, and the calendar stops reading. This
-							cannot be undone — restore it instead if you may still want the history.
+							Its layers, participants, and overrides go too. This cannot be undone. Restore it
+							instead to keep the history.
 						</Dialog.Description>
 					</div>
 				</div>

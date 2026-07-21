@@ -9,7 +9,15 @@
 	import { Label } from '$lib/components/ui/label';
 	import * as RadioGroup from '$lib/components/ui/radio-group';
 	import * as Select from '$lib/components/ui/select';
-	import { formatDuty, layerName, ROTATIONS, type Layer } from '$lib/oncall';
+	import DatePicker from '$lib/components/date-picker.svelte';
+	import {
+		formatDuty,
+		isSoloLayer,
+		layerName,
+		ROTATIONS,
+		SOLO_LAYER_NOTE,
+		type Layer
+	} from '$lib/oncall';
 
 	let {
 		layer,
@@ -33,6 +41,7 @@
 
 	const addable = $derived(people.filter((person) => !layer.participants.includes(person)));
 	const nobody = $derived(layer.participants.length === 0);
+	const solo = $derived(isSoloLayer(layer));
 
 	let adding = $state('');
 
@@ -101,7 +110,7 @@
 	<div class="flex flex-col gap-3.5 px-3.5 py-3">
 		<div>
 			<div class="text-subtle-foreground tracking-label mb-2 text-[11px] uppercase">
-				Participants — rotation order
+				Participants: rotation order
 			</div>
 
 			{#if nobody}
@@ -153,6 +162,12 @@
 							</Button>
 						</div>
 					{/each}
+				</div>
+			{/if}
+
+			{#if solo}
+				<div class="text-warning-ink mb-2 text-[12.5px]">
+					{SOLO_LAYER_NOTE}
 				</div>
 			{/if}
 
@@ -260,15 +275,13 @@
 					>
 						Start date
 					</Field.FieldLabel>
-					<Input
+					<DatePicker
 						id="{layer.id}-start"
-						type="date"
-						required
+						label="Start date"
+						size="sm"
 						value={layer.startsOn}
-						aria-invalid={errors?.startsOn ? 'true' : undefined}
-						oninput={(event: Event) =>
-							update(index, { startsOn: (event.currentTarget as HTMLInputElement).value })}
-						class="h-[34px] text-[13px]"
+						invalid={Boolean(errors?.startsOn)}
+						onChange={(startsOn) => update(index, { startsOn })}
 					/>
 					{#if errors?.startsOn}
 						<Field.FieldError class="text-critical-ink text-xs font-normal">

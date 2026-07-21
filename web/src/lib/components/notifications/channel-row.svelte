@@ -21,7 +21,7 @@
 		testing = true;
 		timer = setTimeout(() => {
 			testing = false;
-			toast.success(`Test page sent to ${meta.label} — delivered in 0.8 s.`);
+			toast.success(`Test page sent to ${meta.label}: delivered in 0.8 s.`);
 		}, 1200);
 	}
 	onDestroy(() => clearTimeout(timer));

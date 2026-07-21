@@ -26,7 +26,7 @@
 			<Button
 				size="sm"
 				onclick={() =>
-					toast.info('New pages reuse the settings form — open a page to see it.')}
+					toast.info('New pages reuse the settings form. Open a page to see it.')}
 			>
 				<PlusIcon data-icon="inline-start" />
 				New page

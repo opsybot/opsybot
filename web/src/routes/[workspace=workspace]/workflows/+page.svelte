@@ -102,7 +102,7 @@
 				</span>
 				<div class="text-[15px] font-medium">No workflows yet</div>
 				<p class="text-subtle-foreground m-0 max-w-[420px] text-center text-[13px] leading-[1.55]">
-					A workflow runs an action when something happens — a declaration, a severity change, an
+					A workflow runs an action when something happens: a declaration, a severity change, an
 					update that has gone overdue. Start from a template below.
 				</p>
 			</div>

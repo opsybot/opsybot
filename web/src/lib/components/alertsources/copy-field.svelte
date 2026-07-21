@@ -19,7 +19,7 @@
 			await navigator.clipboard?.writeText(value);
 			toast.success(`${label} copied.`);
 		} catch {
-			toast.error(`Could not copy — select and copy the ${label.toLowerCase()} manually.`);
+			toast.error(`Could not copy. Select and copy the ${label.toLowerCase()} manually.`);
 		}
 	}
 </script>

@@ -28,7 +28,6 @@
 
 	let { data }: PageProps = $props();
 
-	// Seeded once; this route remounts on navigation and a reseed would clobber edits
 	let name = $state(untrack(() => data.name));
 	let timezone = $state(untrack(() => data.timezone));
 	let severities = $state(untrack(() => data.severities.map((sev) => ({ ...sev }))));
@@ -273,7 +272,7 @@
 							bind:value={clientSecret}
 							disabled={clearClientSecret}
 							autocomplete="off"
-							placeholder={hasClientSecret ? 'Stored — leave blank to keep it' : 'Client secret'}
+							placeholder={hasClientSecret ? 'Stored. Leave blank to keep it' : 'Client secret'}
 						/>
 					</Field.Field>
 				</div>
@@ -297,7 +296,7 @@
 					<Field.FieldLabel for="sso-meta" class="text-muted-foreground text-[13px] font-medium">IdP metadata URL</Field.FieldLabel>
 					<Input id="sso-meta" class="font-mono text-[12px]" bind:value={samlMetadataUrl} placeholder="https://sso.example.com/saml/metadata" />
 				</Field.Field>
-				<CopyField label="Opsybot metadata — give this to your IdP" value={samlMetadataOut} />
+				<CopyField label="Opsybot metadata. Give this to your IdP" value={samlMetadataOut} />
 			</div>
 		{/if}
 
@@ -316,7 +315,7 @@
 		</Field.Field>
 	</SettingsSection>
 
-	<SettingsSection title="Data retention" note="self-hosted — you own the disk">
+	<SettingsSection title="Data retention" note="self-hosted. You own the disk">
 		<div class="flex flex-wrap gap-3">
 			{@render labeledSelect('Alert history', retention.alerts, RETENTION_OPTIONS.alerts, (v) => (retention.alerts = v), '160px')}
 			{@render labeledSelect('Incident history', retention.incidents, RETENTION_OPTIONS.incidents, (v) => (retention.incidents = v), '160px')}
@@ -331,7 +330,6 @@
 		use:enhance={() => async ({ result, update }) => {
 			await update({ reset: false });
 			if (result.type !== 'success') return;
-			// Server may sanitize values; copy them back so inputs show what was stored
 			name = data.name;
 			timezone = data.timezone;
 			severities = data.severities.map((sev) => ({ ...sev }));

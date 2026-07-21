@@ -54,7 +54,7 @@
 					use:enhance={() =>
 						async ({ result, update }) => {
 							await update({ reset: false });
-							if (result.type === 'success') toast.success(`${platform.label} reconnected — scopes refreshed.`);
+							if (result.type === 'success') toast.success(`${platform.label} reconnected: scopes refreshed.`);
 						}}
 				>
 					<input type="hidden" name="platform" value={platform.id} />

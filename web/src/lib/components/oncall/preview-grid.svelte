@@ -17,7 +17,7 @@
 	{@const uncovered = holes && day.gap}
 	{#if day.person}
 		<span
-			title={uncovered ? `${day.person} — part of this day is uncovered` : day.person}
+			title={uncovered ? `${day.person}: part of this day is uncovered` : day.person}
 			class="flex h-6 items-center justify-center gap-0.5 rounded-sm border text-[10.5px] font-semibold {uncovered
 				? 'bg-warning-wash border-warning-edge text-warning-ink'
 				: PERSON_CLASS[personTone(day.person)]}"

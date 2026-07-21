@@ -31,8 +31,6 @@ function ago(iso?: string | null): string {
 	return days === 1 ? 'yesterday' : `${days} d ago`;
 }
 
-// ---- Members -------------------------------------------------------------
-
 function mapMember(dto: Schemas['Member']): Member {
 	const auth = dto.authMethod === 'sso' ? 'SSO' : dto.authMethod === 'invited' ? 'invited' : 'password';
 	const references: MemberReference[] = (dto.references ?? []).map((ref) => ({
@@ -112,8 +110,6 @@ export async function reactivateMember(
 	);
 	return !error;
 }
-
-// ---- Teams ---------------------------------------------------------------
 
 async function memberNameIndex(cookies: Cookies, workspace: string) {
 	const members = await listMembers(cookies, workspace);
@@ -208,8 +204,6 @@ export async function updateTeam(
 	return !error;
 }
 
-// ---- API keys ------------------------------------------------------------
-
 function mapKey(dto: Schemas['ApiKey']): ApiKey {
 	return {
 		id: dto.id,
@@ -255,8 +249,6 @@ export async function revokeKey(cookies: Cookies, workspace: string, id: string)
 	return !error;
 }
 
-// ---- Audit ---------------------------------------------------------------
-
 export type AuditQuery = { q?: string; actor?: string; action?: string; cursor?: string };
 
 export async function listAudit(
@@ -283,13 +275,11 @@ export async function listAudit(
 			actor: entry.actor || 'system',
 			action: entry.action,
 			target: entry.target,
-			ip: entry.ip || '—'
+			ip: entry.ip || '–'
 		})),
 		nextCursor: data?.nextCursor ?? ''
 	};
 }
-
-// ---- Workspace settings (incident config is a deferred domain: fixture) ----
 
 const DEFAULT_SETTINGS = (): WorkspaceSettings => ({
 	name: 'Acme Corp',
@@ -334,7 +324,7 @@ const CONFIG_DIFF: ConfigDiff = {
 		{ path: 'routing/rule[2]', note: 'adds condition labels.env is prod' }
 	],
 	decision: [
-		{ path: 'policies/frontend-daytime', note: 'references user tom@acme.dev — deactivated. Pick a replacement or skip.' }
+		{ path: 'policies/frontend-daytime', note: 'references user tom@acme.dev, now deactivated. Pick a replacement or skip.' }
 	],
 	skipped: [{ path: 'statuspages/status.acme.dev', note: 'identical to current config' }]
 };

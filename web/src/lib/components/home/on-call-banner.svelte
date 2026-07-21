@@ -17,7 +17,6 @@
 
 	const start = $derived(Date.parse(shift.start));
 	const end = $derived(Date.parse(shift.end));
-	// Floor at 0.04 keeps a sliver of bar visible before the shift starts
 	const progress = $derived(Math.min(1, Math.max(0.04, (now - start) / (end - start))));
 </script>
 

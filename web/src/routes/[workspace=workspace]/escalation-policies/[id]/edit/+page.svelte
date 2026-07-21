@@ -6,7 +6,6 @@
 	let { data }: PageProps = $props();
 </script>
 
-<!-- {#key} reseeds the builder when the loaded policy changes -->
 {#key data}
 	<PolicyBuilder initial={data.tree} backHref={ws(`/escalation-policies/${data.id}`)} />
 {/key}

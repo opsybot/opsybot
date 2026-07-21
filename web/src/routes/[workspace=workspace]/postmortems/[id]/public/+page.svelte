@@ -15,7 +15,7 @@
 		>
 			<EyeIcon class="text-info-ink size-[13px] shrink-0" />
 			<span>
-				Previewing the public page — this is exactly what a visitor sees. No names, no internal links.
+				Previewing the public page. This is exactly what a visitor sees. No names, no internal links.
 			</span>
 			<a
 				href={ws(`/postmortems/${data.id}`)}
@@ -32,9 +32,9 @@
 				<TriangleAlertIcon class="text-warning-ink size-[13px] shrink-0" />
 				<span>
 					{#if !data.published}
-						Nobody can reach this yet — the postmortem has not been published.
+						Nobody can reach this yet: the postmortem has not been published.
 					{:else}
-						Nobody can reach this yet — the public link is switched off.
+						Nobody can reach this yet: the public link is switched off.
 					{/if}
 				</span>
 			</div>

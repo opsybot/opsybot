@@ -2,7 +2,6 @@
 	import { Switch as SwitchPrimitive } from "bits-ui";
 	import { cn, type WithoutChildrenOrChild } from "$lib/utils.js";
 
-	// The design system's Switch: a 42×24 track that fills mint when on, carrying an 18px knob.
 	let {
 		ref = $bindable(null),
 		class: className,

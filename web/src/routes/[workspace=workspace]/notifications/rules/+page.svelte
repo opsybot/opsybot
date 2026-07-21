@@ -14,7 +14,6 @@
 
 	let { data }: PageProps = $props();
 
-	// Seeded once; the route remounts on navigation, so no reseed effect is needed
 	let high = $state(untrack(() => data.high.map((step) => ({ ...step }))));
 	let low = $state(untrack(() => data.low.map((step) => ({ ...step }))));
 	let quiet = $state(untrack(() => structuredClone(data.quietHours)));
@@ -26,7 +25,7 @@
 	<div class="bg-card overflow-hidden rounded-xl border">
 		<header class="flex items-center gap-2 border-b px-4 py-3">
 			<SirenIcon class="text-subtle-foreground size-3.5" />
-			<span class="text-[13.5px] font-semibold">High urgency — pages</span>
+			<span class="text-[13.5px] font-semibold">High urgency: pages</span>
 			<span class="text-subtle-foreground text-[12px]">SEV1/SEV2 and anything that demands action</span>
 		</header>
 		<div class="flex flex-col gap-3 p-3.5">

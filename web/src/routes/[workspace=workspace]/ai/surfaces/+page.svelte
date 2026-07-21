@@ -11,13 +11,13 @@
 {#snippet label(title: string, where: string)}
 	<div class="text-muted-foreground mb-2 text-[11px] font-semibold tracking-[0.07em] uppercase">
 		{title}
-		<span class="text-subtle-foreground font-normal tracking-normal normal-case">— {where}</span>
+		<span class="text-subtle-foreground font-normal tracking-normal normal-case">: {where}</span>
 	</div>
 {/snippet}
 
 <div class="flex max-w-[760px] flex-col gap-[18px]">
 	<p class="text-subtle-foreground m-0 text-[13px] leading-[1.6]">
-		These components live inside other screens — the incident detail, the alert list, the declare
+		These components live inside other screens: the incident detail, the alert list, the declare
 		dialog. Shown here in both states: flip the global AI switch on the Models tab to see every
 		surface's "model unavailable" state.
 	</p>

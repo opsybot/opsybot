@@ -105,7 +105,6 @@
 							bind:this={forms[channel.id]}
 							use:enhance={() => async ({ result, update }) => {
 								await update({ reset: false });
-								// update() will not resync an unchanged server value, so revert by hand on failure
 								if (result.type !== 'success') {
 									channels[index].on = data.channels[index].on;
 									toast.error('Could not update the channel.');

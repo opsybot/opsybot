@@ -20,7 +20,6 @@ type Schemas = components['schemas'];
 const DAY = 86_400_000;
 const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-// UTC Monday of the current week; the create form anchors previews to it
 export function thisMonday(): string {
 	const now = new Date();
 	const monday = new Date(
@@ -134,8 +133,6 @@ const utcDay = (at: Date) => new Date(Date.UTC(at.getUTCFullYear(), at.getUTCMon
 export type ScheduleInput = { name: string; team: string; timezone: string; layers: Layer[] };
 export type OverrideInput = { person: string; startsAt: string; endsAt: string; reason: string };
 
-// ---- List ----------------------------------------------------------------
-
 export async function scheduleList(cookies: Cookies, workspace: string, includeArchived = false) {
 	const client = apiClient(cookies);
 	const [listRes, index] = await Promise.all([
@@ -181,8 +178,6 @@ export async function scheduleList(cookies: Cookies, workspace: string, includeA
 	);
 	return { now, schedules };
 }
-
-// ---- Detail --------------------------------------------------------------
 
 type DetailOptions = { view: 'week' | 'month'; zone: 'utc' | 'local'; date?: string; time?: string };
 
@@ -331,8 +326,6 @@ async function scheduleAudit(cookies: Cookies, workspace: string, slug: string) 
 		}));
 }
 
-// ---- Form data (new / edit) ----------------------------------------------
-
 export async function formOptions(cookies: Cookies, workspace: string) {
 	const [index, teams] = await Promise.all([memberIndex(cookies, workspace), teamSlugs(cookies, workspace)]);
 	return { people: [...index.byId.values()].sort((a, b) => a.localeCompare(b)), teams };
@@ -349,8 +342,6 @@ export async function editSchedule(cookies: Cookies, workspace: string, slug: st
 	const schedule = toSchedule(data, index.byId);
 	return { name: schedule.name, team: schedule.team, timezone: schedule.timezone, layers: schedule.layers };
 }
-
-// ---- Preview -------------------------------------------------------------
 
 export async function previewRows(cookies: Cookies, workspace: string, input: ScheduleInput, from: string) {
 	const { byName, byId } = await memberIndex(cookies, workspace);
@@ -399,8 +390,6 @@ export async function previewRows(cookies: Cookies, workspace: string, input: Sc
 	};
 }
 
-// ---- Mine ----------------------------------------------------------------
-
 export async function myShifts(cookies: Cookies, workspace: string, from: string, to: string) {
 	const { data } = await apiClient(cookies).GET('/workspaces/{workspaceId}/on-call', {
 		params: { path: { workspaceId: workspace }, query: { from, to } }
@@ -411,8 +400,6 @@ export async function myShifts(cookies: Cookies, workspace: string, from: string
 		scheduleSlug: shift.scheduleSlug
 	}));
 }
-
-// ---- Mutations -----------------------------------------------------------
 
 type SaveResult = { slug?: string; nameError?: string; error?: string };
 

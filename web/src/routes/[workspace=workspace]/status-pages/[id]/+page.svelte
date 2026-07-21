@@ -32,7 +32,6 @@
 
 	const page = $derived(data.page);
 
-	// Seed once from saved values so edits are not reset by re-renders
 	let accent = $state(untrack(() => page.accent));
 	let visibility = $state(untrack(() => page.visibility));
 	let utcDefault = $state(untrack(() => page.utcDefault));
@@ -162,7 +161,7 @@
 								class="bg-inset border-border-strong text-subtle-foreground hover:text-muted-foreground hover:border-brand-edge inline-flex items-center gap-2 rounded-md border border-dashed px-4 py-3 text-[12.5px]"
 							>
 								<ImageIcon class="size-[15px]" />
-								Upload — SVG or PNG
+								Upload: SVG or PNG
 							</button>
 						</div>
 						<div>
@@ -186,7 +185,7 @@
 								{/each}
 							</div>
 							<div class="text-subtle-foreground mt-1.5 text-[11.5px]">
-								Constrained set — status colors stay reserved for status.
+								Constrained set: status colors stay reserved for status.
 							</div>
 						</div>
 					</div>
@@ -263,7 +262,7 @@
 						</div>
 					</div>
 					<p class="text-subtle-foreground m-0 text-[11.5px]">
-						Point a CNAME at pages.opsy.bot — verification and certificates are automatic.
+						Point a CNAME at pages.opsy.bot: verification and certificates are automatic.
 					</p>
 				</div>
 			</section>
@@ -295,7 +294,6 @@
 			</Button>
 		</form>
 
-		<!-- Outside the settings form, forms cannot nest -->
 		<section class="bg-card overflow-hidden rounded-xl border">
 			<header class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
 				<span class="text-[13.5px] font-semibold">Components</span>

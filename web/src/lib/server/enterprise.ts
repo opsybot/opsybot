@@ -2,10 +2,10 @@ import type { AuditData, Perm, RolesData, ScimData, ScimEvent, SecurityPolicy } 
 import { scenario } from './fixtures';
 
 const EVENTS: ScimEvent[] = [
-	{ at: '2026-07-11 09:00:12 UTC', kind: 'sync', text: 'Full sync — 42 users, 3 groups, no drift', tone: 'success' },
+	{ at: '2026-07-11 09:00:12 UTC', kind: 'sync', text: 'Full sync: 42 users, 3 groups, no drift', tone: 'success' },
 	{ at: '2026-07-10 16:41:03 UTC', kind: 'create', text: 'Provisioned jordan@acme.dev from group eng-all → viewer', tone: 'success' },
 	{ at: '2026-07-09 11:22:47 UTC', kind: 'deprovision', text: 'Deprovisioned tom@acme.dev (left IdP group)', tone: 'warning', wizard: '3 references reassigned to Sana Ito' },
-	{ at: '2026-07-08 09:00:09 UTC', kind: 'update', text: 'Updated 4 users — name/email changes from IdP', tone: 'neutral' }
+	{ at: '2026-07-08 09:00:09 UTC', kind: 'update', text: 'Updated 4 users. Name/email changes from IdP', tone: 'neutral' }
 ];
 
 const ROLES = ['Stakeholder', 'Responder', 'Team admin', 'Billing admin', 'sec-auditor (custom)'];
@@ -29,7 +29,7 @@ const store = {
 	} as ScimData,
 	audit: {
 		savedFilters: [
-			{ name: 'Auth failures — 30 d', q: 'action:auth.login.failed' },
+			{ name: 'Auth failures: 30 d', q: 'action:auth.login.failed' },
 			{ name: 'Config changes by API keys', q: 'actor:*-provider action:config.*' },
 			{ name: 'Role changes', q: 'action:member.role.*' }
 		],

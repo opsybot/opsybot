@@ -4,7 +4,6 @@ import { listFollowUps } from '$lib/server/incidents';
 import { getPostmortem } from '$lib/server/postmortems';
 import type { PageServerLoad } from './$types';
 
-// Internal fields are omitted from the payload here, not hidden by CSS
 export const load: PageServerLoad = ({ params }) => {
 	const found = getPostmortem(params.id);
 	if (!found) error(404, `No postmortem called ${params.id}.`);

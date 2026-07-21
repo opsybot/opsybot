@@ -37,11 +37,11 @@
 	function exportTimeline(format: 'json' | 'markdown') {
 		const payload =
 			format === 'markdown'
-				? `# ${incident.id} — timeline\n\n` +
+				? `# ${incident.id}: timeline\n\n` +
 					incident.timeline
 						.map(
 							(entry) =>
-								`- **${formatUtc(entry.at)}** · ${entry.type} · ${entry.actor}${entry.retro ? ' _(retroactive)_' : ''} — ${entry.text}`
+								`- **${formatUtc(entry.at)}** · ${entry.type} · ${entry.actor}${entry.retro ? ' _(retroactive)_' : ''}: ${entry.text}`
 						)
 						.join('\n')
 				: JSON.stringify(incident.timeline, null, 2);

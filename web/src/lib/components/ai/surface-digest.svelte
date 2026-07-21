@@ -20,14 +20,14 @@
 	onDestroy(() => clearTimeout(timer));
 
 	const GROUPS = [
-		['database', '2 alerts — disk usage on db-3 and slow vacuum on db-1. Same cluster, likely one cleanup task.'],
-		['edge', '3 alerts — cert expiries within 30 days across three domains. One renewal run covers all.'],
-		['events-worker', '2 alerts — queue depth briefly above threshold, self-recovered twice. Consider raising the threshold.']
+		['database', '2 alerts: disk usage on db-3 and slow vacuum on db-1. Same cluster, likely one cleanup task.'],
+		['edge', '3 alerts: cert expiries within 30 days across three domains. One renewal run covers all.'],
+		['events-worker', '2 alerts: queue depth briefly above threshold, self-recovered twice. Consider raising the threshold.']
 	];
 </script>
 
 {#if !enabled}
-	<SurfaceOff>The digest needs a model — currently unavailable.</SurfaceOff>
+	<SurfaceOff>The digest needs a model: currently unavailable.</SurfaceOff>
 {:else}
 	<div class="bg-card rounded-xl border px-4 py-3.5">
 		<header class="flex items-center gap-2 {phase ==='idle' ? '' : 'mb-2.5'}">
@@ -56,7 +56,7 @@
 						</div>
 					{/each}
 					<p class="text-subtle-foreground mt-0.5 mb-0 text-[10.5px]">
-						Drafted by Opsybot — alerts stay untouched until you act.
+						Drafted by Opsybot. Alerts stay untouched until you act.
 					</p>
 				</div>
 			{/if}

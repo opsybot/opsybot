@@ -54,7 +54,7 @@ var (
 	errSlugFormat    = validation.NewError("slug_invalid", "A workspace URL uses lowercase letters, numbers, and hyphens, and starts with a letter.")
 	errTeamName      = validation.NewError("team_name_invalid", "Enter a team name of 60 characters or fewer.")
 	errTeamMembers   = validation.NewError("team_members_max", "A team can have at most 50 members.")
-	errChannelDetail = validation.NewError("channel_invalid", "Enter a valid destination — a real email address or an https URL.")
+	errChannelDetail = validation.NewError("channel_invalid", "Enter a valid destination: a real email address or an https URL.")
 	errKeyName       = validation.NewError("key_name_invalid", "Enter a key name of 60 characters or fewer.")
 	errKeyKind       = validation.NewError("key_kind_invalid", "Choose a valid key type.")
 	errKeyScope      = validation.NewError("key_scope_invalid", "Choose at least one valid scope.")

@@ -62,7 +62,7 @@ export class RenderSnippetConfig<TProps> {
  * @returns A `RenderComponentConfig` object that helps svelte-table know how to render the header/cell component.
  * @example
  * ```ts
- * // +page.svelte
+ *
  * const defaultColumns = [
  *   columnHelper.accessor('name', {
  *     header: header => renderComponent(SortHeader, { label: 'Name', header }),
@@ -94,7 +94,7 @@ export function renderComponent<
  * @returns - A `RenderSnippetConfig` object that helps svelte-table know how to render the header/cell snippet.
  * @example
  * ```ts
- * // +page.svelte
+ *
  * const defaultColumns = [
  *   columnHelper.accessor('name', {
  *     cell: cell => renderSnippet(nameSnippet, { name: cell.row.name }),

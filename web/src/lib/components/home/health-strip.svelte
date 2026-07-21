@@ -16,7 +16,7 @@
 >
 	<TriangleAlertIcon class="text-warning size-[15px] shrink-0" />
 	<span>
-		Instance health: {unhealthy} of {instance.workersTotal} background workers unhealthy — page delivery
+		Instance health: {unhealthy} of {instance.workersTotal} background workers unhealthy. Page delivery
 		may be delayed.
 		<span class="text-subtle-foreground font-mono">
 			Last check {formatUtc(instance.checkedAt)}

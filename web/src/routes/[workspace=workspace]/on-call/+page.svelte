@@ -73,7 +73,7 @@
 							</div>
 							<div class="text-subtle-foreground mt-1 font-mono text-[11.5px]">
 								{#if schedule.paused}
-									paused — it pages no one
+									paused. It pages no one
 								{:else if schedule.handover}
 									next handover {formatWhen(schedule.handover.at, data.now)} → {schedule.handover.to}
 								{:else}
@@ -122,7 +122,7 @@
 									<Tag>{schedule.team}</Tag>
 								</div>
 								<div class="text-subtle-foreground mt-1 font-mono text-[11.5px]">
-									archived — it pages no one; restore or delete it
+									archived. It pages no one
 								</div>
 							</div>
 

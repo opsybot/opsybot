@@ -235,3 +235,93 @@ func TestOnCallPausedAndShifts(t *testing.T) {
 		}
 	}
 }
+
+func TestSoloLayerNeverHandsOver(t *testing.T) {
+	s := Schedule{Timezone: "UTC", Layers: []Layer{{
+		Participants: []string{"a"}, Rotation: RotationCustom, IntervalDays: 2,
+		HandoverHour: 9, StartsOn: mustDate("2026-07-13"),
+	}}}
+
+	for _, at := range []string{
+		"2026-07-13T12:00:00Z",
+		"2026-07-15T12:00:00Z",
+		"2026-07-17T12:00:00Z",
+		"2026-08-02T12:00:00Z",
+	} {
+		if got := onCall(t, s, at); got != "a" {
+			t.Errorf("solo layer on-call at %s = %q, want a", at, got)
+		}
+	}
+
+	from := mustInstant("2026-07-13T00:00:00Z")
+	to := mustInstant("2026-07-27T00:00:00Z")
+	if handovers := s.HandoverList(from, to, 5); len(handovers) != 0 {
+		t.Errorf("solo layer produced %d handovers, want none: %+v", len(handovers), handovers)
+	}
+}
+
+func TestCustomIntervalCyclesAllParticipants(t *testing.T) {
+	s := Schedule{Timezone: "UTC", Layers: []Layer{{
+		Participants: []string{"a", "b", "c"}, Rotation: RotationCustom, IntervalDays: 2,
+		HandoverHour: 0, StartsOn: mustDate("2026-07-13"),
+	}}}
+
+	cases := map[string]string{
+		"2026-07-13T12:00:00Z": "a",
+		"2026-07-14T23:59:00Z": "a",
+		"2026-07-15T00:00:00Z": "b",
+		"2026-07-17T00:00:00Z": "c",
+		"2026-07-19T00:00:00Z": "a",
+	}
+	for at, want := range cases {
+		if got := onCall(t, s, at); got != want {
+			t.Errorf("custom/2d three-way at %s = %q, want %q", at, got, want)
+		}
+	}
+}
+
+func TestCustomIntervalHandoverHoldsWallClockAcrossDST(t *testing.T) {
+	s := Schedule{Timezone: "Europe/Berlin", Layers: []Layer{{
+		Participants: []string{"a", "b"}, Rotation: RotationCustom, IntervalDays: 2,
+		HandoverHour: 9, StartsOn: mustDate("2026-03-25"),
+	}}}
+
+	handovers := s.HandoverList(mustInstant("2026-03-25T00:00:00Z"), mustInstant("2026-04-01T00:00:00Z"), 10)
+	want := map[string]bool{
+		"2026-03-27T08:00:00Z": true,
+		"2026-03-31T07:00:00Z": true,
+	}
+	for _, h := range handovers {
+		delete(want, h.At.UTC().Format(time.RFC3339))
+	}
+	if len(want) != 0 {
+		t.Errorf("missing DST-adjusted custom handovers at %v; got %+v", want, handovers)
+	}
+}
+
+func TestCustomIntervalBounds(t *testing.T) {
+	for _, interval := range []int{LayerMinIntervalDays, LayerMaxIntervalDays} {
+		s := Schedule{Timezone: "UTC", Layers: []Layer{{
+			Participants: []string{"a", "b"}, Rotation: RotationCustom, IntervalDays: interval,
+			HandoverHour: 0, StartsOn: mustDate("2026-07-13"),
+		}}}
+		start := mustInstant("2026-07-13T12:00:00Z")
+		if got := s.OnCallAt(start).UserID; got != "a" {
+			t.Errorf("interval %d at start = %q, want a", interval, got)
+		}
+		next := start.AddDate(0, 0, interval)
+		if got := s.OnCallAt(next).UserID; got != "b" {
+			t.Errorf("interval %d after one period = %q, want b", interval, got)
+		}
+	}
+}
+
+func TestZeroIntervalFallsBackToMinimum(t *testing.T) {
+	s := Schedule{Timezone: "UTC", Layers: []Layer{{
+		Participants: []string{"a", "b"}, Rotation: RotationCustom, IntervalDays: 0,
+		HandoverHour: 0, StartsOn: mustDate("2026-07-13"),
+	}}}
+	if got := onCall(t, s, "2026-07-14T12:00:00Z"); got != "b" {
+		t.Errorf("zero interval should clamp to %d day: got %q, want b", LayerMinIntervalDays, got)
+	}
+}

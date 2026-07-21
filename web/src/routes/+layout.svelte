@@ -10,7 +10,6 @@
 
 	let { data, children }: LayoutProps = $props();
 
-	// Seed theme from the server value once; client toggles own it after
 	setTheme(untrack(() => data.theme));
 
 	$effect(() => {

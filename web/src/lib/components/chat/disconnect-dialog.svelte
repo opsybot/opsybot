@@ -9,7 +9,6 @@
 
 	let { platform, onclose }: { platform: Platform | null; onclose: () => void } = $props();
 
-	// Hold the last platform so the title survives the close animation
 	let current = $state<Platform | null>(null);
 	const open = $derived(!!platform);
 

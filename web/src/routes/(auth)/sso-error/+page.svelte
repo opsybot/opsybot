@@ -24,7 +24,7 @@
 		},
 		exchange_failed: {
 			title: 'Your identity provider rejected the sign-in',
-			detail: 'The handshake with your provider failed. Try again — if it keeps failing, ask your admin to check the SSO settings.'
+			detail: 'The handshake with your provider failed. Try again: if it keeps failing, ask your admin to check the SSO settings.'
 		},
 		not_provisioned: {
 			title: 'No account yet',
@@ -48,12 +48,12 @@
 		},
 		idp_error: {
 			title: 'Identity provider error',
-			detail: 'Your identity provider returned an error. Try again — if it persists, ask your admin.'
+			detail: 'Your identity provider returned an error. Try again: if it persists, ask your admin.'
 		}
 	};
 	const FALLBACK = {
 		title: 'Single sign-on failed',
-		detail: 'We couldn’t complete the login. Try again — if it persists, contact your workspace admin.'
+		detail: 'We couldn’t complete the login. Try again: if it persists, contact your workspace admin.'
 	};
 
 	const message = $derived(MESSAGES[data.code] ?? FALLBACK);
@@ -66,7 +66,7 @@
 
 <AuthShell
 	title="Single sign-on failed"
-	subtitle="We couldn’t complete the login. Nothing is wrong with your account — this is between Opsybot and your identity provider."
+	subtitle="We couldn’t complete the login. Nothing is wrong with your account. This is between Opsybot and your identity provider."
 >
 	{#snippet footer()}
 		<span>Back to <a href="/login" class="text-brand-foreground hover:underline">log in</a></span>

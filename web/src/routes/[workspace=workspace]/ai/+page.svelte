@@ -24,7 +24,7 @@
 			</span>
 			<div class="text-[15px] font-medium">No model configured</div>
 			<p class="text-subtle-foreground m-0 max-w-[440px] text-[13px] leading-[1.6]">
-				AI stays off until you connect a model. Bring your own — a self-hosted Ollama keeps incident
+				AI stays off until you connect a model. Bring your own: a self-hosted Ollama keeps incident
 				data entirely on your infrastructure. Data goes only to the endpoint you configure.
 			</p>
 			<Button size="sm" variant="secondary" onclick={() => (addOpen = true)}>

@@ -47,7 +47,6 @@
 		roleNames
 	}: { initial: Initial; editing: boolean; fromTemplate: boolean; roleNames: string[] } = $props();
 
-	// Seeded once; an existing workflow loads verbatim, including an empty condition list
 	let name = $state(untrack(() => initial?.name ?? ''));
 	let trigger = $state<TriggerType>(untrack(() => initial?.trigger ?? 'declared'));
 	let conditions = $state(
@@ -116,7 +115,7 @@
 			toast.success(
 				editing
 					? `“${name.trim()}” saved.`
-					: `“${name.trim()}” saved${fromTemplate ? ' from template' : ''}. It starts disabled — flip it on when ready.`
+					: `“${name.trim()}” saved${fromTemplate ? ' from template' : ''}. It starts disabled. Flip it on when ready.`
 			);
 			await goto(ws('/workflows'));
 		}}
@@ -153,7 +152,7 @@
 		<WfSelect options={TRIGGERS} bind:value={trigger} class="max-w-[280px]" aria-label="Trigger" />
 
 		<div class="text-subtle-foreground -mb-0.5 text-[11px] tracking-[0.08em] uppercase">
-			Only if — all conditions match
+			Only if: all conditions match
 		</div>
 		{#each conditions as condition, i (condition.id)}
 			<div class="flex items-center gap-2">
@@ -199,7 +198,7 @@
 			<Alert.Content>
 				<Alert.Title>This workflow would loop</Alert.Title>
 				<Alert.Description>
-					It fires on “update overdue” and adds a timeline note — which counts as activity and re-arms
+					It fires on “update overdue” and adds a timeline note, which counts as activity and re-arms
 					the overdue timer, firing it again. Remove the note action or change the trigger.
 				</Alert.Description>
 			</Alert.Content>

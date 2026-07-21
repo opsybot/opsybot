@@ -10,8 +10,8 @@ export const ENT_TABS: { id: EntTab; label: string; icon: string }[] = [
 ];
 
 export const ENT_PITCH: Record<EntTab, string> = {
-	scim: 'Provision and deprovision from your identity provider automatically — leavers lose access the moment IdP says so, with references safely reassigned.',
-	roles: 'Stakeholder, team admin, billing admin, and custom roles — least-privilege access described in plain language.',
+	scim: 'Provision and deprovision from your identity provider automatically: leavers lose access the moment IdP says so, with references safely reassigned.',
+	roles: 'Stakeholder, team admin, billing admin, and custom roles: least-privilege access described in plain language.',
 	audit: 'Saved filters, exports, SIEM streaming, and multi-year retention on top of the core audit log.',
 	security: 'Session lifetimes, admin IP allowlists, enforced 2FA, and SSO-only login with break-glass recovery.'
 };

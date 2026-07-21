@@ -126,7 +126,7 @@
 			<div class="bg-card flex flex-col gap-3.5 rounded-xl border p-[18px]">
 				<h2 class="m-0 text-[17px] font-semibold">Connect Opsgenie</h2>
 				<p class="text-muted-foreground m-0 text-[13px] leading-[1.6]">
-					Paste a read-only Opsgenie API key. We only read your config — schedules, policies, teams, users, services.
+					Paste a read-only Opsgenie API key. We only read your config: schedules, policies, teams, users, services.
 					Nothing in Opsgenie is changed.
 				</p>
 				<Field.Field class="gap-1.5 space-y-0">
@@ -149,7 +149,7 @@
 			<Alert.Root tone="info">
 				<EyeIcon />
 				<Alert.Content>
-					<Alert.Description>Dry run — nothing is written yet. This is what a real import would do.</Alert.Description>
+					<Alert.Description>Dry run: nothing is written yet. This is what a real import would do.</Alert.Description>
 				</Alert.Content>
 			</Alert.Root>
 
@@ -205,7 +205,7 @@
 			</div>
 		{:else if step === 2}
 			<p class="text-muted-foreground m-0 text-[13px]">
-				Resolve each item. Still nothing written — these choices feed the import.
+				Resolve each item. Still nothing written. These choices feed the import.
 			</p>
 			{#each data.dryrun.decisions as decision (decision.id)}
 				{@const Icon = DECISION_ICON[decision.kind]}
@@ -248,7 +248,7 @@
 						<RotateCwIcon />
 						<Alert.Content>
 							<Alert.Description>
-								This import is idempotent — safe to re-run. Re-running updates changed items and skips identical ones,
+								This import is idempotent: safe to re-run. Re-running updates changed items and skips identical ones,
 								so you can import again after fixing anything in Opsgenie.
 							</Alert.Description>
 						</Alert.Content>
@@ -256,7 +256,7 @@
 					{#if importing}
 						<div class="flex items-center gap-3" role="status" aria-live="polite">
 							{@render spinner()}
-							<span class="text-muted-foreground text-[13px]">Importing — 42 users, 6 schedules, 4 policies, 5 teams, 11 services…</span>
+							<span class="text-muted-foreground text-[13px]">Importing: 42 users, 6 schedules, 4 policies, 5 teams, 11 services…</span>
 						</div>
 					{:else}
 						<div class="flex gap-2.5">
@@ -319,7 +319,7 @@
 			<div class="bg-card flex flex-col gap-4 rounded-xl border p-5">
 				<h2 class="m-0 text-[17px] font-semibold">Send a real test page</h2>
 				<p class="text-muted-foreground m-0 text-[13px] leading-[1.6]">
-					Pages the current on-call for payments-primary through Opsybot — the real path, real device. Confirm it
+					Pages the current on-call for payments-primary through Opsybot: the real path, real device. Confirm it
 					arrives before you re-point any monitoring.
 				</p>
 				{#if testState === 'idle'}
@@ -357,7 +357,7 @@
 				</Button>
 			</div>
 			<p class="text-muted-foreground m-0 text-[13px] leading-[1.6]">
-				Re-point each source from Opsgenie to Opsybot. Do them one at a time — alerts flow to both until you flip each
+				Re-point each source from Opsgenie to Opsybot. Do them one at a time: alerts flow to both until you flip each
 				one. Tick as you go.
 			</p>
 			<div class="bg-card overflow-hidden rounded-xl border">

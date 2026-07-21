@@ -14,7 +14,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import TimezoneSelect from '$lib/components/timezone-select.svelte';
 	import { scheduleSchema } from '$lib/schemas/oncall';
-	import type { DaySummary, Layer } from '$lib/oncall';
+	import { isSoloLayer, SOLO_LAYER_NOTE, type DaySummary, type Layer } from '$lib/oncall';
 	import LayerCard from './layer-card.svelte';
 	import PreviewGrid from './preview-grid.svelte';
 
@@ -43,7 +43,6 @@
 		teams: string[];
 	} = $props();
 
-	// dataType 'json' so the nested layers array posts as one object
 	const form = superForm(untrack(() => data), {
 		dataType: 'json',
 		validators: zod4Client(scheduleSchema)
@@ -52,6 +51,7 @@
 
 	const layers = $derived($formData.layers);
 	const nobodyIn = $derived(layers.some((layer) => layer.participants.length === 0));
+	const everyLayerSolo = $derived(layers.length > 0 && layers.every(isSoloLayer));
 	const layerErrors = $derived(
 		($errors.layers ?? {}) as Record<
 			number,
@@ -79,7 +79,6 @@
 				});
 				if (res.ok) preview = await res.json();
 			} catch {
-				// keep the last preview on a transient failure
 			}
 			previewLoading = false;
 		}, 300);
@@ -186,7 +185,7 @@
 					<AlertContent>
 						<AlertTitle>How timezones work</AlertTitle>
 						The schedule runs in the timezone you pick. Handovers and restriction hours happen at that
-						local time — a 09:00 handover in Europe/Berlin stays 09:00 there across daylight saving.
+						local time: a 09:00 handover in Europe/Berlin stays 09:00 there across daylight saving.
 						Everyone still sees the calendar in their own timezone.
 					</AlertContent>
 				</Alert>
@@ -237,8 +236,13 @@
 							Add someone to every layer to preview the rotation.
 						</p>
 					{/if}
+					{#if everyLayerSolo}
+						<p class="text-warning-ink m-0 mt-2.5 px-0.5 text-[11px] leading-[1.5]">
+							{SOLO_LAYER_NOTE}
+						</p>
+					{/if}
 					<p class="text-subtle-foreground m-0 mt-2.5 px-0.5 text-[11px] leading-[1.5]">
-						The top row is who actually gets paged — the highest layer on duty with people in it wins.
+						The top row is who actually gets paged: the highest layer on duty with people in it wins.
 					</p>
 				</div>
 			</section>

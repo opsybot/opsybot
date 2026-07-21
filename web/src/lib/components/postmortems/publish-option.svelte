@@ -38,7 +38,6 @@
 		{disabled}
 		aria-label={label}
 		onCheckedChange={async (next) => {
-			// Await tick so the hidden input flushes before requestSubmit reads it
 			wanted = next;
 			await tick();
 			form?.requestSubmit();

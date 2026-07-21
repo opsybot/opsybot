@@ -91,7 +91,7 @@
 										)}
 								>
 									<ArrowRightLeftIcon class="size-[11px]" />
-									{event.wizard} — view outcome
+									{event.wizard}: view outcome
 								</button>
 							{/if}
 						</div>
@@ -115,7 +115,7 @@
 					await update({ reset: false });
 					rotateOpen = false;
 					revealed = true;
-					toast.success('Token rotated — update your IdP now.');
+					toast.success('Token rotated: update your IdP now.');
 				}}
 			>
 				<div class="flex flex-col gap-3 p-6">

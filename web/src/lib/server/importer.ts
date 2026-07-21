@@ -26,7 +26,7 @@ const DRYRUN: DryRun = {
 			detail: 'Opsybot ingests Zabbix via generic JSON. Map it, or skip and reconnect manually after.',
 			choices: [
 				{ value: 'map', label: 'Map to generic JSON' },
-				{ value: 'skip', label: 'Skip — reconnect later' }
+				{ value: 'skip', label: 'Skip: reconnect later' }
 			]
 		},
 		{
@@ -43,7 +43,7 @@ const DRYRUN: DryRun = {
 	skipped: [
 		{
 			title: 'Opsgenie "Who is on-call" widget config',
-			reason: "UI-only, no Opsybot equivalent — schedules carry over, the widget doesn't."
+			reason: "UI-only, no Opsybot equivalent: schedules carry over, the widget doesn't."
 		},
 		{ title: '2 deactivated users', reason: 'Not referenced anywhere; nothing to import.' }
 	]

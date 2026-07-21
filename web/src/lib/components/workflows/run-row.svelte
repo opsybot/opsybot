@@ -32,7 +32,7 @@
 			use:enhance={() =>
 				async ({ result, update }) => {
 					await update();
-					if (result.type === 'success') toast.success('Retried — the webhook returned 200.');
+					if (result.type === 'success') toast.success('Retried: the webhook returned 200.');
 				}}
 		>
 			<input type="hidden" name="workflow" value={workflowId} />

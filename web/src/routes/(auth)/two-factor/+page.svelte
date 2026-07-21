@@ -15,8 +15,7 @@
 >
 	{#snippet footer()}
 		<span>
-			Signed in as {data.email} —
-			<a href="/login" class="text-brand-foreground hover:underline">not you?</a>
+			Signed in as {data.email}: <a href="/login" class="text-brand-foreground hover:underline">not you?</a>
 		</span>
 	{/snippet}
 

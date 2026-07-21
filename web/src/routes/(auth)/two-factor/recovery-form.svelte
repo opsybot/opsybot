@@ -19,7 +19,7 @@
 		<OctagonAlertIcon />
 		<Alert.Content>
 			<Alert.Description>
-				That recovery code didn't match. Each code works once — try another.
+				That recovery code didn't match. Each code works once. Try another.
 			</Alert.Description>
 		</Alert.Content>
 	</Alert.Root>

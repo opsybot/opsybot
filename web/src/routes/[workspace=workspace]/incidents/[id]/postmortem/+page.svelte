@@ -38,7 +38,7 @@
 			<div class="text-sm font-medium">No postmortem yet</div>
 			<p class="text-subtle-foreground m-0 max-w-[420px] text-center text-[12.5px] leading-[1.55]">
 				{incident.status === 'resolved'
-					? 'Start from the timeline — most of the story is already captured.'
+					? 'Start from the timeline: most of the story is already captured.'
 					: 'Usually written after resolve, but you can start any time.'}
 			</p>
 			<div class="flex gap-2">
@@ -71,7 +71,7 @@
 		<Panel>
 			<header class="flex items-center gap-2 border-b px-4 py-3">
 				<FileTextIcon class="text-subtle-foreground size-3.5" />
-				<span class="text-[13.5px] font-semibold">Postmortem — {incident.id}</span>
+				<span class="text-[13.5px] font-semibold">Postmortem: {incident.id}</span>
 				<Badge
 					tone={stage === 'published' ? 'success' : stage === 'in-review' ? 'info' : 'neutral'}
 					size="sm"
@@ -99,7 +99,7 @@
 						'The narrative sections are drafted from the timeline, so the author starts editing rather than staring at a blank page.'}
 				</p>
 				<p class="text-subtle-foreground mt-2.5 mb-0 text-[11px]">
-					Drafted by Opsybot — review before sharing. Timeline, contributing factors, and follow-ups
+					Drafted by Opsybot. Review before sharing. Timeline, contributing factors, and follow-ups
 					are pre-filled.
 				</p>
 				<Button variant="ghost" size="sm" class="mt-3" href={ws(`/postmortems/${postmortemId(incident.id)}`)}>

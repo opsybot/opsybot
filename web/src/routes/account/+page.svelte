@@ -43,7 +43,7 @@
 	<div class="acct-note">
 		<InfoIcon size={15} style="color: var(--text-tertiary); flex-shrink: 0; margin-top: 1px" />
 		<span>
-			This is your <strong>personal account</strong> — the same you across every workspace and
+			This is your <strong>personal account</strong>: the same you across every workspace and
 			organization. Workspace-specific settings (notification rules, on-call, roles) live inside each
 			workspace.
 		</span>

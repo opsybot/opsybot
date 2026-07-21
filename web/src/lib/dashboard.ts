@@ -66,12 +66,10 @@ export type Onboarding = {
 };
 
 export type Dashboard = {
-	// Server clock so the first paint and the hydrated page agree on now
 	now: number;
 	onboarding: Onboarding | null;
 	incidents: Incident[];
 	alerts: Alert[];
-	// Alerts per hour over the last 24h
 	alertVolume: number[];
 	onCallNow: OnCallEntry[];
 	myShifts: Shift[];

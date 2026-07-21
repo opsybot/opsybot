@@ -21,7 +21,6 @@ export function personTone(name: string): PersonTone {
 	return TONE_CYCLE[hash % TONE_CYCLE.length];
 }
 
-// Tailwind cannot see class names built at runtime
 export const PERSON_CLASS: Record<PersonTone, string> = {
 	brand: 'bg-brand-wash border-brand-edge text-brand-foreground',
 	info: 'bg-info-wash border-info-edge text-info-ink',
@@ -39,7 +38,6 @@ export const ROTATIONS: { value: Rotation; label: string; description: string }[
 	{ value: 'custom', label: 'Custom interval', description: 'Every N days' }
 ];
 
-// Weekday (0 = Sunday), whole hours in the schedule's timezone
 export type Restriction = { day: number; start: number; end: number };
 
 export type Layer = {
@@ -69,7 +67,6 @@ export type Schedule = {
 	name: string;
 	team: string;
 	timezone: string;
-	// Highest precedence first
 	layers: Layer[];
 	overrides: Override[];
 	feedUrl: string;
@@ -105,7 +102,6 @@ export function dayWindow(schedule: Pick<Schedule, 'layers'>, day: Date): { from
 	return { from, to: new Date(from.getTime() + DAY) };
 }
 
-// Keep only the segments overlapping [from, to], truncated to that window
 export function clipSegments(segments: Segment[], from: Date, to: Date): Segment[] {
 	const lo = from.getTime();
 	const hi = to.getTime();
@@ -134,7 +130,6 @@ export type DaySummary = {
 	gap: boolean;
 };
 
-// Derive the day's dominant person / override / gap from already-computed segments
 export function daySummaryFromSegments(segments: Segment[], date: Date): DaySummary {
 	const held = new Map<string, number>();
 	for (const run of segments) {
@@ -257,6 +252,13 @@ export function formatDuty(layer: Layer): string {
 			return `${hours(start, end)}, ${days(list)}`;
 		})
 		.join(' · ');
+}
+
+export const SOLO_LAYER_NOTE =
+	'A rotation needs two or more people to hand over. With one, they stay on call continuously.';
+
+export function isSoloLayer(layer: { participants: string[] }): boolean {
+	return layer.participants.length === 1;
 }
 
 export function formatRotation(layer: Layer): string {

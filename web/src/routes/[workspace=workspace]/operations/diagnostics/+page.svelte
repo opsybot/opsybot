@@ -32,8 +32,8 @@
 	function reRun() {
 		toast.success(
 			data.overall.degraded
-				? 'Re-ran all checks — worker-3 back to healthy in a moment.'
-				: 'Re-ran all checks — all systems still healthy.'
+				? 'Re-ran all checks: worker-3 back to healthy in a moment.'
+				: 'Re-ran all checks: all systems still healthy.'
 		);
 	}
 </script>
@@ -57,7 +57,6 @@
 		</span>
 		<div class="flex-1">
 			<div class="text-[14px] font-semibold">{data.overall.title}</div>
-			<!-- muted not subtle: subtle drops below the AA floor on warning-wash in light theme -->
 			<div class="text-muted-foreground mt-px text-[12px]">{data.overall.detail}</div>
 		</div>
 		<Button size="sm" variant="secondary" onclick={reRun}>

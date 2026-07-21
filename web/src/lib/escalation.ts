@@ -116,7 +116,6 @@ export function laneMeta(branch: Branch, lane: Lane): { key: string; label: stri
 	return { ...meta, icon: def.icon };
 }
 
-// Ink text on the matching wash clears WCAG AA
 export const TONE_STYLE: Record<Tone, { bg: string; border: string; color: string }> = {
 	critical: { bg: 'var(--critical-wash)', border: 'var(--critical-edge)', color: 'var(--critical-ink)' },
 	warning: { bg: 'var(--warning-wash)', border: 'var(--warning-edge)', color: 'var(--warning-ink)' },
@@ -450,7 +449,6 @@ function sanitizeTargets(input: unknown[]): Target[] {
 	return out;
 }
 
-// Depth bound so a crafted deeply nested tree cannot overflow the stack
 const MAX_DEPTH = 40;
 
 function sanitizeNodes(input: unknown[], depth = 0): EscNode[] {
@@ -472,7 +470,6 @@ function sanitizeNodes(input: unknown[], depth = 0): EscNode[] {
 				};
 			});
 			out.push({ id: typeof node.id === 'string' ? node.id : uid('br'), type: 'branch', on, lanes });
-			// A branch ends its sequence; drop crafted nodes tucked after it
 			break;
 		}
 		out.push({

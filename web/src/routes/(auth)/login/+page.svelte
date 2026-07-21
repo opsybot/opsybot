@@ -99,7 +99,7 @@
 				<Alert.Content>
 					<Alert.Title>Single sign-on required</Alert.Title>
 					<Alert.Description>
-						This account's workspace requires SSO. Password login is disabled — enter your workspace
+						This account's workspace requires SSO. Password login is disabled. Enter your workspace
 						URL to continue to your identity provider.
 					</Alert.Description>
 				</Alert.Content>

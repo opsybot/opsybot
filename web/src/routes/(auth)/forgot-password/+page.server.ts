@@ -13,7 +13,6 @@ export const actions: Actions = {
 		const form = await superValidate(request, zod4(forgotPasswordSchema));
 		if (!form.valid) return fail(400, { form });
 
-		// Same reply whether or not the account exists, to avoid account enumeration
 		return message(form, 'sent');
 	}
 };

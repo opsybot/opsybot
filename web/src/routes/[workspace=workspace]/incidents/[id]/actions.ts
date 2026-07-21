@@ -95,7 +95,6 @@ export const incidentActions = {
 
 	postmortem: async ({ request, params }) => {
 		const form = await request.formData();
-		// Route through the postmortem module so state and drafted content stay in sync
 		advance(params.id!, String(form.get('state')) as 'draft' | 'in-review' | 'published');
 	}
 } satisfies Actions;

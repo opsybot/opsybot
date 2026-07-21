@@ -4,7 +4,6 @@
 
 	let { since, now: serverNow }: { since: string; now: number } = $props();
 
-	// Seed from the server clock so SSR and hydration render the same age
 	let now = $state(untrack(() => serverNow));
 
 	$effect(() => {

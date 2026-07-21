@@ -22,9 +22,8 @@ export const scheduleSchema = z.object({
 		.min(1, 'Give the schedule a name.')
 		.regex(
 			/^[a-z][a-z0-9-]{0,39}$/,
-			'Start with a letter; lower case letters, numbers and dashes — it is used in the feed URL.'
+			'Start with a letter; lower case letters, numbers and dashes. It is used in the feed URL.'
 		)
-		// these collide with route segments and the preview endpoint
 		.refine((name) => !['new', 'mine', 'preview'].includes(name), 'That name is reserved. Pick another.'),
 	team: z.string().min(1, 'Pick a team.'),
 	timezone: z.string().min(1, 'Pick a timezone.'),

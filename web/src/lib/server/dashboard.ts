@@ -7,7 +7,6 @@ const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
-// UTC shift window; an end hour at or before the start rolls into the next day
 function shiftOn(day: Date, startHour: number, endHour: number) {
 	const start = new Date(day);
 	start.setUTCHours(startHour, 0, 0, 0);
@@ -62,7 +61,7 @@ function overdue(now: number): OverdueItem[] {
 			id: 'ov-1',
 			kind: 'update',
 			tone: 'critical',
-			title: 'Status update due — INC-2481',
+			title: 'Status update due: INC-2481',
 			dueAt: new Date(now - 6 * MINUTE).toISOString(),
 			action: 'Post update',
 			href: '/incidents'
@@ -80,7 +79,7 @@ function overdue(now: number): OverdueItem[] {
 			id: 'ov-3',
 			kind: 'postmortem',
 			tone: 'warning',
-			title: 'Postmortem — INC-2468',
+			title: 'Postmortem: INC-2468',
 			dueAt: new Date(now - 3 * DAY).toISOString(),
 			action: 'Start draft',
 			href: '/postmortems'

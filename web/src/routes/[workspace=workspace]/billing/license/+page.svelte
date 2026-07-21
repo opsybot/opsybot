@@ -87,7 +87,7 @@
 					await update({ reset: false });
 					key = '';
 					phase = 'idle';
-					toast.success('License activated — Business, unlimited responders, expires 2027-01-14.');
+					toast.success('License activated: Business, unlimited responders, expires 2027-01-14.');
 				};
 			}}
 		>

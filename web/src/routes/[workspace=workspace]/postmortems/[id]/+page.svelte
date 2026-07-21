@@ -46,7 +46,7 @@
 	});
 
 	$effect(() => {
-		if (form?.added) toast.success('Follow-up added — it is on the global follow-ups list.');
+		if (form?.added) toast.success('Follow-up added. It is on the global follow-ups list.');
 	});
 </script>
 
@@ -143,7 +143,7 @@
 
 			<p class="bg-inset text-subtle-foreground m-0 border-b px-4 py-[9px] text-xs leading-[1.55]">
 				Blameless means systemic: describe conditions and mechanisms, never who. “The pipeline had
-				no canary stage” — not “someone deployed without checking”.
+				no canary stage”: not “someone deployed without checking”.
 			</p>
 
 			<div class="flex flex-col gap-3 p-3.5">
@@ -248,12 +248,12 @@
 			<PublishOption
 				option="publicLink"
 				on={postmortem.publicLink}
-				label="Public link — readable without login"
+				label="Public link: readable without login"
 				onchanged={(next) => {
 					if (next) toast.warning('Public link enabled. Internal-only fields never appear on it.');
 				}}
 			>
-				Public link — readable without login
+				Public link: readable without login
 				<span class="text-subtle-foreground">(off by default)</span>
 			</PublishOption>
 		</section>

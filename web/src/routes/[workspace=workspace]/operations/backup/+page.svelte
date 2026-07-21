@@ -44,7 +44,7 @@
 		<Button
 			size="sm"
 			variant="secondary"
-			onclick={() => toast.success("On-demand backup started — you'll get a notification when it completes.")}
+			onclick={() => toast.success("On-demand backup started. You'll get a notification when it completes.")}
 		>
 			<DownloadIcon data-icon="inline-start" />
 			Back up now
@@ -86,7 +86,7 @@
 						<TriangleAlertIcon />
 						<Alert.Content>
 							<Alert.Description>
-								After restore, rotate the SCIM and API tokens — backups include them. Paging stays paused until the
+								After restore, rotate the SCIM and API tokens: backups include them. Paging stays paused until the
 								scheduler confirms healthy.
 							</Alert.Description>
 						</Alert.Content>

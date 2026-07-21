@@ -32,7 +32,6 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
 
 	const days = new Set<string>();
 	for (const shift of monthShifts) {
-		// A shift crossing midnight marks both UTC days
 		for (
 			let at = Date.parse(shift.startsAt);
 			at < Date.parse(shift.endsAt);

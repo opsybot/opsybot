@@ -37,7 +37,7 @@ function seed() {
 			id: 'status.acme.dev',
 			name: 'Acme status',
 			description: 'Live status for acme.dev products.',
-			pageTitle: 'Acme status — live',
+			pageTitle: 'Acme status: live',
 			visibility: 'public',
 			domain: 'status.acme.dev',
 			domainVerified: true,
@@ -77,7 +77,7 @@ function seed() {
 	const maintenance: Maintenance[] = [
 		{
 			id: 'm1',
-			title: 'Database maintenance — primary failover test',
+			title: 'Database maintenance: primary failover test',
 			description: 'Brief interruptions to checkout while the primary fails over.',
 			components: ['Payments API', 'Checkout'],
 			startsAt: iso(DAY + 12 * HOUR),
@@ -175,7 +175,6 @@ export function updatePage(pageId: string, settings: PageSettings) {
 		allowIndexing: settings.allowIndexing
 	});
 
-	// The page id is the domain; a changed domain resets verification
 	if (settings.domain !== pageId) {
 		page.id = settings.domain;
 		page.domainVerified = false;

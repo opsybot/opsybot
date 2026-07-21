@@ -26,7 +26,6 @@
 	const showLabels = $derived(showAxis && !!labels && labels.some(Boolean));
 </script>
 
-<!-- Decorative: the surrounding card states these numbers in text -->
 <div class="font-sans" aria-hidden="true">
 	{#if type === 'line'}
 		<svg

@@ -37,12 +37,12 @@
 	const valid = $derived(conditions.some((condition) => condition.value.trim()));
 
 	const positionOptions = $derived([
-		{ value: 'start', label: 'First — before rule 1' },
+		{ value: 'start', label: 'First, before rule 1' },
 		...Array.from({ length: Math.max(0, rulesCount - 1) }, (_, index) => ({
 			value: String(index + 1),
 			label: `After rule ${index + 1}`
 		})),
-		{ value: 'end', label: 'Last — just above the default route' }
+		{ value: 'end', label: 'Last, just above the default route' }
 	]);
 
 	const definition = $derived(
@@ -91,7 +91,7 @@
 				<div class="mt-1 flex flex-col gap-4">
 					<div class="flex flex-col gap-2">
 						<div class="text-subtle-foreground text-[11px] tracking-[0.08em] uppercase">
-							Conditions — all must match
+							Conditions: all must match
 						</div>
 						{#each conditions as condition, index (condition.id)}
 							<div class="flex items-center gap-2">

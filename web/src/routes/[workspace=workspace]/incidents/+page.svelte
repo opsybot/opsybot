@@ -13,7 +13,6 @@
 
 	let { data }: PageProps = $props();
 
-	// ?declare arrives from the shell's Declare button; consume it or the dialog reopens
 	let declaring = $state(false);
 
 	$effect(() => {
@@ -33,7 +32,7 @@
 			</span>
 			<div class="text-[15px] font-medium">No incidents</div>
 			<p class="text-subtle-foreground m-0 max-w-[400px] text-center text-[13px] leading-[1.55]">
-				When something pages someone, it can be declared an incident and run from here — or
+				When something pages someone, it can be declared an incident and run from here, or
 				straight from chat.
 			</p>
 			<Button variant="secondary" size="sm" onclick={() => (declaring = true)}>

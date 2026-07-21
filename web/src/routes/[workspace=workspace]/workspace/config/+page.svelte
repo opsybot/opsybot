@@ -53,7 +53,7 @@
 		<div class="min-w-[240px] flex-1">
 			<div class="text-[13.5px] font-semibold">Export workspace configuration</div>
 			<div class="text-subtle-foreground mt-0.5 text-[12px] leading-[1.5]">
-				Schedules, policies, routing, workflows, severities, custom fields — one YAML file.
+				Schedules, policies, routing, workflows, severities, custom fields: one YAML file.
 				<button
 					type="button"
 					class="text-brand-foreground ml-1.5 hover:underline"
@@ -84,7 +84,7 @@
 					class="border-border-strong bg-inset text-muted-foreground hover:text-foreground hover:border-brand-edge inline-flex items-center gap-[9px] rounded-md border border-dashed px-[18px] py-3 text-[12.5px] transition-colors"
 				>
 					<UploadIcon class="size-[15px]" />
-					Choose file — .yaml or .json
+					Choose file: .yaml or .json
 				</button>
 				<span class="text-subtle-foreground text-[12px]">Nothing changes until you confirm the dry-run diff.</span>
 			</div>
@@ -96,14 +96,14 @@
 						class="border-border border-t-primary size-4 shrink-0 animate-spin rounded-full border-2 [animation-duration:0.8s] motion-reduce:animate-none"
 						aria-hidden="true"
 					></span>
-					<span class="text-[13px]">Validating acme-corp.opsybot.yaml — schema, references, permissions…</span>
+					<span class="text-[13px]">Validating acme-corp.opsybot.yaml: schema, references, permissions…</span>
 				</div>
 			{/if}
 			{#if stage === 'diff' || stage === 'applied'}
 				<Alert.Root tone={stage === 'applied' ? 'success' : 'info'}>
 					{#if stage === 'applied'}<CheckIcon />{:else}<TriangleAlertIcon />{/if}
 					<Alert.Content>
-						<Alert.Title>{stage === 'applied' ? 'Applied' : 'Validation passed — dry run below'}</Alert.Title>
+						<Alert.Title>{stage === 'applied' ? 'Applied' : 'Validation passed: dry run below'}</Alert.Title>
 						<Alert.Description>
 							{stage === 'applied'
 								? 'The configuration is live. Re-import any time; unchanged items are skipped.'
@@ -190,7 +190,7 @@
 		await update({ reset: false });
 		stage = 'applied';
 		toast.success(
-			`Configuration applied — 2 created, 2 changed, 1 ${decision === 'skip' ? 'skipped' : 'reassigned'}, 1 unchanged. Recorded in the audit log.`
+			`Configuration applied: 2 created, 2 changed, 1 ${decision === 'skip' ? 'skipped' : 'reassigned'}, 1 unchanged. Recorded in the audit log.`
 		);
 	}}
 >

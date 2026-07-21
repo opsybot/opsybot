@@ -60,7 +60,6 @@ export type Workflow = {
 	trigger: TriggerType;
 	conditions: Condition[];
 	actions: WorkflowAction[];
-	// Newest first; lastRun reads the head
 	history: WorkflowRun[];
 };
 
@@ -98,7 +97,7 @@ export const TEMPLATES: Template[] = [
 				}
 			},
 			{ type: 'role', config: { role: 'Comms lead' } },
-			{ type: 'note', config: { text: 'SEV1 comms cadence active — updates every 15 min.' } }
+			{ type: 'note', config: { text: 'SEV1 comms cadence active: updates every 15 min.' } }
 		]
 	},
 	{
@@ -111,7 +110,7 @@ export const TEMPLATES: Template[] = [
 		actions: [
 			{
 				type: 'post',
-				config: { channel: '#security', text: 'Security incident {id} declared — you have been added to {channel}.' }
+				config: { channel: '#security', text: 'Security incident {id} declared. You have been added to {channel}.' }
 			},
 			{ type: 'webhook', config: { url: 'https://hooks.acme.dev/sec-pager', payload: '{ "incident": "{id}" }' } }
 		]
@@ -176,7 +175,6 @@ export function lastRun(workflow: Pick<Workflow, 'history'>): WorkflowRun | null
 	return workflow.history[0] ?? null;
 }
 
-// A timeline note re-arms the overdue timer, so this pairing fires forever
 export function loops(trigger: TriggerType, actions: Pick<WorkflowAction, 'type'>[]): boolean {
 	return trigger === 'overdue' && actions.some((action) => action.type === 'note');
 }

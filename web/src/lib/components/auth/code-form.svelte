@@ -13,7 +13,7 @@
 		data,
 		action = '?/code',
 		submitLabel = 'Verify',
-		wrongMessage = "That code didn't match. Codes rotate every 30 s — wait for a fresh one and try again."
+		wrongMessage = "That code didn't match. Codes rotate every 30 s. Wait for a fresh one and try again."
 	}: {
 		data: SuperValidated<Infer<typeof totpSchema>>;
 		action?: string;

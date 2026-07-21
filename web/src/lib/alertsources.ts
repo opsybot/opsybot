@@ -120,7 +120,6 @@ function getPath(object: unknown, path: string): unknown {
 	}, object);
 }
 
-// Linear-scan glob; no regex, so adversarial patterns cannot cause backtracking blowup
 function globMatch(value: string, pattern: string): boolean {
 	const haystack = value.toLowerCase();
 	const parts = pattern.toLowerCase().split('*');
@@ -138,7 +137,6 @@ function globMatch(value: string, pattern: string): boolean {
 		if (at < 0) return false;
 		cursor = at + part.length;
 	}
-	// The prefix and middles must not overrun into the suffix region
 	return cursor <= haystack.length - last.length;
 }
 
@@ -157,7 +155,6 @@ export function conditionMatches(alert: unknown, condition: Condition): boolean 
 	}
 }
 
-// Rules with no conditions never match; [].every() is true
 export function matchRule(alert: unknown, rules: RoutingRule[]): number {
 	for (let index = 0; index < rules.length; index++) {
 		const rule = rules[index];
@@ -177,7 +174,7 @@ export function evaluateSample(
 	try {
 		alert = JSON.parse(sample);
 	} catch (error) {
-		return { ok: false, error: `Invalid JSON — ${(error as Error).message}` };
+		return { ok: false, error: `Invalid JSON: ${(error as Error).message}` };
 	}
 	const index = matchRule(alert, rules);
 	return { ok: true, index, policy: index === -1 ? defaultPolicy : rules[index].policy };

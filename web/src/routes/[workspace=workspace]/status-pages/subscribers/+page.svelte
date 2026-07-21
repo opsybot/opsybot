@@ -22,10 +22,10 @@
 	let { data, form }: PageProps = $props();
 
 	$effect(() => {
-		if (form?.removed) toast.success(`${form.removed} removed — deletion requests are honored immediately.`);
+		if (form?.removed) toast.success(`${form.removed} removed: deletion requests are honored immediately.`);
 	});
 	$effect(() => {
-		if (form?.redelivered) toast.success('Redelivered — endpoint returned 200.');
+		if (form?.redelivered) toast.success('Redelivered: endpoint returned 200.');
 	});
 
 	let typed: ReturnType<typeof setTimeout>;
@@ -114,7 +114,7 @@
 				{#if data.query}
 					Showing {data.emails.length} matching “{data.query}”.
 				{:else}
-					Showing {data.emails.length} of {data.counts.email.toLocaleString('en-US')} — search to find
+					Showing {data.emails.length} of {data.counts.email.toLocaleString('en-US')}. Search to find
 					a specific address.
 				{/if}
 			</p>

@@ -24,7 +24,7 @@
 	const isActive = (href: string) => path === href || path.startsWith(`${href}/`);
 </script>
 
-<Page title="Enterprise" subtitle={data.licensed ? 'Licensed to Acme Corp' : 'Not licensed — preview'}>
+<Page title="Enterprise" subtitle={data.licensed ? 'Licensed to Acme Corp' : 'Not licensed: preview'}>
 	<nav aria-label="Enterprise views" class="flex w-full items-center gap-1 overflow-x-auto shadow-[inset_0_-1px_0_var(--border)]">
 		{#each TABS as tab (tab.id)}
 			{@const active = isActive(ws(tab.href))}

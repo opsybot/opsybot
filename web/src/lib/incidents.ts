@@ -60,7 +60,6 @@ export const ENTRY_TYPES: { id: EntryType; label: string }[] = [
 export type TimelineEntry = {
 	id: string;
 	type: EntryType;
-	// UTC; retro entries carry the original event time
 	at: string;
 	actor: string;
 	text: string;

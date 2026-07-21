@@ -91,7 +91,7 @@ export function statusBanner(status: BillingStatus, trialDaysLeft: number): Stat
 			return {
 				tone: 'warning',
 				icon: 'triangle-alert',
-				title: 'Trial ended — workspace read-only',
+				title: 'Trial ended: workspace read-only',
 				body: 'You have a 14-day grace window to add a payment method before anything is scheduled for deletion. Export everything any time. Paging keeps working through the grace window.',
 				cta: 'Add payment method'
 			};
@@ -117,7 +117,6 @@ export function usagePercent(meter: UsageMeter): number | null {
 	return Math.min(100, Math.round((meter.used / meter.included) * 100));
 }
 
-// Raw tokens keep the fill at the 3:1 contrast floor
 export function usageFill(pct: number): string {
 	return pct > 85 ? 'var(--warning)' : 'var(--mint-500)';
 }
@@ -156,7 +155,7 @@ export function licenseAlert(license: License): { tone: 'critical' | 'warning' |
 		return {
 			tone: 'critical',
 			title: 'License expired',
-			body: 'SSO enforcement, SCIM, and advanced audit are locked. On-call, alerting, and paging keep running — we never stop the pager. Renew to unlock the rest.'
+			body: 'SSO enforcement, SCIM, and advanced audit are locked. On-call, alerting, and paging keep running. We never stop the pager. Renew to unlock the rest.'
 		};
 	if (license.status === 'expiring')
 		return {
@@ -168,7 +167,7 @@ export function licenseAlert(license: License): { tone: 'critical' | 'warning' |
 		return {
 			tone: 'info',
 			title: 'Running the AGPL core',
-			body: 'The open-source core is the whole platform — on-call, alerting, and paging are unrestricted. Activate a license to unlock SSO enforcement, SCIM, and advanced audit.'
+			body: 'The open-source core is the whole platform. On-call, alerting, and paging are unrestricted. Activate a license to unlock SSO enforcement, SCIM, and advanced audit.'
 		};
 	return null;
 }
