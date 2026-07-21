@@ -15,6 +15,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/policy"
 	"github.com/opsybot/opsybot/internal/repository/ratelimit"
 	"github.com/opsybot/opsybot/internal/repository/recovery_code"
+	"github.com/opsybot/opsybot/internal/repository/schedule"
 	"github.com/opsybot/opsybot/internal/repository/session"
 	"github.com/opsybot/opsybot/internal/repository/sso_connection"
 	"github.com/opsybot/opsybot/internal/repository/sso_state"
@@ -31,6 +32,7 @@ import (
 	"github.com/opsybot/opsybot/internal/service/members"
 	"github.com/opsybot/opsybot/internal/service/ratelimiter"
 	"github.com/opsybot/opsybot/internal/service/references"
+	"github.com/opsybot/opsybot/internal/service/schedules"
 	"github.com/opsybot/opsybot/internal/service/sso"
 	"github.com/opsybot/opsybot/internal/service/teams"
 	"github.com/opsybot/opsybot/internal/service/users"
@@ -58,10 +60,11 @@ var repositoryProviders = wire.NewSet(
 	recovery_code.New,
 	channel.New,
 	pending.New,
+	schedule.New,
 )
 
 var serviceProviders = wire.NewSet(
-	wire.Value([]service.ReferenceSource(nil)),
+	scheduleReferenceSources,
 	auth.New,
 	workspaces.New,
 	members.New,
@@ -69,8 +72,17 @@ var serviceProviders = wire.NewSet(
 	users.New,
 	channels.New,
 	teams.New,
+	schedules.New,
 	apikeys.New,
 	audits.New,
 	sso.New,
 	ratelimiter.New,
 )
+
+func scheduleReferenceSources(schedules service.Schedules) []service.ReferenceSource {
+	src, ok := schedules.(service.ReferenceSource)
+	if !ok {
+		return nil
+	}
+	return []service.ReferenceSource{src}
+}

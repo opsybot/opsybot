@@ -34,7 +34,6 @@
 		bind:this={form}
 		use:enhance={() => async ({ result, update }) => {
 			await update({ reset: false });
-			// A rejected save leaves value unchanged, so the resync effect won't fire; revert here
 			if (result.type !== 'success') {
 				assigned = value;
 				toast.error(String((result.type === 'failure' && result.data?.error) || 'Could not change the assignment.'));

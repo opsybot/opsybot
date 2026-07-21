@@ -28,7 +28,6 @@
 	let field = $state<HTMLTextAreaElement | null>(null);
 	let form = $state<HTMLFormElement | null>(null);
 
-	// Await tick so the value flushes; reset: false or the enhance update blanks the field
 	async function save() {
 		await tick();
 		form?.requestSubmit();
@@ -39,7 +38,7 @@
 		proposal = null;
 		if (andEdit) {
 			field?.focus();
-			toast.info('Draft inserted — edit away. It saves when you click out.');
+			toast.info('Draft inserted. Edit away. It saves when you click out.');
 		} else {
 			save();
 			toast.success(`Draft accepted into “${title}”.`);
@@ -114,7 +113,7 @@
 			<div class="bg-brand-wash border-brand-edge mt-2.5 rounded-md border p-3">
 				<Badge tone="brand" size="sm">
 					<SparklesIcon />
-					Drafted from the timeline — review before sharing
+					Drafted from the timeline. Review before sharing
 				</Badge>
 
 				<p class="text-muted-foreground m-0 mt-[7px] text-[13px] leading-[1.6]">{proposal}</p>

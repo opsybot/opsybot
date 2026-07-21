@@ -20,7 +20,6 @@
 		readonly?: boolean;
 	} = $props();
 
-	// One form per field so a blur save cannot post the other field's half-typed value
 	let label = $state(untrack(() => factor.label));
 	let text = $state(untrack(() => factor.text));
 	let labelForm = $state<HTMLFormElement | null>(null);
@@ -45,7 +44,7 @@
 			name="value"
 			bind:value={label}
 			{readonly}
-			placeholder="The condition, in a few words — no canary stage"
+			placeholder="The condition, in a few words: no canary stage"
 			aria-label="Condition"
 			class="mb-2 h-[34px] text-[13px] font-medium"
 			onblur={() => save(labelForm)}

@@ -3,10 +3,6 @@
 	import type { HTMLAnchorAttributes, HTMLButtonAttributes } from "svelte/elements";
 	import { type VariantProps, tv } from "tailwind-variants";
 
-	// Sizes, radii, weights and variant colours are the Opsybot design system's Button and
-	// IconButton, transcribed exactly. Text buttons are 8px (--radius-button); icon buttons are
-	// 6px (--radius-sm) — the two genuinely differ in the reference. The focus ring is ours: the
-	// reference leaves the browser default, which does not clear the product's WCAG AA bar.
 	export const buttonVariants = tv({
 		base: "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 rounded-md border border-transparent bg-clip-padding font-semibold tracking-[0.01em] focus-visible:ring-3 active:not-aria-[haspopup]:translate-y-px aria-invalid:ring-3 [&_svg:not([class*='size-'])]:size-4 group/button inline-flex shrink-0 items-center justify-center leading-none whitespace-nowrap transition-all outline-none select-none disabled:pointer-events-none disabled:opacity-45 [&_svg]:pointer-events-none [&_svg]:shrink-0",
 		variants: {

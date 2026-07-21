@@ -14,8 +14,8 @@
 	const ok = $derived(model.health === 'ok');
 
 	function test() {
-		if (ok) toast.success(`Test OK — ${model.latency}.`);
-		else toast.error('Test failed — connection timed out after 30 s.');
+		if (ok) toast.success(`Test OK: ${model.latency}.`);
+		else toast.error('Test failed: connection timed out after 30 s.');
 	}
 </script>
 

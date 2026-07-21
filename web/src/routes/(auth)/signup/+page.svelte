@@ -15,10 +15,20 @@
 
 	let { data }: PageProps = $props();
 
-	const form = superForm(untrack(() => data.form), { validators: zod4Client(signupSchema) });
-	const { form: formData, message, errors, validateForm, submitting } = form;
+	const accountFields = ['name', 'email', 'password', 'confirm'] as const;
+	const hasAccountError = (e: Record<string, string[] | undefined>) =>
+		accountFields.some((field) => e[field]?.length);
 
 	let step = $state(1);
+
+	const form = superForm(untrack(() => data.form), {
+		dataType: 'json',
+		validators: zod4Client(signupSchema),
+		onUpdated: ({ form: result }) => {
+			if (hasAccountError(result.errors as Record<string, string[] | undefined>)) step = 1;
+		}
+	});
+	const { form: formData, message, errors, validateForm, submitting } = form;
 
 	async function next() {
 		const result = await validateForm({ update: false });
@@ -30,7 +40,7 @@
 			password: e.password,
 			confirm: e.confirm
 		};
-		if (!['name', 'email', 'password', 'confirm'].some((f) => e[f]?.length)) step = 2;
+		if (!hasAccountError(e)) step = 2;
 	}
 </script>
 

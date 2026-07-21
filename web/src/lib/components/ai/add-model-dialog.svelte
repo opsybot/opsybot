@@ -40,7 +40,6 @@
 	});
 	onDestroy(() => clearTimeout(timer));
 
-	// Editing any field resets a passing test so a stale success cannot be submitted
 	$effect(() => {
 		void [name, endpoint, apiKey, timeout, maxContext];
 		untrack(() => {
@@ -128,7 +127,7 @@
 						<Alert.Content>
 							<Alert.Title>Test request succeeded</Alert.Title>
 							<Alert.Description>
-								Round trip 1.9 s · 128k context confirmed · streaming works. No incident data was sent — the
+								Round trip 1.9 s · 128k context confirmed · streaming works. No incident data was sent: the
 								test uses a canned prompt.
 							</Alert.Description>
 						</Alert.Content>

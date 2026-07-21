@@ -9,7 +9,6 @@
 
 	let { tab }: { tab: string } = $props();
 
-	// Controls render the sanitized scope, never raw URL params
 	const filters = $derived(parseFilters(page.url));
 
 	const DIMENSIONS = [

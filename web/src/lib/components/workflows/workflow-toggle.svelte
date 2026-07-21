@@ -6,7 +6,6 @@
 
 	let { id, name, enabled }: { id: string; name: string; enabled: boolean } = $props();
 
-	// Optimistic flip; the effect settles checked back to the server value after reload
 	let checked = $state(untrack(() => enabled));
 	$effect(() => {
 		checked = enabled;

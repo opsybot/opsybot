@@ -105,7 +105,7 @@
 		<footer class="bg-inset flex items-center gap-2.5 border-t px-[18px] py-3">
 			<FlaskConicalIcon class="text-subtle-foreground size-4 shrink-0" />
 			<span class="text-muted-foreground flex-1 text-[12.5px] leading-normal">
-				Want to look around first? Load sample data — 3 incidents, 2 services, and a schedule, all
+				Want to look around first? Load sample data: 3 incidents, 2 services, and a schedule, all
 				labelled <Badge tone="neutral" size="sm">Sample</Badge> and removable in one click.
 			</span>
 			<Button variant="ghost" size="sm">Load sample data</Button>

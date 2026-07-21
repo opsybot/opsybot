@@ -17,7 +17,7 @@
 		[
 			analysis.emptyLevel && 'A level notifies no one.',
 			analysis.unreachableLevel && 'A level targets only people who can’t be paged.',
-			analysis.hasDeadEnd && 'A branch lane has no levels — alerts routed there page no one.',
+			analysis.hasDeadEnd && 'A branch lane has no levels: alerts routed there page no one.',
 			analysis.deactivated && 'A deactivated user is still targeted.'
 		].filter(Boolean) as string[]
 	);

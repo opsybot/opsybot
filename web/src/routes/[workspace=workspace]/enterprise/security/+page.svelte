@@ -32,7 +32,7 @@
 	function toggleSso(value: boolean) {
 		ssoEnforced = value;
 		if (value) toast.warning('SSO enforced. Password login is now disabled.');
-		else toast('SSO enforcement off — password login allowed again.');
+		else toast('SSO enforcement off: password login allowed again.');
 	}
 </script>
 

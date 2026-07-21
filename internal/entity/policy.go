@@ -11,6 +11,7 @@ const (
 	PolicyObjectPersonalKeys PolicyObject = "personal_keys"
 	PolicyObjectChannels     PolicyObject = "channels"
 	PolicyObjectAudit        PolicyObject = "audit"
+	PolicyObjectSchedules    PolicyObject = "schedules"
 )
 
 type PolicyAction string
@@ -37,6 +38,7 @@ func RolePolicies(role Role) []PolicyRule {
 			{PolicyObjectPersonalKeys, PolicyActionRead}, {PolicyObjectPersonalKeys, PolicyActionWrite},
 			{PolicyObjectChannels, PolicyActionRead}, {PolicyObjectChannels, PolicyActionWrite},
 			{PolicyObjectAudit, PolicyActionRead},
+			{PolicyObjectSchedules, PolicyActionRead}, {PolicyObjectSchedules, PolicyActionWrite},
 		}
 	case RoleMember:
 		return []PolicyRule{
@@ -45,6 +47,7 @@ func RolePolicies(role Role) []PolicyRule {
 			{PolicyObjectSettings, PolicyActionRead},
 			{PolicyObjectPersonalKeys, PolicyActionRead}, {PolicyObjectPersonalKeys, PolicyActionWrite},
 			{PolicyObjectChannels, PolicyActionRead}, {PolicyObjectChannels, PolicyActionWrite},
+			{PolicyObjectSchedules, PolicyActionRead},
 		}
 	default:
 		return nil
@@ -57,6 +60,8 @@ func ScopeFor(obj PolicyObject, act PolicyAction) (Scope, bool) {
 		return ScopeAuditRead, true
 	case obj == PolicyObjectSettings && act == PolicyActionWrite:
 		return ScopeConfigWrite, true
+	case obj == PolicyObjectSchedules && act == PolicyActionWrite:
+		return ScopeSchedulesWrite, true
 	default:
 		return "", false
 	}

@@ -51,7 +51,7 @@ function seed() {
 					id: 'e1',
 					at: iso(-38 * MINUTE),
 					kind: 'received',
-					text: 'Alert received from Checkly — matched routing rule payments-prod'
+					text: 'Alert received from Checkly: matched routing rule payments-prod'
 				},
 				{
 					id: 'e2',
@@ -71,7 +71,7 @@ function seed() {
 					id: 'e4',
 					at: iso(-33 * MINUTE),
 					kind: 'timeout',
-					text: 'No ack after 5 min — moved to step 2',
+					text: 'No ack after 5 min: moved to step 2',
 					result: 'timeout',
 					tone: 'warning'
 				},
@@ -125,7 +125,7 @@ function seed() {
 					id: 'g1',
 					at: iso(-52 * MINUTE),
 					kind: 'received',
-					text: 'Alert received from Datadog — grouped with 2 related alerts'
+					text: 'Alert received from Datadog: grouped with 2 related alerts'
 				},
 				{
 					id: 'g2',
@@ -167,7 +167,7 @@ function seed() {
 					id: 'h1',
 					at: iso(-70 * MINUTE),
 					kind: 'received',
-					text: 'Alert received from Grafana — matched routing rule platform-prod'
+					text: 'Alert received from Grafana: matched routing rule platform-prod'
 				},
 				{
 					id: 'h2',
@@ -214,13 +214,13 @@ function seed() {
 					id: 'i1',
 					at: iso(-11 * MINUTE),
 					kind: 'received',
-					text: 'Alert received from Prometheus — matched routing rule platform-prod'
+					text: 'Alert received from Prometheus: matched routing rule platform-prod'
 				},
 				{
 					id: 'i2',
 					at: iso(-11 * MINUTE),
 					kind: 'chat',
-					text: 'Posted to #platform-alerts — warning severity does not page',
+					text: 'Posted to #platform-alerts: warning severity does not page',
 					result: 'delivered',
 					tone: 'success'
 				}
@@ -281,7 +281,7 @@ function seed() {
 					id: 'k2',
 					at: iso(-2 * HOUR - 40 * MINUTE),
 					kind: 'resolved',
-					text: 'Source reported recovery — auto-resolved',
+					text: 'Source reported recovery: auto-resolved',
 					result: 'resolved',
 					tone: 'success'
 				}
@@ -345,7 +345,7 @@ function seed() {
 			id: 'f-1',
 			source: 'webhook/legacy-nagios',
 			at: iso(-2 * HOUR),
-			reason: 'JSON parse error at position 214 — unexpected token',
+			reason: 'JSON parse error at position 214: unexpected token',
 			payload: '{"host":"db-3","service":"disk","state":"WARNING","output":"DISK WARNING - free space / 12%",,}'
 		},
 		{
@@ -487,7 +487,6 @@ export function listHeartbeats(): Heartbeat[] {
 	return empty ? [] : store.heartbeats;
 }
 
-// Forms submit '5m'; tables display '5 m'
 const spaced = (duration: string) => duration.replace(/^(\d+)/, '$1 ');
 
 export function createHeartbeat(input: {

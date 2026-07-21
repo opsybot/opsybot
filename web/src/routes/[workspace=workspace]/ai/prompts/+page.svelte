@@ -24,7 +24,7 @@
 			</Select.Content>
 		</Select.Root>
 		<span class="text-subtle-foreground text-[12.5px]">
-			Read-only — exactly what leaves for the model, nothing else.
+			Read-only: exactly what leaves for the model, nothing else.
 		</span>
 	</div>
 

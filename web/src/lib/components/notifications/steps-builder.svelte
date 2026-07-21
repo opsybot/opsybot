@@ -19,7 +19,6 @@
 	const delayLabel = (value: string) => DELAY_OPTIONS.find((delay) => delay.value === value)?.label ?? value;
 	const atCap = $derived(steps.length >= MAX_STEPS);
 
-	// All writes go through commit so step 1 stays immediate and delays stay positive
 	function commit(next: RuleStep[]) {
 		steps = normalizeSteps(next);
 	}

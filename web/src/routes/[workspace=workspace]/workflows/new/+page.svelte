@@ -8,7 +8,6 @@
 
 <Page title="Workflows" subtitle="Automate the boring half of incident response">
 	<div class="mt-[18px]">
-		<!-- {#key} reseeds the builder so seeded state cannot outlive a navigation -->
 		{#key data}
 			<Builder
 				initial={data.initial}

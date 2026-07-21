@@ -10,7 +10,6 @@
 
 	let { platform }: { platform: Platform } = $props();
 
-	// Seed once; reseeding on every load would clobber a mid-edit value between autosaves
 	const initial = untrack(() => platform.connection?.defaults ?? DEFAULT_DEFAULTS);
 	let naming = $state(initial.namingPattern);
 	let announce = $state(initial.announceChannel);

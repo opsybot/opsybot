@@ -12,7 +12,6 @@ class AppShellState {
 		this.#session = session;
 	}
 
-	// Reads through to layout data so a workspace switch re-renders the shell
 	get session(): Session {
 		return this.#session();
 	}

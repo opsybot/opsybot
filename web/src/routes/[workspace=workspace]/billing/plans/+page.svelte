@@ -36,7 +36,7 @@
 		<div class="flex items-center gap-3 rounded-xl border px-4 py-3 text-[12.5px] leading-[1.5] {bannerSurface(banner.tone)}">
 			<Icon class="size-[15px] shrink-0 {bannerInk(banner.tone)}" />
 			<span class="text-muted-foreground flex-1">
-				<strong class="text-foreground font-semibold">{banner.title}</strong> — {banner.body}
+				<strong class="text-foreground font-semibold">{banner.title}</strong>: {banner.body}
 			</span>
 			{#if banner.cta}
 				<Button size="sm" onclick={() => (changeTo = getPlan(data.currentPlanId) ?? null)}>{banner.cta}</Button>
@@ -85,7 +85,7 @@
 	</div>
 
 	<p class="text-subtle-foreground m-0 text-[12px] leading-[1.5]">
-		Every paid plan includes <strong class="font-semibold">unlimited responders</strong> — you're never billed per
+		Every paid plan includes <strong class="font-semibold">unlimited responders</strong>. You're never billed per
 		seat. Managed delivery (SMS/voice) is metered separately with volumes shown before any overage applies.
 	</p>
 </div>
@@ -117,7 +117,7 @@
 						</div>
 					</div>
 					<p class="text-subtle-foreground m-0 text-[12px] leading-[1.5]">
-						Change takes effect immediately. Nothing is deleted on a downgrade — over-limit items become read-only.
+						Change takes effect immediately. Nothing is deleted on a downgrade: over-limit items become read-only.
 					</p>
 				</div>
 			</div>

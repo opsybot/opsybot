@@ -89,7 +89,7 @@
 				<GitBranchIcon class="size-3" />
 			</span>
 			<div>
-				<span class="text-muted-foreground">No ack — routed by {def.title}: </span>
+				<span class="text-muted-foreground">No ack, routed by {def.title}: </span>
 				<strong>{lane.label}</strong>
 			</div>
 		</div>
@@ -141,7 +141,7 @@
 
 		{#if conds.length === 0}
 			<div class="text-muted-foreground text-[12.5px]">
-				This policy has no branches — every alert follows the same path.
+				This policy has no branches: every alert follows the same path.
 			</div>
 		{:else}
 			<div class="flex flex-col gap-2.5">

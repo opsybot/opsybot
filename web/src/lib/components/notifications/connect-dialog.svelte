@@ -13,7 +13,6 @@
 
 	let { type, onclose }: { type: ChannelType | null; onclose: () => void } = $props();
 
-	// current keeps the last non-null type so labels survive the close animation
 	let current = $state<ChannelType | null>(null);
 	let step = $state<'form' | 'waiting' | 'done'>('form');
 	const open = $derived(!!type);
@@ -103,7 +102,7 @@
 						</Alert.Root>
 					{:else if meta.connect === 'oauth'}
 						<Dialog.Description class="text-muted-foreground text-[13px] leading-[1.6]">
-							You'll be sent to {meta.label} to authorize Opsybot. It only gets permission to DM you — nothing
+							You'll be sent to {meta.label} to authorize Opsybot. It only gets permission to DM you, nothing
 							else.
 						</Dialog.Description>
 						{@render actionRow(`Continue to ${meta.label}`, true)}
@@ -143,7 +142,7 @@
 							</Field.FieldLabel>
 							<Input id="ntfy-topic" class="font-mono" placeholder="maya-pages-x7k2" />
 							<Field.FieldDescription class="text-subtle-foreground text-xs">
-								Pick something unguessable — anyone who knows the topic can read it.
+								Pick something unguessable. Anyone who knows the topic can read it.
 							</Field.FieldDescription>
 						</Field.Field>
 						{@render actionRow('Connect and send test')}

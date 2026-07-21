@@ -22,7 +22,7 @@ function seed(): { incidents: Incident[]; followUps: FollowUp[] } {
 	const incidents: Incident[] = [
 		{
 			id: 'INC-2481',
-			name: 'Checkout degraded — EU',
+			name: 'Checkout degraded: EU',
 			severity: 'SEV1',
 			status: 'investigating',
 			lead: 'Maya Chen',
@@ -223,7 +223,7 @@ function seed(): { incidents: Incident[]; followUps: FollowUp[] } {
 					type: 'observation',
 					at: iso(-3 * DAY + 2 * MINUTE),
 					actor: 'Opsybot',
-					text: 'Gateway error rate crossed 4.2% — up from a 0.1% baseline',
+					text: 'Gateway error rate crossed 4.2%: up from a 0.1% baseline',
 					ai: true
 				},
 				{
@@ -238,14 +238,14 @@ function seed(): { incidents: Incident[]; followUps: FollowUp[] } {
 					type: 'decision',
 					at: iso(-3 * DAY + 29 * MINUTE),
 					actor: 'Priya Nair',
-					text: 'Rolling back 84c2 rather than rolling forward — the regression is in routing'
+					text: 'Rolling back 84c2 rather than rolling forward: the regression is in routing'
 				},
 				{
 					id: 'w5',
 					type: 'action',
 					at: iso(-3 * DAY + 60 * MINUTE),
 					actor: 'Marcus Lee',
-					text: 'Rollback requested — waiting on the manual approval gate'
+					text: 'Rollback requested: waiting on the manual approval gate'
 				},
 				{
 					id: 'w6',
@@ -259,14 +259,14 @@ function seed(): { incidents: Incident[]; followUps: FollowUp[] } {
 					type: 'communication',
 					at: iso(-3 * DAY + 90 * MINUTE),
 					actor: 'Maya Chen',
-					text: 'Status page updated — errors subsiding, watching for 30 minutes'
+					text: 'Status page updated: errors subsiding, watching for 30 minutes'
 				},
 				{
 					id: 'w8',
 					type: 'status',
 					at: iso(-3 * DAY + HOUR + 47 * MINUTE),
 					actor: 'Priya Nair',
-					text: 'Resolved — error rate back to baseline for 30 minutes'
+					text: 'Resolved: error rate back to baseline for 30 minutes'
 				}
 			],
 			statusPage: { domain: 'status.acme.dev', stage: 'none', title: '', updates: [] },
@@ -316,7 +316,7 @@ function seed(): { incidents: Incident[]; followUps: FollowUp[] } {
 					type: 'status',
 					at: iso(-9 * DAY + 40 * MINUTE),
 					actor: 'Dev Patel',
-					text: 'Resolved — search responses back to baseline'
+					text: 'Resolved. Search responses back to baseline'
 				}
 			],
 			statusPage: { domain: 'status.acme.dev', stage: 'none', title: '', updates: [] },
@@ -352,7 +352,7 @@ function seed(): { incidents: Incident[]; followUps: FollowUp[] } {
 					type: 'status',
 					at: iso(-14 * DAY + 3 * HOUR + 12 * MINUTE),
 					actor: 'Maya Chen',
-					text: 'Resolved — primary promoted by hand'
+					text: 'Resolved: primary promoted by hand'
 				}
 			],
 			statusPage: { domain: 'status.acme.dev', stage: 'none', title: '', updates: [] },
@@ -388,7 +388,7 @@ function seed(): { incidents: Incident[]; followUps: FollowUp[] } {
 					type: 'status',
 					at: iso(-23 * DAY + 55 * MINUTE),
 					actor: 'Sana Ito',
-					text: 'Resolved — certificate renewed and pushed to the edge'
+					text: 'Resolved: certificate renewed and pushed to the edge'
 				}
 			],
 			statusPage: { domain: 'status.acme.dev', stage: 'none', title: '', updates: [] },
@@ -424,7 +424,7 @@ function seed(): { incidents: Incident[]; followUps: FollowUp[] } {
 					type: 'status',
 					at: iso(-31 * DAY + 4 * HOUR),
 					actor: 'Marcus Lee',
-					text: 'Resolved — indexing backfilled and alerting added'
+					text: 'Resolved: indexing backfilled and alerting added'
 				}
 			],
 			statusPage: { domain: 'status.acme.dev', stage: 'none', title: '', updates: [] },
@@ -619,7 +619,6 @@ export function postUpdate(incidentId: string) {
 	);
 }
 
-// The incident owns its status-page history; the status pages section writes through here
 export function publishStatusUpdate(
 	incidentId: string,
 	stage: StatusPageUpdate['stage'],
@@ -637,7 +636,7 @@ export function publishStatusUpdate(
 		...incident.statusPage.updates
 	];
 
-	record(incident, 'communication', `Status page updated — ${stage.toLowerCase()}`);
+	record(incident, 'communication', `Status page updated: ${stage.toLowerCase()}`);
 	return true;
 }
 
@@ -653,7 +652,7 @@ export function resolveIncident(
 	incident.status = 'resolved';
 	incident.resolvedAt = new Date().toISOString();
 	incident.nextUpdateAt = null;
-	record(incident, 'status', `Resolved — ${summary}`);
+	record(incident, 'status', `Resolved: ${summary}`);
 
 	if (alsoAlerts && incident.alerts.length) {
 		incident.alerts = incident.alerts.map((alert) => ({ ...alert, status: 'resolved' as const }));
@@ -665,7 +664,7 @@ export function resolveIncident(
 		record(
 			incident,
 			'status',
-			`Postmortem scheduled — draft due in 3 working days, assigned to ${incident.lead}`
+			`Postmortem scheduled: draft due in 3 working days, assigned to ${incident.lead}`
 		);
 	}
 }
@@ -676,7 +675,7 @@ export function reopenIncident(incidentId: string) {
 	incident.status = 'monitoring';
 	incident.resolvedAt = null;
 	incident.nextUpdateAt = new Date(Date.now() + 15 * MINUTE).toISOString();
-	record(incident, 'status', 'Reopened — update reminders restarted');
+	record(incident, 'status', 'Reopened: update reminders restarted');
 }
 
 export function addEntry(

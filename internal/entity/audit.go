@@ -44,6 +44,17 @@ const (
 	ActionSSOUpdated      = "sso.updated"
 	ActionChannelAdded    = "channel.added"
 	ActionChannelRemoved  = "channel.removed"
+
+	ActionScheduleCreated     = "schedule.created"
+	ActionScheduleUpdated     = "schedule.updated"
+	ActionScheduleDuplicated  = "schedule.duplicated"
+	ActionScheduleArchived    = "schedule.archived"
+	ActionScheduleUnarchived  = "schedule.unarchived"
+	ActionSchedulePaused      = "schedule.paused"
+	ActionScheduleResumed     = "schedule.resumed"
+	ActionScheduleDeleted     = "schedule.deleted"
+	ActionScheduleOverrideAdd = "schedule.override.added"
+	ActionScheduleReassigned  = "schedule.reassigned"
 )
 
 const (

@@ -10,7 +10,7 @@
 		<div class="flex items-start gap-[9px]">
 			<ShieldCheckIcon class="text-primary mt-0.5 size-3.5 shrink-0" />
 			<span class="text-muted-foreground text-[12.5px] leading-[1.5]">
-				<strong class="text-foreground font-semibold">{scope.what}</strong> — {scope.why}
+				<strong class="text-foreground font-semibold">{scope.what}</strong>: {scope.why}
 			</span>
 		</div>
 	{/each}

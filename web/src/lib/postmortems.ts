@@ -50,7 +50,6 @@ export function owesPostmortem(incident: { severity: Severity }): boolean {
 
 const WORKING_DAY_LIMIT = 3;
 
-// Weekends and the resolve day itself do not count
 function workingDaysSince(iso: string, now: number): number {
 	let days = 0;
 
@@ -120,7 +119,6 @@ export function patterns(published: Postmortem[]): Pattern[] {
 export function formatDuration(incident: Incident): string {
 	if (!incident.resolvedAt) return 'still open';
 
-	// Round to whole minutes before splitting so 1 h 59 m 40 s cannot read 1 h 60 m
 	const total = Math.round((Date.parse(incident.resolvedAt) - Date.parse(incident.declaredAt)) / MINUTE);
 	const hours = Math.floor(total / 60);
 	const minutes = total % 60;

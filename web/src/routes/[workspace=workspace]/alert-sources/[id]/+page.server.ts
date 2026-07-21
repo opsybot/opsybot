@@ -11,7 +11,6 @@ export const load: PageServerLoad = ({ params }) => {
 export const actions: Actions = {
 	toggle: async ({ params }) => {
 		const source = getSource(params.id);
-		// Invert the stored state, not a form value, so a double submit cannot desync
 		if (!source || !setPaused(params.id, source.status !== 'paused')) {
 			return fail(404, { error: 'That source no longer exists.' });
 		}

@@ -64,7 +64,6 @@ export type SilenceState = 'active' | 'scheduled' | 'ended';
 export type Silence = {
 	id: string;
 	state: SilenceState;
-	// Every scope condition must match for the silence to apply
 	scope: string[];
 	reason: string;
 	creator: string;

@@ -46,7 +46,7 @@
 			<TriangleAlertIcon />
 			<Alert.Content>
 				<Alert.Description>
-					Ask {invite.invitedBy} — or any {invite.workspace} admin — to send a new invite to the same
+					Ask {invite.invitedBy}, or any {invite.workspace} admin, to send a new invite to the same
 					email address. Nothing else is needed on your side.
 				</Alert.Description>
 			</Alert.Content>

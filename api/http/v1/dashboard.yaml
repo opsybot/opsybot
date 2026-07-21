@@ -1721,6 +1721,234 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+  /workspaces/{workspaceId}/schedules:
+    get:
+      operationId: listSchedules
+      summary: List on-call schedules in a workspace
+      tags: [schedules]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: includeArchived, in: query, required: false, schema: { type: boolean } }
+      responses:
+        "200": { description: Schedules, content: { application/json: { schema: { $ref: "#/components/schemas/ScheduleList" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    post:
+      operationId: createSchedule
+      summary: Create an on-call schedule
+      tags: [schedules]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateScheduleRequest" }
+      responses:
+        "201": { description: Schedule created, content: { application/json: { schema: { $ref: "#/components/schemas/Schedule" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/schedules/preview:
+    post:
+      operationId: previewSchedule
+      summary: Compute a draft schedule without saving it
+      tags: [schedules]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PreviewScheduleRequest" }
+      responses:
+        "200": { description: Calendar, content: { application/json: { schema: { $ref: "#/components/schemas/ScheduleCalendar" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/schedules/{scheduleSlug}:
+    get:
+      operationId: getSchedule
+      summary: A single schedule
+      tags: [schedules]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: scheduleSlug, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Schedule, content: { application/json: { schema: { $ref: "#/components/schemas/Schedule" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    put:
+      operationId: updateSchedule
+      summary: Edit a schedule
+      tags: [schedules]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: scheduleSlug, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateScheduleRequest" }
+      responses:
+        "200": { description: Schedule, content: { application/json: { schema: { $ref: "#/components/schemas/Schedule" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    delete:
+      operationId: deleteSchedule
+      summary: Permanently delete an archived schedule
+      tags: [schedules]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: scheduleSlug, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Schedule deleted }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/schedules/{scheduleSlug}/archive:
+    post:
+      operationId: archiveSchedule
+      summary: Archive a schedule
+      tags: [schedules]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: scheduleSlug, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Schedule, content: { application/json: { schema: { $ref: "#/components/schemas/Schedule" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/schedules/{scheduleSlug}/unarchive:
+    post:
+      operationId: unarchiveSchedule
+      summary: Restore an archived schedule
+      tags: [schedules]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: scheduleSlug, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Schedule, content: { application/json: { schema: { $ref: "#/components/schemas/Schedule" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/schedules/{scheduleSlug}/pause:
+    post:
+      operationId: pauseSchedule
+      summary: Pause a schedule
+      tags: [schedules]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: scheduleSlug, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Schedule, content: { application/json: { schema: { $ref: "#/components/schemas/Schedule" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/schedules/{scheduleSlug}/resume:
+    post:
+      operationId: resumeSchedule
+      summary: Resume a paused schedule
+      tags: [schedules]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: scheduleSlug, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Schedule, content: { application/json: { schema: { $ref: "#/components/schemas/Schedule" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/schedules/{scheduleSlug}/duplicate:
+    post:
+      operationId: duplicateSchedule
+      summary: Duplicate a schedule (starts paused)
+      tags: [schedules]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: scheduleSlug, in: path, required: true, schema: { type: string } }
+      responses:
+        "201": { description: Schedule created, content: { application/json: { schema: { $ref: "#/components/schemas/Schedule" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/schedules/{scheduleSlug}/overrides:
+    post:
+      operationId: addScheduleOverride
+      summary: Add a one-off override to a schedule
+      tags: [schedules]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: scheduleSlug, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AddOverrideRequest" }
+      responses:
+        "201": { description: Override added, content: { application/json: { schema: { $ref: "#/components/schemas/ScheduleOverride" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/schedules/{scheduleSlug}/calendar:
+    get:
+      operationId: getScheduleCalendar
+      summary: Computed coverage for a date range
+      tags: [schedules]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: scheduleSlug, in: path, required: true, schema: { type: string } }
+        - { name: from, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date-time } }
+      responses:
+        "200": { description: Calendar, content: { application/json: { schema: { $ref: "#/components/schemas/ScheduleCalendar" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/schedules/{scheduleSlug}/on-call:
+    get:
+      operationId: getScheduleOnCall
+      summary: Who is on-call at an instant
+      tags: [schedules]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: scheduleSlug, in: path, required: true, schema: { type: string } }
+        - { name: at, in: query, required: false, schema: { type: string, format: date-time } }
+      responses:
+        "200": { description: On-call status, content: { application/json: { schema: { $ref: "#/components/schemas/ScheduleOnCall" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/on-call:
+    get:
+      operationId: myOnCall
+      summary: Your upcoming shifts across all schedules
+      tags: [schedules]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: from, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date-time } }
+      responses:
+        "200": { description: Shifts, content: { application/json: { schema: { $ref: "#/components/schemas/OnCallShiftList" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
 components:
   schemas:
     Health:
@@ -2148,3 +2376,146 @@ components:
         instance:
           type: string
           format: uri-reference
+    ScheduleRestriction:
+      type: object
+      required: [weekday, startMinute, endMinute]
+      properties:
+        weekday: { type: integer }
+        startMinute: { type: integer }
+        endMinute: { type: integer }
+    ScheduleLayer:
+      type: object
+      required: [id, participants, rotation, intervalDays, handoverHour, startsOn, restrictions]
+      properties:
+        id: { type: string }
+        participants: { type: array, items: { type: string } }
+        rotation: { type: string, enum: [daily, weekly, custom] }
+        intervalDays: { type: integer }
+        handoverHour: { type: integer }
+        startsOn: { type: string }
+        restrictions: { type: array, items: { $ref: "#/components/schemas/ScheduleRestriction" } }
+    ScheduleLayerInput:
+      type: object
+      required: [participants, rotation, intervalDays, handoverHour, startsOn, restrictions]
+      properties:
+        participants: { type: array, items: { type: string } }
+        rotation: { type: string, enum: [daily, weekly, custom] }
+        intervalDays: { type: integer }
+        handoverHour: { type: integer }
+        startsOn: { type: string }
+        restrictions: { type: array, items: { $ref: "#/components/schemas/ScheduleRestriction" } }
+    ScheduleOverride:
+      type: object
+      required: [id, userId, startsAt, endsAt, reason, createdAt]
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        reason: { type: string }
+        createdByUserId: { type: string }
+        createdAt: { type: string, format: date-time }
+    Schedule:
+      type: object
+      required: [id, slug, team, timezone, paused, archived, feedUrl, layers, overrides, createdAt]
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        team: { type: string }
+        timezone: { type: string }
+        paused: { type: boolean }
+        archived: { type: boolean }
+        feedUrl: { type: string }
+        layers: { type: array, items: { $ref: "#/components/schemas/ScheduleLayer" } }
+        overrides: { type: array, items: { $ref: "#/components/schemas/ScheduleOverride" } }
+        onCallUserId: { type: string }
+        onCallUntil: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+    ScheduleList:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/Schedule" } }
+    CreateScheduleRequest:
+      type: object
+      required: [name, team, timezone, layers]
+      properties:
+        name: { type: string }
+        team: { type: string }
+        timezone: { type: string }
+        layers: { type: array, items: { $ref: "#/components/schemas/ScheduleLayerInput" } }
+    UpdateScheduleRequest:
+      type: object
+      required: [name, team, timezone, layers]
+      properties:
+        name: { type: string }
+        team: { type: string }
+        timezone: { type: string }
+        layers: { type: array, items: { $ref: "#/components/schemas/ScheduleLayerInput" } }
+    PreviewScheduleRequest:
+      type: object
+      required: [timezone, layers, from, to]
+      properties:
+        timezone: { type: string }
+        layers: { type: array, items: { $ref: "#/components/schemas/ScheduleLayerInput" } }
+        from: { type: string, format: date-time }
+        to: { type: string, format: date-time }
+    AddOverrideRequest:
+      type: object
+      required: [userId, startsAt, endsAt]
+      properties:
+        userId: { type: string }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        reason: { type: string }
+    Segment:
+      type: object
+      required: [startsAt, endsAt, override]
+      properties:
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        userId: { type: string }
+        via: { type: string }
+        override: { type: boolean }
+    Handover:
+      type: object
+      required: [at, fromUserId, toUserId]
+      properties:
+        at: { type: string, format: date-time }
+        fromUserId: { type: string }
+        toUserId: { type: string }
+    LayerCoverage:
+      type: object
+      required: [index, via, segments]
+      properties:
+        index: { type: integer }
+        via: { type: string }
+        segments: { type: array, items: { $ref: "#/components/schemas/Segment" } }
+    ScheduleCalendar:
+      type: object
+      required: [effective, layers, gaps, handovers]
+      properties:
+        effective: { type: array, items: { $ref: "#/components/schemas/Segment" } }
+        layers: { type: array, items: { $ref: "#/components/schemas/LayerCoverage" } }
+        gaps: { type: array, items: { $ref: "#/components/schemas/Segment" } }
+        handovers: { type: array, items: { $ref: "#/components/schemas/Handover" } }
+    ScheduleOnCall:
+      type: object
+      required: [override]
+      properties:
+        userId: { type: string }
+        via: { type: string }
+        override: { type: boolean }
+        until: { type: string, format: date-time }
+    OnCallShift:
+      type: object
+      required: [startsAt, endsAt, scheduleSlug]
+      properties:
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        scheduleSlug: { type: string }
+    OnCallShiftList:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/OnCallShift" } }

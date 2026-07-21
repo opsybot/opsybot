@@ -3,35 +3,46 @@
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import GlobeIcon from '@lucide/svelte/icons/globe';
 	import PlusIcon from '@lucide/svelte/icons/plus';
-	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { untrack } from 'svelte';
 	import { superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
+	import { page } from '$app/state';
 	import { Alert, AlertContent, AlertTitle } from '$lib/components/ui/alert';
 	import { Button } from '$lib/components/ui/button';
 	import * as Field from '$lib/components/ui/field';
 	import { Input } from '$lib/components/ui/input';
 	import * as Select from '$lib/components/ui/select';
+	import TimezoneSelect from '$lib/components/timezone-select.svelte';
 	import { scheduleSchema } from '$lib/schemas/oncall';
-	import { TEAMS, UNREACHABLE, type Layer } from '$lib/oncall';
+	import { isSoloLayer, SOLO_LAYER_NOTE, type DaySummary, type Layer } from '$lib/oncall';
 	import LayerCard from './layer-card.svelte';
 	import PreviewGrid from './preview-grid.svelte';
+
+	type FormValues = { name: string; team: string; timezone: string; layers: Layer[] };
+	type PreviewData = {
+		days: { label: string; num: number; iso: string }[];
+		effective: DaySummary[];
+		rows: { label: string; title: string; days: DaySummary[] }[];
+	};
 
 	let {
 		data,
 		heading,
 		submitLabel,
 		back,
-		previewFrom
+		previewFrom,
+		people,
+		teams
 	}: {
-		data: SuperValidated<{ name: string; team: string; layers: Layer[] }>;
+		data: SuperValidated<FormValues>;
 		heading: string;
 		submitLabel: string;
 		back: string;
 		previewFrom: string;
+		people: string[];
+		teams: string[];
 	} = $props();
 
-	// dataType 'json' so the nested layers array posts as one object
 	const form = superForm(untrack(() => data), {
 		dataType: 'json',
 		validators: zod4Client(scheduleSchema)
@@ -40,17 +51,39 @@
 
 	const layers = $derived($formData.layers);
 	const nobodyIn = $derived(layers.some((layer) => layer.participants.length === 0));
+	const everyLayerSolo = $derived(layers.length > 0 && layers.every(isSoloLayer));
 	const layerErrors = $derived(
 		($errors.layers ?? {}) as Record<
 			number,
 			{ participants?: string[]; intervalDays?: string[]; startsOn?: string[] } | undefined
 		>
 	);
-	const unreachable = $derived([
-		...new Set(
-			layers.flatMap((layer) => layer.participants.filter((person) => UNREACHABLE.includes(person)))
-		)
-	]);
+
+	let preview = $state<PreviewData | null>(null);
+	let previewLoading = $state(false);
+
+	$effect(() => {
+		const payload = { timezone: $formData.timezone, layers: $formData.layers, from: previewFrom };
+		const empty = payload.layers.some((layer) => layer.participants.length === 0);
+		if (empty) {
+			preview = null;
+			return;
+		}
+		previewLoading = true;
+		const handle = setTimeout(async () => {
+			try {
+				const res = await fetch(`/${page.params.workspace}/on-call/preview`, {
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify(payload)
+				});
+				if (res.ok) preview = await res.json();
+			} catch {
+			}
+			previewLoading = false;
+		}, 300);
+		return () => clearTimeout(handle);
+	});
 
 	function update(index: number, patch: Partial<Layer>) {
 		$formData.layers = layers.map((layer, position) =>
@@ -126,46 +159,42 @@
 							Team
 						</Field.FieldLabel>
 						<Select.Root type="single" name="team" bind:value={$formData.team}>
-							<Select.Trigger>{$formData.team}</Select.Trigger>
+							<Select.Trigger>{$formData.team || 'Pick a team'}</Select.Trigger>
 							<Select.Content>
 								<Select.Group>
-									{#each TEAMS as team (team)}
+									{#each teams as team (team)}
 										<Select.Item value={team} label={team}>{team}</Select.Item>
 									{/each}
 								</Select.Group>
 							</Select.Content>
 						</Select.Root>
+						{#if $errors.team}
+							<Field.FieldError class="text-critical-ink text-xs font-normal">
+								{$errors.team}
+							</Field.FieldError>
+						{/if}
 					</Field.Field>
+
+					<div class="w-[220px]">
+						<TimezoneSelect {form} name="timezone" label="Timezone" />
+					</div>
 				</div>
 
 				<Alert tone="info">
 					<GlobeIcon />
 					<AlertContent>
 						<AlertTitle>How timezones work</AlertTitle>
-						Shifts are stored in UTC. Everyone sees the calendar in their own timezone, and handovers
-						happen at the same instant everywhere — 09:00 UTC is 11:00 for Berlin responders and 02:00
-						for San Francisco.
+						The schedule runs in the timezone you pick. Handovers and restriction hours happen at that
+						local time: a 09:00 handover in Europe/Berlin stays 09:00 there across daylight saving.
+						Everyone still sees the calendar in their own timezone.
 					</AlertContent>
 				</Alert>
-
-				{#if unreachable.length}
-					<Alert tone="warning">
-						<TriangleAlertIcon />
-						<AlertContent>
-							<AlertTitle>
-								{unreachable.join(', ')}
-								{unreachable.length === 1 ? 'has' : 'have'} no notification channel
-							</AlertTitle>
-							They would be skipped when paged. Ask them to connect a channel before this schedule goes
-							live.
-						</AlertContent>
-					</Alert>
-				{/if}
 
 				{#each layers as layer, index (layer.id)}
 					<LayerCard
 						{layer}
 						{index}
+						{people}
 						total={layers.length}
 						errors={layerErrors[index]}
 						{update}
@@ -191,13 +220,29 @@
 			<section class="bg-card overflow-hidden rounded-xl border">
 				<header class="flex items-center gap-2.5 border-b px-4 py-3">
 					<span class="text-[13.5px] font-semibold">Preview</span>
-					<span class="text-subtle-foreground ml-auto font-mono text-[10.5px]">UTC</span>
+					<span class="text-subtle-foreground ml-auto font-mono text-[10.5px]">
+						{$formData.timezone}
+					</span>
 				</header>
 				<div class="overflow-x-auto p-3">
-					<PreviewGrid {layers} from={previewFrom} />
+					{#if preview}
+						<PreviewGrid days={preview.days} effective={preview.effective} rows={preview.rows} />
+					{:else if previewLoading}
+						<p class="text-subtle-foreground m-0 px-0.5 py-6 text-center text-[12px]">
+							Building preview…
+						</p>
+					{:else}
+						<p class="text-subtle-foreground m-0 px-0.5 py-6 text-center text-[12px]">
+							Add someone to every layer to preview the rotation.
+						</p>
+					{/if}
+					{#if everyLayerSolo}
+						<p class="text-warning-ink m-0 mt-2.5 px-0.5 text-[11px] leading-[1.5]">
+							{SOLO_LAYER_NOTE}
+						</p>
+					{/if}
 					<p class="text-subtle-foreground m-0 mt-2.5 px-0.5 text-[11px] leading-[1.5]">
-						The top row is who actually gets paged — the highest layer on duty with people in it
-						wins.
+						The top row is who actually gets paged: the highest layer on duty with people in it wins.
 					</p>
 				</div>
 			</section>

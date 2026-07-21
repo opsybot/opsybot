@@ -77,7 +77,7 @@
 						</Button>
 					</div>
 					<p class="text-subtle-foreground m-0 text-xs">
-						A GET or POST counts as a check-in. The URL is shown once — copy it now.
+						A GET or POST counts as a check-in. The URL is shown once. Copy it now.
 					</p>
 				</div>
 			</div>

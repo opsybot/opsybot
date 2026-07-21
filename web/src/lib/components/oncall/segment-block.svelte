@@ -8,7 +8,7 @@
 	const hours = $derived(formatSpanHours(segment, zone));
 	const label = $derived(
 		segment.person && segment.override && reason
-			? `${segment.person} — ${reason}`
+			? `${segment.person}: ${reason}`
 			: (segment.person ?? 'No one is on call')
 	);
 </script>

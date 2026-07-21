@@ -14,5 +14,7 @@
 		submitLabel="Create schedule"
 		back={ws('/on-call')}
 		previewFrom={data.previewFrom}
+		people={data.people}
+		teams={data.teams}
 	/>
 </Page>

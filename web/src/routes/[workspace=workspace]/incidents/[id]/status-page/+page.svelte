@@ -63,7 +63,7 @@
 	<Panel class="flex items-center gap-2.5 p-3.5">
 		<EyeOffIcon class="text-subtle-foreground size-3.5 shrink-0" />
 		<span class="text-muted-foreground flex-1 text-[12.5px]">
-			internal.acme.dev — not published for this incident.
+			internal.acme.dev: not published for this incident.
 		</span>
 		<Button variant="ghost" size="sm" href={ws('/status-pages')}>Publish here</Button>
 	</Panel>

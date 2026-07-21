@@ -15,7 +15,7 @@ var rootCmd = &cobra.Command{
 schedules, alerting, incident response, and status pages.
 
 Configuration comes from OPSYBOT_* environment variables, an optional
---config file, and built-in defaults — in that order of precedence.`,
+--config file, and built-in defaults, in that order of precedence.`,
 }
 
 func Execute() {

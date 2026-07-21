@@ -39,7 +39,6 @@
 	onclick={editable ? () => onselect?.(node.id) : undefined}
 	onkeydown={editable
 		? (event) => {
-				// Ignore bubbled keys so Enter on the inner delete button does not also select
 				if (event.target !== event.currentTarget) return;
 				if (event.key === 'Enter' || event.key === ' ') {
 					event.preventDefault();
@@ -76,7 +75,7 @@
 		{#if noTargets}
 			<div class="text-critical-ink flex items-center gap-1.5 text-[12px]">
 				<TriangleAlertIcon class="size-3" />
-				Notifies no one — add a target
+				Notifies no one. Add a target
 			</div>
 		{:else}
 			{#each node.targets as target, index (index)}

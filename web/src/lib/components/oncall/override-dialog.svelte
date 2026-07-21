@@ -10,30 +10,33 @@
 	import * as RadioGroup from '$lib/components/ui/radio-group';
 	import * as Select from '$lib/components/ui/select';
 	import { Label } from '$lib/components/ui/label';
-	import { PEOPLE, formatShift, weekdayName } from '$lib/oncall';
+	import DatePicker from '$lib/components/date-picker.svelte';
+	import TimeSelect from '$lib/components/time-select.svelte';
+	import { formatShift, weekdayName } from '$lib/oncall';
 
 	let {
 		open = $bindable(false),
 		schedule,
 		target,
+		people,
 		now,
 		error
 	}: {
 		open?: boolean;
 		schedule: string;
 		target: { startsAt: string; endsAt: string; person: string | null };
+		people: string[];
 		now: number;
 		error?: string;
 	} = $props();
 
-	let person = $state(PEOPLE.find((name) => name !== target.person) ?? PEOPLE[0]);
+	let person = $state(untrack(() => people.find((name) => name !== target.person) ?? people[0] ?? ''));
 	let mode = $state('full');
 	let reason = $state('');
 
 	const day = (iso: string) => iso.slice(0, 10);
 	const clock = (iso: string) => iso.slice(11, 16);
 
-	// Seed once from the loaded shift; a re-render must not clobber edits
 	let startDate = $state(untrack(() => day(target.startsAt)));
 	let startTime = $state(untrack(() => clock(target.startsAt)));
 	let endDate = $state(untrack(() => day(target.endsAt)));
@@ -81,7 +84,7 @@
 							<Select.Trigger>{person}</Select.Trigger>
 							<Select.Content>
 								<Select.Group>
-									{#each PEOPLE as name (name)}
+									{#each people as name (name)}
 										<Select.Item value={name} label={name}>{name}</Select.Item>
 									{/each}
 								</Select.Group>
@@ -134,7 +137,12 @@
 									>
 										Start date
 									</Field.FieldLabel>
-									<Input id="start-date" name="startDate" type="date" bind:value={startDate} />
+									<DatePicker
+										id="start-date"
+										name="startDate"
+										label="Start date"
+										bind:value={startDate}
+									/>
 								</Field.Field>
 								<Field.Field class="w-[120px] gap-1.5 space-y-0">
 									<Field.FieldLabel
@@ -143,7 +151,12 @@
 									>
 										Start time
 									</Field.FieldLabel>
-									<Input id="start-time" name="startTime" type="time" bind:value={startTime} />
+									<TimeSelect
+										id="start-time"
+										name="startTime"
+										label="Start time"
+										bind:value={startTime}
+									/>
 								</Field.Field>
 							</div>
 
@@ -155,7 +168,7 @@
 									>
 										End date
 									</Field.FieldLabel>
-									<Input id="end-date" name="endDate" type="date" bind:value={endDate} />
+									<DatePicker id="end-date" name="endDate" label="End date" bind:value={endDate} />
 								</Field.Field>
 								<Field.Field class="w-[120px] gap-1.5 space-y-0">
 									<Field.FieldLabel
@@ -164,7 +177,7 @@
 									>
 										End time
 									</Field.FieldLabel>
-									<Input id="end-time" name="endTime" type="time" bind:value={endTime} />
+									<TimeSelect id="end-time" name="endTime" label="End time" bind:value={endTime} />
 									<Field.FieldDescription class="text-subtle-foreground text-xs">
 										UTC, 24-hour.
 									</Field.FieldDescription>

@@ -1,29 +1,37 @@
-import { formatShift, shiftsFor } from '$lib/oncall';
-import { listSchedules, listSwapRequests, requestSwap } from '$lib/server/oncall';
-import type { Actions, PageServerLoad } from './$types';
+import { formatShift } from '$lib/oncall';
+import { myShifts } from '$lib/server/oncall';
+import type { PageServerLoad } from './$types';
 
 const DAY = 86_400_000;
 
-export const load: PageServerLoad = ({ locals }) => {
+export const load: PageServerLoad = async ({ params, cookies }) => {
 	const now = new Date();
-	const me = locals.user?.name ?? '';
-	const schedules = listSchedules();
 
-	const shifts = shiftsFor(schedules, me, now, 7).map((shift, index) => ({
-		id: `${shift.scheduleId}-${index}`,
+	const week = await myShifts(
+		cookies,
+		params.workspace,
+		now.toISOString(),
+		new Date(now.getTime() + 7 * DAY).toISOString()
+	);
+	const shifts = week.map((shift, index) => ({
+		id: `${shift.scheduleSlug}-${index}`,
 		when: formatShift(shift, now.getTime()),
-		schedule: shift.schedule,
+		schedule: shift.scheduleSlug,
 		startsAt: shift.startsAt,
 		endsAt: shift.endsAt
 	}));
 
 	const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 	const length = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)).getUTCDate();
-	const mine = shiftsFor(schedules, me, start, length);
+	const monthShifts = await myShifts(
+		cookies,
+		params.workspace,
+		start.toISOString(),
+		new Date(start.getTime() + length * DAY).toISOString()
+	);
 
 	const days = new Set<string>();
-	for (const shift of mine) {
-		// A shift crossing midnight marks both UTC days
+	for (const shift of monthShifts) {
 		for (
 			let at = Date.parse(shift.startsAt);
 			at < Date.parse(shift.endsAt);
@@ -35,9 +43,7 @@ export const load: PageServerLoad = ({ locals }) => {
 
 	return {
 		now: now.getTime(),
-		me,
 		shifts,
-		requests: listSwapRequests(),
 		month: {
 			label: start.toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }),
 			blanks: (start.getUTCDay() + 6) % 7,
@@ -47,17 +53,4 @@ export const load: PageServerLoad = ({ locals }) => {
 			days: [...days]
 		}
 	};
-};
-
-export const actions: Actions = {
-	swap: async ({ request }) => {
-		const form = await request.formData();
-		const person = String(form.get('person'));
-		const when = String(form.get('when'));
-
-		if (!when) return;
-
-		requestSwap(`Swap ${when} with ${person}`, String(form.get('message') ?? '').trim());
-		return { person };
-	}
 };

@@ -48,7 +48,7 @@ function seed() {
 					}
 				},
 				{ id: 'wf1-a2', type: 'role', config: { role: 'Comms lead' } },
-				{ id: 'wf1-a3', type: 'note', config: { text: 'SEV1 comms cadence active — updates every 15 min.' } }
+				{ id: 'wf1-a3', type: 'note', config: { text: 'SEV1 comms cadence active: updates every 15 min.' } }
 			],
 			history: [
 				{
@@ -79,7 +79,7 @@ function seed() {
 					type: 'post',
 					config: {
 						channel: '#security',
-						text: 'Security incident {id} declared — you have been added to {channel}.'
+						text: 'Security incident {id} declared. You have been added to {channel}.'
 					}
 				},
 				{
@@ -177,7 +177,6 @@ export function setEnabled(id: string, enabled: boolean): boolean {
 	return true;
 }
 
-// Re-runs the builder's validation server side; the submitted JSON is untrusted
 export function parseDefinition(raw: string): { definition: WorkflowDefinition } | { error: string } {
 	let data: unknown;
 	try {

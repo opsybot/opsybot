@@ -84,8 +84,8 @@ function overall(): Overall {
 	return degraded
 		? {
 				degraded: true,
-				title: 'Degraded — 1 worker recovering',
-				detail: `Paging is unaffected — a healthy worker is covering. Last check ${LAST_CHECK}.`
+				title: 'Degraded: 1 worker recovering',
+				detail: `Paging is unaffected: a healthy worker is covering. Last check ${LAST_CHECK}.`
 			}
 		: { degraded: false, title: 'All systems healthy', detail: `Last check ${LAST_CHECK}.` };
 }

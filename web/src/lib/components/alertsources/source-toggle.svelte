@@ -16,7 +16,7 @@
 
 <div class="flex items-center gap-[9px]">
 	<span class="text-[12.5px] {paused ? 'text-warning-ink' : 'text-muted-foreground'}">
-		{paused ? 'Paused — events are dropped' : 'Receiving events'}
+		{paused ? 'Paused: events are dropped' : 'Receiving events'}
 	</span>
 	<form
 		method="POST"

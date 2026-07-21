@@ -2,7 +2,6 @@ import { fail } from '@sveltejs/kit';
 import { createHeartbeat, listHeartbeats } from '$lib/server/alerts';
 import type { Actions, PageServerLoad } from './$types';
 
-// Self-hosted instances point this at their own ingest host
 const INGEST_ORIGIN = 'https://in.opsy.bot';
 
 export const load: PageServerLoad = () => ({

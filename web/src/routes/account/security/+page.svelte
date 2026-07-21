@@ -62,7 +62,7 @@
 			if (result.type === 'success' && result.data?.recoveryCodes) {
 				regenCodes = result.data.recoveryCodes;
 				toast.success('Recovery codes regenerated', {
-					description: 'Your previous codes no longer work — save the new set.'
+					description: 'Your previous codes no longer work. Save the new set.'
 				});
 			}
 		}
@@ -113,11 +113,10 @@
 		<ShieldIcon size={15} style="color: var(--text-tertiary); flex-shrink: 0; margin-top: 1px" />
 		<span>
 			These protect <strong>your account</strong> everywhere it signs in. A workspace can also
-			<em>require</em> two-factor — if it does, you'll be prompted at next login.
+			<em>require</em> two-factor: if it does, you'll be prompted at next login.
 		</span>
 	</div>
 
-	<!-- Password -->
 	<div class="acct-card">
 		<div class="acct-sec">
 			<span class="acct-sec-ic"><LockIcon size={18} /></span>
@@ -129,7 +128,6 @@
 		</div>
 	</div>
 
-	<!-- Two-factor -->
 	<div class="acct-card">
 		<div class="acct-sec">
 			<span class="acct-sec-ic {data.enabled ? 'is-on' : ''}"><ShieldCheckIcon size={18} /></span>
@@ -171,7 +169,7 @@
 				<div class="acct-on">
 					<span>
 						{data.unavailableDetail ||
-							'Two-factor is unavailable — this instance has no auth secret key configured. Ask an admin to set it.'}
+							'Two-factor is unavailable. This instance has no auth secret key configured. Ask an admin to set it.'}
 					</span>
 				</div>
 			</div>
@@ -179,7 +177,6 @@
 	</div>
 </div>
 
-<!-- Setup wizard -->
 <Dialog.Root open={setupOpen} onOpenChange={(v) => (v ? undefined : (setupOpen = false))}>
 	<Dialog.Content class="sm:max-w-[460px]">
 		<div class="flex flex-col gap-4 p-6">
@@ -194,7 +191,7 @@
 					<Dialog.Description class="text-muted-foreground text-sm leading-[1.55]">
 						{setupStep === 'codes'
 							? 'Store these somewhere safe. Each one signs you in once if you lose your authenticator.'
-							: 'Scan the code with any TOTP app — 1Password, Google Authenticator, Authy — then enter a code to confirm.'}
+							: 'Scan the code with any TOTP app: 1Password, Google Authenticator, Authy, then enter a code to confirm.'}
 					</Dialog.Description>
 				</div>
 			</div>
@@ -223,7 +220,7 @@
 							{/snippet}
 						</InputOTP.Root>
 						{#if $vfMsg === 'wrong'}
-							<div class="acct-err">That code didn't match. Codes rotate every 30 s — enter the current one.</div>
+							<div class="acct-err">That code didn't match. Codes rotate every 30 s. Enter the current one.</div>
 						{/if}
 						<div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px">
 							<Button type="button" variant="ghost" onclick={() => (setupOpen = false)}>Cancel</Button>
@@ -268,7 +265,6 @@
 	</Dialog.Content>
 </Dialog.Root>
 
-<!-- Regenerate recovery codes -->
 <Dialog.Root open={regenOpen} onOpenChange={(v) => (v ? undefined : (regenOpen = false))}>
 	<Dialog.Content class="sm:max-w-[460px]">
 		<div class="flex flex-col gap-4 p-6">
@@ -330,7 +326,6 @@
 	</Dialog.Content>
 </Dialog.Root>
 
-<!-- Disable -->
 <Dialog.Root open={disableOpen} onOpenChange={(v) => (v ? undefined : (disableOpen = false))}>
 	<Dialog.Content class="sm:max-w-[440px]">
 		<div class="flex flex-col gap-4 p-6">
@@ -369,7 +364,6 @@
 	</Dialog.Content>
 </Dialog.Root>
 
-<!-- Change password -->
 <Dialog.Root open={pwOpen} onOpenChange={(v) => (v ? undefined : (pwOpen = false))}>
 	<Dialog.Content class="sm:max-w-[440px]">
 		<div class="flex flex-col gap-4 p-6">

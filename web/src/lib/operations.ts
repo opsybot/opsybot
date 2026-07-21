@@ -17,12 +17,10 @@ export function opsTone(state: HealthState): Tone {
 	return state === 'ok' ? 'success' : state === 'warn' ? 'warning' : 'critical';
 }
 
-// Fill, not text, so the 3:1 contrast floor applies and the raw tone token passes
 export function dotColor(state: HealthState): string {
 	return `var(--${opsTone(state)})`;
 }
 
-// Text needs AA contrast, so ink tokens rather than raw tone colors
 export function depthClass(state: HealthState): string {
 	return state === 'warn'
 		? 'text-warning-ink'

@@ -26,7 +26,6 @@
 	bind:this={form}
 	use:enhance={() => async ({ result, update }) => {
 		await update({ reset: false });
-		// Rejection leaves value unchanged, so the resync effect never fires; revert manually
 		if (result.type !== 'success') {
 			role = value;
 			toast.error(String((result.type === 'failure' && result.data?.error) || 'Could not change the role.'));

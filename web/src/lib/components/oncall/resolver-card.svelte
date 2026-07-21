@@ -1,6 +1,9 @@
 <script lang="ts">
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
+	import { onMount, tick } from 'svelte';
 	import UserAvatar from '$lib/components/layout/user-avatar.svelte';
+	import DatePicker from '$lib/components/date-picker.svelte';
+	import TimeSelect from '$lib/components/time-select.svelte';
 	import { Input } from '$lib/components/ui/input';
 	import type { Coverage } from '$lib/oncall';
 
@@ -13,9 +16,18 @@
 		date: string;
 		time: string;
 		coverage: Coverage;
-		// Kept as hidden inputs; a GET submit replaces the whole query string
 		keep: Record<string, string>;
 	} = $props();
+
+	let enhanced = $state(false);
+	let form = $state<HTMLFormElement | null>(null);
+
+	onMount(() => (enhanced = true));
+
+	async function submitLookup() {
+		await tick();
+		form?.requestSubmit();
+	}
 </script>
 
 <section class="bg-card overflow-hidden rounded-xl border">
@@ -23,28 +35,48 @@
 		<span class="text-[13.5px] font-semibold">Who is on call at…</span>
 	</header>
 
-	<form method="GET" class="px-3.5 py-3">
+	<form method="GET" class="px-3.5 py-3" bind:this={form}>
 		{#each Object.entries(keep) as [name, value] (name)}
 			<input type="hidden" {name} {value} />
 		{/each}
 
 		<div class="flex gap-2">
-			<Input
-				type="date"
-				name="date"
-				value={date}
-				aria-label="Date"
-				onchange={(event: Event) => (event.target as HTMLInputElement).form?.requestSubmit()}
-				class="h-[34px] flex-1 text-[13px]"
-			/>
-			<Input
-				type="time"
-				name="time"
-				value={time}
-				aria-label="Time, UTC"
-				onchange={(event: Event) => (event.target as HTMLInputElement).form?.requestSubmit()}
-				class="h-[34px] w-[100px] text-[13px]"
-			/>
+			{#if enhanced}
+				<div class="flex-1">
+					<DatePicker
+						name="date"
+						label="Date"
+						size="sm"
+						value={date}
+						onChange={submitLookup}
+					/>
+				</div>
+				<TimeSelect
+					name="time"
+					label="Time, UTC"
+					size="sm"
+					value={time}
+					onChange={submitLookup}
+					class="w-[110px]"
+				/>
+			{:else}
+				<Input
+					type="date"
+					name="date"
+					value={date}
+					aria-label="Date"
+					onchange={(event: Event) => (event.target as HTMLInputElement).form?.requestSubmit()}
+					class="h-[34px] flex-1 text-[13px]"
+				/>
+				<Input
+					type="time"
+					name="time"
+					value={time}
+					aria-label="Time, UTC"
+					onchange={(event: Event) => (event.target as HTMLInputElement).form?.requestSubmit()}
+					class="h-[34px] w-[100px] text-[13px]"
+				/>
+			{/if}
 			<span class="text-subtle-foreground self-center font-mono text-[11px]">UTC</span>
 		</div>
 
@@ -65,7 +97,7 @@
 			{:else}
 				<TriangleAlertIcon class="text-warning-ink size-3.5 shrink-0" />
 				<span class="text-warning-ink text-[12.5px]">
-					No one is on call then — that is a gap.
+					No one is on call then. That is a gap.
 				</span>
 			{/if}
 		</div>

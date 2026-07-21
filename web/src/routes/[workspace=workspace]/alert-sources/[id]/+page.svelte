@@ -29,7 +29,6 @@
 	let revealed = $state(false);
 	let rotateOpen = $state(false);
 
-	// Reseed only when the source id changes so a save does not discard an in-progress edit
 	let rows = $state(untrack(() => data.source.mapping.map((m) => ({ ...m }))));
 	$effect(() => {
 		source.id;
@@ -171,7 +170,7 @@
 					revealed = true;
 					rotateOpen = false;
 					toast.success('Secret rotated', {
-						description: 'The old secret stops working in 24 h — update your sender before then.'
+						description: 'The old secret stops working in 24 h: update your sender before then.'
 					});
 				}}
 		>

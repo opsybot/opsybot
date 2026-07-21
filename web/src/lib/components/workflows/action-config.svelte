@@ -11,7 +11,6 @@
 		type WorkflowAction
 	} from '$lib/workflows';
 
-	// action is the builder's deep-reactive proxy; binds write into the array it serializes
 	let { action, roleNames }: { action: WorkflowAction; roleNames: string[] } = $props();
 
 	const labelClass = 'text-muted-foreground text-[13px] font-medium';
@@ -57,7 +56,7 @@
 		<Input
 			id="ac-{action.id}-note"
 			bind:value={action.config.text}
-			placeholder="Comms cadence active — updates every 15 min."
+			placeholder="Comms cadence active: updates every 15 min."
 		/>
 	</Field.Field>
 {:else if action.type === 'webhook'}

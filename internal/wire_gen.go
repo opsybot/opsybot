@@ -32,6 +32,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/policy"
 	"github.com/opsybot/opsybot/internal/repository/ratelimit"
 	"github.com/opsybot/opsybot/internal/repository/recovery_code"
+	"github.com/opsybot/opsybot/internal/repository/schedule"
 	"github.com/opsybot/opsybot/internal/repository/session"
 	"github.com/opsybot/opsybot/internal/repository/sso_connection"
 	"github.com/opsybot/opsybot/internal/repository/sso_state"
@@ -40,7 +41,6 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/user"
 	"github.com/opsybot/opsybot/internal/repository/user_identity"
 	"github.com/opsybot/opsybot/internal/repository/workspace"
-	"github.com/opsybot/opsybot/internal/service"
 	"github.com/opsybot/opsybot/internal/service/apikeys"
 	"github.com/opsybot/opsybot/internal/service/audits"
 	"github.com/opsybot/opsybot/internal/service/auth"
@@ -48,6 +48,7 @@ import (
 	"github.com/opsybot/opsybot/internal/service/members"
 	"github.com/opsybot/opsybot/internal/service/ratelimiter"
 	"github.com/opsybot/opsybot/internal/service/references"
+	"github.com/opsybot/opsybot/internal/service/schedules"
 	"github.com/opsybot/opsybot/internal/service/sso"
 	"github.com/opsybot/opsybot/internal/service/teams"
 	"github.com/opsybot/opsybot/internal/service/users"
@@ -128,20 +129,22 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	userIdentity := user_identity.New(postgresClient)
 	ssoState := sso_state.New(valkeyClient)
 	serviceSSO := sso.New(configAuth, repositoryTransactor, repositoryWorkspace, repositoryMember, repositoryUser, repositoryPolicy, repositorySession, repositoryAudit, ssoConnection, userIdentity, ssoState)
+	repositoryTeam := team.New(postgresClient)
+	repositorySchedule := schedule.New(postgresClient)
+	serviceSchedules := schedules.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, repositorySchedule, repositoryPolicy, repositoryAudit)
 	rateLimiter := ratelimit.New(valkeyClient)
 	serviceRateLimiter := ratelimiter.New(configAuth, rateLimiter)
 	serviceWorkspaces := workspaces.New(repositoryWorkspace, repositoryMember)
-	v := _wireValue
+	v := scheduleReferenceSources(serviceSchedules)
 	serviceReferences := references.New(v)
 	serviceMembers := members.New(configAuth, repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryUser, repositoryInvite, repositorySession, repositoryPolicy, repositoryAudit, repositoryMailer, serviceReferences)
 	serviceUsers := users.New(repositoryTransactor, repositoryUser, recoveryCode, repositorySession)
 	repositoryChannel := channel.New(postgresClient)
 	serviceChannels := channels.New(repositoryChannel, repositoryAudit)
-	repositoryTeam := team.New(postgresClient)
 	serviceTeams := teams.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, repositoryPolicy, repositoryAudit)
 	serviceAudits := audits.New(repositoryWorkspace, repositoryMember, repositoryPolicy, repositoryAudit)
-	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers, serviceUsers, serviceChannels, serviceTeams, apiKeys, serviceAudits, serviceSSO)
-	handler := http.NewRouter(slogLogger, configAuth, serviceAuth, apiKeys, serviceSSO, serviceRateLimiter, strictServerInterface)
+	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers, serviceUsers, serviceChannels, serviceTeams, serviceSchedules, apiKeys, serviceAudits, serviceSSO)
+	handler := http.NewRouter(slogLogger, configAuth, serviceAuth, apiKeys, serviceSSO, serviceSchedules, serviceRateLimiter, strictServerInterface)
 	app := &App{
 		OTel:     client,
 		Cfg:      configConfig,
@@ -157,10 +160,6 @@ func InitApp(cfgFile string) (*App, func(), error) {
 		cleanup()
 	}, nil
 }
-
-var (
-	_wireValue = []service.ReferenceSource(nil)
-)
 
 func InitMigrator(cfgFile string) (*Migrator, func(), error) {
 	configConfig, err := config.New(cfgFile)

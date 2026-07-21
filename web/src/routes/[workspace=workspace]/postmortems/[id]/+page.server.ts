@@ -77,7 +77,6 @@ export const actions: Actions = {
 		const form = await request.formData();
 		editable(params.id);
 
-		// One field per submit; label and text autosave independently
 		const field = form.get('field') === 'label' ? 'label' : 'text';
 		const value = String(form.get('value') ?? '');
 		writeFactor(params.id, String(form.get('id')), {
@@ -98,7 +97,6 @@ export const actions: Actions = {
 
 		if (option !== 'announce' && option !== 'publicLink') return fail(400, { error: 'Unknown option.' });
 
-		// Options stay editable after publishing, so open() rather than editable()
 		open(params.id);
 		setOptions(params.id, { [option]: on });
 	},

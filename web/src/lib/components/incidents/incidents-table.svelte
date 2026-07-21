@@ -26,7 +26,6 @@
 		now: number;
 	} = $props();
 
-	// TanStack is used for filtering only; cells are rendered by hand
 	const columns: ColumnDef<Incident>[] = [
 		{
 			id: 'search',
@@ -123,7 +122,7 @@
 				<Table.Cell
 					class="p-3 pr-[18px] font-mono {overdue ? 'text-critical-ink' : 'text-subtle-foreground'}"
 				>
-					{incident.nextUpdateAt ? formatDue(incident.nextUpdateAt, now) : '—'}
+					{incident.nextUpdateAt ? formatDue(incident.nextUpdateAt, now) : '–'}
 				</Table.Cell>
 			</Table.Row>
 		{/each}

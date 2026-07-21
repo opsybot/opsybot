@@ -21,7 +21,7 @@ function rowsFor(tab: Tab, filters: Filters): (string | number)[][] {
 		case 'load': {
 			const load = getOnCallLoad(filters);
 			if (load.withheld) {
-				return [['Notice'], [`Fewer than ${COHORT_FLOOR} people match this filter — on-call load is withheld.`]];
+				return [['Notice'], [`Fewer than ${COHORT_FLOOR} people match this filter, on-call load is withheld.`]];
 			}
 			return [
 				['Person', 'Team', 'On-call hours', 'Pages', 'Night pages', 'Weekend pages'],
@@ -61,7 +61,7 @@ export const GET: RequestHandler = ({ url }) => {
 	const rows =
 		tab === 'definitions' || insightsAvailable()
 			? [['Scope', scopeLabel(filters)], [], ...rowsFor(tab, filters)]
-			: [['Scope', scopeLabel(filters)], [], ['Notice'], ['No incidents resolved yet — nothing to measure.']];
+			: [['Scope', scopeLabel(filters)], [], ['Notice'], ['No incidents resolved yet: nothing to measure.']];
 
 	return new Response(toCsv(rows), {
 		headers: {

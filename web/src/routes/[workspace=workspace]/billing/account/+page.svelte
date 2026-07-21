@@ -42,7 +42,7 @@
 			{:else}
 				<div class="bg-inset flex items-center gap-3 rounded-md border border-dashed px-3 py-2.5">
 					<CreditCardIcon class="text-subtle-foreground size-[18px]" />
-					<span class="text-subtle-foreground flex-1 text-[12.5px]">No card yet — add one before the trial ends.</span>
+					<span class="text-subtle-foreground flex-1 text-[12.5px]">No card yet. Add one before the trial ends.</span>
 					<Button size="sm" variant="secondary" onclick={() => toast('Card setup opens a secure form.')}>Add card</Button>
 				</div>
 			{/if}
@@ -100,8 +100,7 @@
 			{/each}
 		</div>
 		<div class="text-subtle-foreground border-t px-4 py-2.5 text-[11.5px] leading-[1.5]">
-			Over the included volume, SMS is €0.04 and voice €0.09 each. You'll see a banner before any overage begins —
-			nothing is charged silently.
+			Over the included volume, SMS is €0.04 and voice €0.09 each. You'll see a banner before any overage begins: nothing is charged silently.
 		</div>
 	</div>
 

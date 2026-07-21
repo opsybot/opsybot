@@ -15,7 +15,6 @@ export const actions: Actions = {
 		if (!name) return fail(400, { error: 'Give the source a name.' });
 		if (!FORMATS.some((format) => format.id === formatId)) return fail(400, { error: 'Pick a source format.' });
 
-		// Keep the secret the operator copied in setup, but only if it matches the minted format
 		const posted = String(form.get('secret') ?? '');
 		const secret = /^osk_[a-f0-9]{16}$/.test(posted) ? posted : draftSecret();
 

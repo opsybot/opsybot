@@ -23,14 +23,13 @@
 
 {#if !enabled}
 	<SurfaceOff>
-		Catch-me-up needs a model. AI is off or no model is configured —
-		<a href={ws('/ai')} class="text-brand-foreground hover:underline">connect one</a>.
+		Catch-me-up needs a model. AI is off or no model is configured. <a href={ws('/ai')} class="text-brand-foreground hover:underline">Connect one</a>.
 	</SurfaceOff>
 {:else}
 	<div class="bg-card rounded-xl border px-4 py-3.5">
 		<header class="mb-2.5 flex items-center gap-2">
 			<SparklesIcon class="text-primary size-3.5" />
-			<span class="text-[13.5px] font-semibold">Catch me up — INC-2481</span>
+			<span class="text-[13.5px] font-semibold">Catch me up: INC-2481</span>
 			<Badge tone="brand" size="sm">generated 09:52 UTC</Badge>
 			<div class="flex-1"></div>
 			<Button variant="ghost" size="icon-sm" aria-label="Regenerate summary" onclick={regenerate}>
@@ -60,7 +59,7 @@
 				Next status update due 10:07 UTC.
 			</p>
 			<p class="text-subtle-foreground mt-2 mb-0 text-[10.5px]">
-				Drafted by Opsybot from the timeline — verify before acting on it.
+				Drafted by Opsybot from the timeline. Verify before acting on it.
 			</p>
 		{/if}
 	</div>

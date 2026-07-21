@@ -37,7 +37,6 @@ export const actions: Actions = {
 		if (!name) return fail(400, { error: 'Give the page a name.' });
 
 		const domain = String(form.get('domain') ?? '').trim();
-		// Hostname: dot-separated labels, each starting and ending alphanumeric
 		if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(domain)) {
 			return fail(400, { error: 'Enter a hostname, like status.acme.dev.' });
 		}

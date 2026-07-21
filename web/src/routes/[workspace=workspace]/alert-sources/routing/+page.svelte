@@ -38,7 +38,6 @@
 		dialogOpen = true;
 	}
 
-	// Local echo of server state; tick before submit so the hidden input has the new value
 	let defaultPolicy = $state(untrack(() => data.defaultPolicy));
 	$effect(() => {
 		defaultPolicy = data.defaultPolicy;
@@ -55,7 +54,7 @@
 	<div class="flex min-w-0 flex-col gap-2.5">
 		<div class="flex items-center">
 			<span class="text-subtle-foreground text-[13px]">
-				Evaluated top to bottom — first match wins
+				Evaluated top to bottom: first match wins
 			</span>
 			<div class="flex-1"></div>
 			<Button size="sm" onclick={openNew}>
@@ -138,7 +137,7 @@
 				<div class="flex flex-wrap items-center gap-2">
 					<span class="text-[13px] font-semibold">Default route</span>
 					<span class="text-subtle-foreground text-[11.5px]">
-						always last — catches everything unmatched
+						always last: catches everything unmatched
 					</span>
 					{#if test.ok && test.index === -1}
 						<Badge tone="brand" size="sm" dot>matches test alert</Badge>
@@ -185,7 +184,7 @@
 					>
 						<CheckIcon class="text-primary size-[13px] shrink-0" />
 						<span class="text-[12.5px]">
-							{test.index === -1 ? 'No rule matches — default route' : `Matches rule ${test.index + 1}`}
+							{test.index === -1 ? 'No rule matches: default route' : `Matches rule ${test.index + 1}`}
 							→ <span class="font-mono text-[12px]">{test.policy}</span>
 						</span>
 					</div>
@@ -199,7 +198,7 @@
 				{/if}
 			</div>
 			<p class="text-subtle-foreground m-0 text-[11.5px] leading-[1.5]">
-				Edit the JSON — the result updates as you type. Nothing is paged.
+				Edit the JSON: the result updates as you type. Nothing is paged.
 			</p>
 		</div>
 	</div>

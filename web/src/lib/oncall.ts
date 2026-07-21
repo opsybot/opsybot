@@ -11,11 +11,16 @@ export const PERSON_TONE: Record<string, PersonTone> = {
 	'Sana Ito': 'success'
 };
 
+const TONE_CYCLE: PersonTone[] = ['brand', 'info', 'warning', 'high', 'success'];
+
 export function personTone(name: string): PersonTone {
-	return PERSON_TONE[name] ?? 'neutral';
+	if (PERSON_TONE[name]) return PERSON_TONE[name];
+	if (!name) return 'neutral';
+	let hash = 0;
+	for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+	return TONE_CYCLE[hash % TONE_CYCLE.length];
 }
 
-// Tailwind cannot see class names built at runtime
 export const PERSON_CLASS: Record<PersonTone, string> = {
 	brand: 'bg-brand-wash border-brand-edge text-brand-foreground',
 	info: 'bg-info-wash border-info-edge text-info-ink',
@@ -25,14 +30,6 @@ export const PERSON_CLASS: Record<PersonTone, string> = {
 	neutral: 'bg-neutral-wash border-neutral-edge text-neutral-ink'
 };
 
-export const PEOPLE = ['Maya Chen', 'Priya Nair', 'Marcus Lee', 'Dev Patel', 'Sana Ito'];
-
-export const UNREACHABLE = ['Jordan Okafor'];
-
-export const ASSIGNABLE = [...PEOPLE, ...UNREACHABLE];
-
-export const TEAMS = ['payments', 'platform', 'frontend'];
-
 export type Rotation = 'daily' | 'weekly' | 'custom';
 
 export const ROTATIONS: { value: Rotation; label: string; description: string }[] = [
@@ -41,7 +38,6 @@ export const ROTATIONS: { value: Rotation; label: string; description: string }[
 	{ value: 'custom', label: 'Custom interval', description: 'Every N days' }
 ];
 
-// UTC weekday (0 = Sunday), whole UTC hours
 export type Restriction = { day: number; start: number; end: number };
 
 export type Layer = {
@@ -70,50 +66,16 @@ export type Schedule = {
 	id: string;
 	name: string;
 	team: string;
-	// Highest precedence first
+	timezone: string;
 	layers: Layer[];
 	overrides: Override[];
-	audit: AuditEntry[];
-	feedToken: string;
+	feedUrl: string;
 	archived: boolean;
 	paused: boolean;
 };
 
-export type SwapRequest = {
-	id: string;
-	text: string;
-	message: string;
-	status: 'pending' | 'approved';
-};
-
 export function layerName(total: number, index: number): string {
 	return `Layer ${total - index}`;
-}
-
-export function rotationPerson(layer: Layer, at: Date): string | null {
-	if (!layer.participants.length) return null;
-
-	const period =
-		layer.rotation === 'daily' ? 1 : layer.rotation === 'weekly' ? 7 : Math.max(1, layer.intervalDays);
-
-	const anchor = Date.parse(
-		`${layer.startsOn}T${String(layer.handoverHour).padStart(2, '0')}:00:00Z`
-	);
-	const periods = Math.floor((at.getTime() - anchor) / (period * DAY));
-	const count = layer.participants.length;
-
-	return layer.participants[((periods % count) + count) % count];
-}
-
-export function layerOnDuty(layer: Layer, at: Date): boolean {
-	if (!layer.restrictions.length) return true;
-
-	const day = at.getUTCDay();
-	const hour = at.getUTCHours() + at.getUTCMinutes() / 60;
-
-	return layer.restrictions.some(
-		(window) => window.day === day && hour >= window.start && hour < window.end
-	);
 }
 
 export type Coverage = {
@@ -121,39 +83,6 @@ export type Coverage = {
 	via: string | null;
 	override: boolean;
 };
-
-const NOBODY: Coverage = { person: null, via: null, override: false };
-
-export function coverageAt(schedule: Schedule, at: Date): Coverage {
-	const instant = at.getTime();
-
-	// The last override written wins
-	const override = schedule.overrides.findLast(
-		(entry) => instant >= Date.parse(entry.startsAt) && instant < Date.parse(entry.endsAt)
-	);
-	if (override) return { person: override.person, via: 'override', override: true };
-
-	for (let index = 0; index < schedule.layers.length; index++) {
-		const cover = layerCoverageAt(schedule, index, at);
-		if (cover.person) return cover;
-	}
-
-	return NOBODY;
-}
-
-function layerCoverageAt(schedule: Schedule, index: number, at: Date): Coverage {
-	const layer = schedule.layers[index];
-	if (!layer || !layerOnDuty(layer, at)) return NOBODY;
-
-	const person = rotationPerson(layer, at);
-	if (!person) return NOBODY;
-
-	return {
-		person,
-		via: layerName(schedule.layers.length, index).toLowerCase(),
-		override: false
-	};
-}
 
 export type Segment = {
 	startsAt: string;
@@ -163,118 +92,36 @@ export type Segment = {
 	override: boolean;
 };
 
-function boundaries(schedule: Schedule, from: number, to: number): number[] {
-	const marks = new Set<number>([from, to]);
-
-	for (let mark = Math.ceil(from / HOUR) * HOUR; mark < to; mark += HOUR) marks.add(mark);
-
-	for (const override of schedule.overrides) {
-		for (const mark of [Date.parse(override.startsAt), Date.parse(override.endsAt)]) {
-			if (mark > from && mark < to) marks.add(mark);
-		}
-	}
-
-	return [...marks].sort((a, b) => a - b);
-}
-
-export function segments(
-	schedule: Schedule,
-	from: Date,
-	to: Date,
-	layerIndex?: number
-): Segment[] {
-	const marks = boundaries(schedule, from.getTime(), to.getTime());
-	const out: Segment[] = [];
-
-	for (let i = 0; i < marks.length - 1; i++) {
-		const [start, end] = [marks[i], marks[i + 1]];
-		const at = new Date((start + end) / 2);
-		const cover =
-			layerIndex === undefined
-				? coverageAt(schedule, at)
-				: layerCoverageAt(schedule, layerIndex, at);
-
-		const last = out[out.length - 1];
-		if (last && last.person === cover.person && last.override === cover.override) {
-			last.endsAt = new Date(end).toISOString();
-			continue;
-		}
-
-		out.push({
-			startsAt: new Date(start).toISOString(),
-			endsAt: new Date(end).toISOString(),
-			...cover
-		});
-	}
-
-	return out;
-}
-
-export function dayStartHour(schedule: Schedule): number {
+export function dayStartHour(schedule: Pick<Schedule, 'layers'>): number {
 	return schedule.layers[schedule.layers.length - 1]?.handoverHour ?? 0;
 }
 
-export function dayWindow(schedule: Schedule, day: Date): { from: Date; to: Date } {
+export function dayWindow(schedule: Pick<Schedule, 'layers'>, day: Date): { from: Date; to: Date } {
 	const from = new Date(day);
 	from.setUTCHours(dayStartHour(schedule), 0, 0, 0);
 	return { from, to: new Date(from.getTime() + DAY) };
 }
 
-export function gaps(schedule: Schedule, from: Date, days: number): Segment[] {
-	if (schedule.paused) return [];
-
-	const to = new Date(from.getTime() + days * DAY);
-	return segments(schedule, from, to).filter((segment) => !segment.person);
+export function clipSegments(segments: Segment[], from: Date, to: Date): Segment[] {
+	const lo = from.getTime();
+	const hi = to.getTime();
+	const out: Segment[] = [];
+	for (const seg of segments) {
+		const start = Date.parse(seg.startsAt);
+		const end = Date.parse(seg.endsAt);
+		if (end <= lo || start >= hi) continue;
+		out.push({
+			...seg,
+			startsAt: new Date(Math.max(start, lo)).toISOString(),
+			endsAt: new Date(Math.min(end, hi)).toISOString()
+		});
+	}
+	return out;
 }
 
 export type Handover = { at: string; from: string; to: string };
 
-export function handovers(schedule: Schedule, from: Date, days: number, limit = 3): Handover[] {
-	if (schedule.paused) return [];
-
-	const to = new Date(from.getTime() + days * DAY);
-	const runs = segments(schedule, from, to);
-	const out: Handover[] = [];
-
-	for (let i = 1; i < runs.length && out.length < limit; i++) {
-		const [before, after] = [runs[i - 1], runs[i]];
-		if (!before.person || !after.person || before.person === after.person) continue;
-		out.push({ at: after.startsAt, from: before.person, to: after.person });
-	}
-
-	return out;
-}
-
 export type Shift = { startsAt: string; endsAt: string; schedule: string; scheduleId: string };
-
-export function shiftsFor(
-	schedules: Schedule[],
-	person: string,
-	from: Date,
-	days: number
-): Shift[] {
-	const to = new Date(from.getTime() + days * DAY);
-
-	// Look past the window end so a straddling shift keeps its real end time
-	const horizon = new Date(to.getTime() + 7 * DAY);
-
-	return schedules
-		.filter((schedule) => !schedule.paused)
-		.flatMap((schedule) =>
-			segments(schedule, from, horizon)
-				.filter(
-					(segment) =>
-						segment.person === person && Date.parse(segment.startsAt) < to.getTime()
-				)
-				.map((segment) => ({
-					startsAt: segment.startsAt,
-					endsAt: segment.endsAt,
-					schedule: schedule.name,
-					scheduleId: schedule.id
-				}))
-		)
-		.sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
-}
 
 export type DaySummary = {
 	date: string;
@@ -283,26 +130,20 @@ export type DaySummary = {
 	gap: boolean;
 };
 
-export function daySummary(schedule: Schedule, day: Date): DaySummary {
-	const { from, to } = dayWindow(schedule, day);
-	const runs = segments(schedule, from, to);
-
+export function daySummaryFromSegments(segments: Segment[], date: Date): DaySummary {
 	const held = new Map<string, number>();
-	for (const run of runs) {
+	for (const run of segments) {
 		if (!run.person) continue;
-		const length = Date.parse(run.endsAt) - Date.parse(run.startsAt);
-		held.set(run.person, (held.get(run.person) ?? 0) + length);
+		held.set(run.person, (held.get(run.person) ?? 0) + (Date.parse(run.endsAt) - Date.parse(run.startsAt)));
 	}
-
 	const [longest] = [...held.entries()].sort((a, b) => b[1] - a[1]);
-
-	const taken = runs.find((run) => run.override);
+	const taken = segments.find((run) => run.override);
 
 	return {
-		date: from.toISOString().slice(0, 10),
+		date: date.toISOString().slice(0, 10),
 		person: taken?.person ?? longest?.[0] ?? null,
 		override: !!taken,
-		gap: runs.some((run) => !run.person)
+		gap: segments.some((run) => !run.person)
 	};
 }
 
@@ -392,7 +233,7 @@ export function formatDuty(layer: Layer): string {
 	const hours = (start: number, end: number) =>
 		start === 0 && end === 24
 			? 'around the clock'
-			: `${String(start).padStart(2, '0')}:00–${String(end).padStart(2, '0')}:00 UTC`;
+			: `${String(start).padStart(2, '0')}:00–${String(end).padStart(2, '0')}:00`;
 
 	const days = (list: number[]) => {
 		const set = new Set(list);
@@ -411,6 +252,13 @@ export function formatDuty(layer: Layer): string {
 			return `${hours(start, end)}, ${days(list)}`;
 		})
 		.join(' · ');
+}
+
+export const SOLO_LAYER_NOTE =
+	'A rotation needs two or more people to hand over. With one, they stay on call continuously.';
+
+export function isSoloLayer(layer: { participants: string[] }): boolean {
+	return layer.participants.length === 1;
 }
 
 export function formatRotation(layer: Layer): string {

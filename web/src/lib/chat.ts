@@ -43,7 +43,7 @@ export const PLATFORMS: Omit<Platform, 'connection'>[] = [
 		id: 'slack',
 		label: 'Slack',
 		icon: 'message-square',
-		tagline: 'Incidents run in chat — declare, coordinate, resolve without leaving Slack.',
+		tagline: 'Incidents run in chat. Declare, coordinate, resolve without leaving Slack.',
 		scopes: [
 			{ what: 'Create and archive channels', why: 'to open #inc-NNNN rooms and close them on resolve' },
 			{ what: 'Post and read in incident channels', why: 'the timeline scribe works from channel messages' },
@@ -55,7 +55,7 @@ export const PLATFORMS: Omit<Platform, 'connection'>[] = [
 		id: 'teams',
 		label: 'Microsoft Teams',
 		icon: 'message-square',
-		tagline: 'Incidents run in chat — declare, coordinate, resolve without leaving Microsoft Teams.',
+		tagline: 'Incidents run in chat. Declare, coordinate, resolve without leaving Microsoft Teams.',
 		scopes: [
 			{ what: 'Create channels in a team you pick', why: 'incident rooms live in one team' },
 			{ what: 'Post and read in incident channels', why: 'the timeline scribe works from channel messages' },
@@ -66,7 +66,7 @@ export const PLATFORMS: Omit<Platform, 'connection'>[] = [
 		id: 'discord',
 		label: 'Discord',
 		icon: 'message-square',
-		tagline: 'Incidents run in chat — declare, coordinate, resolve without leaving Discord.',
+		tagline: 'Incidents run in chat. Declare, coordinate, resolve without leaving Discord.',
 		scopes: [
 			{ what: 'Manage channels in one category', why: 'incident rooms are created under it' },
 			{ what: 'Post and read in incident channels', why: 'the timeline scribe works from channel messages' },

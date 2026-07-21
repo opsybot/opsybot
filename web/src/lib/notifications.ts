@@ -93,7 +93,7 @@ export function verifyBadge(channel: Pick<Channel, 'verified'>): { tone: Tone; l
 }
 
 export function previewSentence(steps: RuleStep[]): string {
-	if (!steps.length) return 'You would get nothing — add at least one step.';
+	if (!steps.length) return 'You would get nothing. Add at least one step.';
 	const parts = steps.map((step, index) => {
 		const when =
 			index === 0 ? 'immediately' : step.delay === '0' ? 'at the same time' : `after ${step.delay} min`;
@@ -110,7 +110,6 @@ export function uid(): string {
 	return `s${idSeq.toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
-// First step delay is '0', later steps positive; re-enforced after reorders
 export function normalizeSteps(steps: RuleStep[]): RuleStep[] {
 	return steps.map((step, index) => {
 		const delay = index === 0 ? '0' : step.delay === '0' ? DEFAULT_LATER_DELAY : step.delay;
@@ -148,7 +147,6 @@ function parseQuietHours(input: unknown): QuietHours {
 	};
 }
 
-// Sanitizes client-submitted rules; the builder UI is not a trust boundary
 export function parseRules(
 	raw: string
 ): { high: RuleStep[]; low: RuleStep[]; quietHours: QuietHours } | { error: string } {

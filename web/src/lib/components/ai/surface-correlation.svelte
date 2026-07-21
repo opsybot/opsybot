@@ -26,7 +26,7 @@
 </script>
 
 {#if !enabled}
-	<SurfaceOff>Correlation suggestions need a model — currently unavailable.</SurfaceOff>
+	<SurfaceOff>Correlation suggestions need a model: currently unavailable.</SurfaceOff>
 {:else if dismissed}
 	<div
 		bind:this={strip}

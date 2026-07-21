@@ -1,8 +1,6 @@
 <script lang="ts" module>
 	import { type VariantProps, tv } from "tailwind-variants";
 
-	// The design system's Alert: a tone's wash, its hairline, and its icon. The body text stays
-	// neutral so the message is readable regardless of how loud the tone is.
 	export const alertVariants = tv({
 		base: "flex w-full gap-3 rounded-md border px-[15px] py-[13px] text-left *:[svg]:mt-px *:[svg]:size-[18px] *:[svg]:shrink-0",
 		variants: {

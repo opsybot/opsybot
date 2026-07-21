@@ -15,7 +15,6 @@
 	let name = $state('');
 	let description = $state('');
 
-	// Reseed on open so add starts blank and edit starts from the stored role
 	$effect(() => {
 		if (!open) return;
 		const target = role;

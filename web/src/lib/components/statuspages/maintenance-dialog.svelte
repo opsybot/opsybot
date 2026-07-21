@@ -85,7 +85,7 @@
 							id="title"
 							name="title"
 							bind:value={title}
-							placeholder="Database maintenance — primary failover test"
+							placeholder="Database maintenance: primary failover test"
 						/>
 					</Field.Field>
 

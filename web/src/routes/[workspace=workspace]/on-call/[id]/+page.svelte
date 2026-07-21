@@ -1,10 +1,12 @@
 <script lang="ts">
 	import ArchiveIcon from '@lucide/svelte/icons/archive';
+	import ArchiveRestoreIcon from '@lucide/svelte/icons/archive-restore';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import CopyIcon from '@lucide/svelte/icons/copy';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import PlayIcon from '@lucide/svelte/icons/play';
 	import RepeatIcon from '@lucide/svelte/icons/repeat';
+	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
@@ -14,6 +16,7 @@
 	import Page from '$lib/components/layout/page.svelte';
 	import ArchiveDialog from '$lib/components/oncall/archive-dialog.svelte';
 	import AuditTrail from '$lib/components/oncall/audit-trail.svelte';
+	import DeleteDialog from '$lib/components/oncall/delete-dialog.svelte';
 	import FeedCard from '$lib/components/oncall/feed-card.svelte';
 	import HandoversCard from '$lib/components/oncall/handovers-card.svelte';
 	import MonthGrid from '$lib/components/oncall/month-grid.svelte';
@@ -25,14 +28,19 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { ws } from '$lib/navigation';
+	import { isSoloLayer } from '$lib/oncall';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
 
 	let overriding = $state(false);
 	let archiving = $state(false);
+	let deleting = $state(false);
 
-	// Local zone is browser-only; SSR renders UTC to avoid hydration mismatch
+	const everyLayerSolo = $derived(
+		data.layers.length > 0 && data.layers.every((entry) => isSoloLayer(entry.layer))
+	);
+
 	let mounted = $state(false);
 	let localZone = $state('');
 
@@ -103,7 +111,6 @@
 					method="POST"
 					action="?/duplicate"
 					use:enhance={() => {
-						// Capture the name before the redirect swaps data to the copy
 						const from = data.name;
 						return async ({ result, update }) => {
 							await update();
@@ -122,6 +129,27 @@
 				<Button size="sm" variant="ghost" onclick={() => (archiving = true)}>
 					<ArchiveIcon data-icon="inline-start" />
 					Archive
+				</Button>
+			{:else}
+				<form
+					method="POST"
+					action="?/unarchive"
+					use:enhance={() => async ({ result, update }) => {
+						await update();
+						if (result.type === 'success') toast.success(`Restored ${data.name}. It pages again.`);
+						else if (result.type === 'failure')
+							toast.error(String(result.data?.error ?? 'Could not restore the schedule.'));
+					}}
+				>
+					<Button type="submit" size="sm">
+						<ArchiveRestoreIcon data-icon="inline-start" />
+						Restore
+					</Button>
+				</form>
+
+				<Button size="sm" variant="ghost" onclick={() => (deleting = true)}>
+					<Trash2Icon data-icon="inline-start" />
+					Delete
 				</Button>
 			{/if}
 		</div>
@@ -197,14 +225,14 @@
 					</span>
 					<span class="text-warning-ink inline-flex items-center gap-[5px]">
 						<TriangleAlertIcon class="size-[11px]" />
-						gap — no coverage
+						gap: no coverage
 					</span>
 					<span class="ml-auto">higher layers take precedence</span>
 				</div>
 			</section>
 
 			<div class="flex flex-col gap-3.5">
-				<HandoversCard handovers={data.handovers} now={data.now} />
+				<HandoversCard handovers={data.handovers} now={data.now} solo={everyLayerSolo} />
 				<ResolverCard
 					date={data.resolver.date}
 					time={data.resolver.time}
@@ -223,8 +251,11 @@
 	bind:open={overriding}
 	schedule={data.name}
 	target={data.target}
+	people={data.people}
 	now={data.now}
 	error={form?.error}
 />
 
 <ArchiveDialog bind:open={archiving} name={data.name} />
+
+<DeleteDialog bind:open={deleting} name={data.name} />

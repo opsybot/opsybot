@@ -15,7 +15,6 @@ export const actions: Actions = {
 		const fields = form.getAll('field').map(String);
 		const values = form.getAll('value').map(String);
 
-		// A blank condition would match everything, so drop it
 		const scope = fields
 			.map((field, index) => ({ field, value: values[index]?.trim() ?? '' }))
 			.filter((condition) => condition.value)

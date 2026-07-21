@@ -15,7 +15,6 @@
 
 	type Condition = { field: string; value: string };
 
-	// Seed from the initial source only; a prop update must not reset edited rows
 	let conditions = $state<Condition[]>(untrack(() => [{ field: 'source', value: source ?? '' }]));
 	let start = $state('now');
 	let duration = $state('1h');
@@ -51,7 +50,7 @@
 					<div class="flex flex-1 flex-col gap-1">
 						<Dialog.Title class="tracking-heading text-xl font-semibold">Create silence</Dialog.Title>
 						<Dialog.Description class="text-muted-foreground text-sm leading-[1.55]">
-							Matching alerts are still recorded — they just don't page anyone.
+							Matching alerts are still recorded. They just don't page anyone.
 						</Dialog.Description>
 					</div>
 				</div>
@@ -59,7 +58,7 @@
 				<div class="mt-1 flex flex-col gap-4">
 					<div class="flex flex-col gap-2">
 						<div class="text-subtle-foreground tracking-label text-[11px] uppercase">
-							Scope — silence alerts matching all conditions
+							Scope: silence alerts matching all conditions
 						</div>
 
 						{#each conditions as condition, index (index)}

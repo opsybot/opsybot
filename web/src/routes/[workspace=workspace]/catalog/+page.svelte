@@ -70,7 +70,6 @@
 								onclick={() => goto(ws(`/catalog/${service.id}`))}
 							>
 								<Table.Cell class="max-w-[400px] py-2.5 pl-[18px] whitespace-normal">
-									<!-- Real link keeps the clickable row keyboard reachable -->
 									<a
 										href={ws(`/catalog/${service.id}`)}
 										class="text-foreground hover:text-brand-foreground font-mono text-[13px] font-medium"

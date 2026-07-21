@@ -37,7 +37,8 @@ func isPublic(r *http.Request) bool {
 			return true
 		}
 	}
-	return strings.HasPrefix(r.URL.Path, "/v1/auth/sso/")
+	return strings.HasPrefix(r.URL.Path, "/v1/auth/sso/") ||
+		(r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/v1/oncall/feed/"))
 }
 
 func Authn(auth service.Auth, keys service.APIKeys, cfg config.Auth) func(http.Handler) http.Handler {

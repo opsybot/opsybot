@@ -38,7 +38,6 @@ export const actions: Actions = {
 				for (const [ref, name] of Object.entries(raw as Record<string, unknown>))
 					if (typeof name === 'string' && roster.has(name)) replacements[ref] = name;
 		} catch {
-			// Bad JSON leaves replacements empty and the guard below rejects
 		}
 		if (!(await deactivateMember(cookies, params.workspace, String(form.get('id') ?? ''), replacements)))
 			return fail(400, { error: 'Pick a replacement for every reference first.' });

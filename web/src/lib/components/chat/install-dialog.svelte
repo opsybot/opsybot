@@ -15,7 +15,6 @@
 
 	let { platform, onclose }: { platform: Platform | null; onclose: () => void } = $props();
 
-	// Hold the last non-null platform so labels survive the close animation
 	let current = $state<Platform | null>(null);
 	let step = $state<InstallStep>('consent');
 	const open = $derived(!!platform);
@@ -62,10 +61,9 @@
 		step = 'tested';
 		clearTimeout(testTimer);
 		testTimer = setTimeout(
-			() => toast.success('/opsy test posted in #opsybot-sandbox — round trip 0.6 s.'),
+			() => toast.success('/opsy test posted in #opsybot-sandbox: round trip 0.6 s.'),
 			900
 		);
-		// Disabling the clicked button drops focus to body; move it to Done
 		await tick();
 		doneButton?.focus();
 	}
@@ -89,7 +87,7 @@
 				<div class="flex flex-col gap-3.5" role="status" aria-live="polite">
 					{#if step === 'consent'}
 						<Dialog.Description class="text-muted-foreground text-[13px] leading-[1.6]">
-							Opsybot asks {current.label} for exactly these permissions — nothing broader:
+							Opsybot asks {current.label} for exactly these permissions, nothing broader:
 						</Dialog.Description>
 						<ScopeList scopes={current.scopes} />
 						<p class="text-subtle-foreground text-[12px] leading-[1.55]">
@@ -118,7 +116,7 @@
 						</Alert.Root>
 						<div>
 							<div class="text-subtle-foreground mb-2.5 text-[11px] tracking-[0.08em] uppercase">
-								One last check — run a test command
+								One last check. Run a test command
 							</div>
 							<div class="flex items-center gap-2">
 								<code

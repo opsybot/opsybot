@@ -80,7 +80,7 @@
 		</div>
 	{:else}
 		<div class="text-subtle-foreground p-3.5 text-[12.5px]">
-			Off — low-urgency notifications arrive around the clock.
+			Off: low-urgency notifications arrive around the clock.
 		</div>
 	{/if}
 </div>

@@ -37,7 +37,6 @@
 
 	let seededFor = $state<string | null | undefined>(undefined);
 	$effect(() => {
-		// Reseed only when the dialog opens or the subject changes, not on every keystroke
 		const subjectId = service?.id ?? (open ? '\0new' : null);
 		if (!open || subjectId === seededFor) return;
 
@@ -59,7 +58,6 @@
 
 	function close() {
 		open = false;
-		// Force a fresh seed on the next open
 		seededFor = undefined;
 		if (page.url.searchParams.has('new') || page.url.searchParams.has('edit')) {
 			const url = new URL(page.url);

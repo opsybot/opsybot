@@ -95,8 +95,8 @@ function card(metric: RawMetric, factor: number): MetricCard {
 	};
 }
 
-const MTTR_TREND = [62, 58, 55, 71, 49, 52, 48, 44, 51, 47, 45, 48]; // minutes, last 12 weeks (fixed)
-const ALERT_VOLUME = [120, 98, 140, 165, 132, 88, 76, 154, 142, 119, 103, 97, 128, 150]; // per day, last 14 days (fixed)
+const MTTR_TREND = [62, 58, 55, 71, 49, 52, 48, 44, 51, 47, 45, 48];
+const ALERT_VOLUME = [120, 98, 140, 165, 132, 88, 76, 154, 142, 119, 103, 97, 128, 150];
 
 const OVERVIEW_METRICS: Record<RangeKey, RawMetric[]> = {
 	'30d': [
@@ -116,7 +116,6 @@ const OVERVIEW_METRICS: Record<RangeKey, RawMetric[]> = {
 	]
 };
 
-// pct is an authored visual weight, not proportional to the value
 const OVERVIEW_STAGES: Record<RangeKey, StageRow[]> = {
 	'30d': [
 		{ label: 'Declared → investigating', value: '1m 02s', pct: 8 },
@@ -232,7 +231,6 @@ export function getFollowupCompletion(filters: Filters): FollowupCompletion {
 	};
 }
 
-// Rows are withheld below COHORT_FLOOR so individuals cannot be singled out
 export function getOnCallLoad(filters: Filters): {
 	rows: (OnCallLoad['rows'][number] & { heavy: boolean })[];
 	note: string;
@@ -245,7 +243,7 @@ export function getOnCallLoad(filters: Filters): {
 	const header = `Load per person · ${rangeLabel(filters.range).toLowerCase()}`;
 	const note = `Framed for load-balancing, not surveillance. Numbers aggregate over ${rangeWindow(
 		filters.range
-	)} with a floor of ${COHORT_FLOOR} people per view — never used to rank individuals.`;
+	)} with a floor of ${COHORT_FLOOR} people per view, never used to rank individuals.`;
 
 	if (cohort.length < COHORT_FLOOR) {
 		return { rows: [], note, header, footnote: null, withheld: true };
@@ -258,13 +256,12 @@ export function getOnCallLoad(filters: Filters): {
 		pages: person.pages * multiplier,
 		night: person.night * multiplier,
 		weekend: person.weekend * multiplier,
-		// heavy checks the 30d base, not the scaled value, so the flag is stable across windows
 		heavy: person.night > 5
 	}));
 
 	const heaviest = rows.reduce((worst, row) => (row.night > worst.night ? row : worst), rows[0]);
 	const footnote = heaviest.heavy
-		? `${heaviest.name} carried ${heaviest.night} night pages — worth rebalancing the ${heaviest.team} rotation before burnout, not a performance note.`
+		? `${heaviest.name} carried ${heaviest.night} night pages, worth rebalancing the ${heaviest.team} rotation before burnout, not a performance note.`
 		: null;
 
 	return { rows, note, header, footnote, withheld: false };

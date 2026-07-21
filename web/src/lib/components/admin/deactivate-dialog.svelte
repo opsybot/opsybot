@@ -22,7 +22,6 @@
 		'list-checks': ListChecksIcon
 	};
 
-	// Snapshot of the last member so labels stay populated during the close animation
 	let current = $state<Member | null>(null);
 	let picks = $state<Record<string, string>>({});
 	const open = $derived(!!member);
@@ -113,7 +112,7 @@
 		const name = current?.name;
 		await update({ reset: false });
 		onclose();
-		if (name) toast.success(`${name} deactivated. All references reassigned — the audit log records each change.`);
+		if (name) toast.success(`${name} deactivated. All references reassigned: the audit log records each change.`);
 	}}
 >
 	<input type="hidden" name="id" value={current?.id ?? ''} />

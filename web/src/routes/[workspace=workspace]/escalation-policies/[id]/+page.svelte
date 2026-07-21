@@ -21,7 +21,6 @@
 	let activeIndex = $state(-1);
 	let running = $state(false);
 
-	// Reset trace state on route param change; the page instance is reused across policies
 	$effect(() => {
 		data.id;
 		untrack(() => {

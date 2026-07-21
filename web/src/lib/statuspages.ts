@@ -4,8 +4,8 @@ export type Visibility = 'public' | 'token' | 'auth';
 
 export const VISIBILITIES: { value: Visibility; label: string; description: string }[] = [
 	{ value: 'public', label: 'Public', description: 'Anyone with the URL can view.' },
-	{ value: 'token', label: 'Private — link token', description: 'Only people with the tokenized link.' },
-	{ value: 'auth', label: 'Private — authenticated', description: 'Viewers sign in with a workspace account.' }
+	{ value: 'token', label: 'Private: link token', description: 'Only people with the tokenized link.' },
+	{ value: 'auth', label: 'Private: authenticated', description: 'Viewers sign in with a workspace account.' }
 ];
 
 export type ComponentState = 'operational' | 'degraded' | 'partial' | 'major';

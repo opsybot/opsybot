@@ -186,7 +186,7 @@ func twoFactorLoginError[T any](err error, unauthorized, tooMany func(api.Proble
 	if errors.Is(err, entity.ErrPendingNotFound) {
 		return tooMany(prob(http.StatusTooManyRequests, "Too many attempts", "Too many wrong codes. Sign in again with your password and a fresh code.", ""))
 	}
-	return unauthorized(prob(http.StatusUnauthorized, "Incorrect code", "That code didn't match. Codes change every 30 seconds — enter the newest one.", ""))
+	return unauthorized(prob(http.StatusUnauthorized, "Incorrect code", "That code didn't match. Codes change every 30 seconds, so enter the newest one.", ""))
 }
 
 func pendingFrom(ctx context.Context) string {

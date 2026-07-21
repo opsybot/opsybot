@@ -40,7 +40,7 @@ function seed(): Postmortem[] {
 			factors: [
 				factor(
 					'no canary stage',
-					'The deploy pipeline has no canary stage — 84c2 reached 100% of gateway instances in one step.',
+					'The deploy pipeline has no canary stage: 84c2 reached 100% of gateway instances in one step.',
 					refs('INC-2478', ['w3', 'w4'])
 				),
 				factor(
@@ -157,7 +157,6 @@ export function publishedOn(row: { postmortem: Postmortem; incident: Incident })
 export function listPublished(): { postmortem: Postmortem; incident: Incident }[] {
 	return listIncidents()
 		.filter((incident) => incident.postmortem === 'published')
-		// openPostmortem back-fills a draft for incidents published without a record
 		.map((incident) => openPostmortem(incident.id))
 		.filter((row): row is { postmortem: Postmortem; incident: Incident } => !!row)
 		.sort((a, b) => Date.parse(publishedOn(b)) - Date.parse(publishedOn(a)));

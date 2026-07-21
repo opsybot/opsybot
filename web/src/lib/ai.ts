@@ -20,7 +20,6 @@ export const AI_FEATURES: AiFeature[] = [
 	{ id: 'correlation', label: 'Alert correlation', desc: 'Grouping suggestions and related-incident hints.' }
 ];
 
-// {{name}} placeholders are literal; template literals only interpolate ${...}
 export const AI_PROMPTS: Record<AiFeatureId, PromptSpec> = {
 	summaries: {
 		fields: [

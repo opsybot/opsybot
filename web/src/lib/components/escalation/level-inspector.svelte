@@ -45,7 +45,6 @@
 		{ value: 'rr', label: 'Round-robin', hint: 'One target per escalation, rotating' }
 	];
 
-	// Roving tabindex: arrow keys move both selection and focus
 	function onModeKey(event: KeyboardEvent, index: number) {
 		if (!['ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'].includes(event.key)) return;
 		event.preventDefault();

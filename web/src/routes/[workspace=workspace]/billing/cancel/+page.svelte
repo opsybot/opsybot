@@ -16,7 +16,7 @@
 	const STEPS = ['Reason', 'Export', 'Confirm', 'Done'];
 	const TIMELINE: [string, string][] = [
 		['Today', 'Billing stops. The workspace stays fully usable until the period ends.'],
-		['2026-08-01', 'Workspace goes read-only. Paging is disabled — move your on-call elsewhere first.'],
+		['2026-08-01', 'Workspace goes read-only. Paging is disabled: move your on-call elsewhere first.'],
 		['2026-08-31', 'Data is permanently deleted. Recoverable until this date by resubscribing.']
 	];
 
