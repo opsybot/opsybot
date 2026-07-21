@@ -13,6 +13,9 @@
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
+
+	const active = $derived(data.schedules.filter((schedule) => !schedule.archived));
+	const archived = $derived(data.schedules.filter((schedule) => schedule.archived));
 </script>
 
 <Page title="On-call" subtitle="Schedules, overrides, and who is next">
@@ -21,8 +24,8 @@
 	<div class="flex flex-col gap-3.5">
 		<div class="flex items-center">
 			<span class="text-subtle-foreground text-[13px]">
-				{data.schedules.length}
-				{data.schedules.length === 1 ? 'schedule' : 'schedules'}
+				{active.length}
+				{active.length === 1 ? 'schedule' : 'schedules'}
 			</span>
 			<div class="flex-1"></div>
 			<Button size="sm" href={ws('/on-call/new')}>
@@ -31,7 +34,7 @@
 			</Button>
 		</div>
 
-		{#if data.schedules.length === 0}
+		{#if active.length === 0}
 			<div
 				class="text-muted-foreground flex flex-col items-center gap-2.5 rounded-xl border border-dashed px-5 py-14"
 			>
@@ -49,7 +52,7 @@
 			</div>
 		{:else}
 			<div class="bg-card overflow-hidden rounded-xl border">
-				{#each data.schedules as schedule (schedule.id)}
+				{#each active as schedule (schedule.id)}
 					<a
 						href={ws(`/on-call/${schedule.id}`)}
 						data-schedule={schedule.id}
@@ -96,6 +99,37 @@
 						<ChevronRightIcon class="text-subtle-foreground size-4 shrink-0" />
 					</a>
 				{/each}
+			</div>
+		{/if}
+
+		{#if archived.length > 0}
+			<div class="mt-2 flex flex-col gap-2">
+				<span class="text-subtle-foreground text-[11px] font-medium tracking-wide uppercase">
+					Archived · {archived.length}
+				</span>
+				<div class="bg-card overflow-hidden rounded-xl border">
+					{#each archived as schedule (schedule.id)}
+						<a
+							href={ws(`/on-call/${schedule.id}`)}
+							data-schedule={schedule.id}
+							class="hover:bg-accent flex items-center gap-[18px] border-t px-4 py-3.5 opacity-60 first:border-t-0"
+						>
+							<div class="min-w-0 flex-1">
+								<div class="flex flex-wrap items-center gap-2">
+									<span class="text-foreground font-mono text-[13.5px] font-medium">
+										{schedule.name}
+									</span>
+									<Tag>{schedule.team}</Tag>
+								</div>
+								<div class="text-subtle-foreground mt-1 font-mono text-[11.5px]">
+									archived — it pages no one; restore or delete it
+								</div>
+							</div>
+
+							<ChevronRightIcon class="text-subtle-foreground size-4 shrink-0" />
+						</a>
+					{/each}
+				</div>
 			</div>
 		{/if}
 	</div>

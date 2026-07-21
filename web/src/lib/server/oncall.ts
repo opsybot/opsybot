@@ -136,10 +136,15 @@ export type OverrideInput = { person: string; startsAt: string; endsAt: string; 
 
 // ---- List ----------------------------------------------------------------
 
-export async function scheduleList(cookies: Cookies, workspace: string) {
+export async function scheduleList(cookies: Cookies, workspace: string, includeArchived = false) {
 	const client = apiClient(cookies);
 	const [listRes, index] = await Promise.all([
-		client.GET('/workspaces/{workspaceId}/schedules', { params: { path: { workspaceId: workspace } } }),
+		client.GET('/workspaces/{workspaceId}/schedules', {
+			params: {
+				path: { workspaceId: workspace },
+				query: { includeArchived: includeArchived || undefined }
+			}
+		}),
 		memberIndex(cookies, workspace)
 	]);
 	const items = listRes.data?.items ?? [];
@@ -149,6 +154,16 @@ export async function scheduleList(cookies: Cookies, workspace: string) {
 
 	const schedules = await Promise.all(
 		items.map(async (s) => {
+			const base = {
+				id: s.slug,
+				name: s.slug,
+				team: s.team,
+				paused: s.paused,
+				archived: s.archived
+			};
+			if (s.archived) {
+				return { ...base, gap: null, handover: null, person: null, until: null };
+			}
 			const cal = await client.GET(
 				'/workspaces/{workspaceId}/schedules/{scheduleSlug}/calendar',
 				{ params: { path: { workspaceId: workspace, scheduleSlug: s.slug }, query: { from, to } } }
@@ -156,10 +171,7 @@ export async function scheduleList(cookies: Cookies, workspace: string) {
 			const gaps = (cal.data?.gaps ?? []).map((seg) => toSegment(seg, index.byId));
 			const handovers = (cal.data?.handovers ?? []).map((h) => toHandover(h, index.byId));
 			return {
-				id: s.slug,
-				name: s.slug,
-				team: s.team,
-				paused: s.paused,
+				...base,
 				gap: gaps[0] ? formatGap(gaps[0]) : null,
 				handover: handovers[0] ?? null,
 				person: s.onCallUserId ? name(index.byId, s.onCallUserId) : null,
@@ -298,6 +310,7 @@ const AUDIT_TEXT: Record<string, string> = {
 	'schedule.duplicated': 'Duplicated the schedule',
 	'schedule.archived': 'Archived the schedule',
 	'schedule.unarchived': 'Restored the schedule',
+	'schedule.deleted': 'Deleted the schedule',
 	'schedule.paused': 'Paused the schedule',
 	'schedule.resumed': 'Resumed the schedule',
 	'schedule.override.added': 'Added an override',
@@ -473,11 +486,15 @@ export const unarchiveSchedule = (c: Cookies, w: string, s: string) => scheduleA
 export const pauseSchedule = (c: Cookies, w: string, s: string) => scheduleAction(c, w, s, 'pause');
 export const resumeSchedule = (c: Cookies, w: string, s: string) => scheduleAction(c, w, s, 'resume');
 
-export async function deleteSchedule(cookies: Cookies, workspace: string, slug: string): Promise<boolean> {
+export async function deleteSchedule(
+	cookies: Cookies,
+	workspace: string,
+	slug: string
+): Promise<{ error?: string }> {
 	const { error } = await apiClient(cookies).DELETE('/workspaces/{workspaceId}/schedules/{scheduleSlug}', {
 		params: { path: { workspaceId: workspace, scheduleSlug: slug } }
 	});
-	return !error;
+	return error ? { error: error.detail ?? 'Could not delete the schedule.' } : {};
 }
 
 export async function addOverride(

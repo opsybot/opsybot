@@ -1,10 +1,12 @@
 <script lang="ts">
 	import ArchiveIcon from '@lucide/svelte/icons/archive';
+	import ArchiveRestoreIcon from '@lucide/svelte/icons/archive-restore';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import CopyIcon from '@lucide/svelte/icons/copy';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import PlayIcon from '@lucide/svelte/icons/play';
 	import RepeatIcon from '@lucide/svelte/icons/repeat';
+	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
@@ -14,6 +16,7 @@
 	import Page from '$lib/components/layout/page.svelte';
 	import ArchiveDialog from '$lib/components/oncall/archive-dialog.svelte';
 	import AuditTrail from '$lib/components/oncall/audit-trail.svelte';
+	import DeleteDialog from '$lib/components/oncall/delete-dialog.svelte';
 	import FeedCard from '$lib/components/oncall/feed-card.svelte';
 	import HandoversCard from '$lib/components/oncall/handovers-card.svelte';
 	import MonthGrid from '$lib/components/oncall/month-grid.svelte';
@@ -31,6 +34,7 @@
 
 	let overriding = $state(false);
 	let archiving = $state(false);
+	let deleting = $state(false);
 
 	// Local zone is browser-only; SSR renders UTC to avoid hydration mismatch
 	let mounted = $state(false);
@@ -122,6 +126,27 @@
 				<Button size="sm" variant="ghost" onclick={() => (archiving = true)}>
 					<ArchiveIcon data-icon="inline-start" />
 					Archive
+				</Button>
+			{:else}
+				<form
+					method="POST"
+					action="?/unarchive"
+					use:enhance={() => async ({ result, update }) => {
+						await update();
+						if (result.type === 'success') toast.success(`${data.name} is live again.`);
+						else if (result.type === 'failure')
+							toast.error(String(result.data?.error ?? 'Could not restore the schedule.'));
+					}}
+				>
+					<Button type="submit" size="sm">
+						<ArchiveRestoreIcon data-icon="inline-start" />
+						Restore
+					</Button>
+				</form>
+
+				<Button size="sm" variant="ghost" onclick={() => (deleting = true)}>
+					<Trash2Icon data-icon="inline-start" />
+					Delete
 				</Button>
 			{/if}
 		</div>
@@ -229,3 +254,5 @@
 />
 
 <ArchiveDialog bind:open={archiving} name={data.name} />
+
+<DeleteDialog bind:open={deleting} name={data.name} />

@@ -1,12 +1,11 @@
 import { formatShift } from '$lib/oncall';
-import { formOptions, myShifts } from '$lib/server/oncall';
-import type { Actions, PageServerLoad } from './$types';
+import { myShifts } from '$lib/server/oncall';
+import type { PageServerLoad } from './$types';
 
 const DAY = 86_400_000;
 
-export const load: PageServerLoad = async ({ locals, params, cookies }) => {
+export const load: PageServerLoad = async ({ params, cookies }) => {
 	const now = new Date();
-	const me = locals.user?.name ?? '';
 
 	const week = await myShifts(
 		cookies,
@@ -43,14 +42,9 @@ export const load: PageServerLoad = async ({ locals, params, cookies }) => {
 		}
 	}
 
-	const { people } = await formOptions(cookies, params.workspace);
-
 	return {
 		now: now.getTime(),
-		me,
-		people,
 		shifts,
-		requests: [] as { id: string; text: string; message: string; status: 'pending' | 'approved' }[],
 		month: {
 			label: start.toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }),
 			blanks: (start.getUTCDay() + 6) % 7,
@@ -60,14 +54,4 @@ export const load: PageServerLoad = async ({ locals, params, cookies }) => {
 			days: [...days]
 		}
 	};
-};
-
-export const actions: Actions = {
-	swap: async ({ request }) => {
-		const form = await request.formData();
-		const person = String(form.get('person'));
-		const when = String(form.get('when'));
-		if (!when) return;
-		return { person };
-	}
 };

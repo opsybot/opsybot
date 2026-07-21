@@ -77,13 +77,6 @@ export type Schedule = {
 	paused: boolean;
 };
 
-export type SwapRequest = {
-	id: string;
-	text: string;
-	message: string;
-	status: 'pending' | 'approved';
-};
-
 export function layerName(total: number, index: number): string {
 	return `Layer ${total - index}`;
 }

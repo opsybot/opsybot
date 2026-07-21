@@ -2,9 +2,11 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import {
 	addOverride,
 	archiveSchedule,
+	deleteSchedule,
 	duplicateSchedule,
 	resumeSchedule,
-	scheduleDetail
+	scheduleDetail,
+	unarchiveSchedule
 } from '$lib/server/oncall';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -57,6 +59,17 @@ export const actions: Actions = {
 
 	archive: async ({ params, cookies }) => {
 		await archiveSchedule(cookies, params.workspace, params.id);
+		redirect(303, `/${params.workspace}/on-call`);
+	},
+
+	unarchive: async ({ params, cookies }) => {
+		if (!(await unarchiveSchedule(cookies, params.workspace, params.id)))
+			return fail(400, { error: 'Could not restore the schedule.' });
+	},
+
+	delete: async ({ params, cookies }) => {
+		const outcome = await deleteSchedule(cookies, params.workspace, params.id);
+		if (outcome.error) return fail(400, { error: outcome.error });
 		redirect(303, `/${params.workspace}/on-call`);
 	}
 };

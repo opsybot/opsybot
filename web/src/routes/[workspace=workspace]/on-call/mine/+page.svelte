@@ -1,32 +1,14 @@
 <script lang="ts">
 	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
-	import CheckIcon from '@lucide/svelte/icons/check';
-	import ClockIcon from '@lucide/svelte/icons/clock';
 	import RepeatIcon from '@lucide/svelte/icons/repeat';
-	import { toast } from 'svelte-sonner';
 	import Page from '$lib/components/layout/page.svelte';
 	import OncallTabs from '$lib/components/oncall/oncall-tabs.svelte';
-	import SwapDialog from '$lib/components/oncall/swap-dialog.svelte';
-	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
+	import { ws } from '$lib/navigation';
 	import { formatRemaining, formatUtcTime } from '$lib/time';
 	import type { PageProps } from './$types';
 
-	let { data, form }: PageProps = $props();
-
-	let swapping = $state<{ when: string; schedule: string } | null>(null);
-	let open = $state(false);
-
-	function requestSwap(shift: { when: string; schedule: string }) {
-		swapping = shift;
-		open = true;
-	}
-
-	$effect(() => {
-		if (form?.person) {
-			toast.success(`Swap requested. ${form.person} gets a notification to accept.`);
-		}
-	});
+	let { data }: PageProps = $props();
 
 	const days = $derived(new Set(data.month.days));
 </script>
@@ -60,9 +42,9 @@
 								{/if}
 							</div>
 						</div>
-						<Button size="sm" variant="ghost" onclick={() => requestSwap(shift)}>
+						<Button size="sm" variant="ghost" href={ws(`/on-call/${shift.schedule}`)}>
 							<RepeatIcon data-icon="inline-start" />
-							Request swap
+							Add override
 						</Button>
 					</div>
 				{:else}
@@ -75,35 +57,6 @@
 							You are not on call this week. Someone else is carrying it.
 						</p>
 					</div>
-				{/each}
-			</section>
-
-			<section class="bg-card overflow-hidden rounded-xl border">
-				<header class="flex items-center gap-2.5 border-b px-4 py-3">
-					<span class="text-sm font-semibold">My override requests</span>
-				</header>
-
-				{#each data.requests as request (request.id)}
-					<div class="flex items-center gap-2.5 border-t px-3.5 py-2.5 first:border-t-0">
-						{#if request.status === 'pending'}
-							<ClockIcon class="text-warning-ink size-3.5 shrink-0" />
-						{:else}
-							<CheckIcon class="text-success-ink size-3.5 shrink-0" />
-						{/if}
-						<div class="min-w-0 flex-1">
-							<div class="text-[13px]">{request.text}</div>
-							{#if request.message}
-								<div class="text-subtle-foreground mt-px text-[11.5px]">“{request.message}”</div>
-							{/if}
-						</div>
-						<Badge tone={request.status === 'pending' ? 'warning' : 'success'} size="sm">
-							{request.status}
-						</Badge>
-					</div>
-				{:else}
-					<p class="text-subtle-foreground m-0 px-3.5 py-3.5 text-[12.5px]">
-						Nothing pending. Ask for a swap from a shift above.
-					</p>
 				{/each}
 			</section>
 		</div>
@@ -157,5 +110,3 @@
 		</section>
 	</div>
 </Page>
-
-<SwapDialog bind:open shift={swapping} me={data.me} people={data.people} />

@@ -85,3 +85,21 @@ func TestCreateRequiresIdentity(t *testing.T) {
 		t.Fatalf("got %v, want ErrUnauthenticated", err)
 	}
 }
+
+func TestDeleteRejectsUnarchivedSchedule(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	ws := workspace.NewMockWorkspace(ctrl)
+	mem := member.NewMockMember(ctrl)
+	pol := policy.NewMockPolicy(ctrl)
+	sch := schedule.NewMockSchedule(ctrl)
+
+	ws.EXPECT().GetBySlug(gomock.Any(), "acme").Return(entity.Workspace{ID: "w1"}, nil)
+	mem.EXPECT().IsActive(gomock.Any(), "w1", "u1").Return(true, nil)
+	pol.EXPECT().Allowed(gomock.Any(), "user:u1", "w1", entity.PolicyObjectSchedules, entity.PolicyActionWrite).Return(true, nil)
+	sch.EXPECT().GetBySlug(gomock.Any(), "w1", "primary").Return(entity.Schedule{Slug: "primary", Archived: false}, nil)
+
+	s := &srv{tx: fakeTx{}, lock: fakeLock{}, workspaces: ws, members: mem, schedules: sch, policy: pol}
+	if err := s.Delete(withUser("u1"), "acme", "primary"); !errors.Is(err, entity.ErrScheduleNotArchived) {
+		t.Fatalf("got %v, want ErrScheduleNotArchived", err)
+	}
+}
