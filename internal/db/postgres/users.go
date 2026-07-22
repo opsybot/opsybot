@@ -160,6 +160,7 @@ var UserWhere = struct {
 
 // UserRels is where relationship names are stored.
 var UserRels = struct {
+	AckedByUserAlerts              string
 	CreatedByAPIKeys               string
 	OwnerUserAPIKeys               string
 	ActorUserAuditEvents           string
@@ -174,6 +175,7 @@ var UserRels = struct {
 	WorkspaceMembers               string
 	CreatedByWorkspaces            string
 }{
+	AckedByUserAlerts:              "AckedByUserAlerts",
 	CreatedByAPIKeys:               "CreatedByAPIKeys",
 	OwnerUserAPIKeys:               "OwnerUserAPIKeys",
 	ActorUserAuditEvents:           "ActorUserAuditEvents",
@@ -191,6 +193,7 @@ var UserRels = struct {
 
 // userR is where relationships are stored.
 type userR struct {
+	AckedByUserAlerts              AlertSlice              `boil:"AckedByUserAlerts" json:"AckedByUserAlerts" toml:"AckedByUserAlerts" yaml:"AckedByUserAlerts"`
 	CreatedByAPIKeys               APIKeySlice             `boil:"CreatedByAPIKeys" json:"CreatedByAPIKeys" toml:"CreatedByAPIKeys" yaml:"CreatedByAPIKeys"`
 	OwnerUserAPIKeys               APIKeySlice             `boil:"OwnerUserAPIKeys" json:"OwnerUserAPIKeys" toml:"OwnerUserAPIKeys" yaml:"OwnerUserAPIKeys"`
 	ActorUserAuditEvents           AuditEventSlice         `boil:"ActorUserAuditEvents" json:"ActorUserAuditEvents" toml:"ActorUserAuditEvents" yaml:"ActorUserAuditEvents"`
@@ -209,6 +212,22 @@ type userR struct {
 // NewStruct creates a new relationship struct
 func (*userR) NewStruct() *userR {
 	return &userR{}
+}
+
+func (o *User) GetAckedByUserAlerts() AlertSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetAckedByUserAlerts()
+}
+
+func (r *userR) GetAckedByUserAlerts() AlertSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.AckedByUserAlerts
 }
 
 func (o *User) GetCreatedByAPIKeys() APIKeySlice {
@@ -735,6 +754,20 @@ func (q userQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (bool,
 	return count > 0, nil
 }
 
+// AckedByUserAlerts retrieves all the alert's Alerts with an executor via acked_by_user_id column.
+func (o *User) AckedByUserAlerts(mods ...qm.QueryMod) alertQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"alerts\".\"acked_by_user_id\"=?", o.ID),
+	)
+
+	return Alerts(queryMods...)
+}
+
 // CreatedByAPIKeys retrieves all the api_key's APIKeys with an executor via created_by column.
 func (o *User) CreatedByAPIKeys(mods ...qm.QueryMod) apiKeyQuery {
 	var queryMods []qm.QueryMod
@@ -915,6 +948,119 @@ func (o *User) CreatedByWorkspaces(mods ...qm.QueryMod) workspaceQuery {
 	)
 
 	return Workspaces(queryMods...)
+}
+
+// LoadAckedByUserAlerts allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (userL) LoadAckedByUserAlerts(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser any, mods queries.Applicator) error {
+	var slice []*User
+	var object *User
+
+	if singular {
+		var ok bool
+		object, ok = maybeUser.(*User)
+		if !ok {
+			object = new(User)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeUser))
+			}
+		}
+	} else {
+		s, ok := maybeUser.(*[]*User)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeUser))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &userR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`alerts`),
+		qm.WhereIn(`alerts.acked_by_user_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load alerts")
+	}
+
+	var resultSlice []*Alert
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice alerts")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on alerts")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for alerts")
+	}
+
+	if len(alertAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.AckedByUserAlerts = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &alertR{}
+			}
+			foreign.R.AckedByUser = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if queries.Equal(local.ID, foreign.AckedByUserID) {
+				local.R.AckedByUserAlerts = append(local.R.AckedByUserAlerts, foreign)
+				if foreign.R == nil {
+					foreign.R = &alertR{}
+				}
+				foreign.R.AckedByUser = local
+				break
+			}
+		}
+	}
+
+	return nil
 }
 
 // LoadCreatedByAPIKeys allows an eager lookup of values, cached into the
@@ -2380,6 +2526,133 @@ func (userL) LoadCreatedByWorkspaces(ctx context.Context, e boil.ContextExecutor
 				foreign.R.CreatedByUser = local
 				break
 			}
+		}
+	}
+
+	return nil
+}
+
+// AddAckedByUserAlerts adds the given related objects to the existing relationships
+// of the user, optionally inserting them as new records.
+// Appends related to o.R.AckedByUserAlerts.
+// Sets related.R.AckedByUser appropriately.
+func (o *User) AddAckedByUserAlerts(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Alert) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			queries.Assign(&rel.AckedByUserID, o.ID)
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"alerts\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"acked_by_user_id"}),
+				strmangle.WhereClause("\"", "\"", 2, alertPrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			queries.Assign(&rel.AckedByUserID, o.ID)
+		}
+	}
+
+	if o.R == nil {
+		o.R = &userR{
+			AckedByUserAlerts: related,
+		}
+	} else {
+		o.R.AckedByUserAlerts = append(o.R.AckedByUserAlerts, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &alertR{
+				AckedByUser: o,
+			}
+		} else {
+			rel.R.AckedByUser = o
+		}
+	}
+	return nil
+}
+
+// SetAckedByUserAlerts removes all previously related items of the
+// user replacing them completely with the passed
+// in related items, optionally inserting them as new records.
+// Sets o.R.AckedByUser's AckedByUserAlerts accordingly.
+// Replaces o.R.AckedByUserAlerts with related.
+// Sets related.R.AckedByUser's AckedByUserAlerts accordingly.
+func (o *User) SetAckedByUserAlerts(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Alert) error {
+	query := "update \"alerts\" set \"acked_by_user_id\" = null where \"acked_by_user_id\" = $1"
+	values := []any{o.ID}
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, query)
+		fmt.Fprintln(writer, values)
+	}
+	_, err := exec.ExecContext(ctx, query, values...)
+	if err != nil {
+		return errors.Wrap(err, "failed to remove relationships before set")
+	}
+
+	if o.R != nil {
+		for _, rel := range o.R.AckedByUserAlerts {
+			queries.SetScanner(&rel.AckedByUserID, nil)
+			if rel.R == nil {
+				continue
+			}
+
+			rel.R.AckedByUser = nil
+		}
+		o.R.AckedByUserAlerts = nil
+	}
+
+	return o.AddAckedByUserAlerts(ctx, exec, insert, related...)
+}
+
+// RemoveAckedByUserAlerts relationships from objects passed in.
+// Removes related items from R.AckedByUserAlerts (uses pointer comparison, removal does not keep order)
+// Sets related.R.AckedByUser.
+func (o *User) RemoveAckedByUserAlerts(ctx context.Context, exec boil.ContextExecutor, related ...*Alert) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	for _, rel := range related {
+		queries.SetScanner(&rel.AckedByUserID, nil)
+		if rel.R != nil {
+			rel.R.AckedByUser = nil
+		}
+		if _, err = rel.Update(ctx, exec, boil.Whitelist("acked_by_user_id")); err != nil {
+			return err
+		}
+	}
+	if o.R == nil {
+		return nil
+	}
+
+	for _, rel := range related {
+		for i, ri := range o.R.AckedByUserAlerts {
+			if rel != ri {
+				continue
+			}
+
+			ln := len(o.R.AckedByUserAlerts)
+			if ln > 1 && i < ln-1 {
+				o.R.AckedByUserAlerts[i] = o.R.AckedByUserAlerts[ln-1]
+			}
+			o.R.AckedByUserAlerts = o.R.AckedByUserAlerts[:ln-1]
+			break
 		}
 	}
 

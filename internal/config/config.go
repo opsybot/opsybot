@@ -19,6 +19,15 @@ type Config struct {
 	Casbin          Casbin        `mapstructure:"casbin"`
 	Auth            Auth          `mapstructure:"auth"`
 	Mailer          Mailer        `mapstructure:"mailer"`
+	Ingest          Ingest        `mapstructure:"ingest"`
+}
+
+type Ingest struct {
+	BaseURL          string        `mapstructure:"base_url"`
+	MaxBodyBytes     int64         `mapstructure:"max_body_bytes"`
+	MaxConcurrent    int           `mapstructure:"max_concurrent"`
+	RatePerMin       int           `mapstructure:"rate_per_min"`
+	FailureRetention time.Duration `mapstructure:"failure_retention"`
 }
 
 type Mailer struct {
@@ -127,6 +136,10 @@ func NewAuth(cfg Config) Auth {
 	return cfg.Auth
 }
 
+func NewIngest(cfg Config) Ingest {
+	return cfg.Ingest
+}
+
 func NewMailer(cfg Config) Mailer {
 	return cfg.Mailer
 }
@@ -200,6 +213,11 @@ func New(cfgFile string) (Config, error) {
 	v.SetDefault("auth.rate_slug_check_per_min", 60)
 	v.SetDefault("auth.rate_reset_per_hour", 5)
 	v.SetDefault("auth.rate_sso_per_min", 20)
+	v.SetDefault("ingest.base_url", "")
+	v.SetDefault("ingest.max_body_bytes", 1048576)
+	v.SetDefault("ingest.max_concurrent", 64)
+	v.SetDefault("ingest.rate_per_min", 600)
+	v.SetDefault("ingest.failure_retention", "168h")
 	v.SetDefault("mailer.host", "")
 	v.SetDefault("mailer.port", 587)
 	v.SetDefault("mailer.username", "")

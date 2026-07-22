@@ -13,6 +13,7 @@ const (
 	RateScopeSlugCheck     RateScope = "slug_check"
 	RateScopePasswordReset RateScope = "password_reset"
 	RateScopeSSO           RateScope = "sso"
+	RateScopeIngest        RateScope = "ingest"
 )
 
 const RateLimitFailClosedRetry = 5 * time.Second

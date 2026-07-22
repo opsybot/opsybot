@@ -72,6 +72,17 @@ var (
 	errScheduleLayer        = validation.NewError("schedule_layer_invalid", "Check each layer: a rotation, a handover hour, a start date, and restriction hours between 00:00 and 24:00.")
 	errOverrideUser         = validation.NewError("override_user_invalid", "Choose who takes the override.")
 	errOverrideReason       = validation.NewError("override_reason_invalid", "Keep the reason to 200 characters or fewer.")
+
+	errSourceSlug         = validation.NewError("source_slug_invalid", "A source URL uses lowercase letters, numbers, and hyphens, and starts with a letter.")
+	errSourceSlugReserved = validation.NewError("source_slug_reserved", "That name is reserved. Pick another.")
+	errSourceName         = validation.NewError("source_name_invalid", "Enter a source name of 60 characters or fewer.")
+	errSourceFormat       = validation.NewError("source_format_invalid", "Choose a supported format: Alertmanager, Grafana, Uptime Kuma, heartbeat, or generic JSON.")
+	errSourceAutoResolve  = validation.NewError("source_auto_resolve_invalid", "Auto-resolve must be between 0 and 30 days.")
+	errSourceMapping      = validation.NewError("source_mapping_invalid", "Each mapping needs a known field and a path, listed once.")
+	errSourceMappingTitle = validation.NewError("source_mapping_title", "Map the title field so alerts have something to show.")
+	errAlertSeverity      = validation.NewError("alert_severity_invalid", "Choose critical, high, or warning.")
+	errAlertStatus        = validation.NewError("alert_status_invalid", "Choose open, acked, or resolved.")
+	errPolicyRef          = validation.NewError("policy_ref_invalid", "Pick an escalation policy.")
 )
 
 func nameField(value any) error {
@@ -338,6 +349,98 @@ func overrideReasonField(value any) error {
 	s, _ := value.(string)
 	if len(s) > ScheduleReasonMaxLength {
 		return errOverrideReason
+	}
+	return nil
+}
+
+func sourceSlugField(value any) error {
+	s, _ := value.(string)
+	if !ValidSlugFormat(s) || len(s) > SourceSlugMaxLength {
+		return errSourceSlug
+	}
+	if slices.Contains(SourceReservedSlugs, s) {
+		return errSourceSlugReserved
+	}
+	return nil
+}
+
+func sourceNameField(value any) error {
+	s, _ := value.(string)
+	name := strings.TrimSpace(s)
+	if name == "" || len(name) > SourceNameMaxLength {
+		return errSourceName
+	}
+	return nil
+}
+
+func sourceFormatField(value any) error {
+	f, _ := value.(SourceFormat)
+	switch f {
+	case SourceFormatAlertmanager, SourceFormatGrafana, SourceFormatKuma, SourceFormatHeartbeat, SourceFormatGeneric:
+		return nil
+	default:
+		return errSourceFormat
+	}
+}
+
+func alertSeverityField(value any) error {
+	s, _ := value.(AlertSeverity)
+	switch s {
+	case SeverityCritical, SeverityHigh, SeverityWarning:
+		return nil
+	default:
+		return errAlertSeverity
+	}
+}
+
+func alertStatusField(value any) error {
+	s, _ := value.(AlertStatus)
+	switch s {
+	case AlertStatusOpen, AlertStatusAcked, AlertStatusResolved:
+		return nil
+	default:
+		return errAlertStatus
+	}
+}
+
+func autoResolveField(value any) error {
+	d, _ := value.(time.Duration)
+	if d < 0 || d > SourceMaxAutoResolve {
+		return errSourceAutoResolve
+	}
+	return nil
+}
+
+func policyRefField(value any) error {
+	s, _ := value.(string)
+	ref := strings.TrimSpace(s)
+	if ref == "" || len(ref) > PolicyRefMaxLength || !ValidSlugFormat(ref) {
+		return errPolicyRef
+	}
+	return nil
+}
+
+func sourceMappingsField(value any) error {
+	mappings, _ := value.([]SourceMapping)
+	if len(mappings) > SourceMaxMappings {
+		return errSourceMapping
+	}
+	seen := make(map[string]struct{}, len(mappings))
+	for _, m := range mappings {
+		if !slices.Contains(MappingFields, m.Field) {
+			return errSourceMapping
+		}
+		if _, dup := seen[m.Field]; dup {
+			return errSourceMapping
+		}
+		seen[m.Field] = struct{}{}
+		path := strings.TrimSpace(m.Path)
+		if path == "" || len(path) > SourceMappingPathMax {
+			return errSourceMapping
+		}
+	}
+	if _, ok := seen[MappingFieldTitle]; !ok {
+		return errSourceMappingTitle
 	}
 	return nil
 }

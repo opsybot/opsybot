@@ -1,0 +1,5 @@
+{
+  "heartbeat": {"status": 0, "time": "2026-07-21 14:32:11.128", "msg": "connect ECONNREFUSED", "important": true},
+  "monitor": {"id": 7, "name": "checkout", "url": "https://checkout.example.com", "type": "http"},
+  "msg": "[checkout] [DOWN] connect ECONNREFUSED"
+}

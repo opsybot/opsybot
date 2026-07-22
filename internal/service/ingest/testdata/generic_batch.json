@@ -1,0 +1,6 @@
+{
+  "alerts": [
+    {"title": "queue depth high", "severity": "warning", "service": "events-worker", "dedup_key": "q-1", "labels": {"env": "prod"}},
+    {"title": "queue drained", "severity": "info", "service": "events-worker", "dedup_key": "q-1", "status": "resolved"}
+  ]
+}

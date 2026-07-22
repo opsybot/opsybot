@@ -4,6 +4,13 @@
 package dbpostgres
 
 var TableNames = struct {
+	AlertEvents               string
+	AlertIngestEvents         string
+	AlertIngestFailures       string
+	AlertLinks                string
+	AlertSourceMappings       string
+	AlertSources              string
+	Alerts                    string
 	APIKeys                   string
 	AuditEvents               string
 	Invites                   string
@@ -24,6 +31,13 @@ var TableNames = struct {
 	WorkspaceMembers          string
 	Workspaces                string
 }{
+	AlertEvents:               "alert_events",
+	AlertIngestEvents:         "alert_ingest_events",
+	AlertIngestFailures:       "alert_ingest_failures",
+	AlertLinks:                "alert_links",
+	AlertSourceMappings:       "alert_source_mappings",
+	AlertSources:              "alert_sources",
+	Alerts:                    "alerts",
 	APIKeys:                   "api_keys",
 	AuditEvents:               "audit_events",
 	Invites:                   "invites",

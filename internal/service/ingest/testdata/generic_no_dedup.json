@@ -1,0 +1,1 @@
+{"title": "cert expiring", "severity": "high", "service": "edge", "labels": {"domain": "example.com"}}
