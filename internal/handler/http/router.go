@@ -42,6 +42,8 @@ func NewRouter(log *slog.Logger, cfg config.Auth, cfgIngest config.Ingest, auth 
 
 	ingestRoutes := newIngestRoutes(ingest, cfgIngest)
 	r.Post("/v1/ingest/e/{token}", ingestRoutes.webhook)
+	r.Get("/v1/ingest/hb/{token}", ingestRoutes.checkIn)
+	r.Post("/v1/ingest/hb/{token}", ingestRoutes.checkIn)
 
 	dashboardapi.HandlerWithOptions(
 		dashboardapi.NewStrictHandler(dashboard, nil),

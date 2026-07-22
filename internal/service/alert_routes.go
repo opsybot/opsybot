@@ -15,4 +15,7 @@ type AlertRoutes interface {
 	Delete(ctx context.Context, workspaceSlug, routeID string) error
 	Reorder(ctx context.Context, workspaceSlug string, ids []string) error
 	SetDefaultPolicy(ctx context.Context, workspaceSlug, policyRef string) error
+	Preview(ctx context.Context, workspaceSlug, payload string) (entity.RoutePreview, error)
+	ListGroupRules(ctx context.Context, workspaceSlug string) ([]entity.GroupRule, error)
+	SaveGroupRules(ctx context.Context, workspaceSlug string, rules []entity.GroupRule) ([]entity.GroupRule, error)
 }

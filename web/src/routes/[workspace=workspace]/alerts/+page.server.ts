@@ -1,35 +1,53 @@
-import type { ColumnFiltersState } from '@tanstack/table-core';
-import { listAlerts, setStatus } from '$lib/server/alerts';
+import { listAlerts, setStatus, type AlertQuery } from '$lib/server/alerts';
 import type { Actions, PageServerLoad } from './$types';
 
-function filtersFrom(url: URL): ColumnFiltersState {
+const RANGE_HOURS: Record<string, number> = { '24h': 24, '7d': 168, '30d': 720 };
+const PAGE_SIZE = 50;
+
+function queryFrom(url: URL): AlertQuery & { range: string } {
 	const statuses = url.searchParams.getAll('status');
-	const filters: ColumnFiltersState = [
-		{ id: 'status', value: statuses.length ? statuses : ['open', 'acked'] },
-		{ id: 'range', value: url.searchParams.get('range') ?? '24h' }
-	];
+	const range = url.searchParams.get('range') ?? '24h';
+	const hours = RANGE_HOURS[range] ?? RANGE_HOURS['24h'];
+
+	const filter: AlertQuery & { range: string } = {
+		status: statuses.length ? statuses : ['open', 'acked'],
+		since: new Date(Date.now() - hours * 3_600_000).toISOString(),
+		limit: PAGE_SIZE,
+		range
+	};
 
 	for (const key of ['severity', 'source', 'service', 'label'] as const) {
 		const value = url.searchParams.get(key);
-		if (value) filters.push({ id: key, value });
+		if (value) filter[key] = [value];
 	}
 
-	const query = url.searchParams.get('q');
-	if (query) filters.push({ id: 'search', value: query });
+	const search = url.searchParams.get('q');
+	if (search) filter.query = search;
 
-	return filters;
+	const cursor = url.searchParams.get('cursor');
+	if (cursor) filter.cursor = cursor;
+
+	return filter;
 }
 
 export const load: PageServerLoad = async ({ url, params, cookies }) => {
-	const alerts = await listAlerts(cookies, params.workspace);
+	const { range, ...filter } = queryFrom(url);
+	const page = await listAlerts(cookies, params.workspace, filter);
+
+	const filtered = ['q', 'severity', 'source', 'service', 'label', 'status'].some((key) =>
+		url.searchParams.get(key)
+	);
 
 	return {
 		now: Date.now(),
-		alerts,
-		filters: filtersFrom(url),
-		sources: [...new Set(alerts.map((alert) => alert.source))],
-		services: [...new Set(alerts.map((alert) => alert.service).filter(Boolean))],
-		labels: [...new Set(alerts.flatMap((alert) => alert.labels))]
+		range,
+		filtered,
+		paged: !!filter.cursor,
+		alerts: page.alerts,
+		nextCursor: page.nextCursor,
+		sources: page.facets.sources,
+		services: page.facets.services,
+		labels: page.facets.labels
 	};
 };
 

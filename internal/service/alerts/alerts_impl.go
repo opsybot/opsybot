@@ -81,10 +81,29 @@ func (s *srv) List(ctx context.Context, workspaceSlug string, filter entity.Aler
 	if err != nil {
 		return nil, "", err
 	}
+	parents := make([]string, 0, len(list))
 	for i := range list {
 		list[i].SourceSlug = slugs[list[i].SourceID]
+		if list[i].GroupKey != "" {
+			parents = append(parents, list[i].ID)
+		}
+	}
+	children, err := s.alerts.ListChildren(ctx, parents)
+	if err != nil {
+		return nil, "", err
+	}
+	for i := range list {
+		list[i].Children = children[list[i].ID]
 	}
 	return list, next, nil
+}
+
+func (s *srv) Facets(ctx context.Context, workspaceSlug string, since time.Time) (entity.AlertFacets, error) {
+	_, ws, err := s.authorize(ctx, workspaceSlug, entity.PolicyActionRead)
+	if err != nil {
+		return entity.AlertFacets{}, err
+	}
+	return s.alerts.Facets(ctx, ws.ID, since)
 }
 
 func (s *srv) Get(ctx context.Context, workspaceSlug, alertID string) (entity.Alert, error) {
@@ -102,6 +121,11 @@ func (s *srv) Get(ctx context.Context, workspaceSlug, alertID string) (entity.Al
 	if alert.Links, err = s.alerts.ListLinks(ctx, alert.ID); err != nil {
 		return entity.Alert{}, err
 	}
+	children, err := s.alerts.ListChildren(ctx, []string{alert.ID})
+	if err != nil {
+		return entity.Alert{}, err
+	}
+	alert.Children = children[alert.ID]
 	slugs, err := s.sourceSlugs(ctx, ws.ID)
 	if err != nil {
 		return entity.Alert{}, err

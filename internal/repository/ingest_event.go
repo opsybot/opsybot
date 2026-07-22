@@ -4,6 +4,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/opsybot/opsybot/internal/entity"
 )
@@ -13,4 +14,5 @@ type IngestEvent interface {
 	RecordFailure(ctx context.Context, failure entity.IngestFailure) error
 	ListFailures(ctx context.Context, workspaceID string, limit int) ([]entity.IngestFailure, error)
 	ListBySource(ctx context.Context, sourceID string, limit int) ([]entity.IngestEvent, error)
+	Prune(ctx context.Context, before time.Time) (int, error)
 }

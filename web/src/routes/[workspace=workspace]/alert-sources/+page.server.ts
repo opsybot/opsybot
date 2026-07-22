@@ -1,6 +1,12 @@
-import { listSources } from '$lib/server/alertsources';
+import { listSources, sourceVolume } from '$lib/server/alertsources';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, cookies }) => {
-	return { sources: await listSources(cookies, params.workspace) };
+	const [sources, volume] = await Promise.all([
+		listSources(cookies, params.workspace),
+		sourceVolume(cookies, params.workspace)
+	]);
+	return {
+		sources: sources.map((source) => ({ ...source, volume: volume[source.slug] ?? [] }))
+	};
 };

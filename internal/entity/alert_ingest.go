@@ -2,6 +2,7 @@ package entity
 
 import (
 	"errors"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -69,6 +70,12 @@ type IngestRequest struct {
 	Method      string
 	RemoteIP    string
 	ReceivedAt  time.Time
+}
+
+type CheckInRequest struct {
+	Token      string
+	RemoteIP   string
+	ReceivedAt time.Time
 }
 
 type IngestedAlert struct {
@@ -148,4 +155,33 @@ func (a IngestedAlert) Normalize(src AlertSource, now time.Time) IngestedAlert {
 
 func (a IngestedAlert) Valid() bool {
 	return strings.TrimSpace(a.Title) != ""
+}
+
+func FloodAlert(src AlertSource, ratePerMin int, now time.Time) AlertUpsert {
+	return AlertUpsert{
+		WorkspaceID: src.WorkspaceID,
+		SourceID:    src.ID,
+		DedupKey:    FloodDedupPrefix + src.ID,
+		Title:       src.Name + " is sending more than it is allowed",
+		Description: "This source went over " + strconv.Itoa(ratePerMin) +
+			" events a minute, so the extra ones were dropped. Check what is firing upstream before it opens the tap again.",
+		Severity:    SeverityHigh,
+		SourceLabel: src.Slug,
+		Labels:      map[string]string{"source": src.Slug, "reason": "flood"},
+		StartedAt:   now,
+		LastSeenAt:  now,
+	}
+}
+
+func MonitorAlert(m AlertMonitor, src AlertSource, now time.Time) IngestedAlert {
+	return IngestedAlert{
+		DedupKeyRaw: m.DedupKey(),
+		Title:       m.MissedTitle(),
+		Description: m.MissedDescription(now),
+		Severity:    m.Severity,
+		SourceLabel: src.Slug,
+		ServiceName: m.Name,
+		Labels:      map[string]string{"monitor": m.Slug},
+		StartedAt:   m.DueAt(),
+	}
 }

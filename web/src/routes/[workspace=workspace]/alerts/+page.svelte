@@ -4,6 +4,7 @@
 	import CircleCheckIcon from '@lucide/svelte/icons/circle-check';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { enhance } from '$app/forms';
+	import { page } from '$app/state';
 	import AlertsTable from '$lib/components/alerts/alerts-table.svelte';
 	import AlertsTabs from '$lib/components/alerts/alerts-tabs.svelte';
 	import FilterBar from '$lib/components/alerts/filter-bar.svelte';
@@ -15,12 +16,31 @@
 	let { data }: PageProps = $props();
 
 	const selected = new SvelteSet<string>();
+
+	const olderHref = $derived.by(() => {
+		if (!data.nextCursor) return null;
+		const next = new URLSearchParams(page.url.searchParams);
+		next.set('cursor', data.nextCursor);
+		return `?${next}`;
+	});
+
+	const newestHref = $derived.by(() => {
+		const next = new URLSearchParams(page.url.searchParams);
+		next.delete('cursor');
+		return `?${next}`;
+	});
 </script>
 
 <Page title="Alerts" subtitle="Deduplicated signals from every connected source">
 	<AlertsTabs current="list" />
 
-	{#if data.alerts.length === 0}
+	{#if data.alerts.length === 0 && (data.filtered || data.paged)}
+		<FilterBar sources={data.sources} services={data.services} labels={data.labels} />
+		<div class="bg-card flex flex-col items-center gap-2.5 rounded-xl border px-5 py-13">
+			<div class="text-[15px] font-medium">Nothing matches these filters</div>
+			<Button variant="secondary" size="sm" href={ws('/alerts')}>Reset all filters</Button>
+		</div>
+	{:else if data.alerts.length === 0}
 		<div class="bg-card flex flex-col items-center gap-2.5 rounded-xl border px-5 py-13">
 			<span class="bg-inset flex size-[42px] items-center justify-center rounded-full border">
 				<BellOffIcon class="text-subtle-foreground size-5" />
@@ -71,7 +91,19 @@
 		{/if}
 
 		<div class="bg-card overflow-hidden rounded-xl border">
-			<AlertsTable alerts={data.alerts} filters={data.filters} now={data.now} {selected} />
+			<AlertsTable alerts={data.alerts} now={data.now} {selected} />
 		</div>
+
+		{#if olderHref || data.paged}
+			<nav class="flex items-center gap-2.5" aria-label="Alert pages">
+				{#if data.paged}
+					<Button variant="secondary" size="sm" href={newestHref}>Back to newest</Button>
+				{/if}
+				<div class="flex-1"></div>
+				{#if olderHref}
+					<Button variant="secondary" size="sm" href={olderHref}>Older alerts</Button>
+				{/if}
+			</nav>
+		{/if}
 	{/if}
 </Page>

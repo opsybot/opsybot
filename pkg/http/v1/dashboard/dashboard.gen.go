@@ -79,6 +79,48 @@ func (e AlertLinkKind) Valid() bool {
 	}
 }
 
+// Defines values for AlertMonitorSeverity.
+const (
+	AlertMonitorSeverityCritical AlertMonitorSeverity = "critical"
+	AlertMonitorSeverityHigh     AlertMonitorSeverity = "high"
+	AlertMonitorSeverityWarning  AlertMonitorSeverity = "warning"
+)
+
+// Valid indicates whether the value is a known member of the AlertMonitorSeverity enum.
+func (e AlertMonitorSeverity) Valid() bool {
+	switch e {
+	case AlertMonitorSeverityCritical:
+		return true
+	case AlertMonitorSeverityHigh:
+		return true
+	case AlertMonitorSeverityWarning:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AlertMonitorState.
+const (
+	AlertMonitorStateHealthy AlertMonitorState = "healthy"
+	AlertMonitorStateMissed  AlertMonitorState = "missed"
+	AlertMonitorStatePaused  AlertMonitorState = "paused"
+)
+
+// Valid indicates whether the value is a known member of the AlertMonitorState enum.
+func (e AlertMonitorState) Valid() bool {
+	switch e {
+	case AlertMonitorStateHealthy:
+		return true
+	case AlertMonitorStateMissed:
+		return true
+	case AlertMonitorStatePaused:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AlertSourceDefaultSeverity.
 const (
 	AlertSourceDefaultSeverityCritical AlertSourceDefaultSeverity = "critical"
@@ -238,21 +280,42 @@ func (e ChannelType) Valid() bool {
 	}
 }
 
+// Defines values for CreateAlertMonitorRequestSeverity.
+const (
+	CreateAlertMonitorRequestSeverityCritical CreateAlertMonitorRequestSeverity = "critical"
+	CreateAlertMonitorRequestSeverityHigh     CreateAlertMonitorRequestSeverity = "high"
+	CreateAlertMonitorRequestSeverityWarning  CreateAlertMonitorRequestSeverity = "warning"
+)
+
+// Valid indicates whether the value is a known member of the CreateAlertMonitorRequestSeverity enum.
+func (e CreateAlertMonitorRequestSeverity) Valid() bool {
+	switch e {
+	case CreateAlertMonitorRequestSeverityCritical:
+		return true
+	case CreateAlertMonitorRequestSeverityHigh:
+		return true
+	case CreateAlertMonitorRequestSeverityWarning:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreateAlertSourceRequestDefaultSeverity.
 const (
-	Critical CreateAlertSourceRequestDefaultSeverity = "critical"
-	High     CreateAlertSourceRequestDefaultSeverity = "high"
-	Warning  CreateAlertSourceRequestDefaultSeverity = "warning"
+	CreateAlertSourceRequestDefaultSeverityCritical CreateAlertSourceRequestDefaultSeverity = "critical"
+	CreateAlertSourceRequestDefaultSeverityHigh     CreateAlertSourceRequestDefaultSeverity = "high"
+	CreateAlertSourceRequestDefaultSeverityWarning  CreateAlertSourceRequestDefaultSeverity = "warning"
 )
 
 // Valid indicates whether the value is a known member of the CreateAlertSourceRequestDefaultSeverity enum.
 func (e CreateAlertSourceRequestDefaultSeverity) Valid() bool {
 	switch e {
-	case Critical:
+	case CreateAlertSourceRequestDefaultSeverityCritical:
 		return true
-	case High:
+	case CreateAlertSourceRequestDefaultSeverityHigh:
 		return true
-	case Warning:
+	case CreateAlertSourceRequestDefaultSeverityWarning:
 		return true
 	default:
 		return false
@@ -390,19 +453,19 @@ func (e LoginResultStatus) Valid() bool {
 
 // Defines values for MemberAuthMethod.
 const (
-	MemberAuthMethodInvited  MemberAuthMethod = "invited"
-	MemberAuthMethodPassword MemberAuthMethod = "password"
-	MemberAuthMethodSso      MemberAuthMethod = "sso"
+	Invited  MemberAuthMethod = "invited"
+	Password MemberAuthMethod = "password"
+	Sso      MemberAuthMethod = "sso"
 )
 
 // Valid indicates whether the value is a known member of the MemberAuthMethod enum.
 func (e MemberAuthMethod) Valid() bool {
 	switch e {
-	case MemberAuthMethodInvited:
+	case Invited:
 		return true
-	case MemberAuthMethodPassword:
+	case Password:
 		return true
-	case MemberAuthMethodSso:
+	case Sso:
 		return true
 	default:
 		return false
@@ -628,6 +691,27 @@ func (e SsoMode) Valid() bool {
 	}
 }
 
+// Defines values for UpdateAlertMonitorRequestSeverity.
+const (
+	UpdateAlertMonitorRequestSeverityCritical UpdateAlertMonitorRequestSeverity = "critical"
+	UpdateAlertMonitorRequestSeverityHigh     UpdateAlertMonitorRequestSeverity = "high"
+	UpdateAlertMonitorRequestSeverityWarning  UpdateAlertMonitorRequestSeverity = "warning"
+)
+
+// Valid indicates whether the value is a known member of the UpdateAlertMonitorRequestSeverity enum.
+func (e UpdateAlertMonitorRequestSeverity) Valid() bool {
+	switch e {
+	case UpdateAlertMonitorRequestSeverityCritical:
+		return true
+	case UpdateAlertMonitorRequestSeverityHigh:
+		return true
+	case UpdateAlertMonitorRequestSeverityWarning:
+		return true
+	default:
+		return false
+	}
+}
+
 // AcceptInviteRequest defines model for AcceptInviteRequest.
 type AcceptInviteRequest struct {
 	Name     string `json:"name"`
@@ -648,6 +732,7 @@ type AddOverrideRequest struct {
 type Alert struct {
 	AckedBy         *string           `json:"ackedBy,omitempty"`
 	AcknowledgedAt  *time.Time        `json:"acknowledgedAt,omitempty"`
+	Children        *[]AlertChild     `json:"children,omitempty"`
 	Count           int               `json:"count"`
 	DedupKey        string            `json:"dedupKey"`
 	Description     string            `json:"description"`
@@ -676,6 +761,16 @@ type AlertSeverity string
 // AlertStatus defines model for Alert.Status.
 type AlertStatus string
 
+// AlertChild defines model for AlertChild.
+type AlertChild struct {
+	Count      int       `json:"count"`
+	Id         string    `json:"id"`
+	LastSeenAt time.Time `json:"lastSeenAt"`
+	Severity   string    `json:"severity"`
+	Status     string    `json:"status"`
+	Title      string    `json:"title"`
+}
+
 // AlertEvent defines model for AlertEvent.
 type AlertEvent struct {
 	At     time.Time `json:"at"`
@@ -683,6 +778,37 @@ type AlertEvent struct {
 	Kind   string    `json:"kind"`
 	Result string    `json:"result"`
 	Text   string    `json:"text"`
+}
+
+// AlertFacets defines model for AlertFacets.
+type AlertFacets struct {
+	Labels   []string `json:"labels"`
+	Services []string `json:"services"`
+	Sources  []string `json:"sources"`
+}
+
+// AlertGroupRule defines model for AlertGroupRule.
+type AlertGroupRule struct {
+	Fields        []string `json:"fields"`
+	Id            string   `json:"id"`
+	Position      int      `json:"position"`
+	WindowSeconds int      `json:"windowSeconds"`
+}
+
+// AlertGroupRuleInput defines model for AlertGroupRuleInput.
+type AlertGroupRuleInput struct {
+	Fields        []string `json:"fields"`
+	WindowSeconds *int     `json:"windowSeconds,omitempty"`
+}
+
+// AlertGroupRuleList defines model for AlertGroupRuleList.
+type AlertGroupRuleList struct {
+	Items []AlertGroupRule `json:"items"`
+}
+
+// AlertGroupRuleRequest defines model for AlertGroupRuleRequest.
+type AlertGroupRuleRequest struct {
+	Rules []AlertGroupRuleInput `json:"rules"`
 }
 
 // AlertLink defines model for AlertLink.
@@ -697,8 +823,36 @@ type AlertLinkKind string
 
 // AlertList defines model for AlertList.
 type AlertList struct {
-	Items      []Alert `json:"items"`
-	NextCursor *string `json:"nextCursor,omitempty"`
+	Facets     *AlertFacets `json:"facets,omitempty"`
+	Items      []Alert      `json:"items"`
+	NextCursor *string      `json:"nextCursor,omitempty"`
+}
+
+// AlertMonitor defines model for AlertMonitor.
+type AlertMonitor struct {
+	CheckInUrl      string               `json:"checkInUrl"`
+	DueAt           *time.Time           `json:"dueAt,omitempty"`
+	GraceSeconds    int                  `json:"graceSeconds"`
+	Id              string               `json:"id"`
+	IntervalSeconds int                  `json:"intervalSeconds"`
+	LastCheckInAt   *time.Time           `json:"lastCheckInAt,omitempty"`
+	Name            string               `json:"name"`
+	Paused          bool                 `json:"paused"`
+	PolicyRef       string               `json:"policyRef"`
+	Severity        AlertMonitorSeverity `json:"severity"`
+	Slug            string               `json:"slug"`
+	State           AlertMonitorState    `json:"state"`
+}
+
+// AlertMonitorSeverity defines model for AlertMonitor.Severity.
+type AlertMonitorSeverity string
+
+// AlertMonitorState defines model for AlertMonitor.State.
+type AlertMonitorState string
+
+// AlertMonitorList defines model for AlertMonitorList.
+type AlertMonitorList struct {
+	Items []AlertMonitor `json:"items"`
 }
 
 // AlertRoute defines model for AlertRoute.
@@ -777,6 +931,12 @@ type AlertSourceMapping struct {
 	Path  string `json:"path"`
 }
 
+// AlertSourceVolume defines model for AlertSourceVolume.
+type AlertSourceVolume struct {
+	Sources     map[string][]int `json:"sources"`
+	WindowHours int              `json:"windowHours"`
+}
+
 // AlertStatusRequest defines model for AlertStatusRequest.
 type AlertStatusRequest struct {
 	Ids    []string                 `json:"ids"`
@@ -853,6 +1013,19 @@ type ChannelType string
 type ChannelList struct {
 	Items []Channel `json:"items"`
 }
+
+// CreateAlertMonitorRequest defines model for CreateAlertMonitorRequest.
+type CreateAlertMonitorRequest struct {
+	GraceSeconds    *int                               `json:"graceSeconds,omitempty"`
+	IntervalSeconds int                                `json:"intervalSeconds"`
+	Name            string                             `json:"name"`
+	PolicyRef       *string                            `json:"policyRef,omitempty"`
+	Severity        *CreateAlertMonitorRequestSeverity `json:"severity,omitempty"`
+	Slug            *string                            `json:"slug,omitempty"`
+}
+
+// CreateAlertMonitorRequestSeverity defines model for CreateAlertMonitorRequest.Severity.
+type CreateAlertMonitorRequestSeverity string
 
 // CreateAlertSourceRequest defines model for CreateAlertSourceRequest.
 type CreateAlertSourceRequest struct {
@@ -1129,6 +1302,19 @@ type RouteCondition struct {
 // RouteConditionOp defines model for RouteCondition.Op.
 type RouteConditionOp string
 
+// RoutePreview defines model for RoutePreview.
+type RoutePreview struct {
+	GroupFields    []string `json:"groupFields"`
+	MatchedRouteId *string  `json:"matchedRouteId,omitempty"`
+	PolicyRef      string   `json:"policyRef"`
+	Position       int      `json:"position"`
+}
+
+// RoutePreviewRequest defines model for RoutePreviewRequest.
+type RoutePreviewRequest struct {
+	Payload string `json:"payload"`
+}
+
 // Schedule defines model for Schedule.
 type Schedule struct {
 	Archived     bool               `json:"archived"`
@@ -1372,6 +1558,18 @@ type TwoFactorEnrollment struct {
 	Secret     string `json:"secret"`
 }
 
+// UpdateAlertMonitorRequest defines model for UpdateAlertMonitorRequest.
+type UpdateAlertMonitorRequest struct {
+	GraceSeconds    *int                               `json:"graceSeconds,omitempty"`
+	IntervalSeconds int                                `json:"intervalSeconds"`
+	Name            string                             `json:"name"`
+	PolicyRef       *string                            `json:"policyRef,omitempty"`
+	Severity        *UpdateAlertMonitorRequestSeverity `json:"severity,omitempty"`
+}
+
+// UpdateAlertMonitorRequestSeverity defines model for UpdateAlertMonitorRequest.Severity.
+type UpdateAlertMonitorRequestSeverity string
+
 // UpdateAlertSourceMappingRequest defines model for UpdateAlertSourceMappingRequest.
 type UpdateAlertSourceMappingRequest struct {
 	Mapping []AlertSourceMapping `json:"mapping"`
@@ -1427,11 +1625,15 @@ type ListAlertSourceEventsParams struct {
 
 // ListAlertsParams defines parameters for ListAlerts.
 type ListAlertsParams struct {
-	Status   *[]string `form:"status,omitempty" json:"status,omitempty"`
-	Severity *[]string `form:"severity,omitempty" json:"severity,omitempty"`
-	Query    *string   `form:"query,omitempty" json:"query,omitempty"`
-	Cursor   *string   `form:"cursor,omitempty" json:"cursor,omitempty"`
-	Limit    *int      `form:"limit,omitempty" json:"limit,omitempty"`
+	Status   *[]string  `form:"status,omitempty" json:"status,omitempty"`
+	Severity *[]string  `form:"severity,omitempty" json:"severity,omitempty"`
+	Source   *[]string  `form:"source,omitempty" json:"source,omitempty"`
+	Service  *[]string  `form:"service,omitempty" json:"service,omitempty"`
+	Label    *[]string  `form:"label,omitempty" json:"label,omitempty"`
+	Since    *time.Time `form:"since,omitempty" json:"since,omitempty"`
+	Query    *string    `form:"query,omitempty" json:"query,omitempty"`
+	Cursor   *string    `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit    *int       `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // ListAuditParams defines parameters for ListAudit.
@@ -1515,6 +1717,15 @@ type RegenerateRecoveryCodesJSONRequestBody = TwoFactorCodeRequest
 // ActivateTwoFactorJSONRequestBody defines body for ActivateTwoFactor for application/json ContentType.
 type ActivateTwoFactorJSONRequestBody = TwoFactorCodeRequest
 
+// SaveAlertGroupRulesJSONRequestBody defines body for SaveAlertGroupRules for application/json ContentType.
+type SaveAlertGroupRulesJSONRequestBody = AlertGroupRuleRequest
+
+// CreateAlertMonitorJSONRequestBody defines body for CreateAlertMonitor for application/json ContentType.
+type CreateAlertMonitorJSONRequestBody = CreateAlertMonitorRequest
+
+// UpdateAlertMonitorJSONRequestBody defines body for UpdateAlertMonitor for application/json ContentType.
+type UpdateAlertMonitorJSONRequestBody = UpdateAlertMonitorRequest
+
 // CreateAlertRouteJSONRequestBody defines body for CreateAlertRoute for application/json ContentType.
 type CreateAlertRouteJSONRequestBody = AlertRouteRequest
 
@@ -1523,6 +1734,9 @@ type SetDefaultAlertPolicyJSONRequestBody = DefaultPolicyRequest
 
 // ReorderAlertRoutesJSONRequestBody defines body for ReorderAlertRoutes for application/json ContentType.
 type ReorderAlertRoutesJSONRequestBody = ReorderAlertRoutesRequest
+
+// PreviewAlertRouteJSONRequestBody defines body for PreviewAlertRoute for application/json ContentType.
+type PreviewAlertRouteJSONRequestBody = RoutePreviewRequest
 
 // UpdateAlertRouteJSONRequestBody defines body for UpdateAlertRoute for application/json ContentType.
 type UpdateAlertRouteJSONRequestBody = AlertRouteRequest
@@ -1661,6 +1875,27 @@ type ServerInterface interface {
 	// List recent ingestion failures
 	// (GET /workspaces/{workspaceId}/alert-failures)
 	ListIngestFailures(w http.ResponseWriter, r *http.Request, workspaceId string, params ListIngestFailuresParams)
+	// List alert grouping rules
+	// (GET /workspaces/{workspaceId}/alert-group-rules)
+	ListAlertGroupRules(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Replace the alert grouping rules
+	// (PUT /workspaces/{workspaceId}/alert-group-rules)
+	SaveAlertGroupRules(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// List heartbeat monitors
+	// (GET /workspaces/{workspaceId}/alert-monitors)
+	ListAlertMonitors(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Create a heartbeat monitor
+	// (POST /workspaces/{workspaceId}/alert-monitors)
+	CreateAlertMonitor(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Delete a heartbeat monitor
+	// (DELETE /workspaces/{workspaceId}/alert-monitors/{monitorId})
+	DeleteAlertMonitor(w http.ResponseWriter, r *http.Request, workspaceId string, monitorId string)
+	// Get a heartbeat monitor
+	// (GET /workspaces/{workspaceId}/alert-monitors/{monitorId})
+	GetAlertMonitor(w http.ResponseWriter, r *http.Request, workspaceId string, monitorId string)
+	// Update a heartbeat monitor
+	// (PUT /workspaces/{workspaceId}/alert-monitors/{monitorId})
+	UpdateAlertMonitor(w http.ResponseWriter, r *http.Request, workspaceId string, monitorId string)
 	// List alert routing rules
 	// (GET /workspaces/{workspaceId}/alert-routes)
 	ListAlertRoutes(w http.ResponseWriter, r *http.Request, workspaceId string)
@@ -1673,6 +1908,9 @@ type ServerInterface interface {
 	// Reorder alert routing rules
 	// (PUT /workspaces/{workspaceId}/alert-routes/order)
 	ReorderAlertRoutes(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Evaluate a sample alert against the routing and grouping rules
+	// (POST /workspaces/{workspaceId}/alert-routes/preview)
+	PreviewAlertRoute(w http.ResponseWriter, r *http.Request, workspaceId string)
 	// Delete an alert routing rule
 	// (DELETE /workspaces/{workspaceId}/alert-routes/{routeId})
 	DeleteAlertRoute(w http.ResponseWriter, r *http.Request, workspaceId string, routeId string)
@@ -1694,6 +1932,9 @@ type ServerInterface interface {
 	// Create an alert source
 	// (POST /workspaces/{workspaceId}/alert-sources)
 	CreateAlertSource(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Hourly ingest volume per source for the last day
+	// (GET /workspaces/{workspaceId}/alert-sources/volume)
+	GetAlertSourceVolume(w http.ResponseWriter, r *http.Request, workspaceId string)
 	// Delete an alert source
 	// (DELETE /workspaces/{workspaceId}/alert-sources/{sourceSlug})
 	DeleteAlertSource(w http.ResponseWriter, r *http.Request, workspaceId string, sourceSlug string)
@@ -2012,6 +2253,48 @@ func (_ Unimplemented) ListIngestFailures(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// List alert grouping rules
+// (GET /workspaces/{workspaceId}/alert-group-rules)
+func (_ Unimplemented) ListAlertGroupRules(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Replace the alert grouping rules
+// (PUT /workspaces/{workspaceId}/alert-group-rules)
+func (_ Unimplemented) SaveAlertGroupRules(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List heartbeat monitors
+// (GET /workspaces/{workspaceId}/alert-monitors)
+func (_ Unimplemented) ListAlertMonitors(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create a heartbeat monitor
+// (POST /workspaces/{workspaceId}/alert-monitors)
+func (_ Unimplemented) CreateAlertMonitor(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete a heartbeat monitor
+// (DELETE /workspaces/{workspaceId}/alert-monitors/{monitorId})
+func (_ Unimplemented) DeleteAlertMonitor(w http.ResponseWriter, r *http.Request, workspaceId string, monitorId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get a heartbeat monitor
+// (GET /workspaces/{workspaceId}/alert-monitors/{monitorId})
+func (_ Unimplemented) GetAlertMonitor(w http.ResponseWriter, r *http.Request, workspaceId string, monitorId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update a heartbeat monitor
+// (PUT /workspaces/{workspaceId}/alert-monitors/{monitorId})
+func (_ Unimplemented) UpdateAlertMonitor(w http.ResponseWriter, r *http.Request, workspaceId string, monitorId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // List alert routing rules
 // (GET /workspaces/{workspaceId}/alert-routes)
 func (_ Unimplemented) ListAlertRoutes(w http.ResponseWriter, r *http.Request, workspaceId string) {
@@ -2033,6 +2316,12 @@ func (_ Unimplemented) SetDefaultAlertPolicy(w http.ResponseWriter, r *http.Requ
 // Reorder alert routing rules
 // (PUT /workspaces/{workspaceId}/alert-routes/order)
 func (_ Unimplemented) ReorderAlertRoutes(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Evaluate a sample alert against the routing and grouping rules
+// (POST /workspaces/{workspaceId}/alert-routes/preview)
+func (_ Unimplemented) PreviewAlertRoute(w http.ResponseWriter, r *http.Request, workspaceId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2075,6 +2364,12 @@ func (_ Unimplemented) ListAlertSources(w http.ResponseWriter, r *http.Request, 
 // Create an alert source
 // (POST /workspaces/{workspaceId}/alert-sources)
 func (_ Unimplemented) CreateAlertSource(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Hourly ingest volume per source for the last day
+// (GET /workspaces/{workspaceId}/alert-sources/volume)
+func (_ Unimplemented) GetAlertSourceVolume(w http.ResponseWriter, r *http.Request, workspaceId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2864,6 +3159,215 @@ func (siw *ServerInterfaceWrapper) ListIngestFailures(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// ListAlertGroupRules operation middleware
+func (siw *ServerInterfaceWrapper) ListAlertGroupRules(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAlertGroupRules(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SaveAlertGroupRules operation middleware
+func (siw *ServerInterfaceWrapper) SaveAlertGroupRules(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SaveAlertGroupRules(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAlertMonitors operation middleware
+func (siw *ServerInterfaceWrapper) ListAlertMonitors(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAlertMonitors(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateAlertMonitor operation middleware
+func (siw *ServerInterfaceWrapper) CreateAlertMonitor(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateAlertMonitor(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteAlertMonitor operation middleware
+func (siw *ServerInterfaceWrapper) DeleteAlertMonitor(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "monitorId" -------------
+	var monitorId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "monitorId", chi.URLParam(r, "monitorId"), &monitorId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "monitorId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteAlertMonitor(w, r, workspaceId, monitorId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAlertMonitor operation middleware
+func (siw *ServerInterfaceWrapper) GetAlertMonitor(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "monitorId" -------------
+	var monitorId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "monitorId", chi.URLParam(r, "monitorId"), &monitorId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "monitorId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAlertMonitor(w, r, workspaceId, monitorId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateAlertMonitor operation middleware
+func (siw *ServerInterfaceWrapper) UpdateAlertMonitor(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "monitorId" -------------
+	var monitorId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "monitorId", chi.URLParam(r, "monitorId"), &monitorId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "monitorId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateAlertMonitor(w, r, workspaceId, monitorId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListAlertRoutes operation middleware
 func (siw *ServerInterfaceWrapper) ListAlertRoutes(w http.ResponseWriter, r *http.Request) {
 
@@ -2959,6 +3463,32 @@ func (siw *ServerInterfaceWrapper) ReorderAlertRoutes(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ReorderAlertRoutes(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PreviewAlertRoute operation middleware
+func (siw *ServerInterfaceWrapper) PreviewAlertRoute(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PreviewAlertRoute(w, r, workspaceId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3168,6 +3698,32 @@ func (siw *ServerInterfaceWrapper) CreateAlertSource(w http.ResponseWriter, r *h
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateAlertSource(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAlertSourceVolume operation middleware
+func (siw *ServerInterfaceWrapper) GetAlertSourceVolume(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAlertSourceVolume(w, r, workspaceId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3478,6 +4034,58 @@ func (siw *ServerInterfaceWrapper) ListAlerts(w http.ResponseWriter, r *http.Req
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "severity"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "severity", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "source" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", false, false, "source", r.URL.Query(), &params.Source, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "source"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "service" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", false, false, "service", r.URL.Query(), &params.Service, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "service"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "label" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", false, false, "label", r.URL.Query(), &params.Label, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "label"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "label", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "since" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "since", r.URL.Query(), &params.Since, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "since"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "since", Err: err})
 		}
 		return
 	}
@@ -5102,6 +5710,27 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/workspaces/{workspaceId}/alert-failures", wrapper.ListIngestFailures)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/alert-group-rules", wrapper.ListAlertGroupRules)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/workspaces/{workspaceId}/alert-group-rules", wrapper.SaveAlertGroupRules)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/alert-monitors", wrapper.ListAlertMonitors)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/alert-monitors", wrapper.CreateAlertMonitor)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/workspaces/{workspaceId}/alert-monitors/{monitorId}", wrapper.DeleteAlertMonitor)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/alert-monitors/{monitorId}", wrapper.GetAlertMonitor)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/workspaces/{workspaceId}/alert-monitors/{monitorId}", wrapper.UpdateAlertMonitor)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/workspaces/{workspaceId}/alert-routes", wrapper.ListAlertRoutes)
 	})
 	r.Group(func(r chi.Router) {
@@ -5112,6 +5741,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/workspaces/{workspaceId}/alert-routes/order", wrapper.ReorderAlertRoutes)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/alert-routes/preview", wrapper.PreviewAlertRoute)
 	})
 	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/workspaces/{workspaceId}/alert-routes/{routeId}", wrapper.DeleteAlertRoute)
@@ -5133,6 +5765,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/workspaces/{workspaceId}/alert-sources", wrapper.CreateAlertSource)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/alert-sources/volume", wrapper.GetAlertSourceVolume)
 	})
 	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/workspaces/{workspaceId}/alert-sources/{sourceSlug}", wrapper.DeleteAlertSource)
@@ -6781,6 +7416,510 @@ func (response ListIngestFailures404ApplicationProblemPlusJSONResponse) VisitLis
 	return err
 }
 
+type ListAlertGroupRulesRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+}
+
+type ListAlertGroupRulesResponseObject interface {
+	VisitListAlertGroupRulesResponse(w http.ResponseWriter) error
+}
+
+type ListAlertGroupRules200JSONResponse AlertGroupRuleList
+
+func (response ListAlertGroupRules200JSONResponse) VisitListAlertGroupRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAlertGroupRules401ApplicationProblemPlusJSONResponse Problem
+
+func (response ListAlertGroupRules401ApplicationProblemPlusJSONResponse) VisitListAlertGroupRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAlertGroupRules403ApplicationProblemPlusJSONResponse Problem
+
+func (response ListAlertGroupRules403ApplicationProblemPlusJSONResponse) VisitListAlertGroupRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAlertGroupRules404ApplicationProblemPlusJSONResponse Problem
+
+func (response ListAlertGroupRules404ApplicationProblemPlusJSONResponse) VisitListAlertGroupRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveAlertGroupRulesRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	Body        *SaveAlertGroupRulesJSONRequestBody
+}
+
+type SaveAlertGroupRulesResponseObject interface {
+	VisitSaveAlertGroupRulesResponse(w http.ResponseWriter) error
+}
+
+type SaveAlertGroupRules200JSONResponse AlertGroupRuleList
+
+func (response SaveAlertGroupRules200JSONResponse) VisitSaveAlertGroupRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveAlertGroupRules400ApplicationProblemPlusJSONResponse Problem
+
+func (response SaveAlertGroupRules400ApplicationProblemPlusJSONResponse) VisitSaveAlertGroupRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveAlertGroupRules401ApplicationProblemPlusJSONResponse Problem
+
+func (response SaveAlertGroupRules401ApplicationProblemPlusJSONResponse) VisitSaveAlertGroupRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveAlertGroupRules403ApplicationProblemPlusJSONResponse Problem
+
+func (response SaveAlertGroupRules403ApplicationProblemPlusJSONResponse) VisitSaveAlertGroupRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveAlertGroupRules404ApplicationProblemPlusJSONResponse Problem
+
+func (response SaveAlertGroupRules404ApplicationProblemPlusJSONResponse) VisitSaveAlertGroupRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAlertMonitorsRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+}
+
+type ListAlertMonitorsResponseObject interface {
+	VisitListAlertMonitorsResponse(w http.ResponseWriter) error
+}
+
+type ListAlertMonitors200JSONResponse AlertMonitorList
+
+func (response ListAlertMonitors200JSONResponse) VisitListAlertMonitorsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAlertMonitors401ApplicationProblemPlusJSONResponse Problem
+
+func (response ListAlertMonitors401ApplicationProblemPlusJSONResponse) VisitListAlertMonitorsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAlertMonitors403ApplicationProblemPlusJSONResponse Problem
+
+func (response ListAlertMonitors403ApplicationProblemPlusJSONResponse) VisitListAlertMonitorsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAlertMonitors404ApplicationProblemPlusJSONResponse Problem
+
+func (response ListAlertMonitors404ApplicationProblemPlusJSONResponse) VisitListAlertMonitorsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateAlertMonitorRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	Body        *CreateAlertMonitorJSONRequestBody
+}
+
+type CreateAlertMonitorResponseObject interface {
+	VisitCreateAlertMonitorResponse(w http.ResponseWriter) error
+}
+
+type CreateAlertMonitor201JSONResponse AlertMonitor
+
+func (response CreateAlertMonitor201JSONResponse) VisitCreateAlertMonitorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateAlertMonitor400ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateAlertMonitor400ApplicationProblemPlusJSONResponse) VisitCreateAlertMonitorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateAlertMonitor401ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateAlertMonitor401ApplicationProblemPlusJSONResponse) VisitCreateAlertMonitorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateAlertMonitor403ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateAlertMonitor403ApplicationProblemPlusJSONResponse) VisitCreateAlertMonitorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateAlertMonitor404ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateAlertMonitor404ApplicationProblemPlusJSONResponse) VisitCreateAlertMonitorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateAlertMonitor409ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateAlertMonitor409ApplicationProblemPlusJSONResponse) VisitCreateAlertMonitorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteAlertMonitorRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	MonitorId   string `json:"monitorId"`
+}
+
+type DeleteAlertMonitorResponseObject interface {
+	VisitDeleteAlertMonitorResponse(w http.ResponseWriter) error
+}
+
+type DeleteAlertMonitor204Response struct {
+}
+
+func (response DeleteAlertMonitor204Response) VisitDeleteAlertMonitorResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteAlertMonitor401ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteAlertMonitor401ApplicationProblemPlusJSONResponse) VisitDeleteAlertMonitorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteAlertMonitor403ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteAlertMonitor403ApplicationProblemPlusJSONResponse) VisitDeleteAlertMonitorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteAlertMonitor404ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteAlertMonitor404ApplicationProblemPlusJSONResponse) VisitDeleteAlertMonitorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAlertMonitorRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	MonitorId   string `json:"monitorId"`
+}
+
+type GetAlertMonitorResponseObject interface {
+	VisitGetAlertMonitorResponse(w http.ResponseWriter) error
+}
+
+type GetAlertMonitor200JSONResponse AlertMonitor
+
+func (response GetAlertMonitor200JSONResponse) VisitGetAlertMonitorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAlertMonitor401ApplicationProblemPlusJSONResponse Problem
+
+func (response GetAlertMonitor401ApplicationProblemPlusJSONResponse) VisitGetAlertMonitorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAlertMonitor403ApplicationProblemPlusJSONResponse Problem
+
+func (response GetAlertMonitor403ApplicationProblemPlusJSONResponse) VisitGetAlertMonitorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAlertMonitor404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetAlertMonitor404ApplicationProblemPlusJSONResponse) VisitGetAlertMonitorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateAlertMonitorRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	MonitorId   string `json:"monitorId"`
+	Body        *UpdateAlertMonitorJSONRequestBody
+}
+
+type UpdateAlertMonitorResponseObject interface {
+	VisitUpdateAlertMonitorResponse(w http.ResponseWriter) error
+}
+
+type UpdateAlertMonitor200JSONResponse AlertMonitor
+
+func (response UpdateAlertMonitor200JSONResponse) VisitUpdateAlertMonitorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateAlertMonitor400ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateAlertMonitor400ApplicationProblemPlusJSONResponse) VisitUpdateAlertMonitorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateAlertMonitor401ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateAlertMonitor401ApplicationProblemPlusJSONResponse) VisitUpdateAlertMonitorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateAlertMonitor403ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateAlertMonitor403ApplicationProblemPlusJSONResponse) VisitUpdateAlertMonitorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateAlertMonitor404ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateAlertMonitor404ApplicationProblemPlusJSONResponse) VisitUpdateAlertMonitorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListAlertRoutesRequestObject struct {
 	WorkspaceId string `json:"workspaceId"`
 }
@@ -7059,6 +8198,85 @@ func (response ReorderAlertRoutes403ApplicationProblemPlusJSONResponse) VisitReo
 type ReorderAlertRoutes404ApplicationProblemPlusJSONResponse Problem
 
 func (response ReorderAlertRoutes404ApplicationProblemPlusJSONResponse) VisitReorderAlertRoutesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewAlertRouteRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	Body        *PreviewAlertRouteJSONRequestBody
+}
+
+type PreviewAlertRouteResponseObject interface {
+	VisitPreviewAlertRouteResponse(w http.ResponseWriter) error
+}
+
+type PreviewAlertRoute200JSONResponse RoutePreview
+
+func (response PreviewAlertRoute200JSONResponse) VisitPreviewAlertRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewAlertRoute400ApplicationProblemPlusJSONResponse Problem
+
+func (response PreviewAlertRoute400ApplicationProblemPlusJSONResponse) VisitPreviewAlertRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewAlertRoute401ApplicationProblemPlusJSONResponse Problem
+
+func (response PreviewAlertRoute401ApplicationProblemPlusJSONResponse) VisitPreviewAlertRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewAlertRoute403ApplicationProblemPlusJSONResponse Problem
+
+func (response PreviewAlertRoute403ApplicationProblemPlusJSONResponse) VisitPreviewAlertRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewAlertRoute404ApplicationProblemPlusJSONResponse Problem
+
+func (response PreviewAlertRoute404ApplicationProblemPlusJSONResponse) VisitPreviewAlertRouteResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -7578,6 +8796,70 @@ func (response CreateAlertSource409ApplicationProblemPlusJSONResponse) VisitCrea
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAlertSourceVolumeRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+}
+
+type GetAlertSourceVolumeResponseObject interface {
+	VisitGetAlertSourceVolumeResponse(w http.ResponseWriter) error
+}
+
+type GetAlertSourceVolume200JSONResponse AlertSourceVolume
+
+func (response GetAlertSourceVolume200JSONResponse) VisitGetAlertSourceVolumeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAlertSourceVolume401ApplicationProblemPlusJSONResponse Problem
+
+func (response GetAlertSourceVolume401ApplicationProblemPlusJSONResponse) VisitGetAlertSourceVolumeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAlertSourceVolume403ApplicationProblemPlusJSONResponse Problem
+
+func (response GetAlertSourceVolume403ApplicationProblemPlusJSONResponse) VisitGetAlertSourceVolumeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAlertSourceVolume404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetAlertSourceVolume404ApplicationProblemPlusJSONResponse) VisitGetAlertSourceVolumeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -11106,6 +12388,27 @@ type StrictServerInterface interface {
 	// List recent ingestion failures
 	// (GET /workspaces/{workspaceId}/alert-failures)
 	ListIngestFailures(ctx context.Context, request ListIngestFailuresRequestObject) (ListIngestFailuresResponseObject, error)
+	// List alert grouping rules
+	// (GET /workspaces/{workspaceId}/alert-group-rules)
+	ListAlertGroupRules(ctx context.Context, request ListAlertGroupRulesRequestObject) (ListAlertGroupRulesResponseObject, error)
+	// Replace the alert grouping rules
+	// (PUT /workspaces/{workspaceId}/alert-group-rules)
+	SaveAlertGroupRules(ctx context.Context, request SaveAlertGroupRulesRequestObject) (SaveAlertGroupRulesResponseObject, error)
+	// List heartbeat monitors
+	// (GET /workspaces/{workspaceId}/alert-monitors)
+	ListAlertMonitors(ctx context.Context, request ListAlertMonitorsRequestObject) (ListAlertMonitorsResponseObject, error)
+	// Create a heartbeat monitor
+	// (POST /workspaces/{workspaceId}/alert-monitors)
+	CreateAlertMonitor(ctx context.Context, request CreateAlertMonitorRequestObject) (CreateAlertMonitorResponseObject, error)
+	// Delete a heartbeat monitor
+	// (DELETE /workspaces/{workspaceId}/alert-monitors/{monitorId})
+	DeleteAlertMonitor(ctx context.Context, request DeleteAlertMonitorRequestObject) (DeleteAlertMonitorResponseObject, error)
+	// Get a heartbeat monitor
+	// (GET /workspaces/{workspaceId}/alert-monitors/{monitorId})
+	GetAlertMonitor(ctx context.Context, request GetAlertMonitorRequestObject) (GetAlertMonitorResponseObject, error)
+	// Update a heartbeat monitor
+	// (PUT /workspaces/{workspaceId}/alert-monitors/{monitorId})
+	UpdateAlertMonitor(ctx context.Context, request UpdateAlertMonitorRequestObject) (UpdateAlertMonitorResponseObject, error)
 	// List alert routing rules
 	// (GET /workspaces/{workspaceId}/alert-routes)
 	ListAlertRoutes(ctx context.Context, request ListAlertRoutesRequestObject) (ListAlertRoutesResponseObject, error)
@@ -11118,6 +12421,9 @@ type StrictServerInterface interface {
 	// Reorder alert routing rules
 	// (PUT /workspaces/{workspaceId}/alert-routes/order)
 	ReorderAlertRoutes(ctx context.Context, request ReorderAlertRoutesRequestObject) (ReorderAlertRoutesResponseObject, error)
+	// Evaluate a sample alert against the routing and grouping rules
+	// (POST /workspaces/{workspaceId}/alert-routes/preview)
+	PreviewAlertRoute(ctx context.Context, request PreviewAlertRouteRequestObject) (PreviewAlertRouteResponseObject, error)
 	// Delete an alert routing rule
 	// (DELETE /workspaces/{workspaceId}/alert-routes/{routeId})
 	DeleteAlertRoute(ctx context.Context, request DeleteAlertRouteRequestObject) (DeleteAlertRouteResponseObject, error)
@@ -11139,6 +12445,9 @@ type StrictServerInterface interface {
 	// Create an alert source
 	// (POST /workspaces/{workspaceId}/alert-sources)
 	CreateAlertSource(ctx context.Context, request CreateAlertSourceRequestObject) (CreateAlertSourceResponseObject, error)
+	// Hourly ingest volume per source for the last day
+	// (GET /workspaces/{workspaceId}/alert-sources/volume)
+	GetAlertSourceVolume(ctx context.Context, request GetAlertSourceVolumeRequestObject) (GetAlertSourceVolumeResponseObject, error)
 	// Delete an alert source
 	// (DELETE /workspaces/{workspaceId}/alert-sources/{sourceSlug})
 	DeleteAlertSource(ctx context.Context, request DeleteAlertSourceRequestObject) (DeleteAlertSourceResponseObject, error)
@@ -12122,6 +13431,212 @@ func (sh *strictHandler) ListIngestFailures(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// ListAlertGroupRules operation middleware
+func (sh *strictHandler) ListAlertGroupRules(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request ListAlertGroupRulesRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAlertGroupRules(ctx, request.(ListAlertGroupRulesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAlertGroupRules")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAlertGroupRulesResponseObject); ok {
+		if err := validResponse.VisitListAlertGroupRulesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SaveAlertGroupRules operation middleware
+func (sh *strictHandler) SaveAlertGroupRules(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request SaveAlertGroupRulesRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	var body SaveAlertGroupRulesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SaveAlertGroupRules(ctx, request.(SaveAlertGroupRulesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SaveAlertGroupRules")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SaveAlertGroupRulesResponseObject); ok {
+		if err := validResponse.VisitSaveAlertGroupRulesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAlertMonitors operation middleware
+func (sh *strictHandler) ListAlertMonitors(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request ListAlertMonitorsRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAlertMonitors(ctx, request.(ListAlertMonitorsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAlertMonitors")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAlertMonitorsResponseObject); ok {
+		if err := validResponse.VisitListAlertMonitorsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateAlertMonitor operation middleware
+func (sh *strictHandler) CreateAlertMonitor(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request CreateAlertMonitorRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	var body CreateAlertMonitorJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateAlertMonitor(ctx, request.(CreateAlertMonitorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateAlertMonitor")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateAlertMonitorResponseObject); ok {
+		if err := validResponse.VisitCreateAlertMonitorResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteAlertMonitor operation middleware
+func (sh *strictHandler) DeleteAlertMonitor(w http.ResponseWriter, r *http.Request, workspaceId string, monitorId string) {
+	var request DeleteAlertMonitorRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.MonitorId = monitorId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteAlertMonitor(ctx, request.(DeleteAlertMonitorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteAlertMonitor")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteAlertMonitorResponseObject); ok {
+		if err := validResponse.VisitDeleteAlertMonitorResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAlertMonitor operation middleware
+func (sh *strictHandler) GetAlertMonitor(w http.ResponseWriter, r *http.Request, workspaceId string, monitorId string) {
+	var request GetAlertMonitorRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.MonitorId = monitorId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAlertMonitor(ctx, request.(GetAlertMonitorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAlertMonitor")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAlertMonitorResponseObject); ok {
+		if err := validResponse.VisitGetAlertMonitorResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateAlertMonitor operation middleware
+func (sh *strictHandler) UpdateAlertMonitor(w http.ResponseWriter, r *http.Request, workspaceId string, monitorId string) {
+	var request UpdateAlertMonitorRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.MonitorId = monitorId
+
+	var body UpdateAlertMonitorJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateAlertMonitor(ctx, request.(UpdateAlertMonitorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateAlertMonitor")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateAlertMonitorResponseObject); ok {
+		if err := validResponse.VisitUpdateAlertMonitorResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListAlertRoutes operation middleware
 func (sh *strictHandler) ListAlertRoutes(w http.ResponseWriter, r *http.Request, workspaceId string) {
 	var request ListAlertRoutesRequestObject
@@ -12240,6 +13755,39 @@ func (sh *strictHandler) ReorderAlertRoutes(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ReorderAlertRoutesResponseObject); ok {
 		if err := validResponse.VisitReorderAlertRoutesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PreviewAlertRoute operation middleware
+func (sh *strictHandler) PreviewAlertRoute(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request PreviewAlertRouteRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	var body PreviewAlertRouteJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PreviewAlertRoute(ctx, request.(PreviewAlertRouteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PreviewAlertRoute")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PreviewAlertRouteResponseObject); ok {
+		if err := validResponse.VisitPreviewAlertRouteResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -12446,6 +13994,32 @@ func (sh *strictHandler) CreateAlertSource(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CreateAlertSourceResponseObject); ok {
 		if err := validResponse.VisitCreateAlertSourceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAlertSourceVolume operation middleware
+func (sh *strictHandler) GetAlertSourceVolume(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request GetAlertSourceVolumeRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAlertSourceVolume(ctx, request.(GetAlertSourceVolumeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAlertSourceVolume")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAlertSourceVolumeResponseObject); ok {
+		if err := validResponse.VisitGetAlertSourceVolumeResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

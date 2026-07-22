@@ -21,8 +21,9 @@ func (fakeTx) WithTx(ctx context.Context, fn func(context.Context) error) error 
 
 type fakeLock struct{}
 
-func (fakeLock) Workspace(context.Context, string) error { return nil }
-func (fakeLock) Instance(context.Context) error          { return nil }
+func (fakeLock) Workspace(context.Context, string) error      { return nil }
+func (fakeLock) Instance(context.Context) error               { return nil }
+func (fakeLock) TryJob(context.Context, string) (bool, error) { return true, nil }
 
 func withUser(userID string) context.Context {
 	return entity.WithIdentity(context.Background(), entity.Identity{Kind: entity.IdentityKindSession, UserID: userID})

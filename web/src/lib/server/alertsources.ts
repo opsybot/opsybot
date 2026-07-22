@@ -1,6 +1,14 @@
 import type { Cookies } from '@sveltejs/kit';
 import type { components } from '$lib/api/schema';
-import { FORMATS, type Condition, type ConditionOp, type Mapping, type RoutingRule, type Source } from '$lib/alertsources';
+import {
+	FORMATS,
+	type Condition,
+	type ConditionOp,
+	type GroupRule,
+	type Mapping,
+	type RoutingRule,
+	type Source
+} from '$lib/alertsources';
 import { formatSince, formatUtc } from '$lib/time';
 import { apiClient } from './api';
 
@@ -98,13 +106,46 @@ export async function createSource(
 	cookies: Cookies,
 	workspace: string,
 	input: { name: string; formatId: string }
-): Promise<{ slug?: string; error?: string }> {
+): Promise<{ source?: Source; error?: string }> {
 	const { data, error } = await apiClient(cookies).POST('/workspaces/{workspaceId}/alert-sources', {
 		params: { path: { workspaceId: workspace } },
 		body: { name: input.name, format: input.formatId as Schemas['AlertSource']['format'] }
 	});
 	if (error) return { error: error.detail ?? 'Could not create the source.' };
-	return { slug: data?.slug };
+	return { source: data ? toSource(data) : undefined };
+}
+
+export async function sourceVolume(
+	cookies: Cookies,
+	workspace: string
+): Promise<Record<string, number[]>> {
+	const { data } = await apiClient(cookies).GET('/workspaces/{workspaceId}/alert-sources/volume', {
+		params: { path: { workspaceId: workspace } }
+	});
+	return data?.sources ?? {};
+}
+
+export async function listGroupRules(cookies: Cookies, workspace: string): Promise<GroupRule[]> {
+	const { data } = await apiClient(cookies).GET('/workspaces/{workspaceId}/alert-group-rules', {
+		params: { path: { workspaceId: workspace } }
+	});
+	return (data?.items ?? []).map((rule) => ({
+		id: rule.id,
+		fields: rule.fields,
+		windowSeconds: rule.windowSeconds
+	}));
+}
+
+export async function saveGroupRules(
+	cookies: Cookies,
+	workspace: string,
+	rules: { fields: string[]; windowSeconds: number }[]
+): Promise<{ error?: string }> {
+	const { error } = await apiClient(cookies).PUT('/workspaces/{workspaceId}/alert-group-rules', {
+		params: { path: { workspaceId: workspace } },
+		body: { rules }
+	});
+	return error ? { error: error.detail ?? 'Could not save those grouping rules.' } : {};
 }
 
 export async function setPaused(
@@ -250,4 +291,32 @@ export async function reorderRules(
 		body: { ids }
 	});
 	return !error;
+}
+
+export type RoutePreview = {
+	matchedRouteId: string | null;
+	position: number;
+	policyRef: string;
+	groupFields: string[];
+};
+
+export async function previewRoute(
+	cookies: Cookies,
+	workspace: string,
+	payload: string
+): Promise<{ preview?: RoutePreview; error?: string }> {
+	const { data, error } = await apiClient(cookies).POST(
+		'/workspaces/{workspaceId}/alert-routes/preview',
+		{ params: { path: { workspaceId: workspace } }, body: { payload } }
+	);
+	if (error) return { error: error.detail ?? 'Could not evaluate that sample.' };
+	if (!data) return { error: 'Could not evaluate that sample.' };
+	return {
+		preview: {
+			matchedRouteId: data.matchedRouteId ?? null,
+			position: data.position,
+			policyRef: data.policyRef,
+			groupFields: data.groupFields
+		}
+	};
 }

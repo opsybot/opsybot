@@ -12,6 +12,7 @@ package ingest_event
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	entity "github.com/opsybot/opsybot/internal/entity"
 	gomock "go.uber.org/mock/gomock"
@@ -69,6 +70,21 @@ func (m *MockIngestEvent) ListFailures(ctx context.Context, workspaceID string, 
 func (mr *MockIngestEventMockRecorder) ListFailures(ctx, workspaceID, limit any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListFailures", reflect.TypeOf((*MockIngestEvent)(nil).ListFailures), ctx, workspaceID, limit)
+}
+
+// Prune mocks base method.
+func (m *MockIngestEvent) Prune(ctx context.Context, before time.Time) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Prune", ctx, before)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Prune indicates an expected call of Prune.
+func (mr *MockIngestEventMockRecorder) Prune(ctx, before any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Prune", reflect.TypeOf((*MockIngestEvent)(nil).Prune), ctx, before)
 }
 
 // Record mocks base method.

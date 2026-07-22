@@ -1,7 +1,7 @@
 <script lang="ts">
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import CheckIcon from '@lucide/svelte/icons/check';
-	import SendIcon from '@lucide/svelte/icons/send';
+	import { onDestroy } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
@@ -13,8 +13,9 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Field from '$lib/components/ui/field';
 	import { Input } from '$lib/components/ui/input';
-	import { MAPPINGS, endpointUrl, slugify, type Format, type Mapping } from '$lib/alertsources';
+	import { MAPPINGS, type Format, type Mapping, type Source } from '$lib/alertsources';
 	import { ws } from '$lib/navigation';
+	import type { DeliveryEvent } from '$lib/server/alertsources';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -23,22 +24,38 @@
 	let format = $state<Format | null>(null);
 	let name = $state('');
 	let rows = $state<Mapping[]>([]);
-	let testState = $state<'idle' | 'waiting' | 'ok'>('idle');
+	let source = $state<Source | null>(null);
+	let events = $state<DeliveryEvent[]>([]);
+	let polling = $state(false);
 
-	const slug = $derived(slugify(name) || format?.id || 'source');
-	const url = $derived(endpointUrl(slug));
+	let createForm: HTMLFormElement;
+	let mappingForm: HTMLFormElement;
+	let checkForm: HTMLFormElement;
+	let timer: ReturnType<typeof setInterval> | null = null;
+
+	function stopPolling() {
+		if (timer) clearInterval(timer);
+		timer = null;
+		polling = false;
+	}
+
+	onDestroy(stopPolling);
+
+	function startPolling() {
+		if (timer) return;
+		polling = true;
+		timer = setInterval(() => checkForm.requestSubmit(), 3000);
+	}
 
 	function pickFormat(chosen: Format) {
 		format = chosen;
 		rows = MAPPINGS[chosen.id].map((mapping) => ({ ...mapping }));
 	}
 
-	function runTest() {
-		testState = 'waiting';
-		setTimeout(() => (testState = 'ok'), 1600);
+	function finish() {
+		stopPolling();
+		goto(ws(`/alert-sources/${source?.slug}`));
 	}
-
-	let createForm: HTMLFormElement;
 </script>
 
 <div class="flex max-w-[720px] flex-col gap-4">
@@ -75,6 +92,11 @@
 					</button>
 				{/each}
 			</div>
+			<p class="text-subtle-foreground m-0 text-[12.5px]">
+				For a job that should check in on a schedule, create a
+				<a href={ws('/alerts/heartbeats')} class="text-brand-foreground underline">heartbeat monitor</a>
+				instead.
+			</p>
 			<Field.Field class="max-w-[320px] gap-1.5 space-y-0">
 				<Field.FieldLabel for="src-name" class="text-muted-foreground text-[13px] font-medium">
 					Name
@@ -89,21 +111,24 @@
 					Shows on alerts from this source.
 				</Field.FieldDescription>
 			</Field.Field>
-			<Button class="self-start" disabled={!format || !name.trim()} onclick={() => (step = 1)}>
+			<Button
+				class="self-start"
+				disabled={!format || !name.trim()}
+				onclick={() => createForm.requestSubmit()}
+			>
 				Continue
 			</Button>
 		</div>
-	{:else if step === 1}
+	{:else if step === 1 && source}
 		<div class="bg-card flex flex-col gap-4 rounded-xl border p-[18px]">
 			<p class="text-subtle-foreground m-0 text-[12.5px] leading-[1.55]">
-				The endpoint URL and signing secret are generated when you create the source, and shown on
-				its page. Requests are verified with an HMAC of the body using that secret ({format?.id ===
-				'heartbeat'
-					? 'optional for heartbeats'
-					: 'header X-Opsy-Signature'}). Rotate it any time.
+				Point {source.name} at this URL. Requests may be signed with an HMAC of the body in the
+				<code class="font-mono">X-Opsy-Signature</code> header using the secret below. Both are shown
+				again on the source page, and the secret can be rotated any time.
 			</p>
+			<CopyField label="Endpoint URL" value={source.ingestUrl} />
+			<CopyField label="Signing secret" value={source.secret} secret />
 			<div class="flex gap-2.5">
-				<Button variant="ghost" onclick={() => (step = 0)}>Back</Button>
 				<Button onclick={() => (step = 2)}>Continue</Button>
 			</div>
 		</div>
@@ -112,57 +137,63 @@
 			<MappingTable
 				bind:rows
 				editable={format?.id === 'generic'}
-				note={format?.id === 'generic' ? undefined : 'Pre-filled for this format. Mapping stays editable after setup.'}
+				note={format?.id === 'generic'
+					? undefined
+					: 'Pre-filled for this format. Mapping stays editable after setup.'}
 			/>
 			<div class="flex gap-2.5">
 				<Button variant="ghost" onclick={() => (step = 1)}>Back</Button>
-				<Button onclick={() => (step = 3)}>Continue</Button>
+				<Button
+					onclick={() => (format?.id === 'generic' ? mappingForm.requestSubmit() : (step = 3))}
+				>
+					Continue
+				</Button>
 			</div>
 		</div>
 	{:else}
 		<div class="bg-card flex flex-col gap-4 rounded-xl border p-[18px]">
 			<p class="text-muted-foreground m-0 text-[13.5px] leading-[1.6]">
-				Fire a test alert from {name} at the endpoint, or let Opsybot send one for you, and watch it
-				arrive.
+				Fire an alert from {name} at the endpoint and watch it arrive. It runs through your routing
+				rules like any other alert.
 			</p>
-			{#if testState === 'idle'}
-				<Button class="self-start" onclick={runTest}>
-					<SendIcon data-icon="inline-start" />
-					Send a test event
-				</Button>
-			{:else if testState === 'waiting'}
+
+			{#if events.length}
+				{@const latest = events[0]}
+				<Alert.Root tone={latest.outcome === 'failed' ? 'critical' : 'success'}>
+					<CheckIcon />
+					<Alert.Content>
+						<Alert.Title>
+							{latest.outcome === 'failed' ? 'Event rejected' : 'Event received'}
+						</Alert.Title>
+						<Alert.Description>
+							{latest.at} · {latest.outcome} · dedup key {latest.title}
+						</Alert.Description>
+					</Alert.Content>
+				</Alert.Root>
+			{:else if polling}
 				<div class="text-muted-foreground flex items-center gap-2.5">
 					<span
 						class="border-border border-t-primary size-4 shrink-0 animate-spin rounded-full border-2 motion-reduce:animate-none"
 						aria-hidden="true"
 					></span>
-					<span class="text-[13px]">Waiting for the event…</span>
+					<span class="text-[13px]">Waiting for the first event…</span>
 				</div>
-			{:else}
-				<Alert.Root tone="success">
-					<CheckIcon />
-					<Alert.Content>
-						<Alert.Title>Test event received</Alert.Title>
-						<Alert.Description>
-							2026-07-11 09:58:12 UTC · signature valid · parsed OK: title, severity, and service all
-							mapped. It would route through your rules; no one was paged.
-						</Alert.Description>
-					</Alert.Content>
-				</Alert.Root>
-				<div class="flex gap-2.5">
-					<Button onclick={() => createForm.requestSubmit()}>
+			{/if}
+
+			<div class="flex gap-2.5">
+				{#if events.length}
+					<Button onclick={finish}>
 						<CheckIcon data-icon="inline-start" />
 						Finish setup
 					</Button>
-					<Button variant="ghost" onclick={() => (testState = 'idle')}>Send another</Button>
-				</div>
-			{/if}
-			{#if testState !== 'ok'}
-				<div class="flex gap-2.5">
-					<Button variant="ghost" onclick={() => (step = 2)}>Back</Button>
-					<Button variant="ghost" onclick={() => createForm.requestSubmit()}>Skip verification</Button>
-				</div>
-			{/if}
+				{:else if polling}
+					<Button variant="ghost" onclick={stopPolling}>Stop waiting</Button>
+				{:else}
+					<Button onclick={startPolling}>Watch for an event</Button>
+				{/if}
+				<Button variant="ghost" onclick={() => (step = 2)}>Back</Button>
+				<Button variant="ghost" onclick={finish}>Skip verification</Button>
+			</div>
 		</div>
 	{/if}
 
@@ -178,12 +209,46 @@
 					return;
 				}
 				if (result.type !== 'success') return;
-				toast.success(`${name} is connected. Alerts route through your routing rules.`);
-				await goto(ws('/alert-sources'));
+				source = result.data?.source as Source;
+				step = 1;
 			}}
 	>
 		<input type="hidden" name="name" value={name} />
 		<input type="hidden" name="format" value={format?.id ?? ''} />
+	</form>
+
+	<form
+		method="POST"
+		action="?/mapping"
+		bind:this={mappingForm}
+		class="hidden"
+		use:enhance={() =>
+			async ({ result }) => {
+				if (result.type === 'failure') {
+					toast.error(String(result.data?.error ?? 'Could not save that mapping.'));
+					return;
+				}
+				if (result.type === 'success') step = 3;
+			}}
+	>
+		<input type="hidden" name="slug" value={source?.slug ?? ''} />
 		<input type="hidden" name="mapping" value={JSON.stringify(rows)} />
+	</form>
+
+	<form
+		method="POST"
+		action="?/check"
+		bind:this={checkForm}
+		class="hidden"
+		use:enhance={() =>
+			async ({ result }) => {
+				if (result.type !== 'success') return;
+				const received = (result.data?.events ?? []) as DeliveryEvent[];
+				if (!received.length) return;
+				events = received;
+				stopPolling();
+			}}
+	>
+		<input type="hidden" name="slug" value={source?.slug ?? ''} />
 	</form>
 </div>

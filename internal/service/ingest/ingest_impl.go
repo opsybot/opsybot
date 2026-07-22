@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/opsybot/opsybot/internal/config"
@@ -19,6 +20,9 @@ type srv struct {
 	events   repository.IngestEvent
 	routes   repository.AlertRoute
 	silences repository.Silence
+	monitors repository.AlertMonitor
+	limiter  repository.RateLimiter
+	lock     repository.Lock
 	cfg      config.Ingest
 }
 
@@ -29,9 +33,15 @@ func New(
 	events repository.IngestEvent,
 	routes repository.AlertRoute,
 	silences repository.Silence,
+	monitors repository.AlertMonitor,
+	limiter repository.RateLimiter,
+	lock repository.Lock,
 	cfg config.Ingest,
 ) service.Ingest {
-	return &srv{tx: tx, sources: sources, alerts: alerts, events: events, routes: routes, silences: silences, cfg: cfg}
+	return &srv{
+		tx: tx, sources: sources, alerts: alerts, events: events, routes: routes,
+		silences: silences, monitors: monitors, limiter: limiter, lock: lock, cfg: cfg,
+	}
 }
 
 type routingContext struct {
@@ -61,23 +71,66 @@ func (s *srv) routingContext(ctx context.Context, workspaceID string, now time.T
 	return routingContext{routes: routes, groupRules: groupRules, silences: silences, defaultRef: settings.DefaultPolicyRef}, nil
 }
 
-func (s *srv) route(ctx context.Context, rc routingContext, alert entity.Alert, now time.Time) error {
-	_, policyRef, _ := entity.RouteFor(rc.routes, alert, rc.defaultRef)
-	_, groupKey, _ := entity.GroupKeyFor(rc.groupRules, alert)
+func (s *srv) route(ctx context.Context, rc routingContext, alert entity.Alert, upsert entity.AlertUpsert, now time.Time, policyOverride string) error {
+	rule, groupKey, grouped := entity.GroupKeyFor(rc.groupRules, alert)
+	if !grouped || strings.HasPrefix(alert.DedupKey, entity.GroupDedupPrefix) {
+		return s.applyRouting(ctx, rc, alert, now, policyOverride)
+	}
+
+	parent, outcome, err := s.alerts.UpsertGroupParent(ctx, entity.GroupParentFor(rule, groupKey, upsert, alert), groupKey)
+	if err != nil {
+		return err
+	}
+	if err := s.alerts.AttachToParent(ctx, alert.ID, parent.ID); err != nil {
+		return err
+	}
+	if err := s.alerts.ApplyRouting(ctx, alert.ID, "", groupKey, "", now); err != nil {
+		return err
+	}
+	if err := s.alerts.AppendEvent(ctx, alert.ID, entity.AlertEvent{
+		At:     now,
+		Kind:   entity.AlertEventGrouped,
+		Text:   "Grouped into " + parent.Title,
+		Result: groupKey,
+	}); err != nil {
+		return err
+	}
+	if outcome == entity.IngestOutcomeCreated {
+		if err := s.alerts.AppendEvent(ctx, parent.ID, entity.AlertEvent{
+			At:   now,
+			Kind: entity.AlertEventGrouped,
+			Text: rule.Describes(),
+		}); err != nil {
+			return err
+		}
+	}
+	rolled, err := s.alerts.RollUpParent(ctx, parent.ID, now)
+	if err != nil {
+		return err
+	}
+	return s.applyRouting(ctx, rc, rolled, now, policyOverride)
+}
+
+func (s *srv) applyRouting(ctx context.Context, rc routingContext, alert entity.Alert, now time.Time, policyOverride string) error {
+	fallback := rc.defaultRef
+	if policyOverride != "" {
+		fallback = policyOverride
+	}
+	_, policyRef, _ := entity.RouteFor(rc.routes, alert, fallback)
 	silence, suppressed := entity.SilenceFor(rc.silences, alert, now)
 
 	silenceID := ""
 	if suppressed {
 		silenceID = silence.ID
 	}
-	if err := s.alerts.ApplyRouting(ctx, alert.ID, policyRef, groupKey, silenceID, now); err != nil {
+	if err := s.alerts.ApplyRouting(ctx, alert.ID, policyRef, alert.GroupKey, silenceID, now); err != nil {
 		return err
 	}
 	if err := s.alerts.AppendEvent(ctx, alert.ID, entity.AlertEvent{
 		At:     now,
 		Kind:   entity.AlertEventRouted,
 		Text:   "Routed to " + policyRef,
-		Result: groupKey,
+		Result: alert.GroupKey,
 	}); err != nil {
 		return err
 	}
@@ -118,6 +171,9 @@ func (s *srv) Webhook(ctx context.Context, req entity.IngestRequest) ([]entity.I
 	if err := s.verifySignature(ctx, src, req, now); err != nil {
 		return nil, err
 	}
+	if err := s.guardFlood(ctx, src, now); err != nil {
+		return nil, err
+	}
 
 	parsed, err := parseFor(src.Format, req.Body, src, now)
 	if err != nil {
@@ -138,7 +194,7 @@ func (s *srv) Webhook(ctx context.Context, req entity.IngestRequest) ([]entity.I
 			if !normalized.Valid() {
 				continue
 			}
-			result, err := s.apply(ctx, src, normalized, now, rc)
+			result, err := s.apply(ctx, src, normalized, now, rc, "")
 			if err != nil {
 				return err
 			}
@@ -152,7 +208,7 @@ func (s *srv) Webhook(ctx context.Context, req entity.IngestRequest) ([]entity.I
 	return results, nil
 }
 
-func (s *srv) apply(ctx context.Context, src entity.AlertSource, in entity.IngestedAlert, now time.Time, rc routingContext) (entity.IngestResult, error) {
+func (s *srv) apply(ctx context.Context, src entity.AlertSource, in entity.IngestedAlert, now time.Time, rc routingContext, policyOverride string) (entity.IngestResult, error) {
 	dedupKey := entity.DeriveDedupKey(src.ID, in.DedupKeyRaw, in.Title, in.SourceLabel, in.Labels)
 
 	upsert := entity.AlertUpsert{
@@ -203,7 +259,7 @@ func (s *srv) apply(ctx context.Context, src entity.AlertSource, in entity.Inges
 		return entity.IngestResult{}, err
 	}
 
-	if err := s.route(ctx, rc, alert, now); err != nil {
+	if err := s.route(ctx, rc, alert, upsert, now, policyOverride); err != nil {
 		return entity.IngestResult{}, err
 	}
 	return s.finish(ctx, src, alert.ID, dedupKey, outcome, now)
@@ -249,6 +305,11 @@ func (s *srv) applyResolve(ctx context.Context, src entity.AlertSource, upsert e
 	}); err != nil {
 		return entity.IngestResult{}, err
 	}
+	if alert.ParentAlertID != "" {
+		if _, err := s.alerts.RollUpParent(ctx, alert.ParentAlertID, endedAt); err != nil {
+			return entity.IngestResult{}, err
+		}
+	}
 	return s.finish(ctx, src, alert.ID, dedupKey, outcome, endedAt)
 }
 
@@ -264,6 +325,162 @@ func (s *srv) finish(ctx context.Context, src entity.AlertSource, alertID, dedup
 		return entity.IngestResult{}, err
 	}
 	return entity.IngestResult{AlertID: alertID, DedupKey: dedupKey, Outcome: outcome}, nil
+}
+
+func (s *srv) guardFlood(ctx context.Context, src entity.AlertSource, now time.Time) error {
+	if s.cfg.RatePerMin <= 0 {
+		return nil
+	}
+	limit := entity.RateLimit{Rate: s.cfg.RatePerMin, Period: time.Minute, Burst: s.cfg.RatePerMin}
+	result, err := s.limiter.Allow(ctx, string(entity.RateScopeIngest)+":"+src.ID, limit)
+	if err != nil {
+		return err
+	}
+	if result.Allowed {
+		return nil
+	}
+
+	err = s.tx.WithTx(ctx, func(ctx context.Context) error {
+		alert, outcome, err := s.alerts.UpsertOpen(ctx, entity.FloodAlert(src, s.cfg.RatePerMin, now))
+		if err != nil {
+			return err
+		}
+		if outcome == entity.IngestOutcomeCreated {
+			if err := s.alerts.AppendEvent(ctx, alert.ID, entity.AlertEvent{
+				At:   now,
+				Kind: entity.AlertEventReceived,
+				Text: "Ingest budget exceeded, so further events from this source are being dropped.",
+			}); err != nil {
+				return err
+			}
+		}
+		return s.events.Record(ctx, entity.IngestEvent{
+			WorkspaceID: src.WorkspaceID,
+			SourceID:    src.ID,
+			AlertID:     alert.ID,
+			DedupKey:    alert.DedupKey,
+			Outcome:     entity.IngestOutcomeFloodDropped,
+			At:          now,
+		})
+	})
+	if err != nil {
+		return err
+	}
+	return entity.ErrIngestFlooded
+}
+
+func (s *srv) CheckIn(ctx context.Context, req entity.CheckInRequest) (entity.IngestResult, error) {
+	src, err := s.sources.GetByToken(ctx, req.Token)
+	if err != nil {
+		return entity.IngestResult{}, err
+	}
+	if src.Format != entity.SourceFormatHeartbeat {
+		return entity.IngestResult{}, entity.ErrAlertMonitorFormat
+	}
+	if src.Paused {
+		return entity.IngestResult{}, entity.ErrAlertSourcePaused
+	}
+
+	now := req.ReceivedAt
+	if now.IsZero() {
+		now = time.Now().UTC()
+	}
+
+	monitor, err := s.monitors.GetBySourceID(ctx, src.ID)
+	if err != nil {
+		return entity.IngestResult{}, err
+	}
+
+	result := entity.IngestResult{DedupKey: monitor.DedupKey(), Outcome: entity.IngestOutcomeDuplicate}
+	err = s.tx.WithTx(ctx, func(ctx context.Context) error {
+		if err := s.monitors.RecordCheckIn(ctx, monitor.ID, now); err != nil {
+			return err
+		}
+		alert, outcome, err := s.alerts.ResolveByDedupKey(ctx, src.WorkspaceID, src.ID, monitor.DedupKey(), now, entity.ResolveModeSource)
+		switch {
+		case errors.Is(err, entity.ErrAlertNotFound):
+		case err != nil:
+			return err
+		case outcome == entity.IngestOutcomeResolved:
+			if err := s.alerts.AppendEvent(ctx, alert.ID, entity.AlertEvent{
+				At:   now,
+				Kind: entity.AlertEventResolved,
+				Text: monitor.Name + " checked in again",
+			}); err != nil {
+				return err
+			}
+			result = entity.IngestResult{AlertID: alert.ID, DedupKey: monitor.DedupKey(), Outcome: outcome}
+		}
+		if err := s.sources.MarkDelivery(ctx, src.ID, now, false); err != nil {
+			return err
+		}
+		return s.events.Record(ctx, entity.IngestEvent{
+			WorkspaceID: src.WorkspaceID,
+			SourceID:    src.ID,
+			AlertID:     result.AlertID,
+			DedupKey:    result.DedupKey,
+			Outcome:     result.Outcome,
+			At:          now,
+		})
+	})
+	if err != nil {
+		return entity.IngestResult{}, err
+	}
+	return result, nil
+}
+
+func (s *srv) SweepMonitors(ctx context.Context, now time.Time) (int, error) {
+	due, err := s.monitors.ListDue(ctx, now, entity.MonitorSweepBatch)
+	if err != nil {
+		return 0, err
+	}
+
+	fired := 0
+	for _, monitor := range due {
+		raised, err := s.fireMonitor(ctx, monitor, now)
+		if err != nil {
+			return fired, err
+		}
+		if raised {
+			fired++
+		}
+	}
+	return fired, nil
+}
+
+func (s *srv) fireMonitor(ctx context.Context, monitor entity.AlertMonitor, now time.Time) (bool, error) {
+	raised := false
+	err := s.tx.WithTx(ctx, func(ctx context.Context) error {
+		held, err := s.lock.TryJob(ctx, "monitor:"+monitor.ID)
+		if err != nil || !held {
+			return err
+		}
+		src, err := s.sources.GetBySlug(ctx, monitor.WorkspaceID, monitor.Slug)
+		if err != nil {
+			return err
+		}
+		rc, err := s.routingContext(ctx, monitor.WorkspaceID, now)
+		if err != nil {
+			return err
+		}
+		if _, err := s.apply(ctx, src, entity.MonitorAlert(monitor, src, now).Normalize(src, now), now, rc, monitor.PolicyRef); err != nil {
+			return err
+		}
+		raised = true
+		return nil
+	})
+	return raised, err
+}
+
+func (s *srv) ExpireAlerts(ctx context.Context, now time.Time) (int, error) {
+	return s.alerts.ExpireStale(ctx, now, entity.AlertExpireBatch)
+}
+
+func (s *srv) PruneIngestHistory(ctx context.Context, now time.Time) (int, error) {
+	if s.cfg.FailureRetention <= 0 {
+		return 0, nil
+	}
+	return s.events.Prune(ctx, now.Add(-s.cfg.FailureRetention))
 }
 
 func (s *srv) verifySignature(ctx context.Context, src entity.AlertSource, req entity.IngestRequest, now time.Time) error {

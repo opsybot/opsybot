@@ -8,7 +8,7 @@ export const load: PageServerLoad = async ({ params, url, cookies }) => {
 	const service = getService(params.id);
 	if (!service) error(404, `No service called ${params.id}.`);
 
-	const alerts = await listAlerts(cookies, params.workspace);
+	const { alerts } = await listAlerts(cookies, params.workspace, { status: ['open', 'acked'] });
 
 	return {
 		service,

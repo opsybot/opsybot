@@ -15,9 +15,11 @@ var baseSet = wire.NewSet(
 	pkg.Set,
 	repositoryProviders,
 	serviceProviders,
+	cronProviders,
 	handler.Set,
 	wire.Struct(new(App), "*"),
 	wire.Struct(new(Migrator), "*"),
+	wire.Struct(new(Worker), "*"),
 )
 
 func InitApp(cfgFile string) (*App, func(), error) {
@@ -26,6 +28,11 @@ func InitApp(cfgFile string) (*App, func(), error) {
 }
 
 func InitMigrator(cfgFile string) (*Migrator, func(), error) {
+	wire.Build(baseSet)
+	return nil, nil, nil
+}
+
+func InitWorker(cfgFile string) (*Worker, func(), error) {
 	wire.Build(baseSet)
 	return nil, nil, nil
 }

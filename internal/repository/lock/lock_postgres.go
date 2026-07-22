@@ -33,3 +33,12 @@ func (r *repo) Instance(ctx context.Context) error {
 	}
 	return nil
 }
+
+func (r *repo) TryJob(ctx context.Context, name string) (bool, error) {
+	var acquired bool
+	if err := r.db.Querier(ctx).QueryRowContext(ctx,
+		`SELECT pg_try_advisory_xact_lock(hashtextextended($1, 0))`, "opsybot:job:"+name).Scan(&acquired); err != nil {
+		return false, fmt.Errorf("try job lock: %w", err)
+	}
+	return acquired, nil
+}

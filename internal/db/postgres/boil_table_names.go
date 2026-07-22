@@ -9,6 +9,7 @@ var TableNames = struct {
 	AlertIngestEvents         string
 	AlertIngestFailures       string
 	AlertLinks                string
+	AlertMonitors             string
 	AlertRouteConditions      string
 	AlertRoutes               string
 	AlertSettings             string
@@ -42,6 +43,7 @@ var TableNames = struct {
 	AlertIngestEvents:         "alert_ingest_events",
 	AlertIngestFailures:       "alert_ingest_failures",
 	AlertLinks:                "alert_links",
+	AlertMonitors:             "alert_monitors",
 	AlertRouteConditions:      "alert_route_conditions",
 	AlertRoutes:               "alert_routes",
 	AlertSettings:             "alert_settings",

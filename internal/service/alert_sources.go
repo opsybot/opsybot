@@ -18,4 +18,5 @@ type AlertSources interface {
 	RotateSecret(ctx context.Context, workspaceSlug, sourceSlug string) (entity.AlertSource, error)
 	SaveMapping(ctx context.Context, workspaceSlug, sourceSlug string, mappings []entity.SourceMapping) (entity.AlertSource, error)
 	Events(ctx context.Context, workspaceSlug, sourceSlug string, limit int) ([]entity.IngestEvent, error)
+	Volume(ctx context.Context, workspaceSlug string) (map[string][]int, error)
 }

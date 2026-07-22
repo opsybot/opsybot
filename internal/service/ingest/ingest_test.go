@@ -11,9 +11,12 @@ import (
 	"github.com/opsybot/opsybot/internal/config"
 	"github.com/opsybot/opsybot/internal/entity"
 	"github.com/opsybot/opsybot/internal/repository/alert"
+	"github.com/opsybot/opsybot/internal/repository/alert_monitor"
 	"github.com/opsybot/opsybot/internal/repository/alert_route"
 	"github.com/opsybot/opsybot/internal/repository/alert_source"
 	"github.com/opsybot/opsybot/internal/repository/ingest_event"
+	"github.com/opsybot/opsybot/internal/repository/lock"
+	"github.com/opsybot/opsybot/internal/repository/ratelimit"
 	"github.com/opsybot/opsybot/internal/repository/silence"
 )
 
@@ -28,6 +31,9 @@ type harness struct {
 	events   *ingest_event.MockIngestEvent
 	routes   *alert_route.MockAlertRoute
 	silences *silence.MockSilence
+	monitors *alert_monitor.MockAlertMonitor
+	limiter  *ratelimit.MockRateLimiter
+	lock     *lock.MockLock
 }
 
 func newHarness(t *testing.T) *harness {
@@ -39,6 +45,9 @@ func newHarness(t *testing.T) *harness {
 		events:   ingest_event.NewMockIngestEvent(ctrl),
 		routes:   alert_route.NewMockAlertRoute(ctrl),
 		silences: silence.NewMockSilence(ctrl),
+		monitors: alert_monitor.NewMockAlertMonitor(ctrl),
+		limiter:  ratelimit.NewMockRateLimiter(ctrl),
+		lock:     lock.NewMockLock(ctrl),
 	}
 	h.srv = &srv{
 		tx:       fakeTx{},
@@ -47,6 +56,9 @@ func newHarness(t *testing.T) *harness {
 		events:   h.events,
 		routes:   h.routes,
 		silences: h.silences,
+		monitors: h.monitors,
+		limiter:  h.limiter,
+		lock:     h.lock,
 		cfg:      config.Ingest{MaxBodyBytes: 1 << 20},
 	}
 	h.routes.EXPECT().List(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()

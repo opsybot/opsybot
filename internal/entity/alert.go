@@ -70,6 +70,10 @@ const (
 	FloodDedupPrefix          = "opsybot/flood/"
 	MonitorDedupPrefix        = "opsybot/monitor/"
 	GroupDedupPrefix          = "opsybot/group/"
+	AlertExpireBatch          = 500
+	AlertFacetLimit           = 200
+	SourceVolumeWindow        = 24 * time.Hour
+	SourceVolumeBuckets       = 24
 )
 
 type AlertLink struct {
@@ -83,6 +87,8 @@ type AlertChild struct {
 	Title      string
 	Count      int
 	LastSeenAt time.Time
+	Status     AlertStatus
+	Severity   AlertSeverity
 }
 
 type AlertEvent struct {
@@ -149,9 +155,19 @@ type AlertFilter struct {
 	Statuses   []AlertStatus
 	Severities []AlertSeverity
 	SourceIDs  []string
+	Sources    []string
+	Services   []string
+	Labels     []string
+	Since      time.Time
 	Query      string
 	Cursor     string
 	Limit      int
+}
+
+type AlertFacets struct {
+	Sources  []string
+	Services []string
+	Labels   []string
 }
 
 var (

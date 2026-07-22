@@ -94,6 +94,19 @@ func (r *repo) ListFailures(ctx context.Context, workspaceID string, limit int) 
 	return out, nil
 }
 
+func (r *repo) Prune(ctx context.Context, before time.Time) (int, error) {
+	exec := r.db.Querier(ctx)
+	failures, err := dbpostgres.AlertIngestFailures(qm.Where("at < ?", before)).DeleteAll(ctx, exec)
+	if err != nil {
+		return 0, fmt.Errorf("prune ingest failures: %w", err)
+	}
+	events, err := dbpostgres.AlertIngestEvents(qm.Where("at < ?", before)).DeleteAll(ctx, exec)
+	if err != nil {
+		return 0, fmt.Errorf("prune ingest events: %w", err)
+	}
+	return int(failures + events), nil
+}
+
 func (r *repo) ListBySource(ctx context.Context, sourceID string, limit int) ([]entity.IngestEvent, error) {
 	if limit <= 0 || limit > entity.AlertListMaxPageSize {
 		limit = entity.AlertListDefaultPageSize

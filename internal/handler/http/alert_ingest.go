@@ -84,10 +84,40 @@ func (h *ingestRoutes) webhook(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(out)
 }
 
+func (h *ingestRoutes) checkIn(w http.ResponseWriter, r *http.Request) {
+	select {
+	case h.sem <- struct{}{}:
+		defer func() { <-h.sem }()
+	default:
+		w.Header().Set("Retry-After", "1")
+		writeIngestProblem(w, http.StatusTooManyRequests, "Too many requests", "The ingest queue is full. Retry shortly.")
+		return
+	}
+
+	result, err := h.ingest.CheckIn(r.Context(), entity.CheckInRequest{
+		Token:      chi.URLParam(r, "token"),
+		RemoteIP:   entity.RequestInfoFrom(r.Context()).IP,
+		ReceivedAt: time.Now().UTC(),
+	})
+	if err != nil {
+		h.writeError(w, r, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+	_ = json.NewEncoder(w).Encode(ingestResponse{
+		Accepted: 1,
+		Alerts:   []ingestResponseAlert{{ID: result.AlertID, DedupKey: result.DedupKey, Outcome: string(result.Outcome)}},
+	})
+}
+
 func (h *ingestRoutes) writeError(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
-	case errors.Is(err, entity.ErrAlertSourceNotFound):
+	case errors.Is(err, entity.ErrAlertSourceNotFound), errors.Is(err, entity.ErrAlertMonitorNotFound):
 		writeIngestProblem(w, http.StatusNotFound, "Unknown endpoint", "That ingest URL does not match any source.")
+	case errors.Is(err, entity.ErrAlertMonitorFormat):
+		writeIngestProblem(w, http.StatusConflict, "Not a monitor", "That URL belongs to a webhook source, not a heartbeat monitor.")
 	case errors.Is(err, entity.ErrAlertSourcePaused):
 		writeIngestProblem(w, http.StatusConflict, "Source paused", "This source is paused, so events are not accepted.")
 	case errors.Is(err, entity.ErrAlertSourceSignature):

@@ -12,6 +12,7 @@ package alerts
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	entity "github.com/opsybot/opsybot/internal/entity"
 	gomock "go.uber.org/mock/gomock"
@@ -54,6 +55,21 @@ func (m *MockAlerts) Acknowledge(ctx context.Context, workspaceSlug string, ids 
 func (mr *MockAlertsMockRecorder) Acknowledge(ctx, workspaceSlug, ids any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Acknowledge", reflect.TypeOf((*MockAlerts)(nil).Acknowledge), ctx, workspaceSlug, ids)
+}
+
+// Facets mocks base method.
+func (m *MockAlerts) Facets(ctx context.Context, workspaceSlug string, since time.Time) (entity.AlertFacets, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Facets", ctx, workspaceSlug, since)
+	ret0, _ := ret[0].(entity.AlertFacets)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Facets indicates an expected call of Facets.
+func (mr *MockAlertsMockRecorder) Facets(ctx, workspaceSlug, since any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Facets", reflect.TypeOf((*MockAlerts)(nil).Facets), ctx, workspaceSlug, since)
 }
 
 // Failures mocks base method.

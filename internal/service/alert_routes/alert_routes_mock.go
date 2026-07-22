@@ -86,6 +86,36 @@ func (mr *MockAlertRoutesMockRecorder) List(ctx, workspaceSlug any) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockAlertRoutes)(nil).List), ctx, workspaceSlug)
 }
 
+// ListGroupRules mocks base method.
+func (m *MockAlertRoutes) ListGroupRules(ctx context.Context, workspaceSlug string) ([]entity.GroupRule, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListGroupRules", ctx, workspaceSlug)
+	ret0, _ := ret[0].([]entity.GroupRule)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListGroupRules indicates an expected call of ListGroupRules.
+func (mr *MockAlertRoutesMockRecorder) ListGroupRules(ctx, workspaceSlug any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListGroupRules", reflect.TypeOf((*MockAlertRoutes)(nil).ListGroupRules), ctx, workspaceSlug)
+}
+
+// Preview mocks base method.
+func (m *MockAlertRoutes) Preview(ctx context.Context, workspaceSlug, payload string) (entity.RoutePreview, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Preview", ctx, workspaceSlug, payload)
+	ret0, _ := ret[0].(entity.RoutePreview)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Preview indicates an expected call of Preview.
+func (mr *MockAlertRoutesMockRecorder) Preview(ctx, workspaceSlug, payload any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Preview", reflect.TypeOf((*MockAlertRoutes)(nil).Preview), ctx, workspaceSlug, payload)
+}
+
 // Reorder mocks base method.
 func (m *MockAlertRoutes) Reorder(ctx context.Context, workspaceSlug string, ids []string) error {
 	m.ctrl.T.Helper()
@@ -98,6 +128,21 @@ func (m *MockAlertRoutes) Reorder(ctx context.Context, workspaceSlug string, ids
 func (mr *MockAlertRoutesMockRecorder) Reorder(ctx, workspaceSlug, ids any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reorder", reflect.TypeOf((*MockAlertRoutes)(nil).Reorder), ctx, workspaceSlug, ids)
+}
+
+// SaveGroupRules mocks base method.
+func (m *MockAlertRoutes) SaveGroupRules(ctx context.Context, workspaceSlug string, rules []entity.GroupRule) ([]entity.GroupRule, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SaveGroupRules", ctx, workspaceSlug, rules)
+	ret0, _ := ret[0].([]entity.GroupRule)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SaveGroupRules indicates an expected call of SaveGroupRules.
+func (mr *MockAlertRoutesMockRecorder) SaveGroupRules(ctx, workspaceSlug, rules any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveGroupRules", reflect.TypeOf((*MockAlertRoutes)(nil).SaveGroupRules), ctx, workspaceSlug, rules)
 }
 
 // SetDefaultPolicy mocks base method.

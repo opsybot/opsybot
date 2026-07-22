@@ -3,6 +3,7 @@ package entity
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"path"
 	"sort"
 	"strings"
@@ -81,6 +82,76 @@ func (g GroupRule) Matches(a Alert) bool {
 		}
 	}
 	return len(g.Fields) > 0
+}
+
+func PreviewAlert(payload string) (Alert, error) {
+	var raw map[string]any
+	if err := json.Unmarshal([]byte(payload), &raw); err != nil {
+		return Alert{}, ParseFailure(FailureInvalidJSON, "That sample is not valid JSON.")
+	}
+
+	text := func(key string) string {
+		s, _ := raw[key].(string)
+		return s
+	}
+	a := Alert{
+		Title:       text("title"),
+		SourceLabel: text("source"),
+		ServiceName: text("service"),
+		Severity:    NormalizeSeverity(text("severity"), SeverityWarning),
+		Labels:      map[string]string{},
+	}
+	if labels, ok := raw["labels"].(map[string]any); ok {
+		for key, value := range labels {
+			if s, ok := value.(string); ok {
+				a.Labels[key] = s
+			}
+		}
+	}
+	if strings.TrimSpace(a.Title) == "" {
+		return Alert{}, ParseFailure(FailureMissingTitle, "That sample needs a title.")
+	}
+	return a, nil
+}
+
+func (g GroupRule) Label(a Alert) string {
+	values := make([]string, 0, len(g.Fields))
+	for _, field := range g.Fields {
+		if v, ok := a.FieldValue(field); ok && strings.TrimSpace(v) != "" {
+			values = append(values, v)
+		}
+	}
+	return strings.Join(values, " · ")
+}
+
+func (g GroupRule) Describes() string {
+	return "Grouped by " + strings.Join(g.Fields, ", ") + ". Matching alerts collapse into this one and it pages once."
+}
+
+func GroupParentFor(g GroupRule, groupKey string, child AlertUpsert, a Alert) AlertUpsert {
+	labels := make(map[string]string, len(g.Fields))
+	for _, field := range g.Fields {
+		key, ok := strings.CutPrefix(field, "labels.")
+		if !ok {
+			continue
+		}
+		if v, found := a.Labels[key]; found {
+			labels[key] = v
+		}
+	}
+	return AlertUpsert{
+		WorkspaceID: child.WorkspaceID,
+		SourceID:    child.SourceID,
+		DedupKey:    GroupDedupPrefix + groupKey,
+		Title:       g.Label(a),
+		Description: g.Describes(),
+		Severity:    child.Severity,
+		SourceLabel: child.SourceLabel,
+		ServiceName: child.ServiceName,
+		Labels:      labels,
+		StartedAt:   child.StartedAt,
+		LastSeenAt:  child.LastSeenAt,
+	}
 }
 
 func GroupKeyFor(rules []GroupRule, a Alert) (GroupRule, string, bool) {

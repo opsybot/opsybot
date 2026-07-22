@@ -49,6 +49,18 @@ func (h *handler) alertDTO(a entity.Alert) api.Alert {
 		})
 	}
 
+	children := make([]api.AlertChild, 0, len(a.Children))
+	for _, c := range a.Children {
+		children = append(children, api.AlertChild{
+			Id:         c.ID,
+			Title:      c.Title,
+			Count:      c.Count,
+			LastSeenAt: c.LastSeenAt,
+			Status:     string(c.Status),
+			Severity:   string(c.Severity),
+		})
+	}
+
 	dto := api.Alert{
 		Id:              a.ID,
 		DedupKey:        a.DedupKey,
@@ -70,6 +82,9 @@ func (h *handler) alertDTO(a entity.Alert) api.Alert {
 	}
 	if a.GroupKey != "" {
 		dto.GroupKey = &a.GroupKey
+	}
+	if len(children) > 0 {
+		dto.Children = &children
 	}
 	if !a.AckedAt.IsZero() {
 		at := a.AckedAt
@@ -111,6 +126,18 @@ func (h *handler) ListAlerts(ctx context.Context, request api.ListAlertsRequestO
 			filter.Severities = append(filter.Severities, entity.AlertSeverity(s))
 		}
 	}
+	if request.Params.Source != nil {
+		filter.Sources = *request.Params.Source
+	}
+	if request.Params.Service != nil {
+		filter.Services = *request.Params.Service
+	}
+	if request.Params.Label != nil {
+		filter.Labels = *request.Params.Label
+	}
+	if request.Params.Since != nil {
+		filter.Since = *request.Params.Since
+	}
 	if request.Params.Query != nil {
 		filter.Query = *request.Params.Query
 	}
@@ -135,11 +162,23 @@ func (h *handler) ListAlerts(ctx context.Context, request api.ListAlertsRequestO
 		return nil, err
 	}
 
+	facets, err := h.alerts.Facets(ctx, request.WorkspaceId, filter.Since)
+	if err != nil {
+		return nil, err
+	}
+
 	items := make([]api.Alert, 0, len(list))
 	for _, a := range list {
 		items = append(items, h.alertDTO(a))
 	}
-	out := api.ListAlerts200JSONResponse{Items: items}
+	out := api.ListAlerts200JSONResponse{
+		Items: items,
+		Facets: &api.AlertFacets{
+			Sources:  facets.Sources,
+			Services: facets.Services,
+			Labels:   facets.Labels,
+		},
+	}
 	if next != "" {
 		out.NextCursor = &next
 	}

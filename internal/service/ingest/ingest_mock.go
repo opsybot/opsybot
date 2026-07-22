@@ -12,6 +12,7 @@ package ingest
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	entity "github.com/opsybot/opsybot/internal/entity"
 	gomock "go.uber.org/mock/gomock"
@@ -39,6 +40,66 @@ func NewMockIngest(ctrl *gomock.Controller) *MockIngest {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockIngest) EXPECT() *MockIngestMockRecorder {
 	return m.recorder
+}
+
+// CheckIn mocks base method.
+func (m *MockIngest) CheckIn(ctx context.Context, req entity.CheckInRequest) (entity.IngestResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckIn", ctx, req)
+	ret0, _ := ret[0].(entity.IngestResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckIn indicates an expected call of CheckIn.
+func (mr *MockIngestMockRecorder) CheckIn(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckIn", reflect.TypeOf((*MockIngest)(nil).CheckIn), ctx, req)
+}
+
+// ExpireAlerts mocks base method.
+func (m *MockIngest) ExpireAlerts(ctx context.Context, now time.Time) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExpireAlerts", ctx, now)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ExpireAlerts indicates an expected call of ExpireAlerts.
+func (mr *MockIngestMockRecorder) ExpireAlerts(ctx, now any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExpireAlerts", reflect.TypeOf((*MockIngest)(nil).ExpireAlerts), ctx, now)
+}
+
+// PruneIngestHistory mocks base method.
+func (m *MockIngest) PruneIngestHistory(ctx context.Context, now time.Time) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PruneIngestHistory", ctx, now)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PruneIngestHistory indicates an expected call of PruneIngestHistory.
+func (mr *MockIngestMockRecorder) PruneIngestHistory(ctx, now any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PruneIngestHistory", reflect.TypeOf((*MockIngest)(nil).PruneIngestHistory), ctx, now)
+}
+
+// SweepMonitors mocks base method.
+func (m *MockIngest) SweepMonitors(ctx context.Context, now time.Time) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SweepMonitors", ctx, now)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SweepMonitors indicates an expected call of SweepMonitors.
+func (mr *MockIngestMockRecorder) SweepMonitors(ctx, now any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SweepMonitors", reflect.TypeOf((*MockIngest)(nil).SweepMonitors), ctx, now)
 }
 
 // Webhook mocks base method.

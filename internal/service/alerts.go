@@ -4,12 +4,14 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/opsybot/opsybot/internal/entity"
 )
 
 type Alerts interface {
 	List(ctx context.Context, workspaceSlug string, filter entity.AlertFilter) ([]entity.Alert, string, error)
+	Facets(ctx context.Context, workspaceSlug string, since time.Time) (entity.AlertFacets, error)
 	Get(ctx context.Context, workspaceSlug, alertID string) (entity.Alert, error)
 	Acknowledge(ctx context.Context, workspaceSlug string, ids []string) (int, error)
 	Resolve(ctx context.Context, workspaceSlug string, ids []string) (int, error)

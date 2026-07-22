@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"errors"
 	"testing"
 	"time"
 )
@@ -178,5 +179,40 @@ func TestSilenceForPicksOnlyActive(t *testing.T) {
 	got, ok := SilenceFor(silences, sampleAlert(), now)
 	if !ok || got.ID != "active" {
 		t.Errorf("got %q (%v), want the active silence", got.ID, ok)
+	}
+}
+
+func TestPreviewAlertMapsTheSamplePayload(t *testing.T) {
+	sample := `{
+  "title": "payments-api p99 above 800 ms",
+  "severity": "high",
+  "source": "prometheus-prod",
+  "service": "payments-api",
+  "labels": { "env": "prod", "team": "payments", "region": "eu-west-1" }
+}`
+
+	alert, err := PreviewAlert(sample)
+	if err != nil {
+		t.Fatalf("PreviewAlert: %v", err)
+	}
+
+	routes := []AlertRoute{{ID: "r1", PolicyRef: "payments-primary", Conditions: []RouteCondition{
+		{Field: "service", Op: ConditionIs, Value: "payments-api"},
+		{Field: "labels.env", Op: ConditionIs, Value: "prod"},
+	}}}
+	if _, policy, matched := RouteFor(routes, alert, DefaultPolicyRef); !matched || policy != "payments-primary" {
+		t.Errorf("routed to %q (matched %v), want payments-primary: the preview must agree with ingest", policy, matched)
+	}
+	if alert.Severity != SeverityHigh {
+		t.Errorf("severity = %q, want high", alert.Severity)
+	}
+}
+
+func TestPreviewAlertRejectsUnusableSamples(t *testing.T) {
+	if _, err := PreviewAlert("{ not json"); !errors.Is(err, ErrIngestUnparseable) {
+		t.Errorf("err = %v, want an unparseable-payload error", err)
+	}
+	if _, err := PreviewAlert(`{"service":"payments-api"}`); !errors.Is(err, ErrIngestUnparseable) {
+		t.Errorf("err = %v, want an error: a sample with no title cannot be routed", err)
 	}
 }

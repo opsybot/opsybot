@@ -18,7 +18,10 @@ export const SEVERITY_SHORT: Record<AlertSeverity, string> = {
 export type AlertChild = {
 	id: string;
 	title: string;
+	count: number;
 	lastSeenAt: string;
+	status: AlertStatus;
+	severity: AlertSeverity;
 };
 
 export type Alert = {
@@ -79,15 +82,20 @@ export type IngestionFailure = {
 	payload: string;
 };
 
-export type HeartbeatState = 'healthy' | 'missed';
+export type HeartbeatState = 'healthy' | 'missed' | 'paused';
 
 export type Heartbeat = {
 	id: string;
+	slug: string;
 	name: string;
 	state: HeartbeatState;
+	intervalSeconds: number;
+	graceSeconds: number;
 	interval: string;
 	grace: string;
 	lastSeenAt: string | null;
+	dueAt: string | null;
+	checkInUrl: string;
 	policy: string;
 };
 
@@ -99,21 +107,20 @@ export const STATUSES: { id: AlertStatus; label: string }[] = [
 	{ id: 'resolved', label: 'Resolved' }
 ];
 
-export const ESCALATION_POLICIES = ['platform-default', 'payments-primary', 'frontend-daytime'];
-
 export const SCOPE_FIELDS = ['source', 'service', 'label'];
 
 export const INTERVALS = [
-	{ value: '1m', label: 'Every minute' },
-	{ value: '5m', label: 'Every 5 minutes' },
-	{ value: '1h', label: 'Every hour' },
-	{ value: '24h', label: 'Every 24 hours' }
+	{ value: '60', label: 'Every minute' },
+	{ value: '300', label: 'Every 5 minutes' },
+	{ value: '3600', label: 'Every hour' },
+	{ value: '86400', label: 'Every 24 hours' }
 ];
 
 export const GRACE_PERIODS = [
-	{ value: '2m', label: '2 minutes' },
-	{ value: '10m', label: '10 minutes' },
-	{ value: '30m', label: '30 minutes' }
+	{ value: '0', label: 'None' },
+	{ value: '120', label: '2 minutes' },
+	{ value: '600', label: '10 minutes' },
+	{ value: '1800', label: '30 minutes' }
 ];
 
 export const DURATIONS = [

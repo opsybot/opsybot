@@ -5,7 +5,7 @@ import { save } from './save';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ url, params, cookies }) => {
-	const alerts = await listAlerts(cookies, params.workspace);
+	const { alerts } = await listAlerts(cookies, params.workspace, { status: ['open', 'acked'] });
 	const services = listServices(alerts);
 
 	const editing = url.searchParams.get('edit');

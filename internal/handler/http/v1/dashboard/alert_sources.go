@@ -21,6 +21,8 @@ func sourceProblem(err error) (int, api.Problem) {
 		return http.StatusBadRequest, prob(http.StatusBadRequest, "Invalid source", validationDetail(err), "")
 	case errors.Is(err, entity.ErrAlertSourceMappingEmpty):
 		return http.StatusBadRequest, prob(http.StatusBadRequest, "Mapping required", "A generic source needs a field mapping.", "")
+	case errors.Is(err, entity.ErrAlertMonitorFormat):
+		return http.StatusBadRequest, prob(http.StatusBadRequest, "Use a monitor", "Heartbeats are created as monitors, which carry the check-in interval.", "")
 	case errors.Is(err, entity.ErrAlertSourceSlugTaken):
 		return http.StatusConflict, prob(http.StatusConflict, "Name taken", "A source already goes by that name.", "")
 	case errors.Is(err, entity.ErrAlertSourceNotFound), errors.Is(err, entity.ErrWorkspaceNotFound), errors.Is(err, entity.ErrNotMember):
@@ -73,6 +75,26 @@ func (h *handler) ingestURL(token string) string {
 		base = strings.TrimRight(h.cfg.BaseURL, "/")
 	}
 	return base + "/v1/ingest/e/" + token
+}
+
+func (h *handler) GetAlertSourceVolume(ctx context.Context, request api.GetAlertSourceVolumeRequestObject) (api.GetAlertSourceVolumeResponseObject, error) {
+	volume, err := h.sources.Volume(ctx, request.WorkspaceId)
+	if err != nil {
+		status, p := sourceProblem(err)
+		switch status {
+		case http.StatusUnauthorized:
+			return api.GetAlertSourceVolume401ApplicationProblemPlusJSONResponse(p), nil
+		case http.StatusForbidden:
+			return api.GetAlertSourceVolume403ApplicationProblemPlusJSONResponse(p), nil
+		case http.StatusNotFound:
+			return api.GetAlertSourceVolume404ApplicationProblemPlusJSONResponse(p), nil
+		}
+		return nil, err
+	}
+	return api.GetAlertSourceVolume200JSONResponse{
+		WindowHours: int(entity.SourceVolumeWindow / time.Hour),
+		Sources:     volume,
+	}, nil
 }
 
 func (h *handler) ListAlertSources(ctx context.Context, request api.ListAlertSourcesRequestObject) (api.ListAlertSourcesResponseObject, error) {

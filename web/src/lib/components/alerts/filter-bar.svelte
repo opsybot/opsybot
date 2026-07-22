@@ -38,11 +38,16 @@
 		['q', 'severity', 'source', 'service', 'label'].some((key) => params.get(key))
 	);
 
+	function apply(next: URLSearchParams) {
+		next.delete('cursor');
+		goto(`?${next}`, { keepFocus: true, noScroll: true, replaceState: true });
+	}
+
 	function set(key: string, value: string | undefined) {
 		const next = new URLSearchParams(params);
 		if (value) next.set(key, value);
 		else next.delete(key);
-		goto(`?${next}`, { keepFocus: true, noScroll: true, replaceState: true });
+		apply(next);
 	}
 
 	function toggleStatus(status: string) {
@@ -54,14 +59,14 @@
 
 		next.delete('status');
 		for (const value of current) next.append('status', value);
-		goto(`?${next}`, { keepFocus: true, noScroll: true, replaceState: true });
+		apply(next);
 	}
 
 	function clear() {
 		const next = new URLSearchParams();
 		for (const status of statuses) next.append('status', status);
 		next.set('range', range);
-		goto(`?${next}`, { keepFocus: true, noScroll: true, replaceState: true });
+		apply(next);
 	}
 </script>
 

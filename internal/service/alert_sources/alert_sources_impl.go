@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/opsybot/opsybot/internal/entity"
 	"github.com/opsybot/opsybot/internal/repository"
@@ -16,6 +17,7 @@ type srv struct {
 	members    repository.Member
 	sources    repository.AlertSource
 	events     repository.IngestEvent
+	alerts     repository.Alert
 	policy     repository.Policy
 	audit      repository.Audit
 }
@@ -26,10 +28,14 @@ func New(
 	members repository.Member,
 	sources repository.AlertSource,
 	events repository.IngestEvent,
+	alerts repository.Alert,
 	policy repository.Policy,
 	audit repository.Audit,
 ) service.AlertSources {
-	return &srv{tx: tx, workspaces: workspaces, members: members, sources: sources, events: events, policy: policy, audit: audit}
+	return &srv{
+		tx: tx, workspaces: workspaces, members: members, sources: sources,
+		events: events, alerts: alerts, policy: policy, audit: audit,
+	}
 }
 
 func (s *srv) authorize(ctx context.Context, workspaceSlug string, act entity.PolicyAction) (entity.Identity, entity.Workspace, error) {
@@ -91,6 +97,9 @@ func (s *srv) Create(ctx context.Context, workspaceSlug string, in entity.NewAle
 	in.Name = strings.TrimSpace(in.Name)
 	if in.DefaultSeverity == "" {
 		in.DefaultSeverity = entity.SeverityWarning
+	}
+	if in.Format == entity.SourceFormatHeartbeat {
+		return entity.AlertSource{}, entity.ErrAlertMonitorFormat
 	}
 	if err := in.Validate(); err != nil {
 		return entity.AlertSource{}, err
@@ -237,6 +246,33 @@ func (s *srv) Events(ctx context.Context, workspaceSlug, sourceSlug string, limi
 		return nil, err
 	}
 	return s.events.ListBySource(ctx, src.ID, limit)
+}
+
+func (s *srv) Volume(ctx context.Context, workspaceSlug string) (map[string][]int, error) {
+	_, ws, err := s.authorize(ctx, workspaceSlug, entity.PolicyActionRead)
+	if err != nil {
+		return nil, err
+	}
+	sources, err := s.sources.ListByWorkspace(ctx, ws.ID)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]string, 0, len(sources))
+	bySlug := make(map[string]string, len(sources))
+	for _, src := range sources {
+		ids = append(ids, src.ID)
+		bySlug[src.ID] = src.Slug
+	}
+
+	counts, err := s.alerts.CountsBySource(ctx, ids, time.Now().UTC().Add(-entity.SourceVolumeWindow), entity.SourceVolumeBuckets)
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[string][]int, len(counts))
+	for id, series := range counts {
+		out[bySlug[id]] = series
+	}
+	return out, nil
 }
 
 func (s *srv) event(actor entity.Identity, workspaceID, action, target string) entity.AuditEvent {

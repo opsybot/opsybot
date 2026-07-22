@@ -89,6 +89,10 @@ var (
 	errSilenceCondition   = validation.NewError("silence_condition_invalid", "Each scope needs a source, service, or label value.")
 	errSilenceReason      = validation.NewError("silence_reason_invalid", "Keep the reason to 200 characters or fewer.")
 	errGroupRuleFields    = validation.NewError("group_rule_invalid", "A grouping rule needs between 1 and 5 known fields.")
+	errGroupRuleWindow    = validation.NewError("group_window_invalid", "A grouping window runs from 1 minute to 24 hours.")
+	errMonitorInterval    = validation.NewError("monitor_interval_invalid", "A check-in interval runs from 1 minute to 30 days.")
+	errMonitorGrace       = validation.NewError("monitor_grace_invalid", "A grace period runs from 0 up to 24 hours.")
+	errMonitorState       = validation.NewError("monitor_state_invalid", "Choose a valid monitor state.")
 )
 
 func nameField(value any) error {
@@ -517,10 +521,49 @@ func groupRuleFieldsField(value any) error {
 	if len(fields) == 0 || len(fields) > GroupRuleMaxFields {
 		return errGroupRuleFields
 	}
+	seen := make(map[string]struct{}, len(fields))
 	for _, f := range fields {
 		if !routeFieldKnown(f) {
 			return errGroupRuleFields
 		}
+		if _, dup := seen[f]; dup {
+			return errGroupRuleFields
+		}
+		seen[f] = struct{}{}
 	}
 	return nil
+}
+
+func groupRuleWindowField(value any) error {
+	d, _ := value.(time.Duration)
+	if d < GroupWindowMin || d > GroupWindowMax {
+		return errGroupRuleWindow
+	}
+	return nil
+}
+
+func monitorIntervalField(value any) error {
+	d, _ := value.(time.Duration)
+	if d < MonitorIntervalMin || d > MonitorIntervalMax {
+		return errMonitorInterval
+	}
+	return nil
+}
+
+func monitorGraceField(value any) error {
+	d, _ := value.(time.Duration)
+	if d < 0 || d > MonitorGraceMax {
+		return errMonitorGrace
+	}
+	return nil
+}
+
+func monitorStateField(value any) error {
+	s, _ := value.(MonitorState)
+	switch s {
+	case MonitorStateHealthy, MonitorStateMissed, MonitorStatePaused:
+		return nil
+	default:
+		return errMonitorState
+	}
 }

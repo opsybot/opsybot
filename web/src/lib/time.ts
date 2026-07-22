@@ -22,6 +22,14 @@ export function formatAge(ms: number): string {
 	return `${minutes}m ${String(seconds).padStart(2, '0')}s`;
 }
 
+export function formatDuration(seconds: number): string {
+	if (seconds <= 0) return 'none';
+	if (seconds % 86_400 === 0) return `${seconds / 86_400} d`;
+	if (seconds % 3_600 === 0) return `${seconds / 3_600} h`;
+	if (seconds < 60) return `${seconds} s`;
+	return `${Math.round(seconds / 60)} m`;
+}
+
 export function formatSince(ms: number): string {
 	const minutes = Math.round(ms / 60_000);
 	if (minutes < 1) return 'just now';

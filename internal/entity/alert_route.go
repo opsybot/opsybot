@@ -62,15 +62,42 @@ type GroupRule struct {
 	Position    int
 }
 
+func (g GroupRule) Validate() error {
+	return validation.ValidateStruct(&g,
+		validation.Field(&g.Fields, validation.By(groupRuleFieldsField)),
+		validation.Field(&g.Window, validation.By(groupRuleWindowField)),
+	)
+}
+
+func ValidateGroupRules(rules []GroupRule) error {
+	if len(rules) > GroupRuleMaxRules {
+		return ErrGroupRuleLimit
+	}
+	for _, rule := range rules {
+		if err := rule.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 type AlertSettings struct {
 	WorkspaceID      string
 	DefaultPolicyRef string
+}
+
+type RoutePreview struct {
+	MatchedRouteID string
+	Position       int
+	PolicyRef      string
+	GroupFields    []string
 }
 
 var (
 	ErrAlertRouteNotFound   = errors.New("alert route not found")
 	ErrAlertRouteConditions = errors.New("alert route needs at least one condition")
 	ErrGroupRuleNotFound    = errors.New("group rule not found")
+	ErrGroupRuleLimit       = errors.New("group rule limit reached")
 )
 
 func ValidatePolicyRef(ref string) error {

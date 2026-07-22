@@ -1,19 +1,45 @@
 import { error, fail } from '@sveltejs/kit';
-import { RT_FIELDS, RT_OPS, RT_POLICIES, RT_SAMPLE, type Condition, type ConditionOp } from '$lib/alertsources';
+import { RT_FIELDS, RT_OPS, RT_SAMPLE, type Condition, type ConditionOp } from '$lib/alertsources';
 import {
 	addRule,
 	deleteRule,
+	listGroupRules,
 	listRules,
 	reorderRules,
+	previewRoute,
+	saveGroupRules,
 	setDefaultPolicy,
 	updateRule
 } from '$lib/server/alertsources';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, cookies }) => {
-	const { rules, defaultPolicy, knownPolicies } = await listRules(cookies, params.workspace);
-	return { rules, defaultPolicy, knownPolicies, sample: RT_SAMPLE };
+	const [{ rules, defaultPolicy, knownPolicies }, groupRules] = await Promise.all([
+		listRules(cookies, params.workspace),
+		listGroupRules(cookies, params.workspace)
+	]);
+	return { rules, defaultPolicy, knownPolicies, groupRules, sample: RT_SAMPLE };
 };
+
+function parseGroupRules(raw: string): { fields: string[]; windowSeconds: number }[] | null {
+	let data: unknown;
+	try {
+		data = JSON.parse(raw);
+	} catch {
+		return null;
+	}
+	if (!Array.isArray(data)) return null;
+
+	return data
+		.filter((entry): entry is Record<string, unknown> => !!entry && typeof entry === 'object')
+		.map((entry) => ({
+			fields: (Array.isArray(entry.fields) ? entry.fields : []).filter(
+				(field): field is string => typeof field === 'string' && RT_FIELDS.includes(field)
+			),
+			windowSeconds: Number(entry.windowSeconds)
+		}))
+		.filter((rule) => rule.fields.length && Number.isFinite(rule.windowSeconds));
+}
 
 function parseRule(raw: string): { id: string | null; conditions: Condition[]; policy: string; position: string } | { error: string } {
 	let data: unknown;
@@ -44,7 +70,8 @@ function parseRule(raw: string): { id: string | null; conditions: Condition[]; p
 
 	if (!conditions.length) return { error: 'A rule needs at least one condition with a value.' };
 
-	const policy = typeof object.policy === 'string' && RT_POLICIES.includes(object.policy) ? object.policy : RT_POLICIES[0];
+	const policy = typeof object.policy === 'string' ? object.policy.trim() : '';
+	if (!policy) return { error: 'A rule needs a policy to route to.' };
 	const position = typeof object.position === 'string' ? object.position : 'end';
 	const id = typeof object.id === 'string' ? object.id : null;
 	return { id, conditions, policy, position };
@@ -86,6 +113,27 @@ export const actions: Actions = {
 			return fail(400, { error: 'Could not reorder the rules.' });
 		}
 		return { moved: true };
+	},
+
+	preview: async ({ request, params, cookies }) => {
+		const form = await request.formData();
+		const { preview, error } = await previewRoute(
+			cookies,
+			params.workspace,
+			String(form.get('payload') ?? '')
+		);
+		if (error || !preview) return fail(400, { error: error ?? 'Could not evaluate that sample.' });
+		return { preview };
+	},
+
+	saveGroups: async ({ request, params, cookies }) => {
+		const form = await request.formData();
+		const rules = parseGroupRules(String(form.get('rules') ?? ''));
+		if (!rules) return fail(400, { error: 'Could not read those grouping rules.' });
+
+		const outcome = await saveGroupRules(cookies, params.workspace, rules);
+		if (outcome.error) return fail(400, { error: outcome.error });
+		return { grouped: true };
 	},
 
 	setDefault: async ({ request, params, cookies }) => {

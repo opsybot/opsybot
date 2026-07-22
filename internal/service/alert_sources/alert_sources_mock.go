@@ -173,3 +173,18 @@ func (mr *MockAlertSourcesMockRecorder) Update(ctx, workspaceSlug, sourceSlug, i
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockAlertSources)(nil).Update), ctx, workspaceSlug, sourceSlug, in)
 }
+
+// Volume mocks base method.
+func (m *MockAlertSources) Volume(ctx context.Context, workspaceSlug string) (map[string][]int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Volume", ctx, workspaceSlug)
+	ret0, _ := ret[0].(map[string][]int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Volume indicates an expected call of Volume.
+func (mr *MockAlertSourcesMockRecorder) Volume(ctx, workspaceSlug any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Volume", reflect.TypeOf((*MockAlertSources)(nil).Volume), ctx, workspaceSlug)
+}

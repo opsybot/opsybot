@@ -55,7 +55,14 @@ function toAlert(dto: Schemas['Alert']): Alert {
 		count: dto.count,
 		firstSeenAt: dto.startedAt,
 		lastSeenAt: dto.lastSeenAt,
-		children: [],
+		children: (dto.children ?? []).map((child) => ({
+			id: child.id,
+			title: child.title,
+			count: child.count,
+			lastSeenAt: child.lastSeenAt,
+			status: child.status as AlertStatus,
+			severity: child.severity as AlertSeverity
+		})),
 		links: (dto.links ?? []).map((link) => ({
 			kind: link.kind as 'runbook' | 'dashboard' | 'source',
 			label: link.label,
@@ -66,11 +73,38 @@ function toAlert(dto: Schemas['Alert']): Alert {
 	};
 }
 
-export async function listAlerts(cookies: Cookies, workspace: string): Promise<Alert[]> {
+export type AlertQuery = {
+	status?: string[];
+	severity?: string[];
+	source?: string[];
+	service?: string[];
+	label?: string[];
+	since?: string;
+	query?: string;
+	cursor?: string;
+	limit?: number;
+};
+
+export type AlertPage = {
+	alerts: Alert[];
+	nextCursor: string | null;
+	facets: { sources: string[]; services: string[]; labels: string[] };
+};
+
+export async function listAlerts(
+	cookies: Cookies,
+	workspace: string,
+	filter: AlertQuery = {}
+): Promise<AlertPage> {
 	const { data } = await apiClient(cookies).GET('/workspaces/{workspaceId}/alerts', {
-		params: { path: { workspaceId: workspace } }
+		params: { path: { workspaceId: workspace }, query: filter },
+		querySerializer: { array: { style: 'form', explode: false } }
 	});
-	return (data?.items ?? []).map(toAlert);
+	return {
+		alerts: (data?.items ?? []).map(toAlert),
+		nextCursor: data?.nextCursor || null,
+		facets: data?.facets ?? { sources: [], services: [], labels: [] }
+	};
 }
 
 export async function getAlert(

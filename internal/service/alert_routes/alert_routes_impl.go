@@ -115,6 +115,69 @@ func (s *srv) Reorder(ctx context.Context, workspaceSlug string, ids []string) e
 	return s.routes.Reorder(ctx, ws.ID, ids)
 }
 
+func (s *srv) Preview(ctx context.Context, workspaceSlug, payload string) (entity.RoutePreview, error) {
+	_, ws, err := s.authorize(ctx, workspaceSlug, entity.PolicyActionRead, entity.PolicyObjectAlertSources)
+	if err != nil {
+		return entity.RoutePreview{}, err
+	}
+	alert, err := entity.PreviewAlert(payload)
+	if err != nil {
+		return entity.RoutePreview{}, err
+	}
+
+	routes, err := s.routes.List(ctx, ws.ID)
+	if err != nil {
+		return entity.RoutePreview{}, err
+	}
+	settings, err := s.routes.Settings(ctx, ws.ID)
+	if err != nil {
+		return entity.RoutePreview{}, err
+	}
+	groupRules, err := s.routes.ListGroupRules(ctx, ws.ID)
+	if err != nil {
+		return entity.RoutePreview{}, err
+	}
+
+	matched, policyRef, hit := entity.RouteFor(routes, alert, settings.DefaultPolicyRef)
+	out := entity.RoutePreview{PolicyRef: policyRef, Position: -1}
+	if hit {
+		out.MatchedRouteID = matched.ID
+		out.Position = matched.Position
+	}
+	if rule, _, grouped := entity.GroupKeyFor(groupRules, alert); grouped {
+		out.GroupFields = rule.Fields
+	}
+	return out, nil
+}
+
+func (s *srv) ListGroupRules(ctx context.Context, workspaceSlug string) ([]entity.GroupRule, error) {
+	_, ws, err := s.authorize(ctx, workspaceSlug, entity.PolicyActionRead, entity.PolicyObjectAlertSources)
+	if err != nil {
+		return nil, err
+	}
+	return s.routes.ListGroupRules(ctx, ws.ID)
+}
+
+func (s *srv) SaveGroupRules(ctx context.Context, workspaceSlug string, rules []entity.GroupRule) ([]entity.GroupRule, error) {
+	_, ws, err := s.authorize(ctx, workspaceSlug, entity.PolicyActionWrite, entity.PolicyObjectAlertSources)
+	if err != nil {
+		return nil, err
+	}
+	for i := range rules {
+		rules[i].Position = i
+		if rules[i].Window == 0 {
+			rules[i].Window = entity.GroupWindowDefault
+		}
+	}
+	if err := entity.ValidateGroupRules(rules); err != nil {
+		return nil, err
+	}
+	if err := s.routes.ReplaceGroupRules(ctx, ws.ID, rules); err != nil {
+		return nil, fmt.Errorf("save alert group rules: %w", err)
+	}
+	return s.routes.ListGroupRules(ctx, ws.ID)
+}
+
 func (s *srv) SetDefaultPolicy(ctx context.Context, workspaceSlug, policyRef string) error {
 	_, ws, err := s.authorize(ctx, workspaceSlug, entity.PolicyActionWrite, entity.PolicyObjectAlertSources)
 	if err != nil {

@@ -39,6 +39,83 @@ DO UPDATE SET
     updated_at   = now()
 RETURNING id, (xmax = 0) AS inserted`
 
+const upsertGroupParentSQL = `
+INSERT INTO alerts (workspace_id, source_id, dedup_key, group_key, title, description, severity, status,
+                    source_label, service_name, labels, count, started_at, last_seen_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, 'open', $8, $9, $10, 1, $11, $12)
+ON CONFLICT (workspace_id, group_key) WHERE group_key <> '' AND parent_alert_id IS NULL AND resolved_at IS NULL
+DO UPDATE SET
+    last_seen_at = GREATEST(alerts.last_seen_at, EXCLUDED.last_seen_at),
+    started_at   = LEAST(alerts.started_at, EXCLUDED.started_at),
+    updated_at   = now()
+RETURNING id, (xmax = 0) AS inserted`
+
+const rollUpParentSQL = `
+WITH agg AS (
+    SELECT count(*) AS all_children,
+           count(*) FILTER (WHERE resolved_at IS NULL) AS open_children,
+           COALESCE(sum(count) FILTER (WHERE resolved_at IS NULL), 0) AS open_count,
+           max(last_seen_at) AS last_seen,
+           min(started_at) AS started,
+           min(CASE severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 ELSE 2 END)
+               FILTER (WHERE resolved_at IS NULL) AS severity_rank
+    FROM alerts
+    WHERE parent_alert_id = $1
+)
+UPDATE alerts p SET
+    count        = GREATEST(1, agg.open_count),
+    started_at   = LEAST(p.started_at, COALESCE(agg.started, p.started_at)),
+    last_seen_at = GREATEST(p.last_seen_at, COALESCE(agg.last_seen, p.last_seen_at)),
+    severity     = CASE agg.severity_rank WHEN 0 THEN 'critical' WHEN 1 THEN 'high' WHEN 2 THEN 'warning' ELSE p.severity END,
+    status       = CASE WHEN agg.all_children > 0 AND agg.open_children = 0 THEN 'resolved' ELSE p.status END,
+    resolved_at  = CASE WHEN agg.all_children > 0 AND agg.open_children = 0 THEN COALESCE(p.resolved_at, $2) ELSE p.resolved_at END,
+    ended_at     = CASE WHEN agg.all_children > 0 AND agg.open_children = 0 THEN COALESCE(p.ended_at, $2) ELSE p.ended_at END,
+    resolve_mode = CASE WHEN agg.all_children > 0 AND agg.open_children = 0 THEN 'source' ELSE p.resolve_mode END,
+    updated_at   = $2
+FROM agg
+WHERE p.id = $1`
+
+const expireStaleSQL = `
+WITH due AS (
+    SELECT a.id
+    FROM alerts a
+    JOIN alert_sources s ON s.id = a.source_id
+    WHERE a.resolved_at IS NULL
+      AND s.auto_resolve_after_seconds > 0
+      AND a.last_seen_at + make_interval(secs => s.auto_resolve_after_seconds) < $1
+    ORDER BY a.last_seen_at
+    LIMIT $2
+)
+UPDATE alerts SET
+    status       = 'resolved',
+    resolved_at  = $1,
+    ended_at     = $1,
+    resolve_mode = 'timeout',
+    updated_at   = $1
+WHERE id IN (SELECT id FROM due)`
+
+const facetsSQL = `
+WITH scoped AS (
+    SELECT source_label, service_name, labels
+    FROM alerts
+    WHERE workspace_id = $1 AND parent_alert_id IS NULL AND last_seen_at >= $2
+)
+(SELECT 'source' AS kind, source_label AS value FROM scoped WHERE source_label <> '' GROUP BY 2 ORDER BY 2 LIMIT $3)
+UNION ALL
+(SELECT 'service', service_name FROM scoped WHERE service_name <> '' GROUP BY 2 ORDER BY 2 LIMIT $3)
+UNION ALL
+(SELECT 'label', label.key || ':' || label.value
+ FROM scoped, LATERAL jsonb_each_text(scoped.labels) AS label
+ GROUP BY 2 ORDER BY 2 LIMIT $3)`
+
+const countsBySourceSQL = `
+SELECT source_id,
+       LEAST($4::int, GREATEST(0, floor(extract(epoch FROM (at - $2::timestamptz)) / $3::float)::int)) AS bucket,
+       count(*)::int AS total
+FROM alert_ingest_events
+WHERE source_id = ANY($1) AND at >= $2::timestamptz
+GROUP BY 1, 2`
+
 type repo struct {
 	db postgres.Client
 }
@@ -221,7 +298,7 @@ func (r *repo) List(ctx context.Context, workspaceID string, filter entity.Alert
 		limit = entity.AlertListDefaultPageSize
 	}
 
-	mods := []qm.QueryMod{qm.Where("workspace_id = ?", workspaceID)}
+	mods := []qm.QueryMod{qm.Where("workspace_id = ? AND parent_alert_id IS NULL", workspaceID)}
 	if len(filter.Statuses) > 0 {
 		mods = append(mods, qm.WhereIn("status IN ?", anySlice(statusStrings(filter.Statuses))...))
 	}
@@ -230,6 +307,22 @@ func (r *repo) List(ctx context.Context, workspaceID string, filter entity.Alert
 	}
 	if len(filter.SourceIDs) > 0 {
 		mods = append(mods, qm.WhereIn("source_id IN ?", anySlice(filter.SourceIDs)...))
+	}
+	if len(filter.Sources) > 0 {
+		mods = append(mods, qm.WhereIn("source_label IN ?", anySlice(filter.Sources)...))
+	}
+	if len(filter.Services) > 0 {
+		mods = append(mods, qm.WhereIn("service_name IN ?", anySlice(filter.Services)...))
+	}
+	for _, label := range filter.Labels {
+		key, value, ok := strings.Cut(label, ":")
+		if !ok {
+			continue
+		}
+		mods = append(mods, qm.Where("labels ->> ? = ?", key, value))
+	}
+	if !filter.Since.IsZero() {
+		mods = append(mods, qm.Where("last_seen_at >= ?", filter.Since))
 	}
 	if q := strings.TrimSpace(filter.Query); q != "" {
 		like := "%" + strings.ToLower(q) + "%"
@@ -427,6 +520,161 @@ func decodeCursor(cursor string) (time.Time, string, bool) {
 		return time.Time{}, "", false
 	}
 	return parsed, id, true
+}
+
+func (r *repo) Facets(ctx context.Context, workspaceID string, since time.Time) (entity.AlertFacets, error) {
+	var rows []struct {
+		Kind  string `boil:"kind"`
+		Value string `boil:"value"`
+	}
+	err := queries.Raw(facetsSQL, workspaceID, since, entity.AlertFacetLimit).Bind(ctx, r.db.Querier(ctx), &rows)
+	if err != nil {
+		return entity.AlertFacets{}, fmt.Errorf("list alert facets: %w", err)
+	}
+
+	out := entity.AlertFacets{Sources: []string{}, Services: []string{}, Labels: []string{}}
+	for _, row := range rows {
+		switch row.Kind {
+		case "source":
+			out.Sources = append(out.Sources, row.Value)
+		case "service":
+			out.Services = append(out.Services, row.Value)
+		case "label":
+			out.Labels = append(out.Labels, row.Value)
+		}
+	}
+	return out, nil
+}
+
+func (r *repo) UpsertGroupParent(ctx context.Context, in entity.AlertUpsert, groupKey string) (entity.Alert, entity.IngestOutcome, error) {
+	labels, err := marshalLabels(in.Labels)
+	if err != nil {
+		return entity.Alert{}, entity.IngestOutcomeFailed, err
+	}
+
+	var row struct {
+		ID       string `boil:"id"`
+		Inserted bool   `boil:"inserted"`
+	}
+	err = queries.Raw(upsertGroupParentSQL,
+		in.WorkspaceID, in.SourceID, in.DedupKey, groupKey, in.Title, in.Description, string(in.Severity),
+		in.SourceLabel, in.ServiceName, labels, in.StartedAt, in.LastSeenAt,
+	).Bind(ctx, r.db.Querier(ctx), &row)
+	if err != nil {
+		return entity.Alert{}, entity.IngestOutcomeFailed, fmt.Errorf("upsert group parent: %w", err)
+	}
+
+	m, err := dbpostgres.FindAlert(ctx, r.db.Querier(ctx), row.ID)
+	if err != nil {
+		return entity.Alert{}, entity.IngestOutcomeFailed, fmt.Errorf("reload group parent: %w", err)
+	}
+
+	outcome := entity.IngestOutcomeUpdated
+	if row.Inserted {
+		outcome = entity.IngestOutcomeCreated
+	}
+	return toEntity(m), outcome, nil
+}
+
+func (r *repo) AttachToParent(ctx context.Context, childID, parentID string) error {
+	values := dbpostgres.M{"parent_alert_id": parentID, "updated_at": time.Now().UTC()}
+	if _, err := dbpostgres.Alerts(qm.Where("id = ?", childID)).UpdateAll(ctx, r.db.Querier(ctx), values); err != nil {
+		return fmt.Errorf("attach alert to parent: %w", err)
+	}
+	return nil
+}
+
+func (r *repo) DetachFromParent(ctx context.Context, childID string) error {
+	values := dbpostgres.M{"parent_alert_id": nil, "updated_at": time.Now().UTC()}
+	if _, err := dbpostgres.Alerts(qm.Where("id = ?", childID)).UpdateAll(ctx, r.db.Querier(ctx), values); err != nil {
+		return fmt.Errorf("detach alert from parent: %w", err)
+	}
+	return nil
+}
+
+func (r *repo) RollUpParent(ctx context.Context, parentID string, at time.Time) (entity.Alert, error) {
+	if _, err := r.db.Querier(ctx).ExecContext(ctx, rollUpParentSQL, parentID, at); err != nil {
+		return entity.Alert{}, fmt.Errorf("roll up group parent: %w", err)
+	}
+	m, err := dbpostgres.FindAlert(ctx, r.db.Querier(ctx), parentID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return entity.Alert{}, entity.ErrAlertNotFound
+		}
+		return entity.Alert{}, fmt.Errorf("reload group parent: %w", err)
+	}
+	return toEntity(m), nil
+}
+
+func (r *repo) ListChildren(ctx context.Context, parentIDs []string) (map[string][]entity.AlertChild, error) {
+	out := map[string][]entity.AlertChild{}
+	if len(parentIDs) == 0 {
+		return out, nil
+	}
+	rows, err := dbpostgres.Alerts(
+		qm.WhereIn("parent_alert_id IN ?", anySlice(parentIDs)...),
+		qm.OrderBy("last_seen_at DESC, id DESC"),
+	).All(ctx, r.db.Querier(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("list group children: %w", err)
+	}
+	for _, m := range rows {
+		parent := m.ParentAlertID.String
+		out[parent] = append(out[parent], entity.AlertChild{
+			ID:         m.ID,
+			Title:      m.Title,
+			Count:      m.Count,
+			LastSeenAt: m.LastSeenAt,
+			Status:     entity.AlertStatus(m.Status),
+			Severity:   entity.AlertSeverity(m.Severity),
+		})
+	}
+	return out, nil
+}
+
+func (r *repo) ExpireStale(ctx context.Context, now time.Time, limit int) (int, error) {
+	if limit <= 0 {
+		limit = entity.AlertListMaxPageSize
+	}
+	result, err := r.db.Querier(ctx).ExecContext(ctx, expireStaleSQL, now, limit)
+	if err != nil {
+		return 0, fmt.Errorf("expire stale alerts: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("expire stale alerts: %w", err)
+	}
+	return int(affected), nil
+}
+
+func (r *repo) CountsBySource(ctx context.Context, sourceIDs []string, since time.Time, buckets int) (map[string][]int, error) {
+	out := make(map[string][]int, len(sourceIDs))
+	for _, id := range sourceIDs {
+		out[id] = make([]int, buckets)
+	}
+	if len(sourceIDs) == 0 || buckets <= 0 {
+		return out, nil
+	}
+
+	width := entity.SourceVolumeWindow.Seconds() / float64(buckets)
+	var rows []struct {
+		SourceID string `boil:"source_id"`
+		Bucket   int    `boil:"bucket"`
+		Total    int    `boil:"total"`
+	}
+	err := queries.Raw(countsBySourceSQL, types.StringArray(sourceIDs), since, width, buckets-1).
+		Bind(ctx, r.db.Querier(ctx), &rows)
+	if err != nil {
+		return nil, fmt.Errorf("count source events: %w", err)
+	}
+	for _, row := range rows {
+		series, ok := out[row.SourceID]
+		if !ok || row.Bucket < 0 || row.Bucket >= buckets {
+			continue
+		}
+		series[row.Bucket] = row.Total
+	}
+	return out, nil
 }
 
 func (r *repo) ApplyRouting(ctx context.Context, alertID, policyRef, groupKey, silenceID string, suppressedAt time.Time) error {

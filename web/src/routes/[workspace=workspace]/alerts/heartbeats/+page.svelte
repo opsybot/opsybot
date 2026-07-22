@@ -1,18 +1,30 @@
 <script lang="ts">
 	import HeartPulseIcon from '@lucide/svelte/icons/heart-pulse';
 	import AlertsTabs from '$lib/components/alerts/alerts-tabs.svelte';
+	import EditMonitorDialog from '$lib/components/alerts/edit-monitor-dialog.svelte';
+	import MonitorRowActions from '$lib/components/alerts/monitor-row-actions.svelte';
 	import NewMonitorDialog from '$lib/components/alerts/new-monitor-dialog.svelte';
 	import Page from '$lib/components/layout/page.svelte';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as Empty from '$lib/components/ui/empty';
 	import * as Table from '$lib/components/ui/table';
-	import { formatSince, formatUtcTime } from '$lib/time';
+	import { formatDue, formatSince, formatUtcTime } from '$lib/time';
+	import type { Heartbeat } from '$lib/alerts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
 	let creating = $state(false);
+	let editing = $state<Heartbeat | null>(null);
+	let editOpen = $state(false);
+
+	function openEdit(monitor: Heartbeat) {
+		editing = monitor;
+		editOpen = true;
+	}
+
+	const TONE = { healthy: 'success', missed: 'critical', paused: 'neutral' } as const;
 </script>
 
 <Page title="Alerts" subtitle="Deduplicated signals from every connected source">
@@ -43,6 +55,7 @@
 						<Table.Head class="w-[100px]">Grace</Table.Head>
 						<Table.Head class="w-[190px]">Last check-in</Table.Head>
 						<Table.Head class="w-[170px]">Routing</Table.Head>
+						<Table.Head class="w-[120px]"><span class="sr-only">Actions</span></Table.Head>
 					</Table.Row>
 				</Table.Header>
 				<Table.Body>
@@ -54,9 +67,7 @@
 						>
 							<Table.Cell class="font-mono text-[12.5px] font-medium">{heartbeat.name}</Table.Cell>
 							<Table.Cell>
-								<Badge tone={heartbeat.state === 'missed' ? 'critical' : 'success'} size="sm">
-									{heartbeat.state}
-								</Badge>
+								<Badge tone={TONE[heartbeat.state]} size="sm">{heartbeat.state}</Badge>
 							</Table.Cell>
 							<Table.Cell class="text-muted-foreground">{heartbeat.interval}</Table.Cell>
 							<Table.Cell class="text-muted-foreground">{heartbeat.grace}</Table.Cell>
@@ -65,12 +76,17 @@
 									{formatSince(data.now - Date.parse(heartbeat.lastSeenAt))} · {formatUtcTime(
 										heartbeat.lastSeenAt
 									)}
+								{:else if heartbeat.dueAt}
+									never · {formatDue(heartbeat.dueAt, data.now)}
 								{:else}
 									never
 								{/if}
 							</Table.Cell>
 							<Table.Cell class="text-muted-foreground font-mono text-[11.5px]">
 								{heartbeat.policy}
+							</Table.Cell>
+							<Table.Cell>
+								<MonitorRowActions monitor={heartbeat} onedit={openEdit} />
 							</Table.Cell>
 						</Table.Row>
 					{/each}
@@ -95,4 +111,9 @@
 	</section>
 </Page>
 
-<NewMonitorDialog bind:open={creating} />
+<NewMonitorDialog
+	bind:open={creating}
+	knownPolicies={data.knownPolicies}
+	defaultPolicy={data.defaultPolicy}
+/>
+<EditMonitorDialog bind:open={editOpen} monitor={editing} knownPolicies={data.knownPolicies} />

@@ -15,7 +15,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import { endpointUrl, healthBadge } from '$lib/alertsources';
+	import { healthBadge } from '$lib/alertsources';
 	import { ws } from '$lib/navigation';
 	import type { PageProps } from './$types';
 
@@ -23,7 +23,7 @@
 
 	const source = $derived(data.source);
 	const Icon = $derived(ICON[source.icon]);
-	const url = $derived(endpointUrl(source.slug));
+	const url = $derived(source.ingestUrl);
 	const health = $derived(healthBadge(source));
 
 	let revealed = $state(false);

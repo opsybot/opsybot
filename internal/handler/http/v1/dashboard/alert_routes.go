@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"sort"
+	"time"
 
 	"github.com/opsybot/opsybot/internal/entity"
 	api "github.com/opsybot/opsybot/pkg/http/v1/dashboard"
@@ -149,6 +150,104 @@ func (h *handler) ReorderAlertRoutes(ctx context.Context, request api.ReorderAle
 		return nil, err
 	}
 	return api.ReorderAlertRoutes204Response{}, nil
+}
+
+func (h *handler) PreviewAlertRoute(ctx context.Context, request api.PreviewAlertRouteRequestObject) (api.PreviewAlertRouteResponseObject, error) {
+	preview, err := h.routes.Preview(ctx, request.WorkspaceId, request.Body.Payload)
+	if err != nil {
+		if pe, ok := entity.ParseFailureOf(err); ok {
+			return api.PreviewAlertRoute400ApplicationProblemPlusJSONResponse(
+				prob(http.StatusBadRequest, "Invalid sample", pe.Detail, "")), nil
+		}
+		status, p := routeProblem(err)
+		switch status {
+		case http.StatusBadRequest:
+			return api.PreviewAlertRoute400ApplicationProblemPlusJSONResponse(p), nil
+		case http.StatusUnauthorized:
+			return api.PreviewAlertRoute401ApplicationProblemPlusJSONResponse(p), nil
+		case http.StatusForbidden:
+			return api.PreviewAlertRoute403ApplicationProblemPlusJSONResponse(p), nil
+		case http.StatusNotFound:
+			return api.PreviewAlertRoute404ApplicationProblemPlusJSONResponse(p), nil
+		}
+		return nil, err
+	}
+
+	fields := preview.GroupFields
+	if fields == nil {
+		fields = []string{}
+	}
+	out := api.PreviewAlertRoute200JSONResponse{
+		Position:    preview.Position,
+		PolicyRef:   preview.PolicyRef,
+		GroupFields: fields,
+	}
+	if preview.MatchedRouteID != "" {
+		out.MatchedRouteId = &preview.MatchedRouteID
+	}
+	return out, nil
+}
+
+func groupRuleDTO(g entity.GroupRule) api.AlertGroupRule {
+	return api.AlertGroupRule{
+		Id:            g.ID,
+		Fields:        g.Fields,
+		WindowSeconds: int(g.Window / time.Second),
+		Position:      g.Position,
+	}
+}
+
+func (h *handler) ListAlertGroupRules(ctx context.Context, request api.ListAlertGroupRulesRequestObject) (api.ListAlertGroupRulesResponseObject, error) {
+	rules, err := h.routes.ListGroupRules(ctx, request.WorkspaceId)
+	if err != nil {
+		status, p := routeProblem(err)
+		switch status {
+		case http.StatusUnauthorized:
+			return api.ListAlertGroupRules401ApplicationProblemPlusJSONResponse(p), nil
+		case http.StatusForbidden:
+			return api.ListAlertGroupRules403ApplicationProblemPlusJSONResponse(p), nil
+		case http.StatusNotFound:
+			return api.ListAlertGroupRules404ApplicationProblemPlusJSONResponse(p), nil
+		}
+		return nil, err
+	}
+	items := make([]api.AlertGroupRule, 0, len(rules))
+	for _, g := range rules {
+		items = append(items, groupRuleDTO(g))
+	}
+	return api.ListAlertGroupRules200JSONResponse{Items: items}, nil
+}
+
+func (h *handler) SaveAlertGroupRules(ctx context.Context, request api.SaveAlertGroupRulesRequestObject) (api.SaveAlertGroupRulesResponseObject, error) {
+	rules := make([]entity.GroupRule, 0, len(request.Body.Rules))
+	for _, in := range request.Body.Rules {
+		rule := entity.GroupRule{Fields: in.Fields}
+		if in.WindowSeconds != nil {
+			rule.Window = time.Duration(*in.WindowSeconds) * time.Second
+		}
+		rules = append(rules, rule)
+	}
+
+	saved, err := h.routes.SaveGroupRules(ctx, request.WorkspaceId, rules)
+	if err != nil {
+		status, p := routeProblem(err)
+		switch status {
+		case http.StatusBadRequest:
+			return api.SaveAlertGroupRules400ApplicationProblemPlusJSONResponse(p), nil
+		case http.StatusUnauthorized:
+			return api.SaveAlertGroupRules401ApplicationProblemPlusJSONResponse(p), nil
+		case http.StatusForbidden:
+			return api.SaveAlertGroupRules403ApplicationProblemPlusJSONResponse(p), nil
+		case http.StatusNotFound:
+			return api.SaveAlertGroupRules404ApplicationProblemPlusJSONResponse(p), nil
+		}
+		return nil, err
+	}
+	items := make([]api.AlertGroupRule, 0, len(saved))
+	for _, g := range saved {
+		items = append(items, groupRuleDTO(g))
+	}
+	return api.SaveAlertGroupRules200JSONResponse{Items: items}, nil
 }
 
 func (h *handler) SetDefaultAlertPolicy(ctx context.Context, request api.SetDefaultAlertPolicyRequestObject) (api.SetDefaultAlertPolicyResponseObject, error) {

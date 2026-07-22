@@ -65,6 +65,10 @@ const (
 	ActionAlertSourceMappingSaved  = "alert_source.mapping_saved"
 	ActionAlertAcknowledged        = "alert.acknowledged"
 	ActionAlertResolved            = "alert.resolved"
+	ActionAlertMonitorCreated      = "alert_monitor.created"
+	ActionAlertMonitorUpdated      = "alert_monitor.updated"
+	ActionAlertMonitorDeleted      = "alert_monitor.deleted"
+	ActionAlertGroupRulesSaved     = "alert_group_rules.saved"
 )
 
 const (

@@ -85,6 +85,79 @@ func (mr *MockAlertMockRecorder) ApplyRouting(ctx, alertID, policyRef, groupKey,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyRouting", reflect.TypeOf((*MockAlert)(nil).ApplyRouting), ctx, alertID, policyRef, groupKey, silenceID, suppressedAt)
 }
 
+// AttachToParent mocks base method.
+func (m *MockAlert) AttachToParent(ctx context.Context, childID, parentID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AttachToParent", ctx, childID, parentID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AttachToParent indicates an expected call of AttachToParent.
+func (mr *MockAlertMockRecorder) AttachToParent(ctx, childID, parentID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AttachToParent", reflect.TypeOf((*MockAlert)(nil).AttachToParent), ctx, childID, parentID)
+}
+
+// CountsBySource mocks base method.
+func (m *MockAlert) CountsBySource(ctx context.Context, sourceIDs []string, since time.Time, buckets int) (map[string][]int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountsBySource", ctx, sourceIDs, since, buckets)
+	ret0, _ := ret[0].(map[string][]int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountsBySource indicates an expected call of CountsBySource.
+func (mr *MockAlertMockRecorder) CountsBySource(ctx, sourceIDs, since, buckets any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountsBySource", reflect.TypeOf((*MockAlert)(nil).CountsBySource), ctx, sourceIDs, since, buckets)
+}
+
+// DetachFromParent mocks base method.
+func (m *MockAlert) DetachFromParent(ctx context.Context, childID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DetachFromParent", ctx, childID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DetachFromParent indicates an expected call of DetachFromParent.
+func (mr *MockAlertMockRecorder) DetachFromParent(ctx, childID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DetachFromParent", reflect.TypeOf((*MockAlert)(nil).DetachFromParent), ctx, childID)
+}
+
+// ExpireStale mocks base method.
+func (m *MockAlert) ExpireStale(ctx context.Context, now time.Time, limit int) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExpireStale", ctx, now, limit)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ExpireStale indicates an expected call of ExpireStale.
+func (mr *MockAlertMockRecorder) ExpireStale(ctx, now, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExpireStale", reflect.TypeOf((*MockAlert)(nil).ExpireStale), ctx, now, limit)
+}
+
+// Facets mocks base method.
+func (m *MockAlert) Facets(ctx context.Context, workspaceID string, since time.Time) (entity.AlertFacets, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Facets", ctx, workspaceID, since)
+	ret0, _ := ret[0].(entity.AlertFacets)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Facets indicates an expected call of Facets.
+func (mr *MockAlertMockRecorder) Facets(ctx, workspaceID, since any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Facets", reflect.TypeOf((*MockAlert)(nil).Facets), ctx, workspaceID, since)
+}
+
 // FindResolved mocks base method.
 func (m *MockAlert) FindResolved(ctx context.Context, workspaceID, sourceID, dedupKey string, endedAt time.Time) (entity.Alert, error) {
 	m.ctrl.T.Helper()
@@ -144,6 +217,21 @@ func (m *MockAlert) List(ctx context.Context, workspaceID string, filter entity.
 func (mr *MockAlertMockRecorder) List(ctx, workspaceID, filter any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockAlert)(nil).List), ctx, workspaceID, filter)
+}
+
+// ListChildren mocks base method.
+func (m *MockAlert) ListChildren(ctx context.Context, parentIDs []string) (map[string][]entity.AlertChild, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListChildren", ctx, parentIDs)
+	ret0, _ := ret[0].(map[string][]entity.AlertChild)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListChildren indicates an expected call of ListChildren.
+func (mr *MockAlertMockRecorder) ListChildren(ctx, parentIDs any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListChildren", reflect.TypeOf((*MockAlert)(nil).ListChildren), ctx, parentIDs)
 }
 
 // ListEvents mocks base method.
@@ -219,6 +307,37 @@ func (m *MockAlert) ResolveByDedupKey(ctx context.Context, workspaceID, sourceID
 func (mr *MockAlertMockRecorder) ResolveByDedupKey(ctx, workspaceID, sourceID, dedupKey, endedAt, mode any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResolveByDedupKey", reflect.TypeOf((*MockAlert)(nil).ResolveByDedupKey), ctx, workspaceID, sourceID, dedupKey, endedAt, mode)
+}
+
+// RollUpParent mocks base method.
+func (m *MockAlert) RollUpParent(ctx context.Context, parentID string, at time.Time) (entity.Alert, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RollUpParent", ctx, parentID, at)
+	ret0, _ := ret[0].(entity.Alert)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RollUpParent indicates an expected call of RollUpParent.
+func (mr *MockAlertMockRecorder) RollUpParent(ctx, parentID, at any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RollUpParent", reflect.TypeOf((*MockAlert)(nil).RollUpParent), ctx, parentID, at)
+}
+
+// UpsertGroupParent mocks base method.
+func (m *MockAlert) UpsertGroupParent(ctx context.Context, in entity.AlertUpsert, groupKey string) (entity.Alert, entity.IngestOutcome, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpsertGroupParent", ctx, in, groupKey)
+	ret0, _ := ret[0].(entity.Alert)
+	ret1, _ := ret[1].(entity.IngestOutcome)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// UpsertGroupParent indicates an expected call of UpsertGroupParent.
+func (mr *MockAlertMockRecorder) UpsertGroupParent(ctx, in, groupKey any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertGroupParent", reflect.TypeOf((*MockAlert)(nil).UpsertGroupParent), ctx, in, groupKey)
 }
 
 // UpsertOpen mocks base method.

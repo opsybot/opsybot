@@ -20,6 +20,14 @@ type Config struct {
 	Auth            Auth          `mapstructure:"auth"`
 	Mailer          Mailer        `mapstructure:"mailer"`
 	Ingest          Ingest        `mapstructure:"ingest"`
+	Cron            Cron          `mapstructure:"cron"`
+}
+
+type Cron struct {
+	HeartbeatSweep  time.Duration `mapstructure:"heartbeat_sweep"`
+	AlertAutoResolve time.Duration `mapstructure:"alert_autoresolve"`
+	IngestRetention time.Duration `mapstructure:"ingest_retention"`
+	JobTimeout      time.Duration `mapstructure:"job_timeout"`
 }
 
 type Ingest struct {
@@ -218,6 +226,10 @@ func New(cfgFile string) (Config, error) {
 	v.SetDefault("ingest.max_concurrent", 64)
 	v.SetDefault("ingest.rate_per_min", 600)
 	v.SetDefault("ingest.failure_retention", "168h")
+	v.SetDefault("cron.heartbeat_sweep", "30s")
+	v.SetDefault("cron.alert_autoresolve", "5m")
+	v.SetDefault("cron.ingest_retention", "1h")
+	v.SetDefault("cron.job_timeout", "2m")
 	v.SetDefault("mailer.host", "")
 	v.SetDefault("mailer.port", 587)
 	v.SetDefault("mailer.username", "")

@@ -3,7 +3,9 @@ package internal
 import (
 	"github.com/goforj/wire"
 
+	"github.com/opsybot/opsybot/internal/cron"
 	"github.com/opsybot/opsybot/internal/repository/alert"
+	"github.com/opsybot/opsybot/internal/repository/alert_monitor"
 	"github.com/opsybot/opsybot/internal/repository/alert_route"
 	"github.com/opsybot/opsybot/internal/repository/alert_source"
 	"github.com/opsybot/opsybot/internal/repository/api_key"
@@ -30,6 +32,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/user_identity"
 	"github.com/opsybot/opsybot/internal/repository/workspace"
 	"github.com/opsybot/opsybot/internal/service"
+	"github.com/opsybot/opsybot/internal/service/alert_monitors"
 	"github.com/opsybot/opsybot/internal/service/alert_routes"
 	"github.com/opsybot/opsybot/internal/service/alert_sources"
 	"github.com/opsybot/opsybot/internal/service/alerts"
@@ -75,6 +78,7 @@ var repositoryProviders = wire.NewSet(
 	alert.New,
 	ingest_event.New,
 	alert_route.New,
+	alert_monitor.New,
 	silence.New,
 )
 
@@ -96,7 +100,14 @@ var serviceProviders = wire.NewSet(
 	alerts.New,
 	ingest.New,
 	alert_routes.New,
+	alert_monitors.New,
 	silences.New,
+)
+
+var cronProviders = wire.NewSet(
+	cron.NewHeartbeatSweep,
+	cron.NewAlertAutoResolve,
+	cron.NewIngestRetention,
 )
 
 func scheduleReferenceSources(schedules service.Schedules) []service.ReferenceSource {

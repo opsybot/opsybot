@@ -9,22 +9,41 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
-	import { tick, untrack } from 'svelte';
+	import { onDestroy, onMount, untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { enhance } from '$app/forms';
 	import CondChips from '$lib/components/alertsources/cond-chips.svelte';
+	import GroupRules from '$lib/components/alertsources/group-rules.svelte';
+	import PolicyField from '$lib/components/alertsources/policy-field.svelte';
 	import RuleDialog from '$lib/components/alertsources/rule-dialog.svelte';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import * as Select from '$lib/components/ui/select';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import { RT_POLICIES, evaluateSample, type RoutingRule } from '$lib/alertsources';
+	import { type RoutingRule } from '$lib/alertsources';
+	import type { RoutePreview } from '$lib/server/alertsources';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
 	let sample = $state(untrack(() => data.sample));
-	const test = $derived(evaluateSample(sample, data.rules, data.defaultPolicy));
+	let preview = $state<RoutePreview | null>(null);
+	let previewError = $state('');
+	let previewForm: HTMLFormElement;
+	let debounce: ReturnType<typeof setTimeout> | null = null;
+
+	const matchedIndex = $derived(
+		preview?.matchedRouteId ? data.rules.findIndex((rule) => rule.id === preview?.matchedRouteId) : -1
+	);
+
+	function evaluate() {
+		if (debounce) clearTimeout(debounce);
+		debounce = setTimeout(() => previewForm.requestSubmit(), 400);
+	}
+
+	onMount(evaluate);
+	onDestroy(() => {
+		if (debounce) clearTimeout(debounce);
+	});
 
 	let dialogOpen = $state(false);
 	let editing = $state<RoutingRule | null>(null);
@@ -42,12 +61,6 @@
 	$effect(() => {
 		defaultPolicy = data.defaultPolicy;
 	});
-	let defaultForm: HTMLFormElement;
-	async function changeDefault(policy: string) {
-		defaultPolicy = policy;
-		await tick();
-		defaultForm.requestSubmit();
-	}
 </script>
 
 <div class="grid items-start gap-3.5 min-[1100px]:[grid-template-columns:minmax(0,1fr)_340px]">
@@ -64,7 +77,7 @@
 		</div>
 
 		{#each data.rules as rule, index (rule.id)}
-			{@const hit = test.ok && test.index === index}
+			{@const hit = matchedIndex === index}
 			<div
 				data-rule={rule.id}
 				class="bg-card flex items-start gap-3 rounded-xl border px-[14px] py-[13px] transition-colors {hit
@@ -123,8 +136,8 @@
 		{/each}
 
 		<div
-			class="bg-card flex items-start gap-3 rounded-xl border border-dashed px-[14px] py-[13px] transition-colors {test.ok &&
-			test.index === -1
+			class="bg-card flex items-start gap-3 rounded-xl border border-dashed px-[14px] py-[13px] transition-colors {!!preview &&
+			matchedIndex === -1
 				? 'border-brand-edge shadow-[var(--glow-brand)]'
 				: ''}"
 		>
@@ -139,36 +152,41 @@
 					<span class="text-subtle-foreground text-[11.5px]">
 						always last: catches everything unmatched
 					</span>
-					{#if test.ok && test.index === -1}
+					{#if preview && matchedIndex === -1}
 						<Badge tone="brand" size="sm" dot>matches test alert</Badge>
 					{/if}
 				</div>
 				<div class="flex items-center gap-2">
 					<ArrowRightIcon class="text-subtle-foreground size-3 shrink-0" />
-					<form method="POST" action="?/setDefault" bind:this={defaultForm} use:enhance={() =>
-						async ({ result, update }) => {
-							await update({ reset: false });
-							if (result.type === 'success') toast.success(`Default route now targets ${defaultPolicy}.`);
-						}}
+					<form
+						method="POST"
+						action="?/setDefault"
+						class="flex items-end gap-2"
+						use:enhance={() =>
+							async ({ result, update }) => {
+								await update({ reset: false });
+								if (result.type === 'success') toast.success(`Default route now targets ${defaultPolicy}.`);
+							}}
 					>
+						<PolicyField
+							id="default-policy"
+							label=""
+							known={data.knownPolicies}
+							bind:value={defaultPolicy}
+							class="w-[210px]"
+						/>
 						<input type="hidden" name="policy" value={defaultPolicy} />
-						<Select.Root type="single" value={defaultPolicy} onValueChange={changeDefault}>
-							<Select.Trigger size="sm" class="w-[210px]" aria-label="Default route policy">
-								{defaultPolicy}
-							</Select.Trigger>
-							<Select.Content>
-								<Select.Group>
-									{#each RT_POLICIES as policy (policy)}
-										<Select.Item value={policy} label={policy}>{policy}</Select.Item>
-									{/each}
-								</Select.Group>
-							</Select.Content>
-						</Select.Root>
+						<Button type="submit" size="sm" variant="secondary" disabled={defaultPolicy === data.defaultPolicy}>
+							Save
+						</Button>
 					</form>
 				</div>
 			</div>
 		</div>
 	</div>
+
+	<div class="flex flex-col gap-3.5">
+	<GroupRules rules={data.groupRules} />
 
 	<div class="bg-card overflow-hidden rounded-xl border">
 		<header class="flex items-center gap-2 border-b px-4 py-3">
@@ -176,32 +194,63 @@
 			<span class="text-[13.5px] font-semibold">Test an alert</span>
 		</header>
 		<div class="flex flex-col gap-2.5 p-[14px]">
-			<Textarea bind:value={sample} rows={11} class="font-mono text-[11.5px] leading-[1.6]" aria-label="Sample alert JSON" />
+			<Textarea bind:value={sample} oninput={evaluate} rows={11} class="font-mono text-[11.5px] leading-[1.6]" aria-label="Sample alert JSON" />
 			<div role="status" aria-live="polite">
-				{#if test.ok}
+				{#if preview}
 					<div
-						class="bg-brand-wash border-brand-edge text-muted-foreground flex items-center gap-2 rounded-md border px-[11px] py-[9px]"
+						class="bg-brand-wash border-brand-edge text-muted-foreground flex flex-col gap-1 rounded-md border px-[11px] py-[9px]"
 					>
-						<CheckIcon class="text-primary size-[13px] shrink-0" />
-						<span class="text-[12.5px]">
-							{test.index === -1 ? 'No rule matches: default route' : `Matches rule ${test.index + 1}`}
-							→ <span class="font-mono text-[12px]">{test.policy}</span>
+						<span class="flex items-center gap-2 text-[12.5px]">
+							<CheckIcon class="text-primary size-[13px] shrink-0" />
+							{matchedIndex === -1 ? 'No rule matches: default route' : `Matches rule ${matchedIndex + 1}`}
+							→ <span class="font-mono text-[12px]">{preview.policyRef}</span>
 						</span>
+						{#if preview.groupFields.length}
+							<span class="text-subtle-foreground pl-[21px] text-[11.5px]">
+								Groups by <span class="font-mono">{preview.groupFields.join(', ')}</span>
+							</span>
+						{/if}
 					</div>
-				{:else}
+				{:else if previewError}
 					<div
 						class="bg-warning-wash border-warning-edge text-muted-foreground flex items-center gap-2 rounded-md border px-[11px] py-[9px]"
 					>
 						<TriangleAlertIcon class="text-warning-ink size-[13px] shrink-0" />
-						<span class="text-[12.5px]">{test.error}</span>
+						<span class="text-[12.5px]">{previewError}</span>
 					</div>
 				{/if}
 			</div>
 			<p class="text-subtle-foreground m-0 text-[11.5px] leading-[1.5]">
-				Edit the JSON: the result updates as you type. Nothing is paged.
+				Edit the JSON and Opsybot evaluates it with the same engine that routes real alerts. Nothing
+				is paged.
 			</p>
+			<form
+				method="POST"
+				action="?/preview"
+				bind:this={previewForm}
+				class="hidden"
+				use:enhance={() => async ({ result }) => {
+					if (result.type === 'failure') {
+						preview = null;
+						previewError = String(result.data?.error ?? 'Could not evaluate that sample.');
+						return;
+					}
+					if (result.type !== 'success') return;
+					previewError = '';
+					preview = result.data?.preview as RoutePreview;
+				}}
+			>
+				<input type="hidden" name="payload" value={sample} />
+			</form>
 		</div>
+	</div>
 	</div>
 </div>
 
-<RuleDialog bind:open={dialogOpen} initial={editing} rulesCount={data.rules.length} />
+<RuleDialog
+	bind:open={dialogOpen}
+	initial={editing}
+	rulesCount={data.rules.length}
+	knownPolicies={data.knownPolicies}
+	defaultPolicy={data.defaultPolicy}
+/>
