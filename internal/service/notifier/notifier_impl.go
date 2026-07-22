@@ -19,14 +19,19 @@ func New(mailer repository.Mailer, pager repository.Pager) service.Notifier {
 	return &srv{mailer: mailer, pager: pager}
 }
 
-func (s *srv) PageUser(ctx context.Context, member entity.Member, page entity.AlertPage) entity.NotifyResult {
-	if member.Email == "" {
-		return entity.NotifyResult{Detail: "no email address on file"}
+func (s *srv) Send(ctx context.Context, target entity.NotifyTarget, page entity.AlertPage) entity.NotifyResult {
+	switch target.Channel {
+	case entity.ChannelTypeEmail:
+		if target.Detail == "" {
+			return entity.NotifyResult{Detail: "no email address on file"}
+		}
+		if err := s.mailer.SendPage(ctx, target.Detail, page); err != nil {
+			return entity.NotifyResult{Detail: err.Error()}
+		}
+		return entity.NotifyResult{Delivered: true, Detail: "email sent"}
+	default:
+		return entity.NotifyResult{Detail: "channel not connected yet"}
 	}
-	if err := s.mailer.SendPage(ctx, member.Email, page); err != nil {
-		return entity.NotifyResult{Detail: err.Error()}
-	}
-	return entity.NotifyResult{Delivered: true, Detail: "email sent"}
 }
 
 type webhookAlertPayload struct {

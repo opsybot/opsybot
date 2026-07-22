@@ -30,13 +30,14 @@ type Webhook struct {
 }
 
 type Cron struct {
-	HeartbeatSweep   time.Duration `mapstructure:"heartbeat_sweep"`
-	AlertAutoResolve time.Duration `mapstructure:"alert_autoresolve"`
-	IngestRetention  string        `mapstructure:"ingest_retention"`
-	EscalationSweep  time.Duration `mapstructure:"escalation_sweep"`
-	JobTimeout       time.Duration `mapstructure:"job_timeout"`
-	LockExpiry       time.Duration `mapstructure:"lock_expiry"`
-	StopTimeout      time.Duration `mapstructure:"stop_timeout"`
+	HeartbeatSweep    time.Duration `mapstructure:"heartbeat_sweep"`
+	AlertAutoResolve  time.Duration `mapstructure:"alert_autoresolve"`
+	IngestRetention   string        `mapstructure:"ingest_retention"`
+	EscalationSweep   time.Duration `mapstructure:"escalation_sweep"`
+	NotificationSweep time.Duration `mapstructure:"notification_sweep"`
+	JobTimeout        time.Duration `mapstructure:"job_timeout"`
+	LockExpiry        time.Duration `mapstructure:"lock_expiry"`
+	StopTimeout       time.Duration `mapstructure:"stop_timeout"`
 }
 
 type Ingest struct {
@@ -59,22 +60,24 @@ type Mailer struct {
 }
 
 type Auth struct {
-	BaseURL             string        `mapstructure:"base_url"`
-	SecretKey           string        `mapstructure:"secret_key"`
-	SecretKeyPrevious   string        `mapstructure:"secret_key_previous"`
-	CookieName          string        `mapstructure:"cookie_name"`
-	CookieSecure        bool          `mapstructure:"cookie_secure"`
-	SessionIdleTTL      time.Duration `mapstructure:"session_idle_ttl"`
-	SessionAbsoluteTTL  time.Duration `mapstructure:"session_absolute_ttl"`
-	SessionBrowserTTL   time.Duration `mapstructure:"session_browser_ttl"`
-	SessionTouchWindow  time.Duration `mapstructure:"session_touch_window"`
-	TrustProxyHeaders   bool          `mapstructure:"trust_proxy_headers"`
-	InviteTTL           time.Duration `mapstructure:"invite_ttl"`
-	RateLoginPerMin     int           `mapstructure:"rate_login_per_min"`
-	RateSignupPerHour   int           `mapstructure:"rate_signup_per_hour"`
-	RateSlugCheckPerMin int           `mapstructure:"rate_slug_check_per_min"`
-	RateResetPerHour    int           `mapstructure:"rate_reset_per_hour"`
-	RateSSOPerMin       int           `mapstructure:"rate_sso_per_min"`
+	BaseURL                string        `mapstructure:"base_url"`
+	SecretKey              string        `mapstructure:"secret_key"`
+	SecretKeyPrevious      string        `mapstructure:"secret_key_previous"`
+	CookieName             string        `mapstructure:"cookie_name"`
+	CookieSecure           bool          `mapstructure:"cookie_secure"`
+	SessionIdleTTL         time.Duration `mapstructure:"session_idle_ttl"`
+	SessionAbsoluteTTL     time.Duration `mapstructure:"session_absolute_ttl"`
+	SessionBrowserTTL      time.Duration `mapstructure:"session_browser_ttl"`
+	SessionTouchWindow     time.Duration `mapstructure:"session_touch_window"`
+	TrustProxyHeaders      bool          `mapstructure:"trust_proxy_headers"`
+	InviteTTL              time.Duration `mapstructure:"invite_ttl"`
+	RateLoginPerMin        int           `mapstructure:"rate_login_per_min"`
+	RateSignupPerHour      int           `mapstructure:"rate_signup_per_hour"`
+	RateSlugCheckPerMin    int           `mapstructure:"rate_slug_check_per_min"`
+	RateResetPerHour       int           `mapstructure:"rate_reset_per_hour"`
+	RateSSOPerMin          int           `mapstructure:"rate_sso_per_min"`
+	RateNotifyPerMin       int           `mapstructure:"rate_notify_per_min"`
+	RateChannelTestPerHour int           `mapstructure:"rate_channel_test_per_hour"`
 }
 
 type Environment string
@@ -238,6 +241,8 @@ func New(cfgFile string) (Config, error) {
 	v.SetDefault("auth.rate_slug_check_per_min", 60)
 	v.SetDefault("auth.rate_reset_per_hour", 5)
 	v.SetDefault("auth.rate_sso_per_min", 20)
+	v.SetDefault("auth.rate_notify_per_min", 60)
+	v.SetDefault("auth.rate_channel_test_per_hour", 10)
 	v.SetDefault("ingest.base_url", "")
 	v.SetDefault("ingest.max_body_bytes", 1048576)
 	v.SetDefault("ingest.max_concurrent", 64)
@@ -250,6 +255,7 @@ func New(cfgFile string) (Config, error) {
 	v.SetDefault("cron.lock_expiry", "60s")
 	v.SetDefault("cron.stop_timeout", "30s")
 	v.SetDefault("cron.escalation_sweep", "10s")
+	v.SetDefault("cron.notification_sweep", "5s")
 	v.SetDefault("webhook.timeout", "10s")
 	v.SetDefault("webhook.user_agent", "opsybot")
 	v.SetDefault("mailer.host", "")

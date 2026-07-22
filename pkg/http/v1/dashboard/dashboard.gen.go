@@ -595,6 +595,39 @@ func (e MemberStatus) Valid() bool {
 	}
 }
 
+// Defines values for NotificationStepChannelType.
+const (
+	NotificationStepChannelTypeDiscord  NotificationStepChannelType = "discord"
+	NotificationStepChannelTypeEmail    NotificationStepChannelType = "email"
+	NotificationStepChannelTypeNtfy     NotificationStepChannelType = "ntfy"
+	NotificationStepChannelTypeSlack    NotificationStepChannelType = "slack"
+	NotificationStepChannelTypeTeams    NotificationStepChannelType = "teams"
+	NotificationStepChannelTypeTelegram NotificationStepChannelType = "telegram"
+	NotificationStepChannelTypeWebhook  NotificationStepChannelType = "webhook"
+)
+
+// Valid indicates whether the value is a known member of the NotificationStepChannelType enum.
+func (e NotificationStepChannelType) Valid() bool {
+	switch e {
+	case NotificationStepChannelTypeDiscord:
+		return true
+	case NotificationStepChannelTypeEmail:
+		return true
+	case NotificationStepChannelTypeNtfy:
+		return true
+	case NotificationStepChannelTypeSlack:
+		return true
+	case NotificationStepChannelTypeTeams:
+		return true
+	case NotificationStepChannelTypeTelegram:
+		return true
+	case NotificationStepChannelTypeWebhook:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RecentEscalationState.
 const (
 	RecentEscalationStateAcked     RecentEscalationState = "acked"
@@ -1489,6 +1522,37 @@ type MemberReference struct {
 	Label  string  `json:"label"`
 }
 
+// NotificationQuietHours defines model for NotificationQuietHours.
+type NotificationQuietHours struct {
+	Days        []int  `json:"days"`
+	Enabled     bool   `json:"enabled"`
+	EndMinute   int    `json:"endMinute"`
+	StartMinute int    `json:"startMinute"`
+	Timezone    string `json:"timezone"`
+}
+
+// NotificationRules defines model for NotificationRules.
+type NotificationRules struct {
+	High       []NotificationStep     `json:"high"`
+	Low        []NotificationStep     `json:"low"`
+	QuietHours NotificationQuietHours `json:"quietHours"`
+}
+
+// NotificationSettings defines model for NotificationSettings.
+type NotificationSettings struct {
+	Channels []Channel         `json:"channels"`
+	Rules    NotificationRules `json:"rules"`
+}
+
+// NotificationStep defines model for NotificationStep.
+type NotificationStep struct {
+	ChannelType  NotificationStepChannelType `json:"channelType"`
+	DelayMinutes int                         `json:"delayMinutes"`
+}
+
+// NotificationStepChannelType defines model for NotificationStep.ChannelType.
+type NotificationStepChannelType string
+
 // OnCallShift defines model for OnCallShift.
 type OnCallShift struct {
 	EndsAt       time.Time `json:"endsAt"`
@@ -2068,6 +2132,9 @@ type DeactivateMemberJSONRequestBody = DeactivateMemberRequest
 // ChangeMemberRoleJSONRequestBody defines body for ChangeMemberRole for application/json ContentType.
 type ChangeMemberRoleJSONRequestBody = ChangeRoleRequest
 
+// PutNotificationRulesJSONRequestBody defines body for PutNotificationRules for application/json ContentType.
+type PutNotificationRulesJSONRequestBody = NotificationRules
+
 // CreateScheduleJSONRequestBody defines body for CreateSchedule for application/json ContentType.
 type CreateScheduleJSONRequestBody = CreateScheduleRequest
 
@@ -2340,6 +2407,12 @@ type ServerInterface interface {
 	// Change a member's role
 	// (PUT /workspaces/{workspaceId}/members/{userId}/role)
 	ChangeMemberRole(w http.ResponseWriter, r *http.Request, workspaceId string, userId string)
+	// Get the current user's notification rules and channels for a workspace
+	// (GET /workspaces/{workspaceId}/notification-rules)
+	GetNotificationRules(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Replace the current user's notification rules for a workspace
+	// (PUT /workspaces/{workspaceId}/notification-rules)
+	PutNotificationRules(w http.ResponseWriter, r *http.Request, workspaceId string)
 	// Your upcoming shifts across all schedules
 	// (GET /workspaces/{workspaceId}/on-call)
 	MyOnCall(w http.ResponseWriter, r *http.Request, workspaceId string, params MyOnCallParams)
@@ -2910,6 +2983,18 @@ func (_ Unimplemented) ReactivateMember(w http.ResponseWriter, r *http.Request, 
 // Change a member's role
 // (PUT /workspaces/{workspaceId}/members/{userId}/role)
 func (_ Unimplemented) ChangeMemberRole(w http.ResponseWriter, r *http.Request, workspaceId string, userId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get the current user's notification rules and channels for a workspace
+// (GET /workspaces/{workspaceId}/notification-rules)
+func (_ Unimplemented) GetNotificationRules(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Replace the current user's notification rules for a workspace
+// (PUT /workspaces/{workspaceId}/notification-rules)
+func (_ Unimplemented) PutNotificationRules(w http.ResponseWriter, r *http.Request, workspaceId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -5412,6 +5497,58 @@ func (siw *ServerInterfaceWrapper) ChangeMemberRole(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
+// GetNotificationRules operation middleware
+func (siw *ServerInterfaceWrapper) GetNotificationRules(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetNotificationRules(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutNotificationRules operation middleware
+func (siw *ServerInterfaceWrapper) PutNotificationRules(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutNotificationRules(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // MyOnCall operation middleware
 func (siw *ServerInterfaceWrapper) MyOnCall(w http.ResponseWriter, r *http.Request) {
 
@@ -6612,6 +6749,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/workspaces/{workspaceId}/members/{userId}/role", wrapper.ChangeMemberRole)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/notification-rules", wrapper.GetNotificationRules)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/workspaces/{workspaceId}/notification-rules", wrapper.PutNotificationRules)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/workspaces/{workspaceId}/on-call", wrapper.MyOnCall)
@@ -12095,6 +12238,149 @@ func (response ChangeMemberRole409ApplicationProblemPlusJSONResponse) VisitChang
 	return err
 }
 
+type GetNotificationRulesRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+}
+
+type GetNotificationRulesResponseObject interface {
+	VisitGetNotificationRulesResponse(w http.ResponseWriter) error
+}
+
+type GetNotificationRules200JSONResponse NotificationSettings
+
+func (response GetNotificationRules200JSONResponse) VisitGetNotificationRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNotificationRules401ApplicationProblemPlusJSONResponse Problem
+
+func (response GetNotificationRules401ApplicationProblemPlusJSONResponse) VisitGetNotificationRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNotificationRules403ApplicationProblemPlusJSONResponse Problem
+
+func (response GetNotificationRules403ApplicationProblemPlusJSONResponse) VisitGetNotificationRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNotificationRules404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetNotificationRules404ApplicationProblemPlusJSONResponse) VisitGetNotificationRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutNotificationRulesRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	Body        *PutNotificationRulesJSONRequestBody
+}
+
+type PutNotificationRulesResponseObject interface {
+	VisitPutNotificationRulesResponse(w http.ResponseWriter) error
+}
+
+type PutNotificationRules200JSONResponse NotificationRules
+
+func (response PutNotificationRules200JSONResponse) VisitPutNotificationRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutNotificationRules400ApplicationProblemPlusJSONResponse Problem
+
+func (response PutNotificationRules400ApplicationProblemPlusJSONResponse) VisitPutNotificationRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutNotificationRules401ApplicationProblemPlusJSONResponse Problem
+
+func (response PutNotificationRules401ApplicationProblemPlusJSONResponse) VisitPutNotificationRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutNotificationRules403ApplicationProblemPlusJSONResponse Problem
+
+func (response PutNotificationRules403ApplicationProblemPlusJSONResponse) VisitPutNotificationRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutNotificationRules404ApplicationProblemPlusJSONResponse Problem
+
+func (response PutNotificationRules404ApplicationProblemPlusJSONResponse) VisitPutNotificationRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type MyOnCallRequestObject struct {
 	WorkspaceId string `json:"workspaceId"`
 	Params      MyOnCallParams
@@ -14147,6 +14433,12 @@ type StrictServerInterface interface {
 	// Change a member's role
 	// (PUT /workspaces/{workspaceId}/members/{userId}/role)
 	ChangeMemberRole(ctx context.Context, request ChangeMemberRoleRequestObject) (ChangeMemberRoleResponseObject, error)
+	// Get the current user's notification rules and channels for a workspace
+	// (GET /workspaces/{workspaceId}/notification-rules)
+	GetNotificationRules(ctx context.Context, request GetNotificationRulesRequestObject) (GetNotificationRulesResponseObject, error)
+	// Replace the current user's notification rules for a workspace
+	// (PUT /workspaces/{workspaceId}/notification-rules)
+	PutNotificationRules(ctx context.Context, request PutNotificationRulesRequestObject) (PutNotificationRulesResponseObject, error)
 	// Your upcoming shifts across all schedules
 	// (GET /workspaces/{workspaceId}/on-call)
 	MyOnCall(ctx context.Context, request MyOnCallRequestObject) (MyOnCallResponseObject, error)
@@ -16628,6 +16920,65 @@ func (sh *strictHandler) ChangeMemberRole(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ChangeMemberRoleResponseObject); ok {
 		if err := validResponse.VisitChangeMemberRoleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetNotificationRules operation middleware
+func (sh *strictHandler) GetNotificationRules(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request GetNotificationRulesRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetNotificationRules(ctx, request.(GetNotificationRulesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetNotificationRules")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetNotificationRulesResponseObject); ok {
+		if err := validResponse.VisitGetNotificationRulesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutNotificationRules operation middleware
+func (sh *strictHandler) PutNotificationRules(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request PutNotificationRulesRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	var body PutNotificationRulesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutNotificationRules(ctx, request.(PutNotificationRulesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutNotificationRules")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutNotificationRulesResponseObject); ok {
+		if err := validResponse.VisitPutNotificationRulesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -54,6 +54,8 @@ const (
 	AlertEventResolved   AlertEventKind = "resolved"
 	AlertEventEscalation AlertEventKind = "escalation"
 	AlertEventNotified   AlertEventKind = "notified"
+	AlertEventPush       AlertEventKind = "push"
+	AlertEventChat       AlertEventKind = "chat"
 	AlertEventTimeout    AlertEventKind = "timeout"
 	AlertEventExhausted  AlertEventKind = "exhausted"
 )

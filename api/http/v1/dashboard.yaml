@@ -2412,6 +2412,35 @@ paths:
         "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
         "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
         "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/notification-rules:
+    get:
+      operationId: getNotificationRules
+      summary: Get the current user's notification rules and channels for a workspace
+      tags: [notifications]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Rules, content: { application/json: { schema: { $ref: "#/components/schemas/NotificationSettings" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    put:
+      operationId: putNotificationRules
+      summary: Replace the current user's notification rules for a workspace
+      tags: [notifications]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NotificationRules" }
+      responses:
+        "200": { description: Rules, content: { application/json: { schema: { $ref: "#/components/schemas/NotificationRules" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
   /workspaces/{workspaceId}/escalation-policies:
     get:
       operationId: listEscalationPolicies
@@ -2702,6 +2731,34 @@ components:
         state: { type: string, enum: [running, acked, resolved, exhausted] }
         outcome: { type: string }
         by: { type: string }
+    NotificationStep:
+      type: object
+      required: [channelType, delayMinutes]
+      properties:
+        channelType: { type: string, enum: [slack, teams, discord, telegram, ntfy, email, webhook] }
+        delayMinutes: { type: integer }
+    NotificationQuietHours:
+      type: object
+      required: [enabled, days, startMinute, endMinute, timezone]
+      properties:
+        enabled: { type: boolean }
+        days: { type: array, items: { type: integer } }
+        startMinute: { type: integer }
+        endMinute: { type: integer }
+        timezone: { type: string }
+    NotificationRules:
+      type: object
+      required: [high, low, quietHours]
+      properties:
+        high: { type: array, items: { $ref: "#/components/schemas/NotificationStep" } }
+        low: { type: array, items: { $ref: "#/components/schemas/NotificationStep" } }
+        quietHours: { $ref: "#/components/schemas/NotificationQuietHours" }
+    NotificationSettings:
+      type: object
+      required: [rules, channels]
+      properties:
+        rules: { $ref: "#/components/schemas/NotificationRules" }
+        channels: { type: array, items: { $ref: "#/components/schemas/Channel" } }
     EscalationPolicyDetail:
       type: object
       required: [policy, routes, recent, routed, isDefault]

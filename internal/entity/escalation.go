@@ -340,4 +340,5 @@ type AlertPage struct {
 type NotifyResult struct {
 	Delivered bool
 	Detail    string
+	MessageID string
 }

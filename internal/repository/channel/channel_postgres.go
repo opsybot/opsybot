@@ -61,6 +61,28 @@ func (r *repo) ListByUser(ctx context.Context, userID string) ([]entity.Channel,
 	return out, nil
 }
 
+func (r *repo) ListByUsers(ctx context.Context, userIDs []string) (map[string][]entity.Channel, error) {
+	out := make(map[string][]entity.Channel, len(userIDs))
+	if len(userIDs) == 0 {
+		return out, nil
+	}
+	ids := make([]any, len(userIDs))
+	for i, id := range userIDs {
+		ids[i] = id
+	}
+	rows, err := dbpostgres.UserChannels(
+		qm.WhereIn("user_id IN ?", ids...),
+		qm.OrderBy("user_id, created_at, id"),
+	).All(ctx, r.db.Querier(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("list channels by users: %w", err)
+	}
+	for _, m := range rows {
+		out[m.UserID] = append(out[m.UserID], toEntity(m))
+	}
+	return out, nil
+}
+
 func (r *repo) Get(ctx context.Context, id, userID string) (entity.Channel, error) {
 	m, err := dbpostgres.UserChannels(qm.Where("id = ? AND user_id = ?", id, userID)).One(ctx, r.db.Querier(ctx))
 	if err != nil {

@@ -16,20 +16,21 @@ import (
 )
 
 type srv struct {
-	tx         repository.Transactor
-	lock       repository.Lock
-	workspaces repository.Workspace
-	members    repository.Member
-	teams      repository.Team
-	schedules  repository.Schedule
-	policies   repository.EscalationPolicy
-	runs       repository.EscalationRun
-	alerts     repository.Alert
-	routes     repository.AlertRoute
-	policy     repository.Policy
-	audit      repository.Audit
-	notifier   service.Notifier
-	cfg        config.Auth
+	tx            repository.Transactor
+	lock          repository.Lock
+	workspaces    repository.Workspace
+	members       repository.Member
+	teams         repository.Team
+	schedules     repository.Schedule
+	policies      repository.EscalationPolicy
+	runs          repository.EscalationRun
+	alerts        repository.Alert
+	routes        repository.AlertRoute
+	policy        repository.Policy
+	audit         repository.Audit
+	notifier      service.Notifier
+	notifications service.Notifications
+	cfg           config.Auth
 }
 
 func New(
@@ -46,12 +47,14 @@ func New(
 	policy repository.Policy,
 	audit repository.Audit,
 	notifier service.Notifier,
+	notifications service.Notifications,
 	cfg config.Auth,
 ) service.Escalations {
 	return &srv{
 		tx: tx, lock: lock, workspaces: workspaces, members: members, teams: teams,
 		schedules: schedules, policies: policies, runs: runs, alerts: alerts,
-		routes: routes, policy: policy, audit: audit, notifier: notifier, cfg: cfg,
+		routes: routes, policy: policy, audit: audit, notifier: notifier,
+		notifications: notifications, cfg: cfg,
 	}
 }
 
@@ -533,12 +536,14 @@ func (s *srv) OnAcked(ctx context.Context, workspaceID string, alertIDs []string
 			return err
 		}
 	}
-	return nil
+	return s.notifications.StopForAlerts(ctx, workspaceID, alertIDs, entity.NotifyStopAcked, now)
 }
 
 func (s *srv) OnResolved(ctx context.Context, workspaceID string, alertIDs []string, now time.Time) error {
-	_, err := s.runs.MarkResolved(ctx, workspaceID, alertIDs, now)
-	return err
+	if _, err := s.runs.MarkResolved(ctx, workspaceID, alertIDs, now); err != nil {
+		return err
+	}
+	return s.notifications.StopForAlerts(ctx, workspaceID, alertIDs, entity.NotifyStopResolved, now)
 }
 
 func (s *srv) RunForAlert(ctx context.Context, alertID string) (entity.EscalationRun, error) {
@@ -600,12 +605,10 @@ func (s *srv) Advance(ctx context.Context, now time.Time) (int, error) {
 }
 
 type pendingNotify struct {
-	level     entity.EscalationLevel
-	levelNum  int
-	targets   []entity.EscalationTarget
-	idx       directoryIndex
-	alert     entity.Alert
-	policyURL string
+	webhooks []entity.EscalationWebhook
+	runIDs   []string
+	alert    entity.Alert
+	page     entity.AlertPage
 }
 
 func (s *srv) executeRun(ctx context.Context, stale entity.EscalationRun, now time.Time, force bool) error {
@@ -700,19 +703,57 @@ func (s *srv) executeRun(ctx context.Context, stale entity.EscalationRun, now ti
 			}); err != nil {
 				return err
 			}
-			if len(picked) > 0 {
-				workspace, err := s.workspaces.GetByID(ctx, run.WorkspaceID)
-				if err != nil {
-					return err
+			if len(picked) == 0 {
+				return nil
+			}
+			workspace, err := s.workspaces.GetByID(ctx, run.WorkspaceID)
+			if err != nil {
+				return err
+			}
+			collected := &pendingNotify{
+				alert: alert,
+				page:  entity.BuildAlertPage(alert, workspace.Slug, run.PolicySlug, s.cfg.BaseURL, levelNum),
+			}
+			for _, target := range picked {
+				for _, d := range s.resolveDeliveries(ctx, run, target, idx, now) {
+					if d.webhook.ID != "" {
+						collected.webhooks = append(collected.webhooks, d.webhook)
+						continue
+					}
+					if d.gapResult != "" {
+						if err := s.alerts.AppendEvent(ctx, run.AlertID, entity.AlertEvent{
+							At: now, Kind: entity.AlertEventNotified, Text: d.label + " failed", Result: d.gapResult,
+						}); err != nil {
+							return err
+						}
+						continue
+					}
+					started, err := s.notifications.Page(ctx, entity.NotifyRequest{
+						WorkspaceID: run.WorkspaceID, AlertID: run.AlertID, UserID: d.userID, Email: d.email,
+						Label: d.name, PolicySlug: run.PolicySlug, EscalationID: run.ID,
+						EscalationCycle: run.Cycle, Level: levelNum, Severity: alert.Severity, At: now,
+					})
+					if err != nil {
+						return err
+					}
+					if len(started.Plan.Steps) == 0 {
+						if err := s.alerts.AppendEvent(ctx, run.AlertID, entity.AlertEvent{
+							At: now, Kind: entity.AlertEventNotified, Text: d.name + " has no reachable channel", Result: "no channel",
+						}); err != nil {
+							return err
+						}
+						continue
+					}
+					if err := s.alerts.AppendEvent(ctx, run.AlertID, entity.AlertEvent{
+						At: now, Kind: entity.AlertEventNotified, Text: d.label, Result: entity.NotifyChannelSummary(started.Plan),
+					}); err != nil {
+						return err
+					}
+					collected.runIDs = append(collected.runIDs, started.ID)
 				}
-				pending = &pendingNotify{
-					level:     tick.Level,
-					levelNum:  levelNum,
-					targets:   picked,
-					idx:       idx,
-					alert:     alert,
-					policyURL: strings.TrimRight(s.cfg.BaseURL, "/") + "/" + workspace.Slug + "/alerts/" + alert.ID,
-				}
+			}
+			if len(collected.webhooks) > 0 || len(collected.runIDs) > 0 {
+				pending = collected
 			}
 			return nil
 		}
@@ -743,38 +784,35 @@ func describeTargets(targets []entity.EscalationTarget, idx directoryIndex) stri
 }
 
 func (s *srv) deliver(ctx context.Context, run entity.EscalationRun, p pendingNotify, now time.Time) {
-	page := entity.AlertPage{
-		Severity:   p.alert.Severity,
-		Service:    p.alert.ServiceName,
-		Title:      p.alert.Title,
-		StartedAt:  p.alert.StartedAt,
-		PolicySlug: run.PolicySlug,
-		Level:      p.levelNum,
-		AlertURL:   p.policyURL,
+	for _, hook := range p.webhooks {
+		result := s.notifier.CallWebhook(ctx, hook, p.alert, p.page)
+		text := "Called webhook " + hook.Slug
+		if !result.Delivered {
+			text = text + " failed"
+		}
+		if err := s.alerts.AppendEvent(ctx, run.AlertID, entity.AlertEvent{
+			At:     time.Now().UTC(),
+			Kind:   entity.AlertEventNotified,
+			Text:   text,
+			Result: result.Detail,
+		}); err != nil {
+			logger.From(ctx).ErrorContext(ctx, "record webhook delivery failed", "alert", run.AlertID, "error", err)
+		}
 	}
-	for _, target := range p.targets {
-		for _, delivery := range s.resolveDeliveries(ctx, run, target, p.idx, now) {
-			result := delivery.send(page)
-			text := delivery.label
-			detail := result.Detail
-			if !result.Delivered {
-				text = text + " failed"
-			}
-			if err := s.alerts.AppendEvent(ctx, run.AlertID, entity.AlertEvent{
-				At:     time.Now().UTC(),
-				Kind:   entity.AlertEventNotified,
-				Text:   text,
-				Result: detail,
-			}); err != nil {
-				logger.From(ctx).ErrorContext(ctx, "record notification failed", "alert", run.AlertID, "error", err)
-			}
+	if len(p.runIDs) > 0 {
+		if err := s.notifications.RunNow(ctx, p.runIDs, now); err != nil {
+			logger.From(ctx).ErrorContext(ctx, "run notification ladders failed", "alert", run.AlertID, "error", err)
 		}
 	}
 }
 
 type delivery struct {
-	label string
-	send  func(page entity.AlertPage) entity.NotifyResult
+	label     string
+	name      string
+	userID    string
+	email     string
+	webhook   entity.EscalationWebhook
+	gapResult string
 }
 
 func (s *srv) resolveDeliveries(ctx context.Context, run entity.EscalationRun, target entity.EscalationTarget, idx directoryIndex, now time.Time) []delivery {
@@ -784,10 +822,7 @@ func (s *srv) resolveDeliveries(ctx context.Context, run entity.EscalationRun, t
 		if !ok || member.Status != entity.MemberStatusActive {
 			return nil
 		}
-		return []delivery{{
-			label: "Emailed " + member.Name,
-			send:  func(page entity.AlertPage) entity.NotifyResult { return s.notifier.PageUser(ctx, member, page) },
-		}}
+		return []delivery{{label: "Paging " + member.Name, name: member.Name, userID: member.UserID, email: member.Email}}
 	case entity.EscalationTargetSchedule:
 		sched, ok := idx.schedules[target.Ref]
 		if !ok {
@@ -795,21 +830,15 @@ func (s *srv) resolveDeliveries(ctx context.Context, run entity.EscalationRun, t
 		}
 		cover := sched.OnCallAt(now)
 		if cover.UserID == "" {
-			return []delivery{{
-				label: "No one is on call for " + sched.Slug,
-				send:  func(entity.AlertPage) entity.NotifyResult { return entity.NotifyResult{Detail: "schedule gap"} },
-			}}
+			return []delivery{{label: "No one is on call for " + sched.Slug, gapResult: "schedule gap"}}
 		}
 		member, ok := idx.members[cover.UserID]
 		if !ok || member.Status != entity.MemberStatusActive {
-			return []delivery{{
-				label: "On-call for " + sched.Slug + " can't be paged",
-				send:  func(entity.AlertPage) entity.NotifyResult { return entity.NotifyResult{Detail: "deactivated member"} },
-			}}
+			return []delivery{{label: "On-call for " + sched.Slug + " can't be paged", gapResult: "deactivated member"}}
 		}
 		return []delivery{{
-			label: "Emailed " + member.Name + " (on call for " + sched.Slug + ")",
-			send:  func(page entity.AlertPage) entity.NotifyResult { return s.notifier.PageUser(ctx, member, page) },
+			label: "Paging " + member.Name + " (on call for " + sched.Slug + ")",
+			name:  member.Name, userID: member.UserID, email: member.Email,
 		}}
 	case entity.EscalationTargetTeam:
 		team, ok := idx.teams[target.Ref]
@@ -823,8 +852,8 @@ func (s *srv) resolveDeliveries(ctx context.Context, run entity.EscalationRun, t
 				continue
 			}
 			out = append(out, delivery{
-				label: "Emailed " + member.Name + " (team " + team.Slug + ")",
-				send:  func(page entity.AlertPage) entity.NotifyResult { return s.notifier.PageUser(ctx, member, page) },
+				label: "Paging " + member.Name + " (team " + team.Slug + ")",
+				name:  member.Name, userID: member.UserID, email: member.Email,
 			})
 		}
 		return out
@@ -833,23 +862,10 @@ func (s *srv) resolveDeliveries(ctx context.Context, run entity.EscalationRun, t
 		if !ok {
 			return nil
 		}
-		return []delivery{{
-			label: "Called webhook " + hook.Slug,
-			send: func(page entity.AlertPage) entity.NotifyResult {
-				return s.notifier.CallWebhook(ctx, hook, s.alertForPage(ctx, run), page)
-			},
-		}}
+		return []delivery{{label: "Called webhook " + hook.Slug, webhook: hook}}
 	default:
 		return nil
 	}
-}
-
-func (s *srv) alertForPage(ctx context.Context, run entity.EscalationRun) entity.Alert {
-	alert, err := s.alerts.GetByID(ctx, run.WorkspaceID, run.AlertID)
-	if err != nil {
-		return entity.Alert{ID: run.AlertID, WorkspaceID: run.WorkspaceID}
-	}
-	return alert
 }
 
 func (s *srv) resume(ctx context.Context, run entity.EscalationRun, now time.Time) error {

@@ -50,6 +50,17 @@ func (t ChannelType) Valid() bool {
 	}
 }
 
+func (t ChannelType) EventKind() AlertEventKind {
+	switch t {
+	case ChannelTypeSlack, ChannelTypeTeams, ChannelTypeDiscord, ChannelTypeTelegram:
+		return AlertEventChat
+	case ChannelTypeNtfy:
+		return AlertEventPush
+	default:
+		return AlertEventNotified
+	}
+}
+
 func (n NewChannel) Validate() error {
 	return validation.ValidateStruct(&n,
 		validation.Field(&n.Type, validation.By(channelTypeField)),

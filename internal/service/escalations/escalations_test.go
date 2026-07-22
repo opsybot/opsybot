@@ -20,6 +20,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/schedule"
 	"github.com/opsybot/opsybot/internal/repository/team"
 	"github.com/opsybot/opsybot/internal/repository/workspace"
+	"github.com/opsybot/opsybot/internal/service/notifications"
 	"github.com/opsybot/opsybot/internal/service/notifier"
 )
 
@@ -36,6 +37,7 @@ type harness struct {
 	teams    *team.MockTeam
 	scheds   *schedule.MockSchedule
 	notify   *notifier.MockNotifier
+	notifs   *notifications.MockNotifications
 	lock     *lock.MockLock
 	ws       *workspace.MockWorkspace
 	pol      *policy.MockPolicy
@@ -52,6 +54,7 @@ func newHarness(t *testing.T) *harness {
 		teams:    team.NewMockTeam(ctrl),
 		scheds:   schedule.NewMockSchedule(ctrl),
 		notify:   notifier.NewMockNotifier(ctrl),
+		notifs:   notifications.NewMockNotifications(ctrl),
 		lock:     lock.NewMockLock(ctrl),
 		ws:       workspace.NewMockWorkspace(ctrl),
 		pol:      policy.NewMockPolicy(ctrl),
@@ -60,7 +63,7 @@ func newHarness(t *testing.T) *harness {
 		tx: fakeTx{}, lock: h.lock, workspaces: h.ws, members: h.members, teams: h.teams,
 		schedules: h.scheds, policies: h.policies, runs: h.runs, alerts: h.alerts,
 		routes: alert_route.NewMockAlertRoute(ctrl), policy: h.pol, audit: nil,
-		notifier: h.notify, cfg: config.Auth{BaseURL: "http://localhost:8080"},
+		notifier: h.notify, notifications: h.notifs, cfg: config.Auth{BaseURL: "http://localhost:8080"},
 	}
 	return h
 }
@@ -131,6 +134,7 @@ func TestOnAckedSetsExpiryFromPolicySnapshot(t *testing.T) {
 	h.runs.EXPECT().GetByAlertID(gomock.Any(), "al-1").Return(withTimeout, nil)
 	h.runs.EXPECT().MarkAcked(gomock.Any(), "ws-1", "al-1", now, now.Add(30*time.Minute)).Return(true, nil)
 	h.alerts.EXPECT().AppendEvent(gomock.Any(), "al-1", gomock.Any()).Return(nil)
+	h.notifs.EXPECT().StopForAlerts(gomock.Any(), "ws-1", []string{"al-1"}, entity.NotifyStopAcked, now).Return(nil)
 
 	if err := h.srv.OnAcked(context.Background(), "ws-1", []string{"al-1"}, now); err != nil {
 		t.Fatalf("on acked: %v", err)
@@ -144,6 +148,7 @@ func TestOnAckedWithoutTimeoutIsTerminal(t *testing.T) {
 	h.runs.EXPECT().GetByAlertID(gomock.Any(), "al-1").Return(runningRun(now), nil)
 	h.runs.EXPECT().MarkAcked(gomock.Any(), "ws-1", "al-1", now, time.Time{}).Return(true, nil)
 	h.alerts.EXPECT().AppendEvent(gomock.Any(), "al-1", gomock.Any()).Return(nil)
+	h.notifs.EXPECT().StopForAlerts(gomock.Any(), "ws-1", []string{"al-1"}, entity.NotifyStopAcked, now).Return(nil)
 
 	if err := h.srv.OnAcked(context.Background(), "ws-1", []string{"al-1"}, now); err != nil {
 		t.Fatalf("on acked: %v", err)
@@ -156,6 +161,7 @@ func TestOnAckedLostRaceWritesNoEvent(t *testing.T) {
 
 	h.runs.EXPECT().GetByAlertID(gomock.Any(), "al-1").Return(runningRun(now), nil)
 	h.runs.EXPECT().MarkAcked(gomock.Any(), "ws-1", "al-1", now, time.Time{}).Return(false, nil)
+	h.notifs.EXPECT().StopForAlerts(gomock.Any(), "ws-1", []string{"al-1"}, entity.NotifyStopAcked, now).Return(nil)
 
 	if err := h.srv.OnAcked(context.Background(), "ws-1", []string{"al-1"}, now); err != nil {
 		t.Fatalf("on acked: %v", err)
@@ -169,6 +175,7 @@ func TestOnAckedSkipsForeignWorkspaceRun(t *testing.T) {
 	foreign.WorkspaceID = "ws-2"
 
 	h.runs.EXPECT().GetByAlertID(gomock.Any(), "al-1").Return(foreign, nil)
+	h.notifs.EXPECT().StopForAlerts(gomock.Any(), "ws-1", []string{"al-1"}, entity.NotifyStopAcked, now).Return(nil)
 
 	if err := h.srv.OnAcked(context.Background(), "ws-1", []string{"al-1"}, now); err != nil {
 		t.Fatalf("on acked: %v", err)
@@ -211,13 +218,14 @@ func TestAdvanceNotifiesAndSchedulesNextStep(t *testing.T) {
 		})
 	h.ws.EXPECT().GetByID(gomock.Any(), "ws-1").Return(entity.Workspace{ID: "ws-1", Slug: "acme"}, nil)
 	h.alerts.EXPECT().AppendEvent(gomock.Any(), "al-1", gomock.Any()).Return(nil).Times(2)
-	h.notify.EXPECT().PageUser(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-		func(_ context.Context, m entity.Member, page entity.AlertPage) entity.NotifyResult {
-			if m.UserID != "u1" || page.Level != 1 || page.AlertURL != "http://localhost:8080/acme/alerts/al-1" {
-				t.Errorf("paged %s level %d url %s", m.UserID, page.Level, page.AlertURL)
+	h.notifs.EXPECT().Page(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, req entity.NotifyRequest) (entity.NotificationRun, error) {
+			if req.UserID != "u1" || req.Level != 1 || req.Severity != entity.SeverityCritical {
+				t.Errorf("paged %s level %d severity %s", req.UserID, req.Level, req.Severity)
 			}
-			return entity.NotifyResult{Delivered: true, Detail: "email sent"}
+			return entity.NotificationRun{ID: "nrun-1", Plan: entity.NotificationPlan{Steps: []entity.NotificationPlanStep{{Channel: entity.ChannelTypeEmail}}}}, nil
 		})
+	h.notifs.EXPECT().RunNow(gomock.Any(), []string{"nrun-1"}, now).Return(nil)
 
 	advanced, err := h.srv.Advance(context.Background(), now)
 	if err != nil || advanced != 1 {
@@ -327,7 +335,7 @@ func TestAdvanceSkipsRunHeldByAnotherReplica(t *testing.T) {
 	}
 }
 
-func TestNotifierFailureIsRecordedAndDoesNotStopEscalation(t *testing.T) {
+func TestAdvanceEnqueuesNotificationRunPerTarget(t *testing.T) {
 	h := newHarness(t)
 	now := time.Now().UTC()
 	run := runningRun(now)
@@ -340,24 +348,28 @@ func TestNotifierFailureIsRecordedAndDoesNotStopEscalation(t *testing.T) {
 		Return(entity.Alert{ID: "al-1", WorkspaceID: "ws-1", Status: entity.AlertStatusOpen, Severity: entity.SeverityHigh}, nil)
 	h.runs.EXPECT().SaveProgress(gomock.Any(), gomock.Any()).Return(true, nil)
 	h.ws.EXPECT().GetByID(gomock.Any(), "ws-1").Return(entity.Workspace{ID: "ws-1", Slug: "acme"}, nil)
-	h.notify.EXPECT().PageUser(gomock.Any(), gomock.Any(), gomock.Any()).
-		Return(entity.NotifyResult{Detail: "smtp connection refused"})
 
-	failedRecorded := false
+	enqueued := false
 	h.alerts.EXPECT().AppendEvent(gomock.Any(), "al-1", gomock.Any()).DoAndReturn(
 		func(_ context.Context, _ string, ev entity.AlertEvent) error {
-			if ev.Kind == entity.AlertEventNotified && ev.Result == "smtp connection refused" {
-				failedRecorded = true
+			if ev.Kind == entity.AlertEventNotified && ev.Result == "ntfy → email" {
+				enqueued = true
 			}
 			return nil
 		}).Times(2)
+	h.notifs.EXPECT().Page(gomock.Any(), gomock.Any()).Return(entity.NotificationRun{
+		ID: "nrun-1", Plan: entity.NotificationPlan{Steps: []entity.NotificationPlanStep{
+			{Channel: entity.ChannelTypeNtfy}, {Channel: entity.ChannelTypeEmail},
+		}},
+	}, nil)
+	h.notifs.EXPECT().RunNow(gomock.Any(), []string{"nrun-1"}, now).Return(nil)
 
 	advanced, err := h.srv.Advance(context.Background(), now)
 	if err != nil || advanced != 1 {
 		t.Fatalf("advance = %d, %v", advanced, err)
 	}
-	if !failedRecorded {
-		t.Fatal("delivery failure never landed on the timeline")
+	if !enqueued {
+		t.Fatal("enqueue event with the channel ladder summary never landed on the timeline")
 	}
 }
 

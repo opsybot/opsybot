@@ -26,6 +26,8 @@ var TableNames = struct {
 	EscalationRRState         string
 	EscalationWebhooks        string
 	Invites                   string
+	NotificationAttempts      string
+	NotificationRuns          string
 	PasswordResetTokens       string
 	ScheduleLayerParticipants string
 	ScheduleLayerRestrictions string
@@ -38,6 +40,8 @@ var TableNames = struct {
 	Teams                     string
 	UserChannels              string
 	UserIdentities            string
+	UserNotificationRuleSteps string
+	UserNotificationRules     string
 	UserRecoveryCodes         string
 	Users                     string
 	WorkspaceMembers          string
@@ -65,6 +69,8 @@ var TableNames = struct {
 	EscalationRRState:         "escalation_rr_state",
 	EscalationWebhooks:        "escalation_webhooks",
 	Invites:                   "invites",
+	NotificationAttempts:      "notification_attempts",
+	NotificationRuns:          "notification_runs",
 	PasswordResetTokens:       "password_reset_tokens",
 	ScheduleLayerParticipants: "schedule_layer_participants",
 	ScheduleLayerRestrictions: "schedule_layer_restrictions",
@@ -77,6 +83,8 @@ var TableNames = struct {
 	Teams:                     "teams",
 	UserChannels:              "user_channels",
 	UserIdentities:            "user_identities",
+	UserNotificationRuleSteps: "user_notification_rule_steps",
+	UserNotificationRules:     "user_notification_rules",
 	UserRecoveryCodes:         "user_recovery_codes",
 	Users:                     "users",
 	WorkspaceMembers:          "workspace_members",

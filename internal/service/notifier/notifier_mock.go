@@ -55,16 +55,16 @@ func (mr *MockNotifierMockRecorder) CallWebhook(ctx, hook, alert, page any) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CallWebhook", reflect.TypeOf((*MockNotifier)(nil).CallWebhook), ctx, hook, alert, page)
 }
 
-// PageUser mocks base method.
-func (m *MockNotifier) PageUser(ctx context.Context, member entity.Member, page entity.AlertPage) entity.NotifyResult {
+// Send mocks base method.
+func (m *MockNotifier) Send(ctx context.Context, target entity.NotifyTarget, page entity.AlertPage) entity.NotifyResult {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PageUser", ctx, member, page)
+	ret := m.ctrl.Call(m, "Send", ctx, target, page)
 	ret0, _ := ret[0].(entity.NotifyResult)
 	return ret0
 }
 
-// PageUser indicates an expected call of PageUser.
-func (mr *MockNotifierMockRecorder) PageUser(ctx, member, page any) *gomock.Call {
+// Send indicates an expected call of Send.
+func (mr *MockNotifierMockRecorder) Send(ctx, target, page any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PageUser", reflect.TypeOf((*MockNotifier)(nil).PageUser), ctx, member, page)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockNotifier)(nil).Send), ctx, target, page)
 }

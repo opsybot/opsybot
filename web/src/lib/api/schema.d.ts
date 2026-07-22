@@ -1299,6 +1299,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workspaces/{workspaceId}/notification-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the current user's notification rules and channels for a workspace */
+        get: operations["getNotificationRules"];
+        /** Replace the current user's notification rules for a workspace */
+        put: operations["putNotificationRules"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workspaces/{workspaceId}/escalation-policies": {
         parameters: {
             query?: never;
@@ -1529,6 +1547,27 @@ export interface components {
             state: "running" | "acked" | "resolved" | "exhausted";
             outcome: string;
             by?: string;
+        };
+        NotificationStep: {
+            /** @enum {string} */
+            channelType: "slack" | "teams" | "discord" | "telegram" | "ntfy" | "email" | "webhook";
+            delayMinutes: number;
+        };
+        NotificationQuietHours: {
+            enabled: boolean;
+            days: number[];
+            startMinute: number;
+            endMinute: number;
+            timezone: string;
+        };
+        NotificationRules: {
+            high: components["schemas"]["NotificationStep"][];
+            low: components["schemas"]["NotificationStep"][];
+            quietHours: components["schemas"]["NotificationQuietHours"];
+        };
+        NotificationSettings: {
+            rules: components["schemas"]["NotificationRules"];
+            channels: components["schemas"]["Channel"][];
         };
         EscalationPolicyDetail: {
             policy: components["schemas"]["EscalationPolicy"];
@@ -7178,6 +7217,117 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description The request failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getNotificationRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rules */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationSettings"];
+                };
+            };
+            /** @description The request failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putNotificationRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationRules"];
+            };
+        };
+        responses: {
+            /** @description Rules */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationRules"];
+                };
+            };
+            /** @description The request failed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
             };
             /** @description The request failed */
             401: {

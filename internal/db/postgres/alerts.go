@@ -242,41 +242,47 @@ var AlertWhere = struct {
 
 // AlertRels is where relationship names are stored.
 var AlertRels = struct {
-	AckedByUser         string
-	EscalationPolicy    string
-	ParentAlert         string
-	SuppressedBySilence string
-	Workspace           string
-	AlertEscalation     string
-	AlertEvents         string
-	AlertIngestEvents   string
-	AlertLinks          string
-	ParentAlertAlerts   string
+	AckedByUser          string
+	EscalationPolicy     string
+	ParentAlert          string
+	SuppressedBySilence  string
+	Workspace            string
+	AlertEscalation      string
+	AlertEvents          string
+	AlertIngestEvents    string
+	AlertLinks           string
+	ParentAlertAlerts    string
+	NotificationAttempts string
+	NotificationRuns     string
 }{
-	AckedByUser:         "AckedByUser",
-	EscalationPolicy:    "EscalationPolicy",
-	ParentAlert:         "ParentAlert",
-	SuppressedBySilence: "SuppressedBySilence",
-	Workspace:           "Workspace",
-	AlertEscalation:     "AlertEscalation",
-	AlertEvents:         "AlertEvents",
-	AlertIngestEvents:   "AlertIngestEvents",
-	AlertLinks:          "AlertLinks",
-	ParentAlertAlerts:   "ParentAlertAlerts",
+	AckedByUser:          "AckedByUser",
+	EscalationPolicy:     "EscalationPolicy",
+	ParentAlert:          "ParentAlert",
+	SuppressedBySilence:  "SuppressedBySilence",
+	Workspace:            "Workspace",
+	AlertEscalation:      "AlertEscalation",
+	AlertEvents:          "AlertEvents",
+	AlertIngestEvents:    "AlertIngestEvents",
+	AlertLinks:           "AlertLinks",
+	ParentAlertAlerts:    "ParentAlertAlerts",
+	NotificationAttempts: "NotificationAttempts",
+	NotificationRuns:     "NotificationRuns",
 }
 
 // alertR is where relationships are stored.
 type alertR struct {
-	AckedByUser         *User                 `boil:"AckedByUser" json:"AckedByUser" toml:"AckedByUser" yaml:"AckedByUser"`
-	EscalationPolicy    *EscalationPolicy     `boil:"EscalationPolicy" json:"EscalationPolicy" toml:"EscalationPolicy" yaml:"EscalationPolicy"`
-	ParentAlert         *Alert                `boil:"ParentAlert" json:"ParentAlert" toml:"ParentAlert" yaml:"ParentAlert"`
-	SuppressedBySilence *AlertSilence         `boil:"SuppressedBySilence" json:"SuppressedBySilence" toml:"SuppressedBySilence" yaml:"SuppressedBySilence"`
-	Workspace           *Workspace            `boil:"Workspace" json:"Workspace" toml:"Workspace" yaml:"Workspace"`
-	AlertEscalation     *AlertEscalation      `boil:"AlertEscalation" json:"AlertEscalation" toml:"AlertEscalation" yaml:"AlertEscalation"`
-	AlertEvents         AlertEventSlice       `boil:"AlertEvents" json:"AlertEvents" toml:"AlertEvents" yaml:"AlertEvents"`
-	AlertIngestEvents   AlertIngestEventSlice `boil:"AlertIngestEvents" json:"AlertIngestEvents" toml:"AlertIngestEvents" yaml:"AlertIngestEvents"`
-	AlertLinks          AlertLinkSlice        `boil:"AlertLinks" json:"AlertLinks" toml:"AlertLinks" yaml:"AlertLinks"`
-	ParentAlertAlerts   AlertSlice            `boil:"ParentAlertAlerts" json:"ParentAlertAlerts" toml:"ParentAlertAlerts" yaml:"ParentAlertAlerts"`
+	AckedByUser          *User                    `boil:"AckedByUser" json:"AckedByUser" toml:"AckedByUser" yaml:"AckedByUser"`
+	EscalationPolicy     *EscalationPolicy        `boil:"EscalationPolicy" json:"EscalationPolicy" toml:"EscalationPolicy" yaml:"EscalationPolicy"`
+	ParentAlert          *Alert                   `boil:"ParentAlert" json:"ParentAlert" toml:"ParentAlert" yaml:"ParentAlert"`
+	SuppressedBySilence  *AlertSilence            `boil:"SuppressedBySilence" json:"SuppressedBySilence" toml:"SuppressedBySilence" yaml:"SuppressedBySilence"`
+	Workspace            *Workspace               `boil:"Workspace" json:"Workspace" toml:"Workspace" yaml:"Workspace"`
+	AlertEscalation      *AlertEscalation         `boil:"AlertEscalation" json:"AlertEscalation" toml:"AlertEscalation" yaml:"AlertEscalation"`
+	AlertEvents          AlertEventSlice          `boil:"AlertEvents" json:"AlertEvents" toml:"AlertEvents" yaml:"AlertEvents"`
+	AlertIngestEvents    AlertIngestEventSlice    `boil:"AlertIngestEvents" json:"AlertIngestEvents" toml:"AlertIngestEvents" yaml:"AlertIngestEvents"`
+	AlertLinks           AlertLinkSlice           `boil:"AlertLinks" json:"AlertLinks" toml:"AlertLinks" yaml:"AlertLinks"`
+	ParentAlertAlerts    AlertSlice               `boil:"ParentAlertAlerts" json:"ParentAlertAlerts" toml:"ParentAlertAlerts" yaml:"ParentAlertAlerts"`
+	NotificationAttempts NotificationAttemptSlice `boil:"NotificationAttempts" json:"NotificationAttempts" toml:"NotificationAttempts" yaml:"NotificationAttempts"`
+	NotificationRuns     NotificationRunSlice     `boil:"NotificationRuns" json:"NotificationRuns" toml:"NotificationRuns" yaml:"NotificationRuns"`
 }
 
 // NewStruct creates a new relationship struct
@@ -442,6 +448,38 @@ func (r *alertR) GetParentAlertAlerts() AlertSlice {
 	}
 
 	return r.ParentAlertAlerts
+}
+
+func (o *Alert) GetNotificationAttempts() NotificationAttemptSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetNotificationAttempts()
+}
+
+func (r *alertR) GetNotificationAttempts() NotificationAttemptSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.NotificationAttempts
+}
+
+func (o *Alert) GetNotificationRuns() NotificationRunSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetNotificationRuns()
+}
+
+func (r *alertR) GetNotificationRuns() NotificationRunSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.NotificationRuns
 }
 
 // alertL is where Load methods for each relationship are stored.
@@ -880,6 +918,34 @@ func (o *Alert) ParentAlertAlerts(mods ...qm.QueryMod) alertQuery {
 	)
 
 	return Alerts(queryMods...)
+}
+
+// NotificationAttempts retrieves all the notification_attempt's NotificationAttempts with an executor.
+func (o *Alert) NotificationAttempts(mods ...qm.QueryMod) notificationAttemptQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"notification_attempts\".\"alert_id\"=?", o.ID),
+	)
+
+	return NotificationAttempts(queryMods...)
+}
+
+// NotificationRuns retrieves all the notification_run's NotificationRuns with an executor.
+func (o *Alert) NotificationRuns(mods ...qm.QueryMod) notificationRunQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"notification_runs\".\"alert_id\"=?", o.ID),
+	)
+
+	return NotificationRuns(queryMods...)
 }
 
 // LoadAckedByUser allows an eager lookup of values, cached into the
@@ -2067,6 +2133,232 @@ func (alertL) LoadParentAlertAlerts(ctx context.Context, e boil.ContextExecutor,
 	return nil
 }
 
+// LoadNotificationAttempts allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (alertL) LoadNotificationAttempts(ctx context.Context, e boil.ContextExecutor, singular bool, maybeAlert any, mods queries.Applicator) error {
+	var slice []*Alert
+	var object *Alert
+
+	if singular {
+		var ok bool
+		object, ok = maybeAlert.(*Alert)
+		if !ok {
+			object = new(Alert)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeAlert)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeAlert))
+			}
+		}
+	} else {
+		s, ok := maybeAlert.(*[]*Alert)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeAlert)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeAlert))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &alertR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &alertR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`notification_attempts`),
+		qm.WhereIn(`notification_attempts.alert_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load notification_attempts")
+	}
+
+	var resultSlice []*NotificationAttempt
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice notification_attempts")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on notification_attempts")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for notification_attempts")
+	}
+
+	if len(notificationAttemptAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.NotificationAttempts = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &notificationAttemptR{}
+			}
+			foreign.R.Alert = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.AlertID {
+				local.R.NotificationAttempts = append(local.R.NotificationAttempts, foreign)
+				if foreign.R == nil {
+					foreign.R = &notificationAttemptR{}
+				}
+				foreign.R.Alert = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadNotificationRuns allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (alertL) LoadNotificationRuns(ctx context.Context, e boil.ContextExecutor, singular bool, maybeAlert any, mods queries.Applicator) error {
+	var slice []*Alert
+	var object *Alert
+
+	if singular {
+		var ok bool
+		object, ok = maybeAlert.(*Alert)
+		if !ok {
+			object = new(Alert)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeAlert)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeAlert))
+			}
+		}
+	} else {
+		s, ok := maybeAlert.(*[]*Alert)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeAlert)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeAlert))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &alertR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &alertR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`notification_runs`),
+		qm.WhereIn(`notification_runs.alert_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load notification_runs")
+	}
+
+	var resultSlice []*NotificationRun
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice notification_runs")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on notification_runs")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for notification_runs")
+	}
+
+	if len(notificationRunAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.NotificationRuns = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &notificationRunR{}
+			}
+			foreign.R.Alert = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.AlertID {
+				local.R.NotificationRuns = append(local.R.NotificationRuns, foreign)
+				if foreign.R == nil {
+					foreign.R = &notificationRunR{}
+				}
+				foreign.R.Alert = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
 // SetAckedByUser of the alert to the related item.
 // Sets o.R.AckedByUser to related.
 // Adds o to related.R.AckedByUserAlerts.
@@ -2841,6 +3133,112 @@ func (o *Alert) RemoveParentAlertAlerts(ctx context.Context, exec boil.ContextEx
 		}
 	}
 
+	return nil
+}
+
+// AddNotificationAttempts adds the given related objects to the existing relationships
+// of the alert, optionally inserting them as new records.
+// Appends related to o.R.NotificationAttempts.
+// Sets related.R.Alert appropriately.
+func (o *Alert) AddNotificationAttempts(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*NotificationAttempt) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.AlertID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"notification_attempts\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"alert_id"}),
+				strmangle.WhereClause("\"", "\"", 2, notificationAttemptPrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.AlertID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &alertR{
+			NotificationAttempts: related,
+		}
+	} else {
+		o.R.NotificationAttempts = append(o.R.NotificationAttempts, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &notificationAttemptR{
+				Alert: o,
+			}
+		} else {
+			rel.R.Alert = o
+		}
+	}
+	return nil
+}
+
+// AddNotificationRuns adds the given related objects to the existing relationships
+// of the alert, optionally inserting them as new records.
+// Appends related to o.R.NotificationRuns.
+// Sets related.R.Alert appropriately.
+func (o *Alert) AddNotificationRuns(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*NotificationRun) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.AlertID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"notification_runs\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"alert_id"}),
+				strmangle.WhereClause("\"", "\"", 2, notificationRunPrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.AlertID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &alertR{
+			NotificationRuns: related,
+		}
+	} else {
+		o.R.NotificationRuns = append(o.R.NotificationRuns, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &notificationRunR{
+				Alert: o,
+			}
+		} else {
+			rel.R.Alert = o
+		}
+	}
 	return nil
 }
 

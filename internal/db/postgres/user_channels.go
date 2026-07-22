@@ -94,14 +94,17 @@ var UserChannelWhere = struct {
 
 // UserChannelRels is where relationship names are stored.
 var UserChannelRels = struct {
-	User string
+	User                        string
+	ChannelNotificationAttempts string
 }{
-	User: "User",
+	User:                        "User",
+	ChannelNotificationAttempts: "ChannelNotificationAttempts",
 }
 
 // userChannelR is where relationships are stored.
 type userChannelR struct {
-	User *User `boil:"User" json:"User" toml:"User" yaml:"User"`
+	User                        *User                    `boil:"User" json:"User" toml:"User" yaml:"User"`
+	ChannelNotificationAttempts NotificationAttemptSlice `boil:"ChannelNotificationAttempts" json:"ChannelNotificationAttempts" toml:"ChannelNotificationAttempts" yaml:"ChannelNotificationAttempts"`
 }
 
 // NewStruct creates a new relationship struct
@@ -123,6 +126,22 @@ func (r *userChannelR) GetUser() *User {
 	}
 
 	return r.User
+}
+
+func (o *UserChannel) GetChannelNotificationAttempts() NotificationAttemptSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetChannelNotificationAttempts()
+}
+
+func (r *userChannelR) GetChannelNotificationAttempts() NotificationAttemptSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.ChannelNotificationAttempts
 }
 
 // userChannelL is where Load methods for each relationship are stored.
@@ -452,6 +471,20 @@ func (o *UserChannel) User(mods ...qm.QueryMod) userQuery {
 	return Users(queryMods...)
 }
 
+// ChannelNotificationAttempts retrieves all the notification_attempt's NotificationAttempts with an executor via channel_id column.
+func (o *UserChannel) ChannelNotificationAttempts(mods ...qm.QueryMod) notificationAttemptQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"notification_attempts\".\"channel_id\"=?", o.ID),
+	)
+
+	return NotificationAttempts(queryMods...)
+}
+
 // LoadUser allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for an N-1 relationship.
 func (userChannelL) LoadUser(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUserChannel any, mods queries.Applicator) error {
@@ -572,6 +605,119 @@ func (userChannelL) LoadUser(ctx context.Context, e boil.ContextExecutor, singul
 	return nil
 }
 
+// LoadChannelNotificationAttempts allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (userChannelL) LoadChannelNotificationAttempts(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUserChannel any, mods queries.Applicator) error {
+	var slice []*UserChannel
+	var object *UserChannel
+
+	if singular {
+		var ok bool
+		object, ok = maybeUserChannel.(*UserChannel)
+		if !ok {
+			object = new(UserChannel)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeUserChannel)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeUserChannel))
+			}
+		}
+	} else {
+		s, ok := maybeUserChannel.(*[]*UserChannel)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeUserChannel)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeUserChannel))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &userChannelR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userChannelR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`notification_attempts`),
+		qm.WhereIn(`notification_attempts.channel_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load notification_attempts")
+	}
+
+	var resultSlice []*NotificationAttempt
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice notification_attempts")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on notification_attempts")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for notification_attempts")
+	}
+
+	if len(notificationAttemptAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.ChannelNotificationAttempts = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &notificationAttemptR{}
+			}
+			foreign.R.Channel = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if queries.Equal(local.ID, foreign.ChannelID) {
+				local.R.ChannelNotificationAttempts = append(local.R.ChannelNotificationAttempts, foreign)
+				if foreign.R == nil {
+					foreign.R = &notificationAttemptR{}
+				}
+				foreign.R.Channel = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
 // SetUser of the userChannel to the related item.
 // Sets o.R.User to related.
 // Adds o to related.R.UserChannels.
@@ -614,6 +760,133 @@ func (o *UserChannel) SetUser(ctx context.Context, exec boil.ContextExecutor, in
 		}
 	} else {
 		related.R.UserChannels = append(related.R.UserChannels, o)
+	}
+
+	return nil
+}
+
+// AddChannelNotificationAttempts adds the given related objects to the existing relationships
+// of the user_channel, optionally inserting them as new records.
+// Appends related to o.R.ChannelNotificationAttempts.
+// Sets related.R.Channel appropriately.
+func (o *UserChannel) AddChannelNotificationAttempts(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*NotificationAttempt) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			queries.Assign(&rel.ChannelID, o.ID)
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"notification_attempts\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"channel_id"}),
+				strmangle.WhereClause("\"", "\"", 2, notificationAttemptPrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			queries.Assign(&rel.ChannelID, o.ID)
+		}
+	}
+
+	if o.R == nil {
+		o.R = &userChannelR{
+			ChannelNotificationAttempts: related,
+		}
+	} else {
+		o.R.ChannelNotificationAttempts = append(o.R.ChannelNotificationAttempts, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &notificationAttemptR{
+				Channel: o,
+			}
+		} else {
+			rel.R.Channel = o
+		}
+	}
+	return nil
+}
+
+// SetChannelNotificationAttempts removes all previously related items of the
+// user_channel replacing them completely with the passed
+// in related items, optionally inserting them as new records.
+// Sets o.R.Channel's ChannelNotificationAttempts accordingly.
+// Replaces o.R.ChannelNotificationAttempts with related.
+// Sets related.R.Channel's ChannelNotificationAttempts accordingly.
+func (o *UserChannel) SetChannelNotificationAttempts(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*NotificationAttempt) error {
+	query := "update \"notification_attempts\" set \"channel_id\" = null where \"channel_id\" = $1"
+	values := []any{o.ID}
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, query)
+		fmt.Fprintln(writer, values)
+	}
+	_, err := exec.ExecContext(ctx, query, values...)
+	if err != nil {
+		return errors.Wrap(err, "failed to remove relationships before set")
+	}
+
+	if o.R != nil {
+		for _, rel := range o.R.ChannelNotificationAttempts {
+			queries.SetScanner(&rel.ChannelID, nil)
+			if rel.R == nil {
+				continue
+			}
+
+			rel.R.Channel = nil
+		}
+		o.R.ChannelNotificationAttempts = nil
+	}
+
+	return o.AddChannelNotificationAttempts(ctx, exec, insert, related...)
+}
+
+// RemoveChannelNotificationAttempts relationships from objects passed in.
+// Removes related items from R.ChannelNotificationAttempts (uses pointer comparison, removal does not keep order)
+// Sets related.R.Channel.
+func (o *UserChannel) RemoveChannelNotificationAttempts(ctx context.Context, exec boil.ContextExecutor, related ...*NotificationAttempt) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	for _, rel := range related {
+		queries.SetScanner(&rel.ChannelID, nil)
+		if rel.R != nil {
+			rel.R.Channel = nil
+		}
+		if _, err = rel.Update(ctx, exec, boil.Whitelist("channel_id")); err != nil {
+			return err
+		}
+	}
+	if o.R == nil {
+		return nil
+	}
+
+	for _, rel := range related {
+		for i, ri := range o.R.ChannelNotificationAttempts {
+			if rel != ri {
+				continue
+			}
+
+			ln := len(o.R.ChannelNotificationAttempts)
+			if ln > 1 && i < ln-1 {
+				o.R.ChannelNotificationAttempts[i] = o.R.ChannelNotificationAttempts[ln-1]
+			}
+			o.R.ChannelNotificationAttempts = o.R.ChannelNotificationAttempts[:ln-1]
+			break
+		}
 	}
 
 	return nil

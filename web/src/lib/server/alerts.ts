@@ -24,6 +24,15 @@ function toLabels(labels: Record<string, string> | undefined): string[] {
 		.sort();
 }
 
+function isDeliveryEvent(kind: string): boolean {
+	return kind === 'notified' || kind === 'push' || kind === 'sms' || kind === 'chat';
+}
+
+function deliveryTone(text: string, result: string): 'success' | 'warning' | 'brand' {
+	if (text.endsWith('failed') || result === 'quiet hours' || result === 'no channel') return 'warning';
+	return 'success';
+}
+
 function toTimeline(events: Schemas['AlertEvent'][] | undefined): EscalationEvent[] {
 	return (events ?? []).map((event) => ({
 		id: event.id,
@@ -38,7 +47,9 @@ function toTimeline(events: Schemas['AlertEvent'][] | undefined): EscalationEven
 					? 'warning'
 					: event.kind === 'routed' || event.kind === 'escalation'
 						? 'brand'
-						: undefined
+						: isDeliveryEvent(event.kind)
+							? deliveryTone(event.text, event.result)
+							: undefined
 	}));
 }
 

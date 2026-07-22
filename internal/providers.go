@@ -18,6 +18,8 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/lock"
 	"github.com/opsybot/opsybot/internal/repository/mailer"
 	"github.com/opsybot/opsybot/internal/repository/member"
+	"github.com/opsybot/opsybot/internal/repository/notification_rule"
+	"github.com/opsybot/opsybot/internal/repository/notification_run"
 	"github.com/opsybot/opsybot/internal/repository/pager"
 	"github.com/opsybot/opsybot/internal/repository/password_reset"
 	"github.com/opsybot/opsybot/internal/repository/pending"
@@ -46,6 +48,8 @@ import (
 	"github.com/opsybot/opsybot/internal/service/escalations"
 	"github.com/opsybot/opsybot/internal/service/ingest"
 	"github.com/opsybot/opsybot/internal/service/members"
+	"github.com/opsybot/opsybot/internal/service/notification_rules"
+	"github.com/opsybot/opsybot/internal/service/notifications"
 	"github.com/opsybot/opsybot/internal/service/notifier"
 	"github.com/opsybot/opsybot/internal/service/ratelimiter"
 	"github.com/opsybot/opsybot/internal/service/references"
@@ -87,6 +91,8 @@ var repositoryProviders = wire.NewSet(
 	silence.New,
 	escalation_policy.New,
 	escalation_run.New,
+	notification_rule.New,
+	notification_run.New,
 	pager.New,
 )
 
@@ -111,6 +117,8 @@ var serviceProviders = wire.NewSet(
 	alert_monitors.New,
 	silences.New,
 	notifier.New,
+	notification_rules.New,
+	notifications.New,
 	escalations.New,
 )
 
@@ -119,6 +127,7 @@ var cronProviders = wire.NewSet(
 	cron.NewAlertAutoResolve,
 	cron.NewIngestRetention,
 	cron.NewEscalationSweep,
+	cron.NewNotificationSweep,
 )
 
 func scheduleReferenceSources(schedules service.Schedules, escalations service.Escalations) []service.ReferenceSource {

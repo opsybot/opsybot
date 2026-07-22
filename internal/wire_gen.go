@@ -37,6 +37,8 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/lock"
 	mailer2 "github.com/opsybot/opsybot/internal/repository/mailer"
 	"github.com/opsybot/opsybot/internal/repository/member"
+	"github.com/opsybot/opsybot/internal/repository/notification_rule"
+	"github.com/opsybot/opsybot/internal/repository/notification_run"
 	"github.com/opsybot/opsybot/internal/repository/pager"
 	"github.com/opsybot/opsybot/internal/repository/password_reset"
 	"github.com/opsybot/opsybot/internal/repository/pending"
@@ -64,6 +66,8 @@ import (
 	"github.com/opsybot/opsybot/internal/service/escalations"
 	"github.com/opsybot/opsybot/internal/service/ingest"
 	"github.com/opsybot/opsybot/internal/service/members"
+	"github.com/opsybot/opsybot/internal/service/notification_rules"
+	"github.com/opsybot/opsybot/internal/service/notifications"
 	"github.com/opsybot/opsybot/internal/service/notifier"
 	"github.com/opsybot/opsybot/internal/service/ratelimiter"
 	"github.com/opsybot/opsybot/internal/service/references"
@@ -166,15 +170,18 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	webhookClient := webhook.New(configWebhook)
 	repositoryPager := pager.New(webhookClient)
 	serviceNotifier := notifier.New(repositoryMailer, repositoryPager)
-	serviceEscalations := escalations.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, repositorySchedule, escalationPolicy, escalationRun, repositoryAlert, alertRoute, repositoryPolicy, repositoryAudit, serviceNotifier, configAuth)
-	serviceIngest := ingest.New(repositoryTransactor, alertSource, repositoryAlert, ingestEvent, alertRoute, repositorySilence, alertMonitor, rateLimiter, repositoryLock, escalationPolicy, serviceEscalations, configIngest)
+	notificationRun := notification_run.New(postgresClient)
+	notificationRule := notification_rule.New(postgresClient)
+	repositoryChannel := channel.New(postgresClient)
 	serviceRateLimiter := ratelimiter.New(configAuth, rateLimiter)
+	serviceNotifications := notifications.New(repositoryTransactor, repositoryLock, notificationRun, notificationRule, repositoryChannel, repositoryAlert, repositoryWorkspace, serviceNotifier, serviceRateLimiter, configAuth)
+	serviceEscalations := escalations.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, repositorySchedule, escalationPolicy, escalationRun, repositoryAlert, alertRoute, repositoryPolicy, repositoryAudit, serviceNotifier, serviceNotifications, configAuth)
+	serviceIngest := ingest.New(repositoryTransactor, alertSource, repositoryAlert, ingestEvent, alertRoute, repositorySilence, alertMonitor, rateLimiter, repositoryLock, escalationPolicy, serviceEscalations, configIngest)
 	serviceWorkspaces := workspaces.New(repositoryWorkspace, repositoryMember)
 	v := scheduleReferenceSources(serviceSchedules, serviceEscalations)
 	serviceReferences := references.New(v)
 	serviceMembers := members.New(configAuth, repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryUser, repositoryInvite, repositorySession, repositoryPolicy, repositoryAudit, repositoryMailer, serviceReferences)
 	serviceUsers := users.New(repositoryTransactor, repositoryUser, recoveryCode, repositorySession)
-	repositoryChannel := channel.New(postgresClient)
 	serviceChannels := channels.New(repositoryChannel, repositoryAudit)
 	serviceTeams := teams.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, escalationPolicy, repositoryPolicy, repositoryAudit)
 	serviceAudits := audits.New(repositoryWorkspace, repositoryMember, repositoryPolicy, repositoryAudit)
@@ -183,7 +190,8 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	alertRoutes := alert_routes.New(repositoryWorkspace, repositoryMember, alertRoute, escalationPolicy, repositoryPolicy)
 	serviceSilences := silences.New(repositoryWorkspace, repositoryMember, repositorySilence, repositoryPolicy)
 	alertMonitors := alert_monitors.New(repositoryTransactor, repositoryWorkspace, repositoryMember, alertMonitor, alertSource, alertRoute, escalationPolicy, repositoryPolicy, repositoryAudit)
-	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers, serviceUsers, serviceChannels, serviceTeams, serviceSchedules, apiKeys, serviceAudits, serviceSSO, serviceAlerts, alertSources, alertRoutes, serviceSilences, alertMonitors, serviceEscalations, configIngest)
+	notificationRules := notification_rules.New(repositoryTransactor, repositoryWorkspace, repositoryMember, repositoryUser, notificationRule, repositoryChannel, repositoryPolicy, repositoryAudit)
+	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers, serviceUsers, serviceChannels, serviceTeams, serviceSchedules, apiKeys, serviceAudits, serviceSSO, serviceAlerts, alertSources, alertRoutes, serviceSilences, alertMonitors, serviceEscalations, notificationRules, configIngest)
 	handler := http.NewRouter(slogLogger, configAuth, configIngest, serviceAuth, apiKeys, serviceSSO, serviceSchedules, serviceIngest, serviceRateLimiter, strictServerInterface)
 	app := &App{
 		OTel:     client,
@@ -307,24 +315,31 @@ func InitWorker(cfgFile string) (*Worker, func(), error) {
 	webhookClient := webhook.New(configWebhook)
 	repositoryPager := pager.New(webhookClient)
 	serviceNotifier := notifier.New(repositoryMailer, repositoryPager)
-	serviceEscalations := escalations.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, repositorySchedule, escalationPolicy, escalationRun, repositoryAlert, alertRoute, repositoryPolicy, repositoryAudit, serviceNotifier, configAuth)
+	notificationRun := notification_run.New(postgresClient)
+	notificationRule := notification_rule.New(postgresClient)
+	repositoryChannel := channel.New(postgresClient)
+	serviceRateLimiter := ratelimiter.New(configAuth, rateLimiter)
+	serviceNotifications := notifications.New(repositoryTransactor, repositoryLock, notificationRun, notificationRule, repositoryChannel, repositoryAlert, repositoryWorkspace, serviceNotifier, serviceRateLimiter, configAuth)
+	serviceEscalations := escalations.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, repositorySchedule, escalationPolicy, escalationRun, repositoryAlert, alertRoute, repositoryPolicy, repositoryAudit, serviceNotifier, serviceNotifications, configAuth)
 	configIngest := config.NewIngest(configConfig)
 	serviceIngest := ingest.New(repositoryTransactor, alertSource, repositoryAlert, ingestEvent, alertRoute, repositorySilence, alertMonitor, rateLimiter, repositoryLock, escalationPolicy, serviceEscalations, configIngest)
 	heartbeatSweep := cron2.NewHeartbeatSweep(serviceIngest)
 	alertAutoResolve := cron2.NewAlertAutoResolve(serviceIngest)
 	ingestRetention := cron2.NewIngestRetention(serviceIngest)
 	escalationSweep := cron2.NewEscalationSweep(serviceEscalations)
+	notificationSweep := cron2.NewNotificationSweep(serviceNotifications)
 	worker := &Worker{
-		OTel:        client,
-		Cfg:         configConfig,
-		Log:         slogLogger,
-		PG:          postgresClient,
-		Enforcer:    casbinClient,
-		Scheduler:   cronClient,
-		Heartbeats:  heartbeatSweep,
-		AutoResolve: alertAutoResolve,
-		Retention:   ingestRetention,
-		Escalations: escalationSweep,
+		OTel:          client,
+		Cfg:           configConfig,
+		Log:           slogLogger,
+		PG:            postgresClient,
+		Enforcer:      casbinClient,
+		Scheduler:     cronClient,
+		Heartbeats:    heartbeatSweep,
+		AutoResolve:   alertAutoResolve,
+		Retention:     ingestRetention,
+		Escalations:   escalationSweep,
+		Notifications: notificationSweep,
 	}
 	return worker, func() {
 		cleanup5()
