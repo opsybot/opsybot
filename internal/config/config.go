@@ -24,10 +24,12 @@ type Config struct {
 }
 
 type Cron struct {
-	HeartbeatSweep  time.Duration `mapstructure:"heartbeat_sweep"`
+	HeartbeatSweep   time.Duration `mapstructure:"heartbeat_sweep"`
 	AlertAutoResolve time.Duration `mapstructure:"alert_autoresolve"`
-	IngestRetention time.Duration `mapstructure:"ingest_retention"`
-	JobTimeout      time.Duration `mapstructure:"job_timeout"`
+	IngestRetention  string        `mapstructure:"ingest_retention"`
+	JobTimeout       time.Duration `mapstructure:"job_timeout"`
+	LockExpiry       time.Duration `mapstructure:"lock_expiry"`
+	StopTimeout      time.Duration `mapstructure:"stop_timeout"`
 }
 
 type Ingest struct {
@@ -148,6 +150,10 @@ func NewIngest(cfg Config) Ingest {
 	return cfg.Ingest
 }
 
+func NewCron(cfg Config) Cron {
+	return cfg.Cron
+}
+
 func NewMailer(cfg Config) Mailer {
 	return cfg.Mailer
 }
@@ -228,8 +234,10 @@ func New(cfgFile string) (Config, error) {
 	v.SetDefault("ingest.failure_retention", "168h")
 	v.SetDefault("cron.heartbeat_sweep", "30s")
 	v.SetDefault("cron.alert_autoresolve", "5m")
-	v.SetDefault("cron.ingest_retention", "1h")
+	v.SetDefault("cron.ingest_retention", "17 3 * * *")
 	v.SetDefault("cron.job_timeout", "2m")
+	v.SetDefault("cron.lock_expiry", "60s")
+	v.SetDefault("cron.stop_timeout", "30s")
 	v.SetDefault("mailer.host", "")
 	v.SetDefault("mailer.port", 587)
 	v.SetDefault("mailer.username", "")

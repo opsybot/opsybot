@@ -14,4 +14,5 @@ var Set = wire.NewSet(
 	NewValkey,
 	NewCasbin,
 	NewIngest,
+	NewCron,
 )

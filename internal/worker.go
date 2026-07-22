@@ -19,6 +19,7 @@ type Worker struct {
 	Log         *slog.Logger
 	PG          postgres.Client
 	Enforcer    casbin.Client
+	Scheduler   pkgcron.Client
 	Heartbeats  *cron.HeartbeatSweep
 	AutoResolve *cron.AlertAutoResolve
 	Retention   *cron.IngestRetention
@@ -27,30 +28,45 @@ type Worker struct {
 func (w *Worker) Run(ctx context.Context) error {
 	ctx = logger.Into(ctx, w.Log)
 
-	jobs := pkgcron.New().With(
-		pkgcron.Job{
-			Name:     "heartbeat_sweep",
-			Every:    w.Cfg.Cron.HeartbeatSweep,
-			Deadline: w.Cfg.Cron.JobTimeout,
-			RunOnce:  true,
-			Run:      w.Heartbeats.Run,
+	jobs := []pkgcron.Job{
+		{
+			Name:    "heartbeat_sweep",
+			Every:   w.Cfg.Cron.HeartbeatSweep,
+			Timeout: w.Cfg.Cron.JobTimeout,
+			AtStart: true,
+			Run:     w.Heartbeats.Run,
 		},
-		pkgcron.Job{
-			Name:     "alert_autoresolve",
-			Every:    w.Cfg.Cron.AlertAutoResolve,
-			Deadline: w.Cfg.Cron.JobTimeout,
-			Run:      w.AutoResolve.Run,
+		{
+			Name:    "alert_autoresolve",
+			Every:   w.Cfg.Cron.AlertAutoResolve,
+			Timeout: w.Cfg.Cron.JobTimeout,
+			Run:     w.AutoResolve.Run,
 		},
-		pkgcron.Job{
-			Name:     "ingest_retention",
-			Every:    w.Cfg.Cron.IngestRetention,
-			Deadline: w.Cfg.Cron.JobTimeout,
-			Run:      w.Retention.Run,
+		{
+			Name:    "ingest_retention",
+			Crontab: w.Cfg.Cron.IngestRetention,
+			Timeout: w.Cfg.Cron.JobTimeout,
+			Run:     w.Retention.Run,
 		},
-	)
+	}
 
-	w.Log.InfoContext(ctx, "opsybot worker starting", "environment", w.Cfg.Environment)
-	jobs.Run(ctx)
-	w.Log.InfoContext(ctx, "worker stopped")
+	for _, job := range jobs {
+		if _, err := w.Scheduler.Add(ctx, w.Log, job); err != nil {
+			return err
+		}
+	}
+
+	w.Scheduler.Start()
+	w.Log.InfoContext(ctx, "opsybot worker started", "environment", w.Cfg.Environment)
+	for _, job := range w.Scheduler.Jobs() {
+		next, err := job.NextRun()
+		if err != nil {
+			return err
+		}
+		w.Log.InfoContext(ctx, "cron job scheduled", "job", job.Name(), "next_run", next)
+	}
+
+	<-ctx.Done()
+	w.Log.InfoContext(ctx, "worker stopping", "timeout", w.Cfg.Cron.StopTimeout)
 	return nil
 }

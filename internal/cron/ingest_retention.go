@@ -15,6 +15,6 @@ func NewIngestRetention(ingest service.Ingest) *IngestRetention {
 	return &IngestRetention{ingest: ingest}
 }
 
-func (j *IngestRetention) Run(ctx context.Context, now time.Time) (int, error) {
-	return j.ingest.PruneIngestHistory(ctx, now)
+func (j *IngestRetention) Run(ctx context.Context) (int, error) {
+	return j.ingest.PruneIngestHistory(ctx, time.Now().UTC())
 }

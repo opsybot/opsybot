@@ -15,6 +15,6 @@ func NewHeartbeatSweep(ingest service.Ingest) *HeartbeatSweep {
 	return &HeartbeatSweep{ingest: ingest}
 }
 
-func (j *HeartbeatSweep) Run(ctx context.Context, now time.Time) (int, error) {
-	return j.ingest.SweepMonitors(ctx, now)
+func (j *HeartbeatSweep) Run(ctx context.Context) (int, error) {
+	return j.ingest.SweepMonitors(ctx, time.Now().UTC())
 }

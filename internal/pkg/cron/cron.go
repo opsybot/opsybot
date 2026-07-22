@@ -1,79 +1,51 @@
 package cron
 
 import (
-	"context"
+	"fmt"
+	"log/slog"
 	"time"
 
-	"github.com/opsybot/opsybot/internal/pkg/logger"
+	redislock "github.com/go-co-op/gocron-redis-lock/v2"
+	"github.com/go-co-op/gocron/v2"
+	"github.com/go-redsync/redsync/v4"
+
+	"github.com/opsybot/opsybot/internal/config"
+	"github.com/opsybot/opsybot/internal/pkg/valkey"
 )
 
-type Job struct {
-	Name     string
-	Every    time.Duration
-	Run      func(ctx context.Context, now time.Time) (int, error)
-	RunOnce  bool
-	Deadline time.Duration
-}
+const (
+	lockKeyPrefix     = "opsybot:cron:"
+	lockExtendDivisor = 3
+	defaultLockExpiry = time.Minute
+)
 
-type Client struct {
-	jobs []Job
-}
+type Client struct{ gocron.Scheduler }
 
-func New() Client {
-	return Client{}
-}
-
-func (c Client) With(jobs ...Job) Client {
-	return Client{jobs: append(append([]Job{}, c.jobs...), jobs...)}
-}
-
-func (c Client) Run(ctx context.Context) {
-	done := make(chan struct{}, len(c.jobs))
-	for _, job := range c.jobs {
-		go func() {
-			defer func() { done <- struct{}{} }()
-			c.loop(ctx, job)
-		}()
-	}
-	for range c.jobs {
-		<-done
-	}
-}
-
-func (c Client) loop(ctx context.Context, job Job) {
-	ticker := time.NewTicker(job.Every)
-	defer ticker.Stop()
-
-	if job.RunOnce {
-		c.tick(ctx, job)
-	}
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			c.tick(ctx, job)
-		}
-	}
-}
-
-func (c Client) tick(ctx context.Context, job Job) {
-	log := logger.From(ctx).With("job", job.Name)
-
-	runCtx := ctx
-	if job.Deadline > 0 {
-		var cancel context.CancelFunc
-		runCtx, cancel = context.WithTimeout(ctx, job.Deadline)
-		defer cancel()
+func New(cfg config.Cron, vk valkey.Client, log *slog.Logger) (Client, func(), error) {
+	expiry := cfg.LockExpiry
+	if expiry <= 0 {
+		expiry = defaultLockExpiry
 	}
 
-	started := time.Now().UTC()
-	affected, err := job.Run(runCtx, started)
+	locker, err := redislock.NewRedisLockerWithOptions(vk.UniversalClient,
+		redislock.WithKeyPrefix(lockKeyPrefix),
+		redislock.WithAutoExtendDuration(expiry/lockExtendDivisor),
+		redislock.WithRedsyncOptions(redsync.WithExpiry(expiry), redsync.WithTries(1)),
+	)
 	if err != nil {
-		log.ErrorContext(ctx, "cron job failed", "error", err, "duration", time.Since(started))
-		return
+		return Client{}, nil, fmt.Errorf("build cron locker: %w", err)
 	}
-	if affected > 0 {
-		log.InfoContext(ctx, "cron job finished", "affected", affected, "duration", time.Since(started))
+
+	scheduler, err := gocron.NewScheduler(
+		gocron.WithDistributedLocker(locker),
+		gocron.WithLocation(time.UTC),
+		gocron.WithLogger(schedulerLogger{log: log}),
+		gocron.WithStopTimeout(cfg.StopTimeout),
+		gocron.WithGlobalJobOptions(gocron.WithSingletonMode(gocron.LimitModeReschedule)),
+	)
+	if err != nil {
+		return Client{}, nil, fmt.Errorf("build cron scheduler: %w", err)
 	}
+
+	return Client{scheduler}, func() { _ = scheduler.Shutdown() }, nil
 }

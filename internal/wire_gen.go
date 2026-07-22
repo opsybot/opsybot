@@ -9,12 +9,13 @@ package internal
 import (
 	"github.com/goforj/wire"
 	"github.com/opsybot/opsybot/internal/config"
-	"github.com/opsybot/opsybot/internal/cron"
+	cron2 "github.com/opsybot/opsybot/internal/cron"
 	"github.com/opsybot/opsybot/internal/handler"
 	"github.com/opsybot/opsybot/internal/handler/http"
 	"github.com/opsybot/opsybot/internal/handler/http/v1/dashboard"
 	"github.com/opsybot/opsybot/internal/pkg"
 	"github.com/opsybot/opsybot/internal/pkg/casbin"
+	"github.com/opsybot/opsybot/internal/pkg/cron"
 	"github.com/opsybot/opsybot/internal/pkg/logger"
 	"github.com/opsybot/opsybot/internal/pkg/mailer"
 	"github.com/opsybot/opsybot/internal/pkg/otel"
@@ -242,6 +243,15 @@ func InitWorker(cfgFile string) (*Worker, func(), error) {
 		cleanup()
 		return nil, nil, err
 	}
+	configCron := config.NewCron(configConfig)
+	cronClient, cleanup5, err := cron.New(configCron, valkeyClient, slogLogger)
+	if err != nil {
+		cleanup4()
+		cleanup3()
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
 	repositoryTransactor := transactor.New(postgresClient)
 	alertSource := alert_source.New(postgresClient)
 	repositoryAlert := alert.New(postgresClient)
@@ -253,20 +263,22 @@ func InitWorker(cfgFile string) (*Worker, func(), error) {
 	repositoryLock := lock.New(postgresClient)
 	configIngest := config.NewIngest(configConfig)
 	serviceIngest := ingest.New(repositoryTransactor, alertSource, repositoryAlert, ingestEvent, alertRoute, repositorySilence, alertMonitor, rateLimiter, repositoryLock, configIngest)
-	heartbeatSweep := cron.NewHeartbeatSweep(serviceIngest)
-	alertAutoResolve := cron.NewAlertAutoResolve(serviceIngest)
-	ingestRetention := cron.NewIngestRetention(serviceIngest)
+	heartbeatSweep := cron2.NewHeartbeatSweep(serviceIngest)
+	alertAutoResolve := cron2.NewAlertAutoResolve(serviceIngest)
+	ingestRetention := cron2.NewIngestRetention(serviceIngest)
 	worker := &Worker{
 		OTel:        client,
 		Cfg:         configConfig,
 		Log:         slogLogger,
 		PG:          postgresClient,
 		Enforcer:    casbinClient,
+		Scheduler:   cronClient,
 		Heartbeats:  heartbeatSweep,
 		AutoResolve: alertAutoResolve,
 		Retention:   ingestRetention,
 	}
 	return worker, func() {
+		cleanup5()
 		cleanup4()
 		cleanup3()
 		cleanup2()
