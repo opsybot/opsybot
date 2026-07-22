@@ -104,33 +104,33 @@ func (mr *MockEscalationRunMockRecorder) ListDue(ctx, now, limit any) *gomock.Ca
 }
 
 // MarkAcked mocks base method.
-func (m *MockEscalationRun) MarkAcked(ctx context.Context, alertID string, ackedAt, expiresAt time.Time) (bool, error) {
+func (m *MockEscalationRun) MarkAcked(ctx context.Context, workspaceID, alertID string, ackedAt, expiresAt time.Time) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "MarkAcked", ctx, alertID, ackedAt, expiresAt)
+	ret := m.ctrl.Call(m, "MarkAcked", ctx, workspaceID, alertID, ackedAt, expiresAt)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // MarkAcked indicates an expected call of MarkAcked.
-func (mr *MockEscalationRunMockRecorder) MarkAcked(ctx, alertID, ackedAt, expiresAt any) *gomock.Call {
+func (mr *MockEscalationRunMockRecorder) MarkAcked(ctx, workspaceID, alertID, ackedAt, expiresAt any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkAcked", reflect.TypeOf((*MockEscalationRun)(nil).MarkAcked), ctx, alertID, ackedAt, expiresAt)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkAcked", reflect.TypeOf((*MockEscalationRun)(nil).MarkAcked), ctx, workspaceID, alertID, ackedAt, expiresAt)
 }
 
 // MarkResolved mocks base method.
-func (m *MockEscalationRun) MarkResolved(ctx context.Context, alertIDs []string, at time.Time) (int, error) {
+func (m *MockEscalationRun) MarkResolved(ctx context.Context, workspaceID string, alertIDs []string, at time.Time) (int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "MarkResolved", ctx, alertIDs, at)
+	ret := m.ctrl.Call(m, "MarkResolved", ctx, workspaceID, alertIDs, at)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // MarkResolved indicates an expected call of MarkResolved.
-func (mr *MockEscalationRunMockRecorder) MarkResolved(ctx, alertIDs, at any) *gomock.Call {
+func (mr *MockEscalationRunMockRecorder) MarkResolved(ctx, workspaceID, alertIDs, at any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkResolved", reflect.TypeOf((*MockEscalationRun)(nil).MarkResolved), ctx, alertIDs, at)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkResolved", reflect.TypeOf((*MockEscalationRun)(nil).MarkResolved), ctx, workspaceID, alertIDs, at)
 }
 
 // NextRoundRobin mocks base method.

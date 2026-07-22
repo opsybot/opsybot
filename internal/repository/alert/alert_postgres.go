@@ -352,9 +352,9 @@ func (r *repo) List(ctx context.Context, workspaceID string, filter entity.Alert
 	return out, next, nil
 }
 
-func (r *repo) Acknowledge(ctx context.Context, workspaceID string, ids []string, userID, label string, at time.Time) (int, error) {
+func (r *repo) Acknowledge(ctx context.Context, workspaceID string, ids []string, userID, label string, at time.Time) ([]string, error) {
 	if len(ids) == 0 {
-		return 0, nil
+		return nil, nil
 	}
 	values := dbpostgres.M{
 		"status":         string(entity.AlertStatusAcked),
@@ -365,19 +365,25 @@ func (r *repo) Acknowledge(ctx context.Context, workspaceID string, ids []string
 	if userID != "" {
 		values["acked_by_user_id"] = userID
 	}
-	affected, err := dbpostgres.Alerts(
-		qm.Where("workspace_id = ? AND status = ?", workspaceID, string(entity.AlertStatusOpen)),
-		qm.WhereIn("id IN ?", anySlice(ids)...),
-	).UpdateAll(ctx, r.db.Querier(ctx), values)
+	matched, err := r.lockMatching(ctx, ids,
+		qm.Where("workspace_id = ? AND status = ?", workspaceID, string(entity.AlertStatusOpen)))
 	if err != nil {
-		return 0, fmt.Errorf("acknowledge alerts: %w", err)
+		return nil, fmt.Errorf("acknowledge alerts: %w", err)
 	}
-	return int(affected), nil
+	if len(matched) == 0 {
+		return nil, nil
+	}
+	if _, err := dbpostgres.Alerts(
+		qm.WhereIn("id IN ?", anySlice(matched)...),
+	).UpdateAll(ctx, r.db.Querier(ctx), values); err != nil {
+		return nil, fmt.Errorf("acknowledge alerts: %w", err)
+	}
+	return matched, nil
 }
 
-func (r *repo) Resolve(ctx context.Context, workspaceID string, ids []string, at time.Time, mode entity.ResolveMode) (int, error) {
+func (r *repo) Resolve(ctx context.Context, workspaceID string, ids []string, at time.Time, mode entity.ResolveMode) ([]string, error) {
 	if len(ids) == 0 {
-		return 0, nil
+		return nil, nil
 	}
 	values := dbpostgres.M{
 		"status":       string(entity.AlertStatusResolved),
@@ -386,14 +392,38 @@ func (r *repo) Resolve(ctx context.Context, workspaceID string, ids []string, at
 		"resolve_mode": string(mode),
 		"updated_at":   at,
 	}
-	affected, err := dbpostgres.Alerts(
-		qm.Where("workspace_id = ? AND resolved_at IS NULL", workspaceID),
-		qm.WhereIn("id IN ?", anySlice(ids)...),
-	).UpdateAll(ctx, r.db.Querier(ctx), values)
+	matched, err := r.lockMatching(ctx, ids,
+		qm.Where("workspace_id = ? AND resolved_at IS NULL", workspaceID))
 	if err != nil {
-		return 0, fmt.Errorf("resolve alerts: %w", err)
+		return nil, fmt.Errorf("resolve alerts: %w", err)
 	}
-	return int(affected), nil
+	if len(matched) == 0 {
+		return nil, nil
+	}
+	if _, err := dbpostgres.Alerts(
+		qm.WhereIn("id IN ?", anySlice(matched)...),
+	).UpdateAll(ctx, r.db.Querier(ctx), values); err != nil {
+		return nil, fmt.Errorf("resolve alerts: %w", err)
+	}
+	return matched, nil
+}
+
+func (r *repo) lockMatching(ctx context.Context, ids []string, predicate qm.QueryMod) ([]string, error) {
+	rows, err := dbpostgres.Alerts(
+		qm.Select("id"),
+		predicate,
+		qm.WhereIn("id IN ?", anySlice(ids)...),
+		qm.OrderBy("id"),
+		qm.For("update"),
+	).All(ctx, r.db.Querier(ctx))
+	if err != nil {
+		return nil, err
+	}
+	matched := make([]string, 0, len(rows))
+	for _, m := range rows {
+		matched = append(matched, m.ID)
+	}
+	return matched, nil
 }
 
 func (r *repo) Reopen(ctx context.Context, alertID string, at time.Time) (bool, error) {

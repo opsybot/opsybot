@@ -17,8 +17,8 @@ type Alert interface {
 	GetByID(ctx context.Context, workspaceID, id string) (entity.Alert, error)
 	List(ctx context.Context, workspaceID string, filter entity.AlertFilter) ([]entity.Alert, string, error)
 	Facets(ctx context.Context, workspaceID string, since time.Time) (entity.AlertFacets, error)
-	Acknowledge(ctx context.Context, workspaceID string, ids []string, userID, label string, at time.Time) (int, error)
-	Resolve(ctx context.Context, workspaceID string, ids []string, at time.Time, mode entity.ResolveMode) (int, error)
+	Acknowledge(ctx context.Context, workspaceID string, ids []string, userID, label string, at time.Time) ([]string, error)
+	Resolve(ctx context.Context, workspaceID string, ids []string, at time.Time, mode entity.ResolveMode) ([]string, error)
 	Reopen(ctx context.Context, alertID string, at time.Time) (bool, error)
 	ApplyRouting(ctx context.Context, alertID, policyRef, groupKey, silenceID string, suppressedAt time.Time) error
 	AppendEvent(ctx context.Context, alertID string, event entity.AlertEvent) error

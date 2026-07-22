@@ -315,7 +315,7 @@ func (r *repo) SaveProgress(ctx context.Context, run entity.EscalationRun) (bool
 	return affected > 0, nil
 }
 
-func (r *repo) MarkAcked(ctx context.Context, alertID string, ackedAt, expiresAt time.Time) (bool, error) {
+func (r *repo) MarkAcked(ctx context.Context, workspaceID, alertID string, ackedAt, expiresAt time.Time) (bool, error) {
 	values := dbpostgres.M{
 		"state":      string(entity.EscalationAcked),
 		"acked_at":   ackedAt,
@@ -329,7 +329,7 @@ func (r *repo) MarkAcked(ctx context.Context, alertID string, ackedAt, expiresAt
 		values["next_at"] = expiresAt
 	}
 	affected, err := dbpostgres.AlertEscalations(
-		qm.Where("alert_id = ? AND state = ?", alertID, string(entity.EscalationRunning)),
+		qm.Where("workspace_id = ? AND alert_id = ? AND state = ?", workspaceID, alertID, string(entity.EscalationRunning)),
 	).UpdateAll(ctx, r.db.Querier(ctx), values)
 	if err != nil {
 		return false, fmt.Errorf("mark escalation acked: %w", err)
@@ -337,7 +337,7 @@ func (r *repo) MarkAcked(ctx context.Context, alertID string, ackedAt, expiresAt
 	return affected > 0, nil
 }
 
-func (r *repo) MarkResolved(ctx context.Context, alertIDs []string, at time.Time) (int, error) {
+func (r *repo) MarkResolved(ctx context.Context, workspaceID string, alertIDs []string, at time.Time) (int, error) {
 	if len(alertIDs) == 0 {
 		return 0, nil
 	}
@@ -348,6 +348,7 @@ func (r *repo) MarkResolved(ctx context.Context, alertIDs []string, at time.Time
 		"updated_at": at,
 	}
 	affected, err := dbpostgres.AlertEscalations(
+		qm.Where("workspace_id = ?", workspaceID),
 		qm.WhereIn("state IN ?", string(entity.EscalationRunning), string(entity.EscalationAcked)),
 		qm.WhereIn("alert_id IN ?", anySlice(alertIDs)...),
 	).UpdateAll(ctx, r.db.Querier(ctx), values)

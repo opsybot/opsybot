@@ -355,6 +355,9 @@ func (s *srv) Delete(ctx context.Context, workspaceSlug, policySlug string) erro
 	if refs.Routes > 0 || refs.Monitors > 0 || refs.Default {
 		return entity.ErrEscalationPolicyReferenced
 	}
+	if refs.ActiveRuns > 0 {
+		return entity.ErrEscalationPolicyActive
+	}
 	return s.tx.WithTx(ctx, func(ctx context.Context) error {
 		if err := s.policies.Delete(ctx, ws.ID, p.ID); err != nil {
 			return fmt.Errorf("delete escalation policy: %w", err)
@@ -503,6 +506,9 @@ func (s *srv) OnAcked(ctx context.Context, workspaceID string, alertIDs []string
 			}
 			return err
 		}
+		if run.WorkspaceID != workspaceID {
+			continue
+		}
 		if run.State != entity.EscalationRunning {
 			continue
 		}
@@ -512,7 +518,7 @@ func (s *srv) OnAcked(ctx context.Context, workspaceID string, alertIDs []string
 			expiry = now.Add(run.Snapshot.AckTimeout)
 			text = "Escalation paused; resumes " + expiry.UTC().Format("15:04") + " UTC unless resolved"
 		}
-		marked, err := s.runs.MarkAcked(ctx, alertID, now, expiry)
+		marked, err := s.runs.MarkAcked(ctx, workspaceID, alertID, now, expiry)
 		if err != nil {
 			return err
 		}
@@ -530,8 +536,8 @@ func (s *srv) OnAcked(ctx context.Context, workspaceID string, alertIDs []string
 	return nil
 }
 
-func (s *srv) OnResolved(ctx context.Context, alertIDs []string, now time.Time) error {
-	_, err := s.runs.MarkResolved(ctx, alertIDs, now)
+func (s *srv) OnResolved(ctx context.Context, workspaceID string, alertIDs []string, now time.Time) error {
+	_, err := s.runs.MarkResolved(ctx, workspaceID, alertIDs, now)
 	return err
 }
 

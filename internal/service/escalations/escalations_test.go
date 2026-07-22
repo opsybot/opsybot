@@ -2,6 +2,7 @@ package escalations
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/escalation_run"
 	"github.com/opsybot/opsybot/internal/repository/lock"
 	"github.com/opsybot/opsybot/internal/repository/member"
+	"github.com/opsybot/opsybot/internal/repository/policy"
 	"github.com/opsybot/opsybot/internal/repository/schedule"
 	"github.com/opsybot/opsybot/internal/repository/team"
 	"github.com/opsybot/opsybot/internal/repository/workspace"
@@ -36,6 +38,7 @@ type harness struct {
 	notify   *notifier.MockNotifier
 	lock     *lock.MockLock
 	ws       *workspace.MockWorkspace
+	pol      *policy.MockPolicy
 }
 
 func newHarness(t *testing.T) *harness {
@@ -51,11 +54,12 @@ func newHarness(t *testing.T) *harness {
 		notify:   notifier.NewMockNotifier(ctrl),
 		lock:     lock.NewMockLock(ctrl),
 		ws:       workspace.NewMockWorkspace(ctrl),
+		pol:      policy.NewMockPolicy(ctrl),
 	}
 	h.srv = &srv{
 		tx: fakeTx{}, lock: h.lock, workspaces: h.ws, members: h.members, teams: h.teams,
 		schedules: h.scheds, policies: h.policies, runs: h.runs, alerts: h.alerts,
-		routes: alert_route.NewMockAlertRoute(ctrl), policy: nil, audit: nil,
+		routes: alert_route.NewMockAlertRoute(ctrl), policy: h.pol, audit: nil,
 		notifier: h.notify, cfg: config.Auth{BaseURL: "http://localhost:8080"},
 	}
 	return h
@@ -125,7 +129,7 @@ func TestOnAckedSetsExpiryFromPolicySnapshot(t *testing.T) {
 	withTimeout := runningRun(now)
 	withTimeout.Snapshot.AckTimeout = 30 * time.Minute
 	h.runs.EXPECT().GetByAlertID(gomock.Any(), "al-1").Return(withTimeout, nil)
-	h.runs.EXPECT().MarkAcked(gomock.Any(), "al-1", now, now.Add(30*time.Minute)).Return(true, nil)
+	h.runs.EXPECT().MarkAcked(gomock.Any(), "ws-1", "al-1", now, now.Add(30*time.Minute)).Return(true, nil)
 	h.alerts.EXPECT().AppendEvent(gomock.Any(), "al-1", gomock.Any()).Return(nil)
 
 	if err := h.srv.OnAcked(context.Background(), "ws-1", []string{"al-1"}, now); err != nil {
@@ -138,7 +142,7 @@ func TestOnAckedWithoutTimeoutIsTerminal(t *testing.T) {
 	now := time.Now().UTC()
 
 	h.runs.EXPECT().GetByAlertID(gomock.Any(), "al-1").Return(runningRun(now), nil)
-	h.runs.EXPECT().MarkAcked(gomock.Any(), "al-1", now, time.Time{}).Return(true, nil)
+	h.runs.EXPECT().MarkAcked(gomock.Any(), "ws-1", "al-1", now, time.Time{}).Return(true, nil)
 	h.alerts.EXPECT().AppendEvent(gomock.Any(), "al-1", gomock.Any()).Return(nil)
 
 	if err := h.srv.OnAcked(context.Background(), "ws-1", []string{"al-1"}, now); err != nil {
@@ -151,10 +155,39 @@ func TestOnAckedLostRaceWritesNoEvent(t *testing.T) {
 	now := time.Now().UTC()
 
 	h.runs.EXPECT().GetByAlertID(gomock.Any(), "al-1").Return(runningRun(now), nil)
-	h.runs.EXPECT().MarkAcked(gomock.Any(), "al-1", now, time.Time{}).Return(false, nil)
+	h.runs.EXPECT().MarkAcked(gomock.Any(), "ws-1", "al-1", now, time.Time{}).Return(false, nil)
 
 	if err := h.srv.OnAcked(context.Background(), "ws-1", []string{"al-1"}, now); err != nil {
 		t.Fatalf("on acked: %v", err)
+	}
+}
+
+func TestOnAckedSkipsForeignWorkspaceRun(t *testing.T) {
+	h := newHarness(t)
+	now := time.Now().UTC()
+	foreign := runningRun(now)
+	foreign.WorkspaceID = "ws-2"
+
+	h.runs.EXPECT().GetByAlertID(gomock.Any(), "al-1").Return(foreign, nil)
+
+	if err := h.srv.OnAcked(context.Background(), "ws-1", []string{"al-1"}, now); err != nil {
+		t.Fatalf("on acked: %v", err)
+	}
+}
+
+func TestDeleteRefusedWhileEscalationsActive(t *testing.T) {
+	h := newHarness(t)
+	ctx := entity.WithIdentity(context.Background(), entity.Identity{Kind: entity.IdentityKindSession, UserID: "u1", Label: "Priya"})
+
+	h.ws.EXPECT().GetBySlug(gomock.Any(), "acme").Return(entity.Workspace{ID: "ws-1", Slug: "acme"}, nil)
+	h.members.EXPECT().IsActive(gomock.Any(), "ws-1", "u1").Return(true, nil)
+	h.pol.EXPECT().Allowed(gomock.Any(), gomock.Any(), "ws-1", gomock.Any(), gomock.Any()).Return(true, nil)
+	h.policies.EXPECT().GetBySlug(gomock.Any(), "ws-1", "payments-primary").Return(entity.EscalationPolicy{ID: "pol-1", Slug: "payments-primary"}, nil)
+	h.policies.EXPECT().Refs(gomock.Any(), "ws-1", "pol-1").Return(entity.EscalationPolicyRefs{ActiveRuns: 2}, nil)
+
+	err := h.srv.Delete(ctx, "acme", "payments-primary")
+	if !errors.Is(err, entity.ErrEscalationPolicyActive) {
+		t.Fatalf("expected ErrEscalationPolicyActive, got %v", err)
 	}
 }
 

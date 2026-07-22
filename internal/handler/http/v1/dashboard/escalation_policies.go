@@ -22,6 +22,8 @@ func escalationProblem(err error) (int, api.Problem) {
 		return http.StatusConflict, prob(http.StatusConflict, "Name taken", "A policy already goes by that name.", "")
 	case errors.Is(err, entity.ErrEscalationPolicyReferenced):
 		return http.StatusConflict, prob(http.StatusConflict, "Policy in use", "Routing rules, monitors, or the default route still point at this policy. Re-point them first.", "")
+	case errors.Is(err, entity.ErrEscalationPolicyActive):
+		return http.StatusConflict, prob(http.StatusConflict, "Escalations in progress", "Alerts are still escalating through this policy. Resolve or wait out those escalations first.", "")
 	case errors.Is(err, entity.ErrEscalationWebhookSlugTaken):
 		return http.StatusConflict, prob(http.StatusConflict, "Name taken", "A webhook already goes by that name.", "")
 	case errors.Is(err, entity.ErrEscalationSecretUnavailable):

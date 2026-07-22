@@ -336,7 +336,14 @@ func (r *repo) Refs(ctx context.Context, workspaceID, policyID string) (entity.E
 	if err != nil {
 		return entity.EscalationPolicyRefs{}, fmt.Errorf("check policy default: %w", err)
 	}
-	return entity.EscalationPolicyRefs{Routes: int(routes), Monitors: int(monitors), Default: isDefault}, nil
+	active, err := dbpostgres.AlertEscalations(
+		qm.Where("workspace_id = ? AND policy_id = ?", workspaceID, policyID),
+		qm.WhereIn("state IN ?", string(entity.EscalationRunning), string(entity.EscalationAcked)),
+	).Count(ctx, exec)
+	if err != nil {
+		return entity.EscalationPolicyRefs{}, fmt.Errorf("count policy active runs: %w", err)
+	}
+	return entity.EscalationPolicyRefs{Routes: int(routes), Monitors: int(monitors), Default: isDefault, ActiveRuns: int(active)}, nil
 }
 
 func (r *repo) RoutedCounts(ctx context.Context, workspaceID string) (map[string]int, error) {

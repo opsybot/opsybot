@@ -330,7 +330,7 @@ func (s *srv) applyResolve(ctx context.Context, src entity.AlertSource, upsert e
 	}); err != nil {
 		return entity.IngestResult{}, err
 	}
-	if err := s.escalations.OnResolved(ctx, []string{alert.ID}, endedAt); err != nil {
+	if err := s.escalations.OnResolved(ctx, src.WorkspaceID, []string{alert.ID}, endedAt); err != nil {
 		return entity.IngestResult{}, err
 	}
 	if alert.ParentAlertID != "" {

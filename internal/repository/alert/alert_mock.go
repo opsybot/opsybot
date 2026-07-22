@@ -43,10 +43,10 @@ func (m *MockAlert) EXPECT() *MockAlertMockRecorder {
 }
 
 // Acknowledge mocks base method.
-func (m *MockAlert) Acknowledge(ctx context.Context, workspaceID string, ids []string, userID, label string, at time.Time) (int, error) {
+func (m *MockAlert) Acknowledge(ctx context.Context, workspaceID string, ids []string, userID, label string, at time.Time) ([]string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Acknowledge", ctx, workspaceID, ids, userID, label, at)
-	ret0, _ := ret[0].(int)
+	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -294,10 +294,10 @@ func (mr *MockAlertMockRecorder) ReplaceLinks(ctx, alertID, links any) *gomock.C
 }
 
 // Resolve mocks base method.
-func (m *MockAlert) Resolve(ctx context.Context, workspaceID string, ids []string, at time.Time, mode entity.ResolveMode) (int, error) {
+func (m *MockAlert) Resolve(ctx context.Context, workspaceID string, ids []string, at time.Time, mode entity.ResolveMode) ([]string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Resolve", ctx, workspaceID, ids, at, mode)
-	ret0, _ := ret[0].(int)
+	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

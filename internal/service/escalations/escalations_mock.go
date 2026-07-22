@@ -204,17 +204,17 @@ func (mr *MockEscalationsMockRecorder) OnAcked(ctx, workspaceID, alertIDs, now a
 }
 
 // OnResolved mocks base method.
-func (m *MockEscalations) OnResolved(ctx context.Context, alertIDs []string, now time.Time) error {
+func (m *MockEscalations) OnResolved(ctx context.Context, workspaceID string, alertIDs []string, now time.Time) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "OnResolved", ctx, alertIDs, now)
+	ret := m.ctrl.Call(m, "OnResolved", ctx, workspaceID, alertIDs, now)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // OnResolved indicates an expected call of OnResolved.
-func (mr *MockEscalationsMockRecorder) OnResolved(ctx, alertIDs, now any) *gomock.Call {
+func (mr *MockEscalationsMockRecorder) OnResolved(ctx, workspaceID, alertIDs, now any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnResolved", reflect.TypeOf((*MockEscalations)(nil).OnResolved), ctx, alertIDs, now)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnResolved", reflect.TypeOf((*MockEscalations)(nil).OnResolved), ctx, workspaceID, alertIDs, now)
 }
 
 // RunForAlert mocks base method.

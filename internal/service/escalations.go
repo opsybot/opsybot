@@ -24,6 +24,6 @@ type Escalations interface {
 	Start(ctx context.Context, alert entity.Alert, policyID string) error
 	Advance(ctx context.Context, now time.Time) (int, error)
 	OnAcked(ctx context.Context, workspaceID string, alertIDs []string, now time.Time) error
-	OnResolved(ctx context.Context, alertIDs []string, now time.Time) error
+	OnResolved(ctx context.Context, workspaceID string, alertIDs []string, now time.Time) error
 	RunForAlert(ctx context.Context, alertID string) (entity.EscalationRun, error)
 }

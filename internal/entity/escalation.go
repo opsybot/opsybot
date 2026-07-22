@@ -199,15 +199,17 @@ type EscalationPolicyDetail struct {
 }
 
 type EscalationPolicyRefs struct {
-	Routes   int
-	Monitors int
-	Default  bool
+	Routes     int
+	Monitors   int
+	Default    bool
+	ActiveRuns int
 }
 
 var (
 	ErrEscalationPolicyNotFound    = errors.New("escalation policy not found")
 	ErrEscalationPolicySlugTaken   = errors.New("escalation policy slug taken")
 	ErrEscalationPolicyReferenced  = errors.New("escalation policy referenced")
+	ErrEscalationPolicyActive      = errors.New("escalation policy has active runs")
 	ErrEscalationWebhookNotFound   = errors.New("escalation webhook not found")
 	ErrEscalationWebhookSlugTaken  = errors.New("escalation webhook slug taken")
 	ErrEscalationWebhookInUse      = errors.New("escalation webhook in use")
