@@ -23,6 +23,7 @@ type Worker struct {
 	Heartbeats  *cron.HeartbeatSweep
 	AutoResolve *cron.AlertAutoResolve
 	Retention   *cron.IngestRetention
+	Escalations *cron.EscalationSweep
 }
 
 func (w *Worker) Run(ctx context.Context) error {
@@ -47,6 +48,13 @@ func (w *Worker) Run(ctx context.Context) error {
 			Crontab: w.Cfg.Cron.IngestRetention,
 			Timeout: w.Cfg.Cron.JobTimeout,
 			Run:     w.Retention.Run,
+		},
+		{
+			Name:    "escalation_sweep",
+			Every:   w.Cfg.Cron.EscalationSweep,
+			Timeout: w.Cfg.Cron.JobTimeout,
+			AtStart: true,
+			Run:     w.Escalations.Run,
 		},
 	}
 

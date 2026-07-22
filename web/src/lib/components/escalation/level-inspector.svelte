@@ -10,9 +10,10 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import TargetRow from '$lib/components/escalation/target-row.svelte';
 	import {
-		TARGET_OPTIONS,
 		TARGET_TYPES,
 		WAIT_OPTIONS,
+		targetOptions,
+		type Directory,
 		type Level,
 		type NotifyMode,
 		type TargetType
@@ -21,6 +22,7 @@
 	let {
 		node,
 		sib,
+		directory,
 		onupdate,
 		onmove,
 		onremove,
@@ -28,6 +30,7 @@
 	}: {
 		node: Level;
 		sib: { canUp: boolean; canDown: boolean } | null;
+		directory: Directory;
 		onupdate: (id: string, fn: (level: Level) => Level) => void;
 		onmove: (id: string, dir: -1 | 1) => void;
 		onremove: (id: string) => void;
@@ -35,8 +38,10 @@
 	} = $props();
 
 	const options = $derived.by(() => {
-		const already = new Set(node.targets.map((t) => `${t.type}:${t.value}`));
-		return (TARGET_OPTIONS[node.addType] ?? []).filter((value) => !already.has(`${node.addType}:${value}`));
+		const already = new Set(node.targets.map((t) => `${t.type}:${t.ref}`));
+		return targetOptions(directory, node.addType).filter(
+			(option) => !option.invalid && !already.has(`${node.addType}:${option.ref}`)
+		);
 	});
 	const waitLabel = $derived(WAIT_OPTIONS.find((w) => w.value === node.wait)?.label);
 
@@ -117,15 +122,21 @@
 		<Select.Root
 			type="single"
 			value=""
-			onValueChange={(value) => {
-				if (value) onupdate(node.id, (level) => ({ ...level, targets: [...level.targets, { type: level.addType, value }] }));
+			onValueChange={(ref) => {
+				const option = options.find((entry) => entry.ref === ref);
+				if (option) {
+					onupdate(node.id, (level) => ({
+						...level,
+						targets: [...level.targets, { type: level.addType, ref: option.ref, value: option.label }]
+					}));
+				}
 			}}
 		>
 			<Select.Trigger size="sm" class="flex-1" aria-label="Add {node.addType}">Add {node.addType}…</Select.Trigger>
 			<Select.Content>
 				<Select.Group>
-					{#each options as option (option)}
-						<Select.Item value={option} label={option}>{option}</Select.Item>
+					{#each options as option (option.ref)}
+						<Select.Item value={option.ref} label={option.label}>{option.label}</Select.Item>
 					{/each}
 				</Select.Group>
 			</Select.Content>

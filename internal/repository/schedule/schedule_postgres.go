@@ -185,6 +185,17 @@ func (r *repo) GetBySlug(ctx context.Context, workspaceID, slug string) (entity.
 	return out[0], nil
 }
 
+func (r *repo) GetByID(ctx context.Context, workspaceID, id string) (entity.Schedule, error) {
+	out, err := r.getMany(ctx, qm.Where("workspace_id = ? AND id = ?", workspaceID, id))
+	if err != nil {
+		return entity.Schedule{}, err
+	}
+	if len(out) == 0 {
+		return entity.Schedule{}, entity.ErrScheduleNotFound
+	}
+	return out[0], nil
+}
+
 func (r *repo) GetByFeedToken(ctx context.Context, feedToken string) (entity.Schedule, error) {
 	out, err := r.getMany(ctx, qm.Where("feed_token = ?", feedToken))
 	if err != nil {

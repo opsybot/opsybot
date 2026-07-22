@@ -29,8 +29,6 @@ const (
 	SilenceReasonMax     = 200
 )
 
-const DefaultPolicyRef = "platform-default"
-
 var RouteFields = []string{"source", "service", "severity", "title", "labels"}
 
 type RouteCondition struct {
@@ -43,14 +41,16 @@ type AlertRoute struct {
 	ID          string
 	WorkspaceID string
 	Position    int
-	PolicyRef   string
+	PolicyID    string
+	PolicySlug  string
 	Conditions  []RouteCondition
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
 
 type NewAlertRoute struct {
-	PolicyRef  string
+	PolicySlug string
+	PolicyID   string
 	Conditions []RouteCondition
 }
 
@@ -82,14 +82,15 @@ func ValidateGroupRules(rules []GroupRule) error {
 }
 
 type AlertSettings struct {
-	WorkspaceID      string
-	DefaultPolicyRef string
+	WorkspaceID       string
+	DefaultPolicyID   string
+	DefaultPolicySlug string
 }
 
 type RoutePreview struct {
 	MatchedRouteID string
 	Position       int
-	PolicyRef      string
+	PolicySlug     string
 	GroupFields    []string
 }
 
@@ -110,7 +111,7 @@ func (o ConditionOp) Validate() error {
 
 func (n NewAlertRoute) Validate() error {
 	return validation.ValidateStruct(&n,
-		validation.Field(&n.PolicyRef, validation.By(policyRefField)),
+		validation.Field(&n.PolicySlug, validation.By(policyRefField)),
 		validation.Field(&n.Conditions, validation.By(routeConditionsField)),
 	)
 }

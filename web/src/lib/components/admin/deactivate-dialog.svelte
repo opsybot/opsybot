@@ -13,9 +13,12 @@
 	import * as Select from '$lib/components/ui/select';
 	import type { Member } from '$lib/admin';
 
-	let { member, onclose }: { member: Member | null; onclose: () => void } = $props();
+	let {
+		member,
+		candidates,
+		onclose
+	}: { member: Member | null; candidates: Member[]; onclose: () => void } = $props();
 
-	const REPLACEMENTS = ['Maya Chen', 'Priya Nair', 'Dev Patel', 'Sana Ito'];
 	const REF_ICONS: Record<string, Component<LucideProps>> = {
 		'calendar-clock': CalendarClockIcon,
 		'arrow-up-right': ArrowUpRightIcon,
@@ -36,6 +39,10 @@
 	let form: HTMLFormElement;
 
 	const refs = $derived(current?.references ?? []);
+	const replacements = $derived(
+		candidates.filter((candidate) => candidate.id !== current?.id && !candidate.deactivated)
+	);
+	const nameOf = $derived(new Map(replacements.map((candidate) => [candidate.id, candidate.name])));
 	const allPicked = $derived(refs.length > 0 && refs.every((ref) => picks[ref.id]));
 	const need = $derived(refs.filter((ref) => !picks[ref.id]).length);
 	const picksJson = $derived(JSON.stringify(picks));
@@ -74,12 +81,12 @@
 								onValueChange={(value) => (picks = { ...picks, [ref.id]: value })}
 							>
 								<Select.Trigger size="sm" class="w-[160px]" aria-label="Replacement for {ref.label}">
-									{picks[ref.id] || 'Replace with…'}
+									{nameOf.get(picks[ref.id]) ?? 'Replace with…'}
 								</Select.Trigger>
 								<Select.Content>
 									<Select.Group>
-										{#each REPLACEMENTS as name (name)}
-											<Select.Item value={name} label={name}>{name}</Select.Item>
+										{#each replacements as candidate (candidate.id)}
+											<Select.Item value={candidate.id} label={candidate.name}>{candidate.name}</Select.Item>
 										{/each}
 									</Select.Group>
 								</Select.Content>

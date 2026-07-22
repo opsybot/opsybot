@@ -68,12 +68,12 @@ func TestMonitorDedupKeyIsNamespacedPerMonitor(t *testing.T) {
 
 func TestNewAlertMonitorRejectsOutOfRangeInterval(t *testing.T) {
 	in := NewAlertMonitor{
-		Name:      "nightly-backup",
-		Slug:      "nightly-backup",
-		Interval:  30 * time.Second,
-		Grace:     time.Minute,
-		PolicyRef: DefaultPolicyRef,
-		Severity:  SeverityHigh,
+		Name:       "nightly-backup",
+		Slug:       "nightly-backup",
+		Interval:   30 * time.Second,
+		Grace:      time.Minute,
+		PolicySlug: "platform-default",
+		Severity:   SeverityHigh,
 	}
 	if err := in.Validate(); !IsValidationError(err) {
 		t.Fatalf("Validate() = %v, want a validation error for a sub-minute interval", err)

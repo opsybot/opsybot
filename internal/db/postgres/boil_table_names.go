@@ -4,6 +4,7 @@
 package dbpostgres
 
 var TableNames = struct {
+	AlertEscalations          string
 	AlertEvents               string
 	AlertGroupRules           string
 	AlertIngestEvents         string
@@ -20,6 +21,10 @@ var TableNames = struct {
 	Alerts                    string
 	APIKeys                   string
 	AuditEvents               string
+	EscalationPolicies        string
+	EscalationPolicyTargets   string
+	EscalationRRState         string
+	EscalationWebhooks        string
 	Invites                   string
 	PasswordResetTokens       string
 	ScheduleLayerParticipants string
@@ -38,6 +43,7 @@ var TableNames = struct {
 	WorkspaceMembers          string
 	Workspaces                string
 }{
+	AlertEscalations:          "alert_escalations",
 	AlertEvents:               "alert_events",
 	AlertGroupRules:           "alert_group_rules",
 	AlertIngestEvents:         "alert_ingest_events",
@@ -54,6 +60,10 @@ var TableNames = struct {
 	Alerts:                    "alerts",
 	APIKeys:                   "api_keys",
 	AuditEvents:               "audit_events",
+	EscalationPolicies:        "escalation_policies",
+	EscalationPolicyTargets:   "escalation_policy_targets",
+	EscalationRRState:         "escalation_rr_state",
+	EscalationWebhooks:        "escalation_webhooks",
 	Invites:                   "invites",
 	PasswordResetTokens:       "password_reset_tokens",
 	ScheduleLayerParticipants: "schedule_layer_participants",

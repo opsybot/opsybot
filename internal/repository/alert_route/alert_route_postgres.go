@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/aarondl/null/v8"
 	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/aarondl/sqlboiler/v4/queries/qm"
 	"github.com/aarondl/sqlboiler/v4/types"
@@ -58,17 +59,35 @@ func (r *repo) List(ctx context.Context, workspaceID string) ([]entity.AlertRout
 		})
 	}
 
+	slugs, err := r.policySlugs(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+
 	out := make([]entity.AlertRoute, 0, len(rows))
 	for _, m := range rows {
 		out = append(out, entity.AlertRoute{
 			ID:          m.ID,
 			WorkspaceID: m.WorkspaceID,
 			Position:    m.Position,
-			PolicyRef:   m.PolicyRef,
+			PolicyID:    m.EscalationPolicyID,
+			PolicySlug:  slugs[m.EscalationPolicyID],
 			Conditions:  byRoute[m.ID],
 			CreatedAt:   m.CreatedAt,
 			UpdatedAt:   m.UpdatedAt,
 		})
+	}
+	return out, nil
+}
+
+func (r *repo) policySlugs(ctx context.Context, workspaceID string) (map[string]string, error) {
+	rows, err := dbpostgres.EscalationPolicies(qm.Where("workspace_id = ?", workspaceID)).All(ctx, r.db.Querier(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("list policy slugs: %w", err)
+	}
+	out := make(map[string]string, len(rows))
+	for _, m := range rows {
+		out[m.ID] = m.Slug
 	}
 	return out, nil
 }
@@ -80,14 +99,14 @@ func (r *repo) Create(ctx context.Context, workspaceID string, in entity.NewAler
 		return entity.AlertRoute{}, fmt.Errorf("count alert routes: %w", err)
 	}
 
-	m := &dbpostgres.AlertRoute{WorkspaceID: workspaceID, PolicyRef: in.PolicyRef, Position: int(next)}
-	if err := m.Insert(ctx, exec, boil.Whitelist("workspace_id", "policy_ref", "position")); err != nil {
+	m := &dbpostgres.AlertRoute{WorkspaceID: workspaceID, EscalationPolicyID: in.PolicyID, Position: int(next)}
+	if err := m.Insert(ctx, exec, boil.Whitelist("workspace_id", "escalation_policy_id", "position")); err != nil {
 		return entity.AlertRoute{}, fmt.Errorf("create alert route: %w", err)
 	}
 	if err := r.replaceConditions(ctx, m.ID, in.Conditions); err != nil {
 		return entity.AlertRoute{}, err
 	}
-	return entity.AlertRoute{ID: m.ID, WorkspaceID: workspaceID, Position: m.Position, PolicyRef: m.PolicyRef, Conditions: in.Conditions}, nil
+	return entity.AlertRoute{ID: m.ID, WorkspaceID: workspaceID, Position: m.Position, PolicyID: m.EscalationPolicyID, PolicySlug: in.PolicySlug, Conditions: in.Conditions}, nil
 }
 
 func (r *repo) Update(ctx context.Context, workspaceID, routeID string, in entity.NewAlertRoute) (entity.AlertRoute, error) {
@@ -95,15 +114,15 @@ func (r *repo) Update(ctx context.Context, workspaceID, routeID string, in entit
 	if err != nil {
 		return entity.AlertRoute{}, err
 	}
-	m.PolicyRef = in.PolicyRef
+	m.EscalationPolicyID = in.PolicyID
 	m.UpdatedAt = time.Now().UTC()
-	if _, err := m.Update(ctx, r.db.Querier(ctx), boil.Whitelist("policy_ref", "updated_at")); err != nil {
+	if _, err := m.Update(ctx, r.db.Querier(ctx), boil.Whitelist("escalation_policy_id", "updated_at")); err != nil {
 		return entity.AlertRoute{}, fmt.Errorf("update alert route: %w", err)
 	}
 	if err := r.replaceConditions(ctx, m.ID, in.Conditions); err != nil {
 		return entity.AlertRoute{}, err
 	}
-	return entity.AlertRoute{ID: m.ID, WorkspaceID: workspaceID, Position: m.Position, PolicyRef: m.PolicyRef, Conditions: in.Conditions}, nil
+	return entity.AlertRoute{ID: m.ID, WorkspaceID: workspaceID, Position: m.Position, PolicyID: m.EscalationPolicyID, PolicySlug: in.PolicySlug, Conditions: in.Conditions}, nil
 }
 
 func (r *repo) Delete(ctx context.Context, workspaceID, routeID string) error {
@@ -208,19 +227,30 @@ func (r *repo) Settings(ctx context.Context, workspaceID string) (entity.AlertSe
 	m, err := dbpostgres.FindAlertSetting(ctx, r.db.Querier(ctx), workspaceID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return entity.AlertSettings{WorkspaceID: workspaceID, DefaultPolicyRef: entity.DefaultPolicyRef}, nil
+			return entity.AlertSettings{WorkspaceID: workspaceID}, nil
 		}
 		return entity.AlertSettings{}, fmt.Errorf("get alert settings: %w", err)
 	}
-	return entity.AlertSettings{WorkspaceID: m.WorkspaceID, DefaultPolicyRef: m.DefaultPolicyRef}, nil
+	out := entity.AlertSettings{WorkspaceID: m.WorkspaceID, DefaultPolicyID: m.DefaultEscalationPolicyID.String}
+	if out.DefaultPolicyID != "" {
+		slugs, err := r.policySlugs(ctx, workspaceID)
+		if err != nil {
+			return entity.AlertSettings{}, err
+		}
+		out.DefaultPolicySlug = slugs[out.DefaultPolicyID]
+	}
+	return out, nil
 }
 
-func (r *repo) SetDefaultPolicy(ctx context.Context, workspaceID, policyRef string) error {
-	m := &dbpostgres.AlertSetting{WorkspaceID: workspaceID, DefaultPolicyRef: policyRef, UpdatedAt: time.Now().UTC()}
+func (r *repo) SetDefaultPolicy(ctx context.Context, workspaceID, policyID string) error {
+	m := &dbpostgres.AlertSetting{WorkspaceID: workspaceID, UpdatedAt: time.Now().UTC()}
+	if policyID != "" {
+		m.DefaultEscalationPolicyID = null.StringFrom(policyID)
+	}
 	if err := m.Upsert(ctx, r.db.Querier(ctx), true,
 		[]string{"workspace_id"},
-		boil.Whitelist("default_policy_ref", "updated_at"),
-		boil.Whitelist("workspace_id", "default_policy_ref")); err != nil {
+		boil.Whitelist("default_escalation_policy_id", "updated_at"),
+		boil.Whitelist("workspace_id", "default_escalation_policy_id")); err != nil {
 		return fmt.Errorf("set default policy: %w", err)
 	}
 	return nil

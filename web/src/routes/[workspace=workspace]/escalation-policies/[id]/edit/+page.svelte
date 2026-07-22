@@ -7,5 +7,5 @@
 </script>
 
 {#key data}
-	<PolicyBuilder initial={data.tree} backHref={ws(`/escalation-policies/${data.id}`)} />
+	<PolicyBuilder initial={data.tree} directory={data.directory} backHref={ws(`/escalation-policies/${data.id}`)} />
 {/key}

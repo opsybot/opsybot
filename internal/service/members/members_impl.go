@@ -94,6 +94,10 @@ func (s *srv) List(ctx context.Context, workspaceSlug string) ([]entity.Member, 
 	}
 	for i := range list {
 		list[i].Role = roles[list[i].UserID]
+		list[i].References, err = s.references.ListByUser(ctx, ws.ID, list[i].UserID)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return list, nil
 }

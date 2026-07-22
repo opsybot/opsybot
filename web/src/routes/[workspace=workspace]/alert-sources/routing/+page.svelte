@@ -203,7 +203,7 @@
 						<span class="flex items-center gap-2 text-[12.5px]">
 							<CheckIcon class="text-primary size-[13px] shrink-0" />
 							{matchedIndex === -1 ? 'No rule matches: default route' : `Matches rule ${matchedIndex + 1}`}
-							→ <span class="font-mono text-[12px]">{preview.policyRef}</span>
+							→ <span class="font-mono text-[12px]">{preview.policySlug}</span>
 						</span>
 						{#if preview.groupFields.length}
 							<span class="text-subtle-foreground pl-[21px] text-[11.5px]">

@@ -32,7 +32,8 @@ type AlertMonitor struct {
 	Name          string
 	Interval      time.Duration
 	Grace         time.Duration
-	PolicyRef     string
+	PolicyID      string
+	PolicySlug    string
 	Severity      AlertSeverity
 	LastCheckInAt time.Time
 	Paused        bool
@@ -42,20 +43,22 @@ type AlertMonitor struct {
 }
 
 type NewAlertMonitor struct {
-	Name      string
-	Slug      string
-	Interval  time.Duration
-	Grace     time.Duration
-	PolicyRef string
-	Severity  AlertSeverity
+	Name       string
+	Slug       string
+	Interval   time.Duration
+	Grace      time.Duration
+	PolicySlug string
+	PolicyID   string
+	Severity   AlertSeverity
 }
 
 type AlertMonitorUpdate struct {
-	Name      string
-	Interval  time.Duration
-	Grace     time.Duration
-	PolicyRef string
-	Severity  AlertSeverity
+	Name       string
+	Interval   time.Duration
+	Grace      time.Duration
+	PolicySlug string
+	PolicyID   string
+	Severity   AlertSeverity
 }
 
 var (
@@ -108,7 +111,7 @@ func (n NewAlertMonitor) Validate() error {
 		validation.Field(&n.Slug, validation.By(sourceSlugField)),
 		validation.Field(&n.Interval, validation.By(monitorIntervalField)),
 		validation.Field(&n.Grace, validation.By(monitorGraceField)),
-		validation.Field(&n.PolicyRef, validation.By(policyRefField)),
+		validation.Field(&n.PolicySlug, validation.By(policyRefField)),
 		validation.Field(&n.Severity, validation.By(alertSeverityField)),
 	)
 }
@@ -118,7 +121,7 @@ func (u AlertMonitorUpdate) Validate() error {
 		validation.Field(&u.Name, validation.By(sourceNameField)),
 		validation.Field(&u.Interval, validation.By(monitorIntervalField)),
 		validation.Field(&u.Grace, validation.By(monitorGraceField)),
-		validation.Field(&u.PolicyRef, validation.By(policyRefField)),
+		validation.Field(&u.PolicySlug, validation.By(policyRefField)),
 		validation.Field(&u.Severity, validation.By(alertSeverityField)),
 	)
 }

@@ -33,6 +33,16 @@ type ResetData struct {
 	ResetURL string
 }
 
+type PageData struct {
+	Severity   string
+	Service    string
+	Title      string
+	StartedAt  string
+	PolicySlug string
+	Level      int
+	AlertURL   string
+}
+
 func New(cfg config.Mailer) (Client, error) {
 	tmpl, err := template.ParseFS(templateFS, "templates/*.txt.tmpl")
 	if err != nil {
@@ -77,6 +87,11 @@ func (c Client) SendInvite(ctx context.Context, to string, data InviteData) erro
 
 func (c Client) SendPasswordReset(ctx context.Context, to string, data ResetData) error {
 	return c.send(ctx, to, "Reset your Opsybot password", "reset.txt.tmpl", data)
+}
+
+func (c Client) SendPage(ctx context.Context, to string, data PageData) error {
+	subject := "[" + strings.ToUpper(data.Severity) + "] " + data.Service + ": " + data.Title
+	return c.send(ctx, to, subject, "page.txt.tmpl", data)
 }
 
 func (c Client) send(ctx context.Context, to, subject, tmpl string, data any) error {

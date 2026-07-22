@@ -52,6 +52,10 @@ const (
 	AlertEventSuppressed AlertEventKind = "suppressed"
 	AlertEventAcked      AlertEventKind = "acked"
 	AlertEventResolved   AlertEventKind = "resolved"
+	AlertEventEscalation AlertEventKind = "escalation"
+	AlertEventNotified   AlertEventKind = "notified"
+	AlertEventTimeout    AlertEventKind = "timeout"
+	AlertEventExhausted  AlertEventKind = "exhausted"
 )
 
 const (
@@ -124,7 +128,9 @@ type Alert struct {
 	AckedByUserID         string
 	AckedByLabel          string
 	ResolveMode           ResolveMode
-	RoutedPolicyRef       string
+	EscalationPolicyID    string
+	EscalationPolicySlug  string
+	Escalation            *EscalationRun
 	SuppressedBySilenceID string
 	SuppressedAt          time.Time
 	Payload               string

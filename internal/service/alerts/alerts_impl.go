@@ -11,14 +11,16 @@ import (
 )
 
 type srv struct {
-	tx         repository.Transactor
-	workspaces repository.Workspace
-	members    repository.Member
-	alerts     repository.Alert
-	sources    repository.AlertSource
-	events     repository.IngestEvent
-	policy     repository.Policy
-	audit      repository.Audit
+	tx          repository.Transactor
+	workspaces  repository.Workspace
+	members     repository.Member
+	alerts      repository.Alert
+	sources     repository.AlertSource
+	events      repository.IngestEvent
+	policies    repository.EscalationPolicy
+	policy      repository.Policy
+	audit       repository.Audit
+	escalations service.Escalations
 }
 
 func New(
@@ -28,10 +30,15 @@ func New(
 	alerts repository.Alert,
 	sources repository.AlertSource,
 	events repository.IngestEvent,
+	policies repository.EscalationPolicy,
 	policy repository.Policy,
 	audit repository.Audit,
+	escalations service.Escalations,
 ) service.Alerts {
-	return &srv{tx: tx, workspaces: workspaces, members: members, alerts: alerts, sources: sources, events: events, policy: policy, audit: audit}
+	return &srv{
+		tx: tx, workspaces: workspaces, members: members, alerts: alerts, sources: sources,
+		events: events, policies: policies, policy: policy, audit: audit, escalations: escalations,
+	}
 }
 
 func (s *srv) authorize(ctx context.Context, workspaceSlug string, act entity.PolicyAction) (entity.Identity, entity.Workspace, error) {
@@ -131,6 +138,14 @@ func (s *srv) Get(ctx context.Context, workspaceSlug, alertID string) (entity.Al
 		return entity.Alert{}, err
 	}
 	alert.SourceSlug = slugs[alert.SourceID]
+	if alert.EscalationPolicyID != "" {
+		if p, err := s.policies.GetByID(ctx, ws.ID, alert.EscalationPolicyID); err == nil {
+			alert.EscalationPolicySlug = p.Slug
+		}
+		if run, err := s.escalations.RunForAlert(ctx, alert.ID); err == nil {
+			alert.Escalation = &run
+		}
+	}
 	return alert, nil
 }
 
@@ -158,6 +173,9 @@ func (s *srv) Acknowledge(ctx context.Context, workspaceSlug string, ids []strin
 			}); err != nil {
 				return err
 			}
+		}
+		if err := s.escalations.OnAcked(ctx, ws.ID, ids, now); err != nil {
+			return err
 		}
 		return s.audit.Create(ctx, s.event(actor, ws.ID, entity.ActionAlertAcknowledged, fmt.Sprintf("%d alerts", affected)))
 	})
@@ -188,6 +206,9 @@ func (s *srv) Resolve(ctx context.Context, workspaceSlug string, ids []string) (
 			}); err != nil {
 				return err
 			}
+		}
+		if err := s.escalations.OnResolved(ctx, ids, now); err != nil {
+			return err
 		}
 		return s.audit.Create(ctx, s.event(actor, ws.ID, entity.ActionAlertResolved, fmt.Sprintf("%d alerts", affected)))
 	})

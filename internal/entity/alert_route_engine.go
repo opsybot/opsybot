@@ -62,17 +62,17 @@ func (r AlertRoute) Matches(a Alert) bool {
 	return true
 }
 
-func RouteFor(routes []AlertRoute, a Alert, defaultPolicyRef string) (AlertRoute, string, bool) {
+func RouteFor(routes []AlertRoute, a Alert, defaultPolicyID string) (AlertRoute, string, bool) {
 	ordered := make([]AlertRoute, len(routes))
 	copy(ordered, routes)
 	sort.SliceStable(ordered, func(i, j int) bool { return ordered[i].Position < ordered[j].Position })
 
 	for _, r := range ordered {
 		if r.Matches(a) {
-			return r, r.PolicyRef, true
+			return r, r.PolicyID, true
 		}
 	}
-	return AlertRoute{}, defaultPolicyRef, false
+	return AlertRoute{}, defaultPolicyID, false
 }
 
 func (g GroupRule) Matches(a Alert) bool {

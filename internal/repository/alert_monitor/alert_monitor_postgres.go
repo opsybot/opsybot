@@ -17,11 +17,13 @@ import (
 )
 
 const selectMonitorSQL = `
-SELECT m.id, m.workspace_id, m.source_id, m.interval_seconds, m.grace_seconds, m.policy_ref, m.severity,
+SELECT m.id, m.workspace_id, m.source_id, m.interval_seconds, m.grace_seconds, m.escalation_policy_id, m.severity,
        m.last_check_in_at, m.created_at, m.updated_at,
-       s.slug, s.name, s.ingest_token, s.paused_at
+       s.slug, s.name, s.ingest_token, s.paused_at,
+       COALESCE(p.slug, '') AS policy_slug
 FROM alert_monitors m
-JOIN alert_sources s ON s.id = m.source_id`
+JOIN alert_sources s ON s.id = m.source_id
+LEFT JOIN escalation_policies p ON p.id = m.escalation_policy_id`
 
 const listMonitorsSQL = selectMonitorSQL + `
 WHERE m.workspace_id = $1
@@ -44,20 +46,21 @@ ORDER BY m.id
 LIMIT $3`
 
 type row struct {
-	ID              string    `boil:"id"`
-	WorkspaceID     string    `boil:"workspace_id"`
-	SourceID        string    `boil:"source_id"`
-	IntervalSeconds int       `boil:"interval_seconds"`
-	GraceSeconds    int       `boil:"grace_seconds"`
-	PolicyRef       string    `boil:"policy_ref"`
-	Severity        string    `boil:"severity"`
-	LastCheckInAt   null.Time `boil:"last_check_in_at"`
-	CreatedAt       time.Time `boil:"created_at"`
-	UpdatedAt       time.Time `boil:"updated_at"`
-	Slug            string    `boil:"slug"`
-	Name            string    `boil:"name"`
-	IngestToken     string    `boil:"ingest_token"`
-	PausedAt        null.Time `boil:"paused_at"`
+	ID              string      `boil:"id"`
+	WorkspaceID     string      `boil:"workspace_id"`
+	SourceID        string      `boil:"source_id"`
+	IntervalSeconds int         `boil:"interval_seconds"`
+	GraceSeconds    int         `boil:"grace_seconds"`
+	PolicyID        null.String `boil:"escalation_policy_id"`
+	PolicySlug      string      `boil:"policy_slug"`
+	Severity        string      `boil:"severity"`
+	LastCheckInAt   null.Time   `boil:"last_check_in_at"`
+	CreatedAt       time.Time   `boil:"created_at"`
+	UpdatedAt       time.Time   `boil:"updated_at"`
+	Slug            string      `boil:"slug"`
+	Name            string      `boil:"name"`
+	IngestToken     string      `boil:"ingest_token"`
+	PausedAt        null.Time   `boil:"paused_at"`
 }
 
 type repo struct {
@@ -77,7 +80,8 @@ func toEntity(r row) entity.AlertMonitor {
 		Name:          r.Name,
 		Interval:      time.Duration(r.IntervalSeconds) * time.Second,
 		Grace:         time.Duration(r.GraceSeconds) * time.Second,
-		PolicyRef:     r.PolicyRef,
+		PolicyID:      r.PolicyID.String,
+		PolicySlug:    r.PolicySlug,
 		Severity:      entity.AlertSeverity(r.Severity),
 		LastCheckInAt: r.LastCheckInAt.Time,
 		Paused:        r.PausedAt.Valid,
@@ -132,10 +136,13 @@ func (r *repo) Create(ctx context.Context, workspaceID, sourceID string, in enti
 		SourceID:        sourceID,
 		IntervalSeconds: int(in.Interval / time.Second),
 		GraceSeconds:    int(in.Grace / time.Second),
-		PolicyRef:       in.PolicyRef,
-		Severity:        string(in.Severity),
+
+		Severity: string(in.Severity),
 	}
-	cols := boil.Whitelist("workspace_id", "source_id", "interval_seconds", "grace_seconds", "policy_ref", "severity")
+	if in.PolicyID != "" {
+		m.EscalationPolicyID = null.StringFrom(in.PolicyID)
+	}
+	cols := boil.Whitelist("workspace_id", "source_id", "interval_seconds", "grace_seconds", "escalation_policy_id", "severity")
 	if err := m.Insert(ctx, r.db.Querier(ctx), cols); err != nil {
 		return entity.AlertMonitor{}, fmt.Errorf("create alert monitor: %w", err)
 	}
@@ -144,11 +151,11 @@ func (r *repo) Create(ctx context.Context, workspaceID, sourceID string, in enti
 
 func (r *repo) Update(ctx context.Context, workspaceID, monitorID string, in entity.AlertMonitorUpdate) (entity.AlertMonitor, error) {
 	values := dbpostgres.M{
-		"interval_seconds": int(in.Interval / time.Second),
-		"grace_seconds":    int(in.Grace / time.Second),
-		"policy_ref":       in.PolicyRef,
-		"severity":         string(in.Severity),
-		"updated_at":       time.Now().UTC(),
+		"interval_seconds":     int(in.Interval / time.Second),
+		"grace_seconds":        int(in.Grace / time.Second),
+		"escalation_policy_id": nullableID(in.PolicyID),
+		"severity":             string(in.Severity),
+		"updated_at":           time.Now().UTC(),
 	}
 	affected, err := dbpostgres.AlertMonitors(
 		qm.Where("workspace_id = ? AND id = ?", workspaceID, monitorID),
@@ -179,4 +186,11 @@ func (r *repo) ListDue(ctx context.Context, now time.Time, limit int) ([]entity.
 		return nil, fmt.Errorf("list due monitors: %w", err)
 	}
 	return out, nil
+}
+
+func nullableID(id string) any {
+	if id == "" {
+		return nil
+	}
+	return id
 }

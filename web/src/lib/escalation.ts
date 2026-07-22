@@ -1,5 +1,5 @@
 export type TargetType = 'person' | 'schedule' | 'team' | 'webhook';
-export type Target = { type: TargetType; value: string };
+export type Target = { type: TargetType; ref: string; value: string; invalid?: boolean };
 export type NotifyMode = 'all' | 'rr';
 
 export type Level = {
@@ -12,12 +12,34 @@ export type Level = {
 };
 
 export type BranchKind = 'priority' | 'hours';
+export type Hours = { days: number[]; start: string; end: string; timezone: string };
 export type Lane = { id: string; key: string; nodes: EscNode[] };
-export type Branch = { id: string; type: 'branch'; on: BranchKind; lanes: Lane[] };
+export type Branch = { id: string; type: 'branch'; on: BranchKind; hours: Hours; lanes: Lane[] };
 export type EscNode = Level | Branch;
 
-export type Tree = { name: string; team: string; repeat: string; nodes: EscNode[] };
+export type Tree = { name: string; team: string; repeat: string; ack: string; nodes: EscNode[] };
 export type Scenario = { priority: string; hours: string };
+
+export type DirectoryMember = { id: string; name: string; email: string; active: boolean };
+export type DirectoryEntry = { id: string; slug: string; name: string };
+export type Directory = {
+	members: DirectoryMember[];
+	schedules: DirectoryEntry[];
+	teams: DirectoryEntry[];
+	webhooks: DirectoryEntry[];
+};
+
+export const DEFAULT_HOURS: Hours = { days: [1, 2, 3, 4, 5], start: '09:00', end: '18:00', timezone: 'UTC' };
+
+export const WEEKDAYS = [
+	{ value: 1, label: 'Mon' },
+	{ value: 2, label: 'Tue' },
+	{ value: 3, label: 'Wed' },
+	{ value: 4, label: 'Thu' },
+	{ value: 5, label: 'Fri' },
+	{ value: 6, label: 'Sat' },
+	{ value: 0, label: 'Sun' }
+];
 
 export type Tone = 'critical' | 'warning' | 'info' | 'neutral';
 
@@ -27,13 +49,6 @@ export const TARGET_TYPES: { value: TargetType; label: string; icon: string }[] 
 	{ value: 'team', label: 'Team', icon: 'users' },
 	{ value: 'webhook', label: 'Webhook', icon: 'webhook' }
 ];
-
-export const TARGET_OPTIONS: Record<TargetType, string[]> = {
-	person: ['Maya Chen', 'Priya Nair', 'Marcus Lee', 'Dev Patel', 'Sana Ito', 'Tom Weber (deactivated)'],
-	schedule: ['payments-primary', 'platform-default', 'frontend-daytime'],
-	team: ['payments', 'platform', 'frontend'],
-	webhook: ['ops-bridge', 'pager-relay']
-};
 
 export const WAIT_OPTIONS = [
 	{ value: '1', label: '1 minute' },
@@ -52,14 +67,33 @@ export const REPEAT_OPTIONS = [
 	{ value: '3', label: 'Repeat 3 times' }
 ];
 
-export const TEAMS = ['payments', 'platform', 'frontend'];
+export const ACK_OPTIONS = [
+	{ value: '0', label: 'Never' },
+	{ value: '10', label: 'After 10 minutes' },
+	{ value: '30', label: 'After 30 minutes' },
+	{ value: '60', label: 'After 1 hour' },
+	{ value: '240', label: 'After 4 hours' }
+];
+
+export function targetOptions(directory: Directory, type: TargetType): { ref: string; label: string; invalid?: boolean }[] {
+	switch (type) {
+		case 'person':
+			return directory.members.map((m) => ({ ref: m.id, label: m.name, invalid: !m.active }));
+		case 'schedule':
+			return directory.schedules.map((s) => ({ ref: s.id, label: s.slug }));
+		case 'team':
+			return directory.teams.map((t) => ({ ref: t.id, label: t.slug }));
+		case 'webhook':
+			return directory.webhooks.map((w) => ({ ref: w.id, label: w.slug }));
+	}
+}
 
 export function targetIcon(type: TargetType): string {
 	return TARGET_TYPES.find((entry) => entry.value === type)?.icon ?? 'user';
 }
 
 export function targetInvalid(target: Target): boolean {
-	return target.type === 'person' && /deactivated/i.test(target.value);
+	return target.invalid === true;
 }
 
 type BranchDef = {
@@ -74,19 +108,19 @@ type BranchDef = {
 export const BRANCH_DEFS: Record<BranchKind, BranchDef> = {
 	priority: {
 		icon: 'flag',
-		title: 'incident priority',
-		verb: 'Route by priority',
+		title: 'alert severity',
+		verb: 'Route by severity',
 		lanes: [
-			{ key: 'high', label: 'SEV1 · SEV2', tone: 'critical' },
-			{ key: 'low', label: 'SEV3 · SEV4', tone: 'neutral' }
+			{ key: 'high', label: 'Critical · High', tone: 'critical' },
+			{ key: 'low', label: 'Warning', tone: 'neutral' }
 		],
 		pick: (scenario) => scenario.priority,
 		control: {
 			id: 'priority',
-			label: 'Incident priority',
+			label: 'Alert severity',
 			options: [
-				{ value: 'high', label: 'SEV1 · SEV2' },
-				{ value: 'low', label: 'SEV3 · SEV4' }
+				{ value: 'high', label: 'Critical · High' },
+				{ value: 'low', label: 'Warning' }
 			]
 		}
 	},
@@ -138,6 +172,7 @@ export function mkBranch(on: BranchKind): Branch {
 		id: uid('br'),
 		type: 'branch',
 		on,
+		hours: { ...DEFAULT_HOURS, days: [...DEFAULT_HOURS.days] },
 		lanes: BRANCH_DEFS[on].lanes.map((lane) => ({ id: uid('ln'), key: lane.key, nodes: [mkLevel()] }))
 	};
 }
@@ -442,11 +477,32 @@ function sanitizeTargets(input: unknown[]): Target[] {
 	for (const raw of input) {
 		if (!raw || typeof raw !== 'object') continue;
 		const entry = raw as Record<string, unknown>;
-		if (isTargetType(entry.type) && typeof entry.value === 'string' && TARGET_OPTIONS[entry.type].includes(entry.value)) {
-			out.push({ type: entry.type, value: entry.value });
+		if (isTargetType(entry.type) && typeof entry.ref === 'string' && entry.ref.trim()) {
+			out.push({
+				type: entry.type,
+				ref: entry.ref.trim(),
+				value: typeof entry.value === 'string' ? entry.value : entry.ref.trim(),
+				invalid: entry.invalid === true
+			});
 		}
 	}
 	return out;
+}
+
+function sanitizeHours(raw: unknown): Hours {
+	if (!raw || typeof raw !== 'object') return { ...DEFAULT_HOURS, days: [...DEFAULT_HOURS.days] };
+	const entry = raw as Record<string, unknown>;
+	const days = Array.isArray(entry.days)
+		? entry.days.filter((d): d is number => typeof d === 'number' && d >= 0 && d <= 6)
+		: [];
+	const time = (value: unknown, fallback: string) =>
+		typeof value === 'string' && /^\d{2}:\d{2}$/.test(value) ? value : fallback;
+	return {
+		days: days.length ? days : [...DEFAULT_HOURS.days],
+		start: time(entry.start, DEFAULT_HOURS.start),
+		end: time(entry.end, DEFAULT_HOURS.end),
+		timezone: typeof entry.timezone === 'string' && entry.timezone ? entry.timezone : DEFAULT_HOURS.timezone
+	};
 }
 
 const MAX_DEPTH = 40;
@@ -469,7 +525,13 @@ function sanitizeNodes(input: unknown[], depth = 0): EscNode[] {
 					nodes: Array.isArray(source.nodes) ? sanitizeNodes(source.nodes, depth + 1) : []
 				};
 			});
-			out.push({ id: typeof node.id === 'string' ? node.id : uid('br'), type: 'branch', on, lanes });
+			out.push({
+				id: typeof node.id === 'string' ? node.id : uid('br'),
+				type: 'branch',
+				on,
+				hours: sanitizeHours(node.hours),
+				lanes
+			});
 			break;
 		}
 		out.push({
@@ -500,10 +562,14 @@ export function parseTree(raw: string): { tree: Tree } | { error: string } {
 	return {
 		tree: {
 			name: typeof object.name === 'string' ? object.name.trim() : '',
-			team: typeof object.team === 'string' && TEAMS.includes(object.team) ? object.team : TEAMS[0],
+			team: typeof object.team === 'string' ? object.team : '',
 			repeat:
 				typeof object.repeat === 'string' && REPEAT_OPTIONS.some((r) => r.value === object.repeat)
 					? object.repeat
+					: '0',
+			ack:
+				typeof object.ack === 'string' && ACK_OPTIONS.some((a) => a.value === object.ack)
+					? object.ack
 					: '0',
 			nodes
 		}

@@ -11,14 +11,16 @@ import {
 	setDefaultPolicy,
 	updateRule
 } from '$lib/server/alertsources';
+import { listPolicyOptions, type PolicyOption } from '$lib/server/escalation';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, cookies }) => {
-	const [{ rules, defaultPolicy, knownPolicies }, groupRules] = await Promise.all([
+	const [{ rules, defaultPolicy }, groupRules, policies] = await Promise.all([
 		listRules(cookies, params.workspace),
-		listGroupRules(cookies, params.workspace)
+		listGroupRules(cookies, params.workspace),
+		listPolicyOptions(cookies, params.workspace)
 	]);
-	return { rules, defaultPolicy, knownPolicies, groupRules, sample: RT_SAMPLE };
+	return { rules, defaultPolicy, knownPolicies: policies.map((p: PolicyOption) => p.slug), groupRules, sample: RT_SAMPLE };
 };
 
 function parseGroupRules(raw: string): { fields: string[]; windowSeconds: number }[] | null {

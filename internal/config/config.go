@@ -21,12 +21,19 @@ type Config struct {
 	Mailer          Mailer        `mapstructure:"mailer"`
 	Ingest          Ingest        `mapstructure:"ingest"`
 	Cron            Cron          `mapstructure:"cron"`
+	Webhook         Webhook       `mapstructure:"webhook"`
+}
+
+type Webhook struct {
+	Timeout   time.Duration `mapstructure:"timeout"`
+	UserAgent string        `mapstructure:"user_agent"`
 }
 
 type Cron struct {
 	HeartbeatSweep   time.Duration `mapstructure:"heartbeat_sweep"`
 	AlertAutoResolve time.Duration `mapstructure:"alert_autoresolve"`
 	IngestRetention  string        `mapstructure:"ingest_retention"`
+	EscalationSweep  time.Duration `mapstructure:"escalation_sweep"`
 	JobTimeout       time.Duration `mapstructure:"job_timeout"`
 	LockExpiry       time.Duration `mapstructure:"lock_expiry"`
 	StopTimeout      time.Duration `mapstructure:"stop_timeout"`
@@ -154,6 +161,10 @@ func NewCron(cfg Config) Cron {
 	return cfg.Cron
 }
 
+func NewWebhook(cfg Config) Webhook {
+	return cfg.Webhook
+}
+
 func NewMailer(cfg Config) Mailer {
 	return cfg.Mailer
 }
@@ -238,6 +249,9 @@ func New(cfgFile string) (Config, error) {
 	v.SetDefault("cron.job_timeout", "2m")
 	v.SetDefault("cron.lock_expiry", "60s")
 	v.SetDefault("cron.stop_timeout", "30s")
+	v.SetDefault("cron.escalation_sweep", "10s")
+	v.SetDefault("webhook.timeout", "10s")
+	v.SetDefault("webhook.user_agent", "opsybot")
 	v.SetDefault("mailer.host", "")
 	v.SetDefault("mailer.port", 587)
 	v.SetDefault("mailer.username", "")

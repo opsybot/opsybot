@@ -25,7 +25,7 @@ func withGroupRules(t *testing.T, h *harness, rules []entity.GroupRule) {
 	h.routes.EXPECT().List(gomock.Any(), "ws-1").Return(nil, nil)
 	h.routes.EXPECT().ListGroupRules(gomock.Any(), "ws-1").Return(rules, nil)
 	h.routes.EXPECT().Settings(gomock.Any(), "ws-1").
-		Return(entity.AlertSettings{DefaultPolicyRef: entity.DefaultPolicyRef}, nil)
+		Return(entity.AlertSettings{DefaultPolicyID: "pol-default", DefaultPolicySlug: "platform-default"}, nil)
 	h.silences.EXPECT().ListActive(gomock.Any(), "ws-1", gomock.Any()).Return(nil, nil)
 }
 
@@ -68,8 +68,8 @@ func TestWebhookAttachesMatchingAlertsToOneParent(t *testing.T) {
 	if routed["child-1"] != "" {
 		t.Errorf("child routed to %q, want no policy: only the parent should page", routed["child-1"])
 	}
-	if routed["parent-1"] != entity.DefaultPolicyRef {
-		t.Errorf("parent routed to %q, want %q", routed["parent-1"], entity.DefaultPolicyRef)
+	if routed["parent-1"] != "pol-default" {
+		t.Errorf("parent routed to %q, want the default policy id", routed["parent-1"])
 	}
 }
 

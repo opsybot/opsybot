@@ -1,5 +1,6 @@
 import { error, fail } from '@sveltejs/kit';
 import { getAlert, setStatus } from '$lib/server/alerts';
+import { escalateAlert } from '$lib/server/escalation';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, cookies }) => {
@@ -16,6 +17,10 @@ export const actions: Actions = {
 	},
 	resolve: async ({ params, cookies }) => {
 		const outcome = await setStatus(cookies, params.workspace, [params.id], 'resolved');
+		if (outcome.error) return fail(400, { error: outcome.error });
+	},
+	escalate: async ({ params, cookies }) => {
+		const outcome = await escalateAlert(cookies, params.workspace, params.id);
 		if (outcome.error) return fail(400, { error: outcome.error });
 	}
 };

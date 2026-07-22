@@ -19,6 +19,7 @@ type srv struct {
 	members    repository.Member
 	teams      repository.Team
 	schedules  repository.Schedule
+	policies   repository.EscalationPolicy
 	policy     repository.Policy
 	audit      repository.Audit
 }
@@ -30,10 +31,22 @@ func New(
 	members repository.Member,
 	teams repository.Team,
 	schedules repository.Schedule,
+	policies repository.EscalationPolicy,
 	policy repository.Policy,
 	audit repository.Audit,
 ) service.Schedules {
-	return &srv{tx: tx, lock: lock, workspaces: workspaces, members: members, teams: teams, schedules: schedules, policy: policy, audit: audit}
+	return &srv{tx: tx, lock: lock, workspaces: workspaces, members: members, teams: teams, schedules: schedules, policies: policies, policy: policy, audit: audit}
+}
+
+func (s *srv) guardPolicyRefs(ctx context.Context, workspaceID, scheduleID string) error {
+	referencing, err := s.policies.ListReferencingSchedule(ctx, workspaceID, scheduleID)
+	if err != nil {
+		return err
+	}
+	if len(referencing) > 0 {
+		return entity.ErrScheduleInPolicy
+	}
+	return nil
 }
 
 func (s *srv) authorize(ctx context.Context, workspaceSlug string, act entity.PolicyAction) (entity.Identity, entity.Workspace, error) {
@@ -259,6 +272,11 @@ func (s *srv) setArchived(ctx context.Context, workspaceSlug, scheduleSlug strin
 			}
 			return entity.ErrScheduleNotArchived
 		}
+		if archived {
+			if err := s.guardPolicyRefs(ctx, ws.ID, current.ID); err != nil {
+				return err
+			}
+		}
 		out, err = s.schedules.SetArchived(ctx, ws.ID, scheduleSlug, archived)
 		if err != nil {
 			return err
@@ -334,6 +352,9 @@ func (s *srv) Delete(ctx context.Context, workspaceSlug, scheduleSlug string) er
 		}
 		if !current.Archived {
 			return entity.ErrScheduleNotArchived
+		}
+		if err := s.guardPolicyRefs(ctx, ws.ID, current.ID); err != nil {
+			return err
 		}
 		if err := s.schedules.Delete(ctx, ws.ID, scheduleSlug); err != nil {
 			return err

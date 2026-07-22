@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aarondl/null/v8"
 	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/aarondl/sqlboiler/v4/queries"
 	"github.com/aarondl/sqlboiler/v4/queries/qm"
@@ -23,68 +24,87 @@ import (
 
 // AlertSetting is an object representing the database table.
 type AlertSetting struct {
-	WorkspaceID      string    `boil:"workspace_id" json:"workspace_id" toml:"workspace_id" yaml:"workspace_id"`
-	DefaultPolicyRef string    `boil:"default_policy_ref" json:"default_policy_ref" toml:"default_policy_ref" yaml:"default_policy_ref"`
-	CreatedAt        time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
-	UpdatedAt        time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
+	WorkspaceID               string      `boil:"workspace_id" json:"workspace_id" toml:"workspace_id" yaml:"workspace_id"`
+	CreatedAt                 time.Time   `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	UpdatedAt                 time.Time   `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
+	DefaultEscalationPolicyID null.String `boil:"default_escalation_policy_id" json:"default_escalation_policy_id,omitempty" toml:"default_escalation_policy_id" yaml:"default_escalation_policy_id,omitempty"`
 
 	R *alertSettingR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L alertSettingL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var AlertSettingColumns = struct {
-	WorkspaceID      string
-	DefaultPolicyRef string
-	CreatedAt        string
-	UpdatedAt        string
+	WorkspaceID               string
+	CreatedAt                 string
+	UpdatedAt                 string
+	DefaultEscalationPolicyID string
 }{
-	WorkspaceID:      "workspace_id",
-	DefaultPolicyRef: "default_policy_ref",
-	CreatedAt:        "created_at",
-	UpdatedAt:        "updated_at",
+	WorkspaceID:               "workspace_id",
+	CreatedAt:                 "created_at",
+	UpdatedAt:                 "updated_at",
+	DefaultEscalationPolicyID: "default_escalation_policy_id",
 }
 
 var AlertSettingTableColumns = struct {
-	WorkspaceID      string
-	DefaultPolicyRef string
-	CreatedAt        string
-	UpdatedAt        string
+	WorkspaceID               string
+	CreatedAt                 string
+	UpdatedAt                 string
+	DefaultEscalationPolicyID string
 }{
-	WorkspaceID:      "alert_settings.workspace_id",
-	DefaultPolicyRef: "alert_settings.default_policy_ref",
-	CreatedAt:        "alert_settings.created_at",
-	UpdatedAt:        "alert_settings.updated_at",
+	WorkspaceID:               "alert_settings.workspace_id",
+	CreatedAt:                 "alert_settings.created_at",
+	UpdatedAt:                 "alert_settings.updated_at",
+	DefaultEscalationPolicyID: "alert_settings.default_escalation_policy_id",
 }
 
 // Generated where
 
 var AlertSettingWhere = struct {
-	WorkspaceID      whereHelperstring
-	DefaultPolicyRef whereHelperstring
-	CreatedAt        whereHelpertime_Time
-	UpdatedAt        whereHelpertime_Time
+	WorkspaceID               whereHelperstring
+	CreatedAt                 whereHelpertime_Time
+	UpdatedAt                 whereHelpertime_Time
+	DefaultEscalationPolicyID whereHelpernull_String
 }{
-	WorkspaceID:      whereHelperstring{field: "\"alert_settings\".\"workspace_id\""},
-	DefaultPolicyRef: whereHelperstring{field: "\"alert_settings\".\"default_policy_ref\""},
-	CreatedAt:        whereHelpertime_Time{field: "\"alert_settings\".\"created_at\""},
-	UpdatedAt:        whereHelpertime_Time{field: "\"alert_settings\".\"updated_at\""},
+	WorkspaceID:               whereHelperstring{field: "\"alert_settings\".\"workspace_id\""},
+	CreatedAt:                 whereHelpertime_Time{field: "\"alert_settings\".\"created_at\""},
+	UpdatedAt:                 whereHelpertime_Time{field: "\"alert_settings\".\"updated_at\""},
+	DefaultEscalationPolicyID: whereHelpernull_String{field: "\"alert_settings\".\"default_escalation_policy_id\""},
 }
 
 // AlertSettingRels is where relationship names are stored.
 var AlertSettingRels = struct {
-	Workspace string
+	DefaultEscalationPolicy string
+	Workspace               string
 }{
-	Workspace: "Workspace",
+	DefaultEscalationPolicy: "DefaultEscalationPolicy",
+	Workspace:               "Workspace",
 }
 
 // alertSettingR is where relationships are stored.
 type alertSettingR struct {
-	Workspace *Workspace `boil:"Workspace" json:"Workspace" toml:"Workspace" yaml:"Workspace"`
+	DefaultEscalationPolicy *EscalationPolicy `boil:"DefaultEscalationPolicy" json:"DefaultEscalationPolicy" toml:"DefaultEscalationPolicy" yaml:"DefaultEscalationPolicy"`
+	Workspace               *Workspace        `boil:"Workspace" json:"Workspace" toml:"Workspace" yaml:"Workspace"`
 }
 
 // NewStruct creates a new relationship struct
 func (*alertSettingR) NewStruct() *alertSettingR {
 	return &alertSettingR{}
+}
+
+func (o *AlertSetting) GetDefaultEscalationPolicy() *EscalationPolicy {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetDefaultEscalationPolicy()
+}
+
+func (r *alertSettingR) GetDefaultEscalationPolicy() *EscalationPolicy {
+	if r == nil {
+		return nil
+	}
+
+	return r.DefaultEscalationPolicy
 }
 
 func (o *AlertSetting) GetWorkspace() *Workspace {
@@ -107,9 +127,9 @@ func (r *alertSettingR) GetWorkspace() *Workspace {
 type alertSettingL struct{}
 
 var (
-	alertSettingAllColumns            = []string{"workspace_id", "default_policy_ref", "created_at", "updated_at"}
+	alertSettingAllColumns            = []string{"workspace_id", "created_at", "updated_at", "default_escalation_policy_id"}
 	alertSettingColumnsWithoutDefault = []string{"workspace_id"}
-	alertSettingColumnsWithDefault    = []string{"default_policy_ref", "created_at", "updated_at"}
+	alertSettingColumnsWithDefault    = []string{"created_at", "updated_at", "default_escalation_policy_id"}
 	alertSettingPrimaryKeyColumns     = []string{"workspace_id"}
 	alertSettingGeneratedColumns      = []string{}
 )
@@ -419,6 +439,17 @@ func (q alertSettingQuery) Exists(ctx context.Context, exec boil.ContextExecutor
 	return count > 0, nil
 }
 
+// DefaultEscalationPolicy pointed to by the foreign key.
+func (o *AlertSetting) DefaultEscalationPolicy(mods ...qm.QueryMod) escalationPolicyQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"id\" = ?", o.DefaultEscalationPolicyID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return EscalationPolicies(queryMods...)
+}
+
 // Workspace pointed to by the foreign key.
 func (o *AlertSetting) Workspace(mods ...qm.QueryMod) workspaceQuery {
 	queryMods := []qm.QueryMod{
@@ -428,6 +459,130 @@ func (o *AlertSetting) Workspace(mods ...qm.QueryMod) workspaceQuery {
 	queryMods = append(queryMods, mods...)
 
 	return Workspaces(queryMods...)
+}
+
+// LoadDefaultEscalationPolicy allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for an N-1 relationship.
+func (alertSettingL) LoadDefaultEscalationPolicy(ctx context.Context, e boil.ContextExecutor, singular bool, maybeAlertSetting any, mods queries.Applicator) error {
+	var slice []*AlertSetting
+	var object *AlertSetting
+
+	if singular {
+		var ok bool
+		object, ok = maybeAlertSetting.(*AlertSetting)
+		if !ok {
+			object = new(AlertSetting)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeAlertSetting)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeAlertSetting))
+			}
+		}
+	} else {
+		s, ok := maybeAlertSetting.(*[]*AlertSetting)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeAlertSetting)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeAlertSetting))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &alertSettingR{}
+		}
+		if !queries.IsNil(object.DefaultEscalationPolicyID) {
+			args[object.DefaultEscalationPolicyID] = struct{}{}
+		}
+
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &alertSettingR{}
+			}
+
+			if !queries.IsNil(obj.DefaultEscalationPolicyID) {
+				args[obj.DefaultEscalationPolicyID] = struct{}{}
+			}
+
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`escalation_policies`),
+		qm.WhereIn(`escalation_policies.id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load EscalationPolicy")
+	}
+
+	var resultSlice []*EscalationPolicy
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice EscalationPolicy")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for escalation_policies")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for escalation_policies")
+	}
+
+	if len(escalationPolicyAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.DefaultEscalationPolicy = foreign
+		if foreign.R == nil {
+			foreign.R = &escalationPolicyR{}
+		}
+		foreign.R.DefaultEscalationPolicyAlertSettings = append(foreign.R.DefaultEscalationPolicyAlertSettings, object)
+		return nil
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if queries.Equal(local.DefaultEscalationPolicyID, foreign.ID) {
+				local.R.DefaultEscalationPolicy = foreign
+				if foreign.R == nil {
+					foreign.R = &escalationPolicyR{}
+				}
+				foreign.R.DefaultEscalationPolicyAlertSettings = append(foreign.R.DefaultEscalationPolicyAlertSettings, local)
+				break
+			}
+		}
+	}
+
+	return nil
 }
 
 // LoadWorkspace allows an eager lookup of values, cached into the
@@ -547,6 +702,86 @@ func (alertSettingL) LoadWorkspace(ctx context.Context, e boil.ContextExecutor, 
 		}
 	}
 
+	return nil
+}
+
+// SetDefaultEscalationPolicy of the alertSetting to the related item.
+// Sets o.R.DefaultEscalationPolicy to related.
+// Adds o to related.R.DefaultEscalationPolicyAlertSettings.
+func (o *AlertSetting) SetDefaultEscalationPolicy(ctx context.Context, exec boil.ContextExecutor, insert bool, related *EscalationPolicy) error {
+	var err error
+	if insert {
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	}
+
+	updateQuery := fmt.Sprintf(
+		"UPDATE \"alert_settings\" SET %s WHERE %s",
+		strmangle.SetParamNames("\"", "\"", 1, []string{"default_escalation_policy_id"}),
+		strmangle.WhereClause("\"", "\"", 2, alertSettingPrimaryKeyColumns),
+	)
+	values := []any{related.ID, o.WorkspaceID}
+
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, updateQuery)
+		fmt.Fprintln(writer, values)
+	}
+	if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	queries.Assign(&o.DefaultEscalationPolicyID, related.ID)
+	if o.R == nil {
+		o.R = &alertSettingR{
+			DefaultEscalationPolicy: related,
+		}
+	} else {
+		o.R.DefaultEscalationPolicy = related
+	}
+
+	if related.R == nil {
+		related.R = &escalationPolicyR{
+			DefaultEscalationPolicyAlertSettings: AlertSettingSlice{o},
+		}
+	} else {
+		related.R.DefaultEscalationPolicyAlertSettings = append(related.R.DefaultEscalationPolicyAlertSettings, o)
+	}
+
+	return nil
+}
+
+// RemoveDefaultEscalationPolicy relationship.
+// Sets o.R.DefaultEscalationPolicy to nil.
+// Removes o from all passed in related items' relationships struct.
+func (o *AlertSetting) RemoveDefaultEscalationPolicy(ctx context.Context, exec boil.ContextExecutor, related *EscalationPolicy) error {
+	var err error
+
+	queries.SetScanner(&o.DefaultEscalationPolicyID, nil)
+	if _, err = o.Update(ctx, exec, boil.Whitelist("default_escalation_policy_id")); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	if o.R != nil {
+		o.R.DefaultEscalationPolicy = nil
+	}
+	if related == nil || related.R == nil {
+		return nil
+	}
+
+	for i, ri := range related.R.DefaultEscalationPolicyAlertSettings {
+		if queries.Equal(o.DefaultEscalationPolicyID, ri.DefaultEscalationPolicyID) {
+			continue
+		}
+
+		ln := len(related.R.DefaultEscalationPolicyAlertSettings)
+		if ln > 1 && i < ln-1 {
+			related.R.DefaultEscalationPolicyAlertSettings[i] = related.R.DefaultEscalationPolicyAlertSettings[ln-1]
+		}
+		related.R.DefaultEscalationPolicyAlertSettings = related.R.DefaultEscalationPolicyAlertSettings[:ln-1]
+		break
+	}
 	return nil
 }
 

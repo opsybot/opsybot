@@ -11,6 +11,7 @@ import (
 	"github.com/opsybot/opsybot/internal/pkg/postgres"
 	"github.com/opsybot/opsybot/internal/pkg/secretbox"
 	"github.com/opsybot/opsybot/internal/pkg/valkey"
+	"github.com/opsybot/opsybot/internal/pkg/webhook"
 )
 
 var Set = wire.NewSet(
@@ -22,4 +23,5 @@ var Set = wire.NewSet(
 	cron.New,
 	mailer.New,
 	secretbox.New,
+	webhook.New,
 )

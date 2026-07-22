@@ -108,7 +108,7 @@
 </div>
 
 <InviteDialog bind:open={inviteOpen} />
-<DeactivateDialog member={deactivating} onclose={() => (deactivating = null)} />
+<DeactivateDialog member={deactivating} candidates={data.members} onclose={() => (deactivating = null)} />
 <ConfirmDialog
 	bind:open={confirmOpen}
 	tone="critical"

@@ -1,6 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import { createMonitor, deleteMonitor, listMonitors, updateMonitor } from '$lib/server/monitors';
 import { listRules } from '$lib/server/alertsources';
+import { listPolicyOptions } from '$lib/server/escalation';
 import type { Actions, PageServerLoad } from './$types';
 
 function readForm(form: FormData): {
@@ -18,14 +19,15 @@ function readForm(form: FormData): {
 }
 
 export const load: PageServerLoad = async ({ params, cookies }) => {
-	const [heartbeats, routing] = await Promise.all([
+	const [heartbeats, routing, policies] = await Promise.all([
 		listMonitors(cookies, params.workspace),
-		listRules(cookies, params.workspace)
+		listRules(cookies, params.workspace),
+		listPolicyOptions(cookies, params.workspace)
 	]);
 	return {
 		now: Date.now(),
 		heartbeats,
-		knownPolicies: routing.knownPolicies,
+		knownPolicies: policies.map((p) => p.slug),
 		defaultPolicy: routing.defaultPolicy
 	};
 };

@@ -2,6 +2,9 @@
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import GitBranchIcon from '@lucide/svelte/icons/git-branch';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
+	import Trash2Icon from '@lucide/svelte/icons/trash-2';
+	import { toast } from 'svelte-sonner';
+	import { enhance } from '$app/forms';
 	import FlowCanvas from '$lib/components/escalation/flow-canvas.svelte';
 	import TracePanel from '$lib/components/escalation/trace-panel.svelte';
 	import Tag from '$lib/components/tag.svelte';
@@ -9,6 +12,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { untrack } from 'svelte';
 	import { computeTrace } from '$lib/escalation';
+	import { formatUtc } from '$lib/time';
 	import { ws } from '$lib/navigation';
 	import type { PageProps } from './$types';
 
@@ -55,6 +59,22 @@
 			<PencilIcon data-icon="inline-start" />
 			Edit path
 		</Button>
+		<form
+			method="POST"
+			action="?/delete"
+			use:enhance={() => async ({ result, update }) => {
+				if (result.type === 'failure') {
+					toast.error(String(result.data?.error ?? 'Could not delete the policy.'));
+					return;
+				}
+				await update();
+			}}
+		>
+			<Button size="sm" variant="ghost" type="submit" class="text-critical-ink hover:text-critical-ink">
+				<Trash2Icon data-icon="inline-start" />
+				Delete
+			</Button>
+		</form>
 	</div>
 
 	<div class="grid items-start gap-3.5 min-[1000px]:[grid-template-columns:minmax(0,1fr)_360px]">
@@ -83,7 +103,6 @@
 						<GitBranchIcon class="text-subtle-foreground mt-0.5 size-[13px] shrink-0" />
 						<div class="min-w-0 flex-1">
 							<div class="font-mono text-[11.5px] leading-[1.5]">{link.rule}</div>
-							<div class="text-subtle-foreground mt-0.5 font-mono text-[10.5px]">{link.matched}</div>
 						</div>
 					</div>
 				{:else}
@@ -113,12 +132,11 @@
 					{#each data.recent as escalation, index (index)}
 						<tr class="border-t">
 							<td class="py-3 pr-3 pl-[18px]">
-								<span class="font-medium">{escalation.alert}</span>
-								{#if escalation.id}
-									<span class="text-subtle-foreground ml-2 font-mono text-[11px]">→ {escalation.id}</span>
-								{/if}
+								<a href={ws(`/alerts/${escalation.alertId}`)} class="font-medium hover:underline">
+									{escalation.alert}
+								</a>
 							</td>
-							<td class="text-subtle-foreground px-3 py-3 font-mono">{escalation.at}</td>
+							<td class="text-subtle-foreground px-3 py-3 font-mono">{formatUtc(escalation.at)}</td>
 							<td class="px-3 py-3">
 								<Badge tone={escalation.tone} size="sm">{escalation.outcome}</Badge>
 								{#if escalation.by}

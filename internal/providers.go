@@ -11,11 +11,14 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/api_key"
 	"github.com/opsybot/opsybot/internal/repository/audit"
 	"github.com/opsybot/opsybot/internal/repository/channel"
+	"github.com/opsybot/opsybot/internal/repository/escalation_policy"
+	"github.com/opsybot/opsybot/internal/repository/escalation_run"
 	"github.com/opsybot/opsybot/internal/repository/ingest_event"
 	"github.com/opsybot/opsybot/internal/repository/invite"
 	"github.com/opsybot/opsybot/internal/repository/lock"
 	"github.com/opsybot/opsybot/internal/repository/mailer"
 	"github.com/opsybot/opsybot/internal/repository/member"
+	"github.com/opsybot/opsybot/internal/repository/pager"
 	"github.com/opsybot/opsybot/internal/repository/password_reset"
 	"github.com/opsybot/opsybot/internal/repository/pending"
 	"github.com/opsybot/opsybot/internal/repository/policy"
@@ -40,8 +43,10 @@ import (
 	"github.com/opsybot/opsybot/internal/service/audits"
 	"github.com/opsybot/opsybot/internal/service/auth"
 	"github.com/opsybot/opsybot/internal/service/channels"
+	"github.com/opsybot/opsybot/internal/service/escalations"
 	"github.com/opsybot/opsybot/internal/service/ingest"
 	"github.com/opsybot/opsybot/internal/service/members"
+	"github.com/opsybot/opsybot/internal/service/notifier"
 	"github.com/opsybot/opsybot/internal/service/ratelimiter"
 	"github.com/opsybot/opsybot/internal/service/references"
 	"github.com/opsybot/opsybot/internal/service/schedules"
@@ -80,6 +85,9 @@ var repositoryProviders = wire.NewSet(
 	alert_route.New,
 	alert_monitor.New,
 	silence.New,
+	escalation_policy.New,
+	escalation_run.New,
+	pager.New,
 )
 
 var serviceProviders = wire.NewSet(
@@ -102,18 +110,24 @@ var serviceProviders = wire.NewSet(
 	alert_routes.New,
 	alert_monitors.New,
 	silences.New,
+	notifier.New,
+	escalations.New,
 )
 
 var cronProviders = wire.NewSet(
 	cron.NewHeartbeatSweep,
 	cron.NewAlertAutoResolve,
 	cron.NewIngestRetention,
+	cron.NewEscalationSweep,
 )
 
-func scheduleReferenceSources(schedules service.Schedules) []service.ReferenceSource {
-	src, ok := schedules.(service.ReferenceSource)
-	if !ok {
-		return nil
+func scheduleReferenceSources(schedules service.Schedules, escalations service.Escalations) []service.ReferenceSource {
+	out := make([]service.ReferenceSource, 0, 2)
+	if src, ok := schedules.(service.ReferenceSource); ok {
+		out = append(out, src)
 	}
-	return []service.ReferenceSource{src}
+	if src, ok := escalations.(service.ReferenceSource); ok {
+		out = append(out, src)
+	}
+	return out
 }

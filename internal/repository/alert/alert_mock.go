@@ -264,6 +264,21 @@ func (mr *MockAlertMockRecorder) ListLinks(ctx, alertID any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListLinks", reflect.TypeOf((*MockAlert)(nil).ListLinks), ctx, alertID)
 }
 
+// Reopen mocks base method.
+func (m *MockAlert) Reopen(ctx context.Context, alertID string, at time.Time) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Reopen", ctx, alertID, at)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Reopen indicates an expected call of Reopen.
+func (mr *MockAlertMockRecorder) Reopen(ctx, alertID, at any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reopen", reflect.TypeOf((*MockAlert)(nil).Reopen), ctx, alertID, at)
+}
+
 // ReplaceLinks mocks base method.
 func (m *MockAlert) ReplaceLinks(ctx context.Context, alertID string, links []entity.AlertLink) error {
 	m.ctrl.T.Helper()

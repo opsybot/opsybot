@@ -100,6 +100,21 @@ func (mr *MockScheduleMockRecorder) GetByFeedToken(ctx, feedToken any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByFeedToken", reflect.TypeOf((*MockSchedule)(nil).GetByFeedToken), ctx, feedToken)
 }
 
+// GetByID mocks base method.
+func (m *MockSchedule) GetByID(ctx context.Context, workspaceID, id string) (entity.Schedule, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByID", ctx, workspaceID, id)
+	ret0, _ := ret[0].(entity.Schedule)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByID indicates an expected call of GetByID.
+func (mr *MockScheduleMockRecorder) GetByID(ctx, workspaceID, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockSchedule)(nil).GetByID), ctx, workspaceID, id)
+}
+
 // GetBySlug mocks base method.
 func (m *MockSchedule) GetBySlug(ctx context.Context, workspaceID, slug string) (entity.Schedule, error) {
 	m.ctrl.T.Helper()

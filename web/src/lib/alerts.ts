@@ -37,6 +37,8 @@ export type Alert = {
 	count: number;
 	firstSeenAt: string;
 	lastSeenAt: string;
+	escalationPolicySlug: string | null;
+	escalation: AlertEscalation | null;
 	children: AlertChild[];
 	links: { kind: 'runbook' | 'dashboard' | 'source'; label: string }[];
 	payload: string;
@@ -45,13 +47,29 @@ export type Alert = {
 
 export type EscalationEventKind =
 	| 'received'
+	| 'deduped'
+	| 'grouped'
+	| 'routed'
+	| 'suppressed'
 	| 'escalation'
+	| 'notified'
 	| 'push'
 	| 'sms'
 	| 'timeout'
 	| 'chat'
 	| 'acked'
-	| 'resolved';
+	| 'resolved'
+	| 'exhausted';
+
+export type AlertEscalation = {
+	state: 'running' | 'acked' | 'resolved' | 'exhausted';
+	stepIndex: number;
+	totalSteps: number;
+	cycle: number;
+	policySlug: string;
+	nextAt: string | null;
+	ackExpiresAt: string | null;
+};
 
 export type EscalationEvent = {
 	id: string;

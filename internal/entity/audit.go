@@ -69,6 +69,13 @@ const (
 	ActionAlertMonitorUpdated      = "alert_monitor.updated"
 	ActionAlertMonitorDeleted      = "alert_monitor.deleted"
 	ActionAlertGroupRulesSaved     = "alert_group_rules.saved"
+	ActionPolicyCreated            = "policy.created"
+	ActionPolicyUpdated            = "policy.updated"
+	ActionPolicyDeleted            = "policy.deleted"
+	ActionAlertEscalated           = "alert.escalated"
+	ActionEscalationWebhookCreated = "escalation_webhook.created"
+	ActionEscalationWebhookUpdated = "escalation_webhook.updated"
+	ActionEscalationWebhookDeleted = "escalation_webhook.deleted"
 )
 
 const (

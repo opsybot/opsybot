@@ -4,9 +4,15 @@
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import CircleCheckIcon from '@lucide/svelte/icons/circle-check';
 	import ClockIcon from '@lucide/svelte/icons/clock';
+	import CopyIcon from '@lucide/svelte/icons/copy';
+	import GitBranchIcon from '@lucide/svelte/icons/git-branch';
 	import InboxIcon from '@lucide/svelte/icons/inbox';
+	import LayersIcon from '@lucide/svelte/icons/layers';
 	import MessageSquareIcon from '@lucide/svelte/icons/message-square';
+	import OctagonAlertIcon from '@lucide/svelte/icons/octagon-alert';
+	import SendIcon from '@lucide/svelte/icons/send';
 	import SmartphoneIcon from '@lucide/svelte/icons/smartphone';
+	import VolumeXIcon from '@lucide/svelte/icons/volume-x';
 	import { Badge } from '$lib/components/ui/badge';
 	import type { EscalationEvent, EscalationEventKind } from '$lib/alerts';
 	import { formatUtcTime } from '$lib/time';
@@ -15,13 +21,19 @@
 
 	const ICON: Record<EscalationEventKind, typeof BellIcon> = {
 		received: InboxIcon,
+		deduped: CopyIcon,
+		grouped: LayersIcon,
+		routed: GitBranchIcon,
+		suppressed: VolumeXIcon,
 		escalation: ArrowUpRightIcon,
+		notified: SendIcon,
 		push: SmartphoneIcon,
 		sms: MessageSquareIcon,
 		timeout: ClockIcon,
 		chat: MessageSquareIcon,
 		acked: CheckIcon,
-		resolved: CircleCheckIcon
+		resolved: CircleCheckIcon,
+		exhausted: OctagonAlertIcon
 	};
 
 	const TONE = { success: 'success', warning: 'warning', brand: 'brand' } as const;

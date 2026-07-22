@@ -13,6 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	entity "github.com/opsybot/opsybot/internal/entity"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -52,6 +53,20 @@ func (m *MockMailer) SendInvite(ctx context.Context, to, inviterName, workspaceN
 func (mr *MockMailerMockRecorder) SendInvite(ctx, to, inviterName, workspaceName, acceptURL any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendInvite", reflect.TypeOf((*MockMailer)(nil).SendInvite), ctx, to, inviterName, workspaceName, acceptURL)
+}
+
+// SendPage mocks base method.
+func (m *MockMailer) SendPage(ctx context.Context, to string, page entity.AlertPage) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SendPage", ctx, to, page)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendPage indicates an expected call of SendPage.
+func (mr *MockMailerMockRecorder) SendPage(ctx, to, page any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendPage", reflect.TypeOf((*MockMailer)(nil).SendPage), ctx, to, page)
 }
 
 // SendPasswordReset mocks base method.

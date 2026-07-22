@@ -24,134 +24,129 @@ import (
 
 // AlertMonitor is an object representing the database table.
 type AlertMonitor struct {
-	ID              string    `boil:"id" json:"id" toml:"id" yaml:"id"`
-	WorkspaceID     string    `boil:"workspace_id" json:"workspace_id" toml:"workspace_id" yaml:"workspace_id"`
-	SourceID        string    `boil:"source_id" json:"source_id" toml:"source_id" yaml:"source_id"`
-	IntervalSeconds int       `boil:"interval_seconds" json:"interval_seconds" toml:"interval_seconds" yaml:"interval_seconds"`
-	GraceSeconds    int       `boil:"grace_seconds" json:"grace_seconds" toml:"grace_seconds" yaml:"grace_seconds"`
-	PolicyRef       string    `boil:"policy_ref" json:"policy_ref" toml:"policy_ref" yaml:"policy_ref"`
-	Severity        string    `boil:"severity" json:"severity" toml:"severity" yaml:"severity"`
-	LastCheckInAt   null.Time `boil:"last_check_in_at" json:"last_check_in_at,omitempty" toml:"last_check_in_at" yaml:"last_check_in_at,omitempty"`
-	CreatedAt       time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
-	UpdatedAt       time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
+	ID                 string      `boil:"id" json:"id" toml:"id" yaml:"id"`
+	WorkspaceID        string      `boil:"workspace_id" json:"workspace_id" toml:"workspace_id" yaml:"workspace_id"`
+	SourceID           string      `boil:"source_id" json:"source_id" toml:"source_id" yaml:"source_id"`
+	IntervalSeconds    int         `boil:"interval_seconds" json:"interval_seconds" toml:"interval_seconds" yaml:"interval_seconds"`
+	GraceSeconds       int         `boil:"grace_seconds" json:"grace_seconds" toml:"grace_seconds" yaml:"grace_seconds"`
+	Severity           string      `boil:"severity" json:"severity" toml:"severity" yaml:"severity"`
+	LastCheckInAt      null.Time   `boil:"last_check_in_at" json:"last_check_in_at,omitempty" toml:"last_check_in_at" yaml:"last_check_in_at,omitempty"`
+	CreatedAt          time.Time   `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	UpdatedAt          time.Time   `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
+	EscalationPolicyID null.String `boil:"escalation_policy_id" json:"escalation_policy_id,omitempty" toml:"escalation_policy_id" yaml:"escalation_policy_id,omitempty"`
 
 	R *alertMonitorR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L alertMonitorL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var AlertMonitorColumns = struct {
-	ID              string
-	WorkspaceID     string
-	SourceID        string
-	IntervalSeconds string
-	GraceSeconds    string
-	PolicyRef       string
-	Severity        string
-	LastCheckInAt   string
-	CreatedAt       string
-	UpdatedAt       string
+	ID                 string
+	WorkspaceID        string
+	SourceID           string
+	IntervalSeconds    string
+	GraceSeconds       string
+	Severity           string
+	LastCheckInAt      string
+	CreatedAt          string
+	UpdatedAt          string
+	EscalationPolicyID string
 }{
-	ID:              "id",
-	WorkspaceID:     "workspace_id",
-	SourceID:        "source_id",
-	IntervalSeconds: "interval_seconds",
-	GraceSeconds:    "grace_seconds",
-	PolicyRef:       "policy_ref",
-	Severity:        "severity",
-	LastCheckInAt:   "last_check_in_at",
-	CreatedAt:       "created_at",
-	UpdatedAt:       "updated_at",
+	ID:                 "id",
+	WorkspaceID:        "workspace_id",
+	SourceID:           "source_id",
+	IntervalSeconds:    "interval_seconds",
+	GraceSeconds:       "grace_seconds",
+	Severity:           "severity",
+	LastCheckInAt:      "last_check_in_at",
+	CreatedAt:          "created_at",
+	UpdatedAt:          "updated_at",
+	EscalationPolicyID: "escalation_policy_id",
 }
 
 var AlertMonitorTableColumns = struct {
-	ID              string
-	WorkspaceID     string
-	SourceID        string
-	IntervalSeconds string
-	GraceSeconds    string
-	PolicyRef       string
-	Severity        string
-	LastCheckInAt   string
-	CreatedAt       string
-	UpdatedAt       string
+	ID                 string
+	WorkspaceID        string
+	SourceID           string
+	IntervalSeconds    string
+	GraceSeconds       string
+	Severity           string
+	LastCheckInAt      string
+	CreatedAt          string
+	UpdatedAt          string
+	EscalationPolicyID string
 }{
-	ID:              "alert_monitors.id",
-	WorkspaceID:     "alert_monitors.workspace_id",
-	SourceID:        "alert_monitors.source_id",
-	IntervalSeconds: "alert_monitors.interval_seconds",
-	GraceSeconds:    "alert_monitors.grace_seconds",
-	PolicyRef:       "alert_monitors.policy_ref",
-	Severity:        "alert_monitors.severity",
-	LastCheckInAt:   "alert_monitors.last_check_in_at",
-	CreatedAt:       "alert_monitors.created_at",
-	UpdatedAt:       "alert_monitors.updated_at",
+	ID:                 "alert_monitors.id",
+	WorkspaceID:        "alert_monitors.workspace_id",
+	SourceID:           "alert_monitors.source_id",
+	IntervalSeconds:    "alert_monitors.interval_seconds",
+	GraceSeconds:       "alert_monitors.grace_seconds",
+	Severity:           "alert_monitors.severity",
+	LastCheckInAt:      "alert_monitors.last_check_in_at",
+	CreatedAt:          "alert_monitors.created_at",
+	UpdatedAt:          "alert_monitors.updated_at",
+	EscalationPolicyID: "alert_monitors.escalation_policy_id",
 }
 
 // Generated where
 
-type whereHelpernull_Time struct{ field string }
-
-func (w whereHelpernull_Time) EQ(x null.Time) qm.QueryMod {
-	return qmhelper.WhereNullEQ(w.field, false, x)
-}
-func (w whereHelpernull_Time) NEQ(x null.Time) qm.QueryMod {
-	return qmhelper.WhereNullEQ(w.field, true, x)
-}
-func (w whereHelpernull_Time) LT(x null.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LT, x)
-}
-func (w whereHelpernull_Time) LTE(x null.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LTE, x)
-}
-func (w whereHelpernull_Time) GT(x null.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GT, x)
-}
-func (w whereHelpernull_Time) GTE(x null.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GTE, x)
-}
-
-func (w whereHelpernull_Time) IsNull() qm.QueryMod    { return qmhelper.WhereIsNull(w.field) }
-func (w whereHelpernull_Time) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
-
 var AlertMonitorWhere = struct {
-	ID              whereHelperstring
-	WorkspaceID     whereHelperstring
-	SourceID        whereHelperstring
-	IntervalSeconds whereHelperint
-	GraceSeconds    whereHelperint
-	PolicyRef       whereHelperstring
-	Severity        whereHelperstring
-	LastCheckInAt   whereHelpernull_Time
-	CreatedAt       whereHelpertime_Time
-	UpdatedAt       whereHelpertime_Time
+	ID                 whereHelperstring
+	WorkspaceID        whereHelperstring
+	SourceID           whereHelperstring
+	IntervalSeconds    whereHelperint
+	GraceSeconds       whereHelperint
+	Severity           whereHelperstring
+	LastCheckInAt      whereHelpernull_Time
+	CreatedAt          whereHelpertime_Time
+	UpdatedAt          whereHelpertime_Time
+	EscalationPolicyID whereHelpernull_String
 }{
-	ID:              whereHelperstring{field: "\"alert_monitors\".\"id\""},
-	WorkspaceID:     whereHelperstring{field: "\"alert_monitors\".\"workspace_id\""},
-	SourceID:        whereHelperstring{field: "\"alert_monitors\".\"source_id\""},
-	IntervalSeconds: whereHelperint{field: "\"alert_monitors\".\"interval_seconds\""},
-	GraceSeconds:    whereHelperint{field: "\"alert_monitors\".\"grace_seconds\""},
-	PolicyRef:       whereHelperstring{field: "\"alert_monitors\".\"policy_ref\""},
-	Severity:        whereHelperstring{field: "\"alert_monitors\".\"severity\""},
-	LastCheckInAt:   whereHelpernull_Time{field: "\"alert_monitors\".\"last_check_in_at\""},
-	CreatedAt:       whereHelpertime_Time{field: "\"alert_monitors\".\"created_at\""},
-	UpdatedAt:       whereHelpertime_Time{field: "\"alert_monitors\".\"updated_at\""},
+	ID:                 whereHelperstring{field: "\"alert_monitors\".\"id\""},
+	WorkspaceID:        whereHelperstring{field: "\"alert_monitors\".\"workspace_id\""},
+	SourceID:           whereHelperstring{field: "\"alert_monitors\".\"source_id\""},
+	IntervalSeconds:    whereHelperint{field: "\"alert_monitors\".\"interval_seconds\""},
+	GraceSeconds:       whereHelperint{field: "\"alert_monitors\".\"grace_seconds\""},
+	Severity:           whereHelperstring{field: "\"alert_monitors\".\"severity\""},
+	LastCheckInAt:      whereHelpernull_Time{field: "\"alert_monitors\".\"last_check_in_at\""},
+	CreatedAt:          whereHelpertime_Time{field: "\"alert_monitors\".\"created_at\""},
+	UpdatedAt:          whereHelpertime_Time{field: "\"alert_monitors\".\"updated_at\""},
+	EscalationPolicyID: whereHelpernull_String{field: "\"alert_monitors\".\"escalation_policy_id\""},
 }
 
 // AlertMonitorRels is where relationship names are stored.
 var AlertMonitorRels = struct {
-	Workspace string
+	EscalationPolicy string
+	Workspace        string
 }{
-	Workspace: "Workspace",
+	EscalationPolicy: "EscalationPolicy",
+	Workspace:        "Workspace",
 }
 
 // alertMonitorR is where relationships are stored.
 type alertMonitorR struct {
-	Workspace *Workspace `boil:"Workspace" json:"Workspace" toml:"Workspace" yaml:"Workspace"`
+	EscalationPolicy *EscalationPolicy `boil:"EscalationPolicy" json:"EscalationPolicy" toml:"EscalationPolicy" yaml:"EscalationPolicy"`
+	Workspace        *Workspace        `boil:"Workspace" json:"Workspace" toml:"Workspace" yaml:"Workspace"`
 }
 
 // NewStruct creates a new relationship struct
 func (*alertMonitorR) NewStruct() *alertMonitorR {
 	return &alertMonitorR{}
+}
+
+func (o *AlertMonitor) GetEscalationPolicy() *EscalationPolicy {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetEscalationPolicy()
+}
+
+func (r *alertMonitorR) GetEscalationPolicy() *EscalationPolicy {
+	if r == nil {
+		return nil
+	}
+
+	return r.EscalationPolicy
 }
 
 func (o *AlertMonitor) GetWorkspace() *Workspace {
@@ -174,9 +169,9 @@ func (r *alertMonitorR) GetWorkspace() *Workspace {
 type alertMonitorL struct{}
 
 var (
-	alertMonitorAllColumns            = []string{"id", "workspace_id", "source_id", "interval_seconds", "grace_seconds", "policy_ref", "severity", "last_check_in_at", "created_at", "updated_at"}
+	alertMonitorAllColumns            = []string{"id", "workspace_id", "source_id", "interval_seconds", "grace_seconds", "severity", "last_check_in_at", "created_at", "updated_at", "escalation_policy_id"}
 	alertMonitorColumnsWithoutDefault = []string{"workspace_id", "source_id", "interval_seconds"}
-	alertMonitorColumnsWithDefault    = []string{"id", "grace_seconds", "policy_ref", "severity", "last_check_in_at", "created_at", "updated_at"}
+	alertMonitorColumnsWithDefault    = []string{"id", "grace_seconds", "severity", "last_check_in_at", "created_at", "updated_at", "escalation_policy_id"}
 	alertMonitorPrimaryKeyColumns     = []string{"id"}
 	alertMonitorGeneratedColumns      = []string{}
 )
@@ -486,6 +481,17 @@ func (q alertMonitorQuery) Exists(ctx context.Context, exec boil.ContextExecutor
 	return count > 0, nil
 }
 
+// EscalationPolicy pointed to by the foreign key.
+func (o *AlertMonitor) EscalationPolicy(mods ...qm.QueryMod) escalationPolicyQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"id\" = ?", o.EscalationPolicyID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return EscalationPolicies(queryMods...)
+}
+
 // Workspace pointed to by the foreign key.
 func (o *AlertMonitor) Workspace(mods ...qm.QueryMod) workspaceQuery {
 	queryMods := []qm.QueryMod{
@@ -495,6 +501,130 @@ func (o *AlertMonitor) Workspace(mods ...qm.QueryMod) workspaceQuery {
 	queryMods = append(queryMods, mods...)
 
 	return Workspaces(queryMods...)
+}
+
+// LoadEscalationPolicy allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for an N-1 relationship.
+func (alertMonitorL) LoadEscalationPolicy(ctx context.Context, e boil.ContextExecutor, singular bool, maybeAlertMonitor any, mods queries.Applicator) error {
+	var slice []*AlertMonitor
+	var object *AlertMonitor
+
+	if singular {
+		var ok bool
+		object, ok = maybeAlertMonitor.(*AlertMonitor)
+		if !ok {
+			object = new(AlertMonitor)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeAlertMonitor)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeAlertMonitor))
+			}
+		}
+	} else {
+		s, ok := maybeAlertMonitor.(*[]*AlertMonitor)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeAlertMonitor)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeAlertMonitor))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &alertMonitorR{}
+		}
+		if !queries.IsNil(object.EscalationPolicyID) {
+			args[object.EscalationPolicyID] = struct{}{}
+		}
+
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &alertMonitorR{}
+			}
+
+			if !queries.IsNil(obj.EscalationPolicyID) {
+				args[obj.EscalationPolicyID] = struct{}{}
+			}
+
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`escalation_policies`),
+		qm.WhereIn(`escalation_policies.id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load EscalationPolicy")
+	}
+
+	var resultSlice []*EscalationPolicy
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice EscalationPolicy")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for escalation_policies")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for escalation_policies")
+	}
+
+	if len(escalationPolicyAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.EscalationPolicy = foreign
+		if foreign.R == nil {
+			foreign.R = &escalationPolicyR{}
+		}
+		foreign.R.AlertMonitors = append(foreign.R.AlertMonitors, object)
+		return nil
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if queries.Equal(local.EscalationPolicyID, foreign.ID) {
+				local.R.EscalationPolicy = foreign
+				if foreign.R == nil {
+					foreign.R = &escalationPolicyR{}
+				}
+				foreign.R.AlertMonitors = append(foreign.R.AlertMonitors, local)
+				break
+			}
+		}
+	}
+
+	return nil
 }
 
 // LoadWorkspace allows an eager lookup of values, cached into the
@@ -614,6 +744,86 @@ func (alertMonitorL) LoadWorkspace(ctx context.Context, e boil.ContextExecutor, 
 		}
 	}
 
+	return nil
+}
+
+// SetEscalationPolicy of the alertMonitor to the related item.
+// Sets o.R.EscalationPolicy to related.
+// Adds o to related.R.AlertMonitors.
+func (o *AlertMonitor) SetEscalationPolicy(ctx context.Context, exec boil.ContextExecutor, insert bool, related *EscalationPolicy) error {
+	var err error
+	if insert {
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	}
+
+	updateQuery := fmt.Sprintf(
+		"UPDATE \"alert_monitors\" SET %s WHERE %s",
+		strmangle.SetParamNames("\"", "\"", 1, []string{"escalation_policy_id"}),
+		strmangle.WhereClause("\"", "\"", 2, alertMonitorPrimaryKeyColumns),
+	)
+	values := []any{related.ID, o.ID}
+
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, updateQuery)
+		fmt.Fprintln(writer, values)
+	}
+	if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	queries.Assign(&o.EscalationPolicyID, related.ID)
+	if o.R == nil {
+		o.R = &alertMonitorR{
+			EscalationPolicy: related,
+		}
+	} else {
+		o.R.EscalationPolicy = related
+	}
+
+	if related.R == nil {
+		related.R = &escalationPolicyR{
+			AlertMonitors: AlertMonitorSlice{o},
+		}
+	} else {
+		related.R.AlertMonitors = append(related.R.AlertMonitors, o)
+	}
+
+	return nil
+}
+
+// RemoveEscalationPolicy relationship.
+// Sets o.R.EscalationPolicy to nil.
+// Removes o from all passed in related items' relationships struct.
+func (o *AlertMonitor) RemoveEscalationPolicy(ctx context.Context, exec boil.ContextExecutor, related *EscalationPolicy) error {
+	var err error
+
+	queries.SetScanner(&o.EscalationPolicyID, nil)
+	if _, err = o.Update(ctx, exec, boil.Whitelist("escalation_policy_id")); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	if o.R != nil {
+		o.R.EscalationPolicy = nil
+	}
+	if related == nil || related.R == nil {
+		return nil
+	}
+
+	for i, ri := range related.R.AlertMonitors {
+		if queries.Equal(o.EscalationPolicyID, ri.EscalationPolicyID) {
+			continue
+		}
+
+		ln := len(related.R.AlertMonitors)
+		if ln > 1 && i < ln-1 {
+			related.R.AlertMonitors[i] = related.R.AlertMonitors[ln-1]
+		}
+		related.R.AlertMonitors = related.R.AlertMonitors[:ln-1]
+		break
+	}
 	return nil
 }
 

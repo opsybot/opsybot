@@ -168,7 +168,7 @@ func toEntity(m *dbpostgres.Alert) entity.Alert {
 		AckedByUserID:         m.AckedByUserID.String,
 		AckedByLabel:          m.AckedByLabel,
 		ResolveMode:           entity.ResolveMode(m.ResolveMode),
-		RoutedPolicyRef:       m.RoutedPolicyRef,
+		EscalationPolicyID:    m.EscalationPolicyID.String,
 		SuppressedBySilenceID: m.SuppressedBySilenceID.String,
 		SuppressedAt:          m.SuppressedAt.Time,
 		Payload:               m.Payload,
@@ -394,6 +394,23 @@ func (r *repo) Resolve(ctx context.Context, workspaceID string, ids []string, at
 		return 0, fmt.Errorf("resolve alerts: %w", err)
 	}
 	return int(affected), nil
+}
+
+func (r *repo) Reopen(ctx context.Context, alertID string, at time.Time) (bool, error) {
+	values := dbpostgres.M{
+		"status":           string(entity.AlertStatusOpen),
+		"acked_at":         nil,
+		"acked_by_user_id": nil,
+		"acked_by_label":   "",
+		"updated_at":       at,
+	}
+	affected, err := dbpostgres.Alerts(
+		qm.Where("id = ? AND status = ?", alertID, string(entity.AlertStatusAcked)),
+	).UpdateAll(ctx, r.db.Querier(ctx), values)
+	if err != nil {
+		return false, fmt.Errorf("reopen alert: %w", err)
+	}
+	return affected > 0, nil
 }
 
 func (r *repo) AppendEvent(ctx context.Context, alertID string, event entity.AlertEvent) error {
@@ -677,11 +694,15 @@ func (r *repo) CountsBySource(ctx context.Context, sourceIDs []string, since tim
 	return out, nil
 }
 
-func (r *repo) ApplyRouting(ctx context.Context, alertID, policyRef, groupKey, silenceID string, suppressedAt time.Time) error {
+func (r *repo) ApplyRouting(ctx context.Context, alertID, policyID, groupKey, silenceID string, suppressedAt time.Time) error {
 	values := dbpostgres.M{
-		"routed_policy_ref": policyRef,
-		"group_key":         groupKey,
-		"updated_at":        time.Now().UTC(),
+		"group_key":  groupKey,
+		"updated_at": time.Now().UTC(),
+	}
+	if policyID != "" {
+		values["escalation_policy_id"] = policyID
+	} else {
+		values["escalation_policy_id"] = nil
 	}
 	if silenceID != "" {
 		values["suppressed_by_silence_id"] = silenceID

@@ -38,7 +38,7 @@ func (h *handler) monitorDTO(m entity.AlertMonitor) api.AlertMonitor {
 		State:           api.AlertMonitorState(m.State(now)),
 		IntervalSeconds: int(m.Interval / time.Second),
 		GraceSeconds:    int(m.Grace / time.Second),
-		PolicyRef:       m.PolicyRef,
+		PolicySlug:      m.PolicySlug,
 		Severity:        api.AlertMonitorSeverity(m.Severity),
 		CheckInUrl:      h.checkInURL(m.CheckInToken),
 		Paused:          m.Paused,
@@ -109,8 +109,8 @@ func (h *handler) CreateAlertMonitor(ctx context.Context, request api.CreateAler
 	if request.Body.GraceSeconds != nil {
 		in.Grace = time.Duration(*request.Body.GraceSeconds) * time.Second
 	}
-	if request.Body.PolicyRef != nil {
-		in.PolicyRef = *request.Body.PolicyRef
+	if request.Body.PolicySlug != nil {
+		in.PolicySlug = *request.Body.PolicySlug
 	}
 	if request.Body.Severity != nil {
 		in.Severity = entity.AlertSeverity(*request.Body.Severity)
@@ -145,8 +145,8 @@ func (h *handler) UpdateAlertMonitor(ctx context.Context, request api.UpdateAler
 	if request.Body.GraceSeconds != nil {
 		in.Grace = time.Duration(*request.Body.GraceSeconds) * time.Second
 	}
-	if request.Body.PolicyRef != nil {
-		in.PolicyRef = *request.Body.PolicyRef
+	if request.Body.PolicySlug != nil {
+		in.PolicySlug = *request.Body.PolicySlug
 	}
 	if request.Body.Severity != nil {
 		in.Severity = entity.AlertSeverity(*request.Body.Severity)
