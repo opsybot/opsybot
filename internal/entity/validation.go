@@ -83,6 +83,12 @@ var (
 	errAlertSeverity      = validation.NewError("alert_severity_invalid", "Choose critical, high, or warning.")
 	errAlertStatus        = validation.NewError("alert_status_invalid", "Choose open, acked, or resolved.")
 	errPolicyRef          = validation.NewError("policy_ref_invalid", "Pick an escalation policy.")
+	errRouteCondition     = validation.NewError("route_condition_invalid", "Each condition needs a known field, an operator, and a value.")
+	errRouteConditions    = validation.NewError("route_conditions_empty", "A rule needs at least one condition with a value.")
+	errConditionOp        = validation.NewError("condition_op_invalid", "Choose is, is not, contains, or matches.")
+	errSilenceCondition   = validation.NewError("silence_condition_invalid", "Each scope needs a source, service, or label value.")
+	errSilenceReason      = validation.NewError("silence_reason_invalid", "Keep the reason to 200 characters or fewer.")
+	errGroupRuleFields    = validation.NewError("group_rule_invalid", "A grouping rule needs between 1 and 5 known fields.")
 )
 
 func nameField(value any) error {
@@ -441,6 +447,80 @@ func sourceMappingsField(value any) error {
 	}
 	if _, ok := seen[MappingFieldTitle]; !ok {
 		return errSourceMappingTitle
+	}
+	return nil
+}
+
+func conditionOpField(value any) error {
+	op, _ := value.(ConditionOp)
+	switch op {
+	case ConditionIs, ConditionIsNot, ConditionContains, ConditionMatches:
+		return nil
+	default:
+		return errConditionOp
+	}
+}
+
+func routeConditionsField(value any) error {
+	conditions, _ := value.([]RouteCondition)
+	if len(conditions) == 0 || len(conditions) > RouteMaxConditions {
+		return errRouteConditions
+	}
+	for _, c := range conditions {
+		if err := conditionOpField(c.Op); err != nil {
+			return err
+		}
+		if !routeFieldKnown(c.Field) {
+			return errRouteCondition
+		}
+		v := strings.TrimSpace(c.Value)
+		if v == "" || len(v) > RouteValueMaxLength {
+			return errRouteCondition
+		}
+	}
+	return nil
+}
+
+func routeFieldKnown(field string) bool {
+	if strings.HasPrefix(field, "labels.") {
+		return len(field) > len("labels.")
+	}
+	return slices.Contains(RouteFields, field)
+}
+
+func silenceConditionsField(value any) error {
+	conditions, _ := value.([]SilenceCondition)
+	if len(conditions) == 0 || len(conditions) > SilenceMaxConditions {
+		return errSilenceCondition
+	}
+	for _, c := range conditions {
+		if !slices.Contains(SilenceScopeFields, c.Field) {
+			return errSilenceCondition
+		}
+		if strings.TrimSpace(c.Value) == "" {
+			return errSilenceCondition
+		}
+	}
+	return nil
+}
+
+func silenceReasonField(value any) error {
+	s, _ := value.(string)
+	if len(s) > SilenceReasonMax {
+		return errSilenceReason
+	}
+	return nil
+}
+
+func groupRuleFieldsField(value any) error {
+	fields, _ := value.([]string)
+	if len(fields) == 0 || len(fields) > GroupRuleMaxFields {
+		return errGroupRuleFields
+	}
+	for _, f := range fields {
+		if !routeFieldKnown(f) {
+			return errGroupRuleFields
+		}
 	}
 	return nil
 }

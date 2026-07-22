@@ -190,6 +190,20 @@ func (r *repo) InsertResolved(ctx context.Context, in entity.AlertUpsert, endedA
 	return toEntity(m), nil
 }
 
+func (r *repo) FindResolved(ctx context.Context, workspaceID, sourceID, dedupKey string, endedAt time.Time) (entity.Alert, error) {
+	m, err := dbpostgres.Alerts(
+		qm.Where("workspace_id = ? AND source_id = ? AND dedup_key = ? AND resolved_at IS NOT NULL AND ended_at = ?",
+			workspaceID, sourceID, dedupKey, endedAt),
+	).One(ctx, r.db.Querier(ctx))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return entity.Alert{}, entity.ErrAlertNotFound
+		}
+		return entity.Alert{}, fmt.Errorf("find resolved alert: %w", err)
+	}
+	return toEntity(m), nil
+}
+
 func (r *repo) GetByID(ctx context.Context, workspaceID, id string) (entity.Alert, error) {
 	m, err := dbpostgres.Alerts(qm.Where("workspace_id = ? AND id = ?", workspaceID, id)).One(ctx, r.db.Querier(ctx))
 	if err != nil {
@@ -413,4 +427,20 @@ func decodeCursor(cursor string) (time.Time, string, bool) {
 		return time.Time{}, "", false
 	}
 	return parsed, id, true
+}
+
+func (r *repo) ApplyRouting(ctx context.Context, alertID, policyRef, groupKey, silenceID string, suppressedAt time.Time) error {
+	values := dbpostgres.M{
+		"routed_policy_ref": policyRef,
+		"group_key":         groupKey,
+		"updated_at":        time.Now().UTC(),
+	}
+	if silenceID != "" {
+		values["suppressed_by_silence_id"] = silenceID
+		values["suppressed_at"] = suppressedAt
+	}
+	if _, err := dbpostgres.Alerts(qm.Where("id = ?", alertID)).UpdateAll(ctx, r.db.Querier(ctx), values); err != nil {
+		return fmt.Errorf("apply alert routing: %w", err)
+	}
+	return nil
 }

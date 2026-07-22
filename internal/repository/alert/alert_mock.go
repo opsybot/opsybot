@@ -71,6 +71,35 @@ func (mr *MockAlertMockRecorder) AppendEvent(ctx, alertID, event any) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AppendEvent", reflect.TypeOf((*MockAlert)(nil).AppendEvent), ctx, alertID, event)
 }
 
+// ApplyRouting mocks base method.
+func (m *MockAlert) ApplyRouting(ctx context.Context, alertID, policyRef, groupKey, silenceID string, suppressedAt time.Time) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ApplyRouting", ctx, alertID, policyRef, groupKey, silenceID, suppressedAt)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ApplyRouting indicates an expected call of ApplyRouting.
+func (mr *MockAlertMockRecorder) ApplyRouting(ctx, alertID, policyRef, groupKey, silenceID, suppressedAt any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyRouting", reflect.TypeOf((*MockAlert)(nil).ApplyRouting), ctx, alertID, policyRef, groupKey, silenceID, suppressedAt)
+}
+
+// FindResolved mocks base method.
+func (m *MockAlert) FindResolved(ctx context.Context, workspaceID, sourceID, dedupKey string, endedAt time.Time) (entity.Alert, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindResolved", ctx, workspaceID, sourceID, dedupKey, endedAt)
+	ret0, _ := ret[0].(entity.Alert)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindResolved indicates an expected call of FindResolved.
+func (mr *MockAlertMockRecorder) FindResolved(ctx, workspaceID, sourceID, dedupKey, endedAt any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindResolved", reflect.TypeOf((*MockAlert)(nil).FindResolved), ctx, workspaceID, sourceID, dedupKey, endedAt)
+}
+
 // GetByID mocks base method.
 func (m *MockAlert) GetByID(ctx context.Context, workspaceID, id string) (entity.Alert, error) {
 	m.ctrl.T.Helper()

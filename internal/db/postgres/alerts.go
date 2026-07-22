@@ -263,32 +263,35 @@ var AlertWhere = struct {
 
 // AlertRels is where relationship names are stored.
 var AlertRels = struct {
-	AckedByUser       string
-	ParentAlert       string
-	Workspace         string
-	AlertEvents       string
-	AlertIngestEvents string
-	AlertLinks        string
-	ParentAlertAlerts string
+	AckedByUser         string
+	ParentAlert         string
+	SuppressedBySilence string
+	Workspace           string
+	AlertEvents         string
+	AlertIngestEvents   string
+	AlertLinks          string
+	ParentAlertAlerts   string
 }{
-	AckedByUser:       "AckedByUser",
-	ParentAlert:       "ParentAlert",
-	Workspace:         "Workspace",
-	AlertEvents:       "AlertEvents",
-	AlertIngestEvents: "AlertIngestEvents",
-	AlertLinks:        "AlertLinks",
-	ParentAlertAlerts: "ParentAlertAlerts",
+	AckedByUser:         "AckedByUser",
+	ParentAlert:         "ParentAlert",
+	SuppressedBySilence: "SuppressedBySilence",
+	Workspace:           "Workspace",
+	AlertEvents:         "AlertEvents",
+	AlertIngestEvents:   "AlertIngestEvents",
+	AlertLinks:          "AlertLinks",
+	ParentAlertAlerts:   "ParentAlertAlerts",
 }
 
 // alertR is where relationships are stored.
 type alertR struct {
-	AckedByUser       *User                 `boil:"AckedByUser" json:"AckedByUser" toml:"AckedByUser" yaml:"AckedByUser"`
-	ParentAlert       *Alert                `boil:"ParentAlert" json:"ParentAlert" toml:"ParentAlert" yaml:"ParentAlert"`
-	Workspace         *Workspace            `boil:"Workspace" json:"Workspace" toml:"Workspace" yaml:"Workspace"`
-	AlertEvents       AlertEventSlice       `boil:"AlertEvents" json:"AlertEvents" toml:"AlertEvents" yaml:"AlertEvents"`
-	AlertIngestEvents AlertIngestEventSlice `boil:"AlertIngestEvents" json:"AlertIngestEvents" toml:"AlertIngestEvents" yaml:"AlertIngestEvents"`
-	AlertLinks        AlertLinkSlice        `boil:"AlertLinks" json:"AlertLinks" toml:"AlertLinks" yaml:"AlertLinks"`
-	ParentAlertAlerts AlertSlice            `boil:"ParentAlertAlerts" json:"ParentAlertAlerts" toml:"ParentAlertAlerts" yaml:"ParentAlertAlerts"`
+	AckedByUser         *User                 `boil:"AckedByUser" json:"AckedByUser" toml:"AckedByUser" yaml:"AckedByUser"`
+	ParentAlert         *Alert                `boil:"ParentAlert" json:"ParentAlert" toml:"ParentAlert" yaml:"ParentAlert"`
+	SuppressedBySilence *AlertSilence         `boil:"SuppressedBySilence" json:"SuppressedBySilence" toml:"SuppressedBySilence" yaml:"SuppressedBySilence"`
+	Workspace           *Workspace            `boil:"Workspace" json:"Workspace" toml:"Workspace" yaml:"Workspace"`
+	AlertEvents         AlertEventSlice       `boil:"AlertEvents" json:"AlertEvents" toml:"AlertEvents" yaml:"AlertEvents"`
+	AlertIngestEvents   AlertIngestEventSlice `boil:"AlertIngestEvents" json:"AlertIngestEvents" toml:"AlertIngestEvents" yaml:"AlertIngestEvents"`
+	AlertLinks          AlertLinkSlice        `boil:"AlertLinks" json:"AlertLinks" toml:"AlertLinks" yaml:"AlertLinks"`
+	ParentAlertAlerts   AlertSlice            `boil:"ParentAlertAlerts" json:"ParentAlertAlerts" toml:"ParentAlertAlerts" yaml:"ParentAlertAlerts"`
 }
 
 // NewStruct creates a new relationship struct
@@ -326,6 +329,22 @@ func (r *alertR) GetParentAlert() *Alert {
 	}
 
 	return r.ParentAlert
+}
+
+func (o *Alert) GetSuppressedBySilence() *AlertSilence {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetSuppressedBySilence()
+}
+
+func (r *alertR) GetSuppressedBySilence() *AlertSilence {
+	if r == nil {
+		return nil
+	}
+
+	return r.SuppressedBySilence
 }
 
 func (o *Alert) GetWorkspace() *Workspace {
@@ -746,6 +765,17 @@ func (o *Alert) ParentAlert(mods ...qm.QueryMod) alertQuery {
 	return Alerts(queryMods...)
 }
 
+// SuppressedBySilence pointed to by the foreign key.
+func (o *Alert) SuppressedBySilence(mods ...qm.QueryMod) alertSilenceQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"id\" = ?", o.SuppressedBySilenceID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return AlertSilences(queryMods...)
+}
+
 // Workspace pointed to by the foreign key.
 func (o *Alert) Workspace(mods ...qm.QueryMod) workspaceQuery {
 	queryMods := []qm.QueryMod{
@@ -1053,6 +1083,130 @@ func (alertL) LoadParentAlert(ctx context.Context, e boil.ContextExecutor, singu
 					foreign.R = &alertR{}
 				}
 				foreign.R.ParentAlertAlerts = append(foreign.R.ParentAlertAlerts, local)
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadSuppressedBySilence allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for an N-1 relationship.
+func (alertL) LoadSuppressedBySilence(ctx context.Context, e boil.ContextExecutor, singular bool, maybeAlert any, mods queries.Applicator) error {
+	var slice []*Alert
+	var object *Alert
+
+	if singular {
+		var ok bool
+		object, ok = maybeAlert.(*Alert)
+		if !ok {
+			object = new(Alert)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeAlert)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeAlert))
+			}
+		}
+	} else {
+		s, ok := maybeAlert.(*[]*Alert)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeAlert)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeAlert))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &alertR{}
+		}
+		if !queries.IsNil(object.SuppressedBySilenceID) {
+			args[object.SuppressedBySilenceID] = struct{}{}
+		}
+
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &alertR{}
+			}
+
+			if !queries.IsNil(obj.SuppressedBySilenceID) {
+				args[obj.SuppressedBySilenceID] = struct{}{}
+			}
+
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`alert_silences`),
+		qm.WhereIn(`alert_silences.id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load AlertSilence")
+	}
+
+	var resultSlice []*AlertSilence
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice AlertSilence")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for alert_silences")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for alert_silences")
+	}
+
+	if len(alertSilenceAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.SuppressedBySilence = foreign
+		if foreign.R == nil {
+			foreign.R = &alertSilenceR{}
+		}
+		foreign.R.SuppressedBySilenceAlerts = append(foreign.R.SuppressedBySilenceAlerts, object)
+		return nil
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if queries.Equal(local.SuppressedBySilenceID, foreign.ID) {
+				local.R.SuppressedBySilence = foreign
+				if foreign.R == nil {
+					foreign.R = &alertSilenceR{}
+				}
+				foreign.R.SuppressedBySilenceAlerts = append(foreign.R.SuppressedBySilenceAlerts, local)
 				break
 			}
 		}
@@ -1788,6 +1942,86 @@ func (o *Alert) RemoveParentAlert(ctx context.Context, exec boil.ContextExecutor
 			related.R.ParentAlertAlerts[i] = related.R.ParentAlertAlerts[ln-1]
 		}
 		related.R.ParentAlertAlerts = related.R.ParentAlertAlerts[:ln-1]
+		break
+	}
+	return nil
+}
+
+// SetSuppressedBySilence of the alert to the related item.
+// Sets o.R.SuppressedBySilence to related.
+// Adds o to related.R.SuppressedBySilenceAlerts.
+func (o *Alert) SetSuppressedBySilence(ctx context.Context, exec boil.ContextExecutor, insert bool, related *AlertSilence) error {
+	var err error
+	if insert {
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	}
+
+	updateQuery := fmt.Sprintf(
+		"UPDATE \"alerts\" SET %s WHERE %s",
+		strmangle.SetParamNames("\"", "\"", 1, []string{"suppressed_by_silence_id"}),
+		strmangle.WhereClause("\"", "\"", 2, alertPrimaryKeyColumns),
+	)
+	values := []any{related.ID, o.ID}
+
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, updateQuery)
+		fmt.Fprintln(writer, values)
+	}
+	if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	queries.Assign(&o.SuppressedBySilenceID, related.ID)
+	if o.R == nil {
+		o.R = &alertR{
+			SuppressedBySilence: related,
+		}
+	} else {
+		o.R.SuppressedBySilence = related
+	}
+
+	if related.R == nil {
+		related.R = &alertSilenceR{
+			SuppressedBySilenceAlerts: AlertSlice{o},
+		}
+	} else {
+		related.R.SuppressedBySilenceAlerts = append(related.R.SuppressedBySilenceAlerts, o)
+	}
+
+	return nil
+}
+
+// RemoveSuppressedBySilence relationship.
+// Sets o.R.SuppressedBySilence to nil.
+// Removes o from all passed in related items' relationships struct.
+func (o *Alert) RemoveSuppressedBySilence(ctx context.Context, exec boil.ContextExecutor, related *AlertSilence) error {
+	var err error
+
+	queries.SetScanner(&o.SuppressedBySilenceID, nil)
+	if _, err = o.Update(ctx, exec, boil.Whitelist("suppressed_by_silence_id")); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	if o.R != nil {
+		o.R.SuppressedBySilence = nil
+	}
+	if related == nil || related.R == nil {
+		return nil
+	}
+
+	for i, ri := range related.R.SuppressedBySilenceAlerts {
+		if queries.Equal(o.SuppressedBySilenceID, ri.SuppressedBySilenceID) {
+			continue
+		}
+
+		ln := len(related.R.SuppressedBySilenceAlerts)
+		if ln > 1 && i < ln-1 {
+			related.R.SuppressedBySilenceAlerts[i] = related.R.SuppressedBySilenceAlerts[ln-1]
+		}
+		related.R.SuppressedBySilenceAlerts = related.R.SuppressedBySilenceAlerts[:ln-1]
 		break
 	}
 	return nil

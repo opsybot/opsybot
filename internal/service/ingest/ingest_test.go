@@ -11,8 +11,10 @@ import (
 	"github.com/opsybot/opsybot/internal/config"
 	"github.com/opsybot/opsybot/internal/entity"
 	"github.com/opsybot/opsybot/internal/repository/alert"
+	"github.com/opsybot/opsybot/internal/repository/alert_route"
 	"github.com/opsybot/opsybot/internal/repository/alert_source"
 	"github.com/opsybot/opsybot/internal/repository/ingest_event"
+	"github.com/opsybot/opsybot/internal/repository/silence"
 )
 
 type fakeTx struct{}
@@ -20,28 +22,44 @@ type fakeTx struct{}
 func (fakeTx) WithTx(ctx context.Context, fn func(context.Context) error) error { return fn(ctx) }
 
 type harness struct {
-	srv     *srv
-	sources *alert_source.MockAlertSource
-	alerts  *alert.MockAlert
-	events  *ingest_event.MockIngestEvent
+	srv      *srv
+	sources  *alert_source.MockAlertSource
+	alerts   *alert.MockAlert
+	events   *ingest_event.MockIngestEvent
+	routes   *alert_route.MockAlertRoute
+	silences *silence.MockSilence
 }
 
 func newHarness(t *testing.T) *harness {
 	t.Helper()
 	ctrl := gomock.NewController(t)
 	h := &harness{
-		sources: alert_source.NewMockAlertSource(ctrl),
-		alerts:  alert.NewMockAlert(ctrl),
-		events:  ingest_event.NewMockIngestEvent(ctrl),
+		sources:  alert_source.NewMockAlertSource(ctrl),
+		alerts:   alert.NewMockAlert(ctrl),
+		events:   ingest_event.NewMockIngestEvent(ctrl),
+		routes:   alert_route.NewMockAlertRoute(ctrl),
+		silences: silence.NewMockSilence(ctrl),
 	}
 	h.srv = &srv{
-		tx:      fakeTx{},
-		sources: h.sources,
-		alerts:  h.alerts,
-		events:  h.events,
-		cfg:     config.Ingest{MaxBodyBytes: 1 << 20},
+		tx:       fakeTx{},
+		sources:  h.sources,
+		alerts:   h.alerts,
+		events:   h.events,
+		routes:   h.routes,
+		silences: h.silences,
+		cfg:      config.Ingest{MaxBodyBytes: 1 << 20},
 	}
+	h.routes.EXPECT().List(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
+	h.routes.EXPECT().ListGroupRules(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
+	h.routes.EXPECT().Settings(gomock.Any(), gomock.Any()).
+		Return(entity.AlertSettings{DefaultPolicyRef: entity.DefaultPolicyRef}, nil).AnyTimes()
+	h.silences.EXPECT().ListActive(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
 	return h
+}
+
+func (h *harness) allowRouting() {
+	h.alerts.EXPECT().ApplyRouting(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(nil).AnyTimes()
 }
 
 func genericSource() entity.AlertSource {
@@ -67,11 +85,12 @@ func TestWebhookCreatesAlert(t *testing.T) {
 	h := newHarness(t)
 	src := genericSource()
 
+	h.allowRouting()
 	h.sources.EXPECT().GetByToken(gomock.Any(), "tok").Return(src, nil)
 	h.alerts.EXPECT().UpsertOpen(gomock.Any(), gomock.Any()).
 		Return(entity.Alert{ID: "al-1", Count: 1}, entity.IngestOutcomeCreated, nil)
 	h.alerts.EXPECT().ReplaceLinks(gomock.Any(), "al-1", gomock.Any()).Return(nil)
-	h.alerts.EXPECT().AppendEvent(gomock.Any(), "al-1", gomock.Any()).Return(nil)
+	h.alerts.EXPECT().AppendEvent(gomock.Any(), "al-1", gomock.Any()).Return(nil).AnyTimes()
 	h.events.EXPECT().Record(gomock.Any(), gomock.Any()).Return(nil)
 	h.sources.EXPECT().MarkDelivery(gomock.Any(), "src-1", gomock.Any(), false).Return(nil)
 
@@ -89,10 +108,11 @@ func TestWebhookRepeatIsRecordedAsDuplicate(t *testing.T) {
 	src := genericSource()
 	src.Format = entity.SourceFormatAlertmanager
 
+	h.allowRouting()
 	h.sources.EXPECT().GetByToken(gomock.Any(), "tok").Return(src, nil)
 	h.alerts.EXPECT().UpsertOpen(gomock.Any(), gomock.Any()).
 		Return(entity.Alert{ID: "al-1", Count: 4}, entity.IngestOutcomeUpdated, nil)
-	h.alerts.EXPECT().AppendEvent(gomock.Any(), "al-1", gomock.Any()).Return(nil)
+	h.alerts.EXPECT().AppendEvent(gomock.Any(), "al-1", gomock.Any()).Return(nil).AnyTimes()
 	h.events.EXPECT().Record(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(_ context.Context, ev entity.IngestEvent) error {
 			if ev.Outcome != entity.IngestOutcomeDuplicate {
@@ -114,9 +134,11 @@ func TestWebhookResolveWithoutOpenAlertInsertsResolved(t *testing.T) {
 	h.sources.EXPECT().GetByToken(gomock.Any(), "tok").Return(genericSource(), nil)
 	h.alerts.EXPECT().ResolveByDedupKey(gomock.Any(), "ws-1", "src-1", gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(entity.Alert{}, entity.IngestOutcomeStale, entity.ErrAlertNotFound)
+	h.alerts.EXPECT().FindResolved(gomock.Any(), "ws-1", "src-1", gomock.Any(), gomock.Any()).
+		Return(entity.Alert{}, entity.ErrAlertNotFound)
 	h.alerts.EXPECT().InsertResolved(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(entity.Alert{ID: "al-9"}, nil)
-	h.alerts.EXPECT().AppendEvent(gomock.Any(), "al-9", gomock.Any()).Return(nil)
+	h.alerts.EXPECT().AppendEvent(gomock.Any(), "al-9", gomock.Any()).Return(nil).AnyTimes()
 	h.events.EXPECT().Record(gomock.Any(), gomock.Any()).Return(nil)
 	h.sources.EXPECT().MarkDelivery(gomock.Any(), "src-1", gomock.Any(), false).Return(nil)
 
@@ -126,6 +148,32 @@ func TestWebhookResolveWithoutOpenAlertInsertsResolved(t *testing.T) {
 	}
 	if got[0].Outcome != entity.IngestOutcomeResolved {
 		t.Errorf("outcome = %q, want resolved", got[0].Outcome)
+	}
+}
+
+func TestWebhookRepeatedResolveDoesNotDuplicate(t *testing.T) {
+	h := newHarness(t)
+
+	h.sources.EXPECT().GetByToken(gomock.Any(), "tok").Return(genericSource(), nil)
+	h.alerts.EXPECT().ResolveByDedupKey(gomock.Any(), "ws-1", "src-1", gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(entity.Alert{}, entity.IngestOutcomeStale, entity.ErrAlertNotFound)
+	h.alerts.EXPECT().FindResolved(gomock.Any(), "ws-1", "src-1", gomock.Any(), gomock.Any()).
+		Return(entity.Alert{ID: "al-existing"}, nil)
+	h.events.EXPECT().Record(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, ev entity.IngestEvent) error {
+			if ev.Outcome != entity.IngestOutcomeDuplicate {
+				t.Errorf("outcome = %q, want duplicate so a re-sent resolve does not create a second row", ev.Outcome)
+			}
+			return nil
+		})
+	h.sources.EXPECT().MarkDelivery(gomock.Any(), "src-1", gomock.Any(), false).Return(nil)
+
+	got, err := h.srv.Webhook(context.Background(), request(`{"title":"recovered","status":"resolved","dedup_key":"k9","ends_at":"2026-07-21T11:00:00Z"}`))
+	if err != nil {
+		t.Fatalf("webhook: %v", err)
+	}
+	if got[0].AlertID != "al-existing" {
+		t.Errorf("alert id = %q, want the existing resolved alert", got[0].AlertID)
 	}
 }
 
@@ -207,11 +255,12 @@ func TestWebhookAcceptsValidSignature(t *testing.T) {
 	src.RequireSignature = true
 
 	body := `{"title":"signed"}`
+	h.allowRouting()
 	h.sources.EXPECT().GetByToken(gomock.Any(), "tok").Return(src, nil)
 	h.alerts.EXPECT().UpsertOpen(gomock.Any(), gomock.Any()).
 		Return(entity.Alert{ID: "al-3", Count: 1}, entity.IngestOutcomeCreated, nil)
 	h.alerts.EXPECT().ReplaceLinks(gomock.Any(), "al-3", gomock.Any()).Return(nil)
-	h.alerts.EXPECT().AppendEvent(gomock.Any(), "al-3", gomock.Any()).Return(nil)
+	h.alerts.EXPECT().AppendEvent(gomock.Any(), "al-3", gomock.Any()).Return(nil).AnyTimes()
 	h.events.EXPECT().Record(gomock.Any(), gomock.Any()).Return(nil)
 	h.sources.EXPECT().MarkDelivery(gomock.Any(), "src-1", gomock.Any(), false).Return(nil)
 
@@ -245,4 +294,76 @@ func TestWebhookRejectsOversizeBody(t *testing.T) {
 func mustFixture(t *testing.T, name string) []byte {
 	t.Helper()
 	return fixture(t, name)
+}
+
+func TestWebhookRoutesToMatchingPolicy(t *testing.T) {
+	h := newHarness(t)
+	ctrl := gomock.NewController(t)
+	h.routes = alert_route.NewMockAlertRoute(ctrl)
+	h.silences = silence.NewMockSilence(ctrl)
+	h.srv.routes = h.routes
+	h.srv.silences = h.silences
+
+	h.routes.EXPECT().List(gomock.Any(), "ws-1").Return([]entity.AlertRoute{
+		{ID: "r1", Position: 0, PolicyRef: "payments-primary", Conditions: []entity.RouteCondition{
+			{Field: "service", Op: entity.ConditionIs, Value: "payments-api"},
+		}},
+	}, nil)
+	h.routes.EXPECT().ListGroupRules(gomock.Any(), "ws-1").Return(nil, nil)
+	h.routes.EXPECT().Settings(gomock.Any(), "ws-1").
+		Return(entity.AlertSettings{DefaultPolicyRef: "platform-default"}, nil)
+	h.silences.EXPECT().ListActive(gomock.Any(), "ws-1", gomock.Any()).Return(nil, nil)
+
+	h.sources.EXPECT().GetByToken(gomock.Any(), "tok").Return(genericSource(), nil)
+	h.alerts.EXPECT().UpsertOpen(gomock.Any(), gomock.Any()).
+		Return(entity.Alert{ID: "al-1", ServiceName: "payments-api", Count: 1}, entity.IngestOutcomeCreated, nil)
+	h.alerts.EXPECT().ReplaceLinks(gomock.Any(), "al-1", gomock.Any()).Return(nil)
+	h.alerts.EXPECT().AppendEvent(gomock.Any(), "al-1", gomock.Any()).Return(nil).AnyTimes()
+	h.alerts.EXPECT().ApplyRouting(gomock.Any(), "al-1", "payments-primary", "", "", gomock.Any()).Return(nil)
+	h.events.EXPECT().Record(gomock.Any(), gomock.Any()).Return(nil)
+	h.sources.EXPECT().MarkDelivery(gomock.Any(), "src-1", gomock.Any(), false).Return(nil)
+
+	if _, err := h.srv.Webhook(context.Background(), request(`{"title":"p99 high","service":"payments-api"}`)); err != nil {
+		t.Fatalf("webhook: %v", err)
+	}
+}
+
+func TestWebhookRecordsSuppressionButStillCreatesAlert(t *testing.T) {
+	h := newHarness(t)
+	ctrl := gomock.NewController(t)
+	h.routes = alert_route.NewMockAlertRoute(ctrl)
+	h.silences = silence.NewMockSilence(ctrl)
+	h.srv.routes = h.routes
+	h.srv.silences = h.silences
+
+	now := time.Date(2026, 7, 21, 12, 0, 0, 0, time.UTC)
+	h.routes.EXPECT().List(gomock.Any(), "ws-1").Return(nil, nil)
+	h.routes.EXPECT().ListGroupRules(gomock.Any(), "ws-1").Return(nil, nil)
+	h.routes.EXPECT().Settings(gomock.Any(), "ws-1").
+		Return(entity.AlertSettings{DefaultPolicyRef: "platform-default"}, nil)
+	h.silences.EXPECT().ListActive(gomock.Any(), "ws-1", gomock.Any()).Return([]entity.Silence{
+		{
+			ID:         "sil-1",
+			StartsAt:   now.Add(-time.Hour),
+			EndsAt:     now.Add(time.Hour),
+			Conditions: []entity.SilenceCondition{{Field: "service", Value: "payments-api"}},
+		},
+	}, nil)
+
+	h.sources.EXPECT().GetByToken(gomock.Any(), "tok").Return(genericSource(), nil)
+	h.alerts.EXPECT().UpsertOpen(gomock.Any(), gomock.Any()).
+		Return(entity.Alert{ID: "al-2", ServiceName: "payments-api", Count: 1}, entity.IngestOutcomeCreated, nil)
+	h.alerts.EXPECT().ReplaceLinks(gomock.Any(), "al-2", gomock.Any()).Return(nil)
+	h.alerts.EXPECT().AppendEvent(gomock.Any(), "al-2", gomock.Any()).Return(nil).AnyTimes()
+	h.alerts.EXPECT().ApplyRouting(gomock.Any(), "al-2", "platform-default", "", "sil-1", gomock.Any()).Return(nil)
+	h.events.EXPECT().Record(gomock.Any(), gomock.Any()).Return(nil)
+	h.sources.EXPECT().MarkDelivery(gomock.Any(), "src-1", gomock.Any(), false).Return(nil)
+
+	got, err := h.srv.Webhook(context.Background(), request(`{"title":"p99 high","service":"payments-api"}`))
+	if err != nil {
+		t.Fatalf("webhook: %v", err)
+	}
+	if got[0].Outcome != entity.IngestOutcomeCreated {
+		t.Errorf("outcome = %q, want created: a silenced alert is still recorded", got[0].Outcome)
+	}
 }

@@ -13,11 +13,13 @@ import (
 )
 
 type srv struct {
-	tx      repository.Transactor
-	sources repository.AlertSource
-	alerts  repository.Alert
-	events  repository.IngestEvent
-	cfg     config.Ingest
+	tx       repository.Transactor
+	sources  repository.AlertSource
+	alerts   repository.Alert
+	events   repository.IngestEvent
+	routes   repository.AlertRoute
+	silences repository.Silence
+	cfg      config.Ingest
 }
 
 func New(
@@ -25,9 +27,68 @@ func New(
 	sources repository.AlertSource,
 	alerts repository.Alert,
 	events repository.IngestEvent,
+	routes repository.AlertRoute,
+	silences repository.Silence,
 	cfg config.Ingest,
 ) service.Ingest {
-	return &srv{tx: tx, sources: sources, alerts: alerts, events: events, cfg: cfg}
+	return &srv{tx: tx, sources: sources, alerts: alerts, events: events, routes: routes, silences: silences, cfg: cfg}
+}
+
+type routingContext struct {
+	routes     []entity.AlertRoute
+	groupRules []entity.GroupRule
+	silences   []entity.Silence
+	defaultRef string
+}
+
+func (s *srv) routingContext(ctx context.Context, workspaceID string, now time.Time) (routingContext, error) {
+	routes, err := s.routes.List(ctx, workspaceID)
+	if err != nil {
+		return routingContext{}, err
+	}
+	groupRules, err := s.routes.ListGroupRules(ctx, workspaceID)
+	if err != nil {
+		return routingContext{}, err
+	}
+	silences, err := s.silences.ListActive(ctx, workspaceID, now)
+	if err != nil {
+		return routingContext{}, err
+	}
+	settings, err := s.routes.Settings(ctx, workspaceID)
+	if err != nil {
+		return routingContext{}, err
+	}
+	return routingContext{routes: routes, groupRules: groupRules, silences: silences, defaultRef: settings.DefaultPolicyRef}, nil
+}
+
+func (s *srv) route(ctx context.Context, rc routingContext, alert entity.Alert, now time.Time) error {
+	_, policyRef, _ := entity.RouteFor(rc.routes, alert, rc.defaultRef)
+	_, groupKey, _ := entity.GroupKeyFor(rc.groupRules, alert)
+	silence, suppressed := entity.SilenceFor(rc.silences, alert, now)
+
+	silenceID := ""
+	if suppressed {
+		silenceID = silence.ID
+	}
+	if err := s.alerts.ApplyRouting(ctx, alert.ID, policyRef, groupKey, silenceID, now); err != nil {
+		return err
+	}
+	if err := s.alerts.AppendEvent(ctx, alert.ID, entity.AlertEvent{
+		At:     now,
+		Kind:   entity.AlertEventRouted,
+		Text:   "Routed to " + policyRef,
+		Result: groupKey,
+	}); err != nil {
+		return err
+	}
+	if suppressed {
+		return s.alerts.AppendEvent(ctx, alert.ID, entity.AlertEvent{
+			At:   now,
+			Kind: entity.AlertEventSuppressed,
+			Text: "Suppressed by an active silence. Still recorded, but it pages no one.",
+		})
+	}
+	return nil
 }
 
 func (s *srv) Webhook(ctx context.Context, req entity.IngestRequest) ([]entity.IngestResult, error) {
@@ -68,12 +129,16 @@ func (s *srv) Webhook(ctx context.Context, req entity.IngestRequest) ([]entity.I
 
 	results := make([]entity.IngestResult, 0, len(parsed))
 	err = s.tx.WithTx(ctx, func(ctx context.Context) error {
+		rc, err := s.routingContext(ctx, src.WorkspaceID, now)
+		if err != nil {
+			return err
+		}
 		for _, raw := range parsed {
 			normalized := raw.Normalize(src, now)
 			if !normalized.Valid() {
 				continue
 			}
-			result, err := s.apply(ctx, src, normalized, now)
+			result, err := s.apply(ctx, src, normalized, now, rc)
 			if err != nil {
 				return err
 			}
@@ -87,7 +152,7 @@ func (s *srv) Webhook(ctx context.Context, req entity.IngestRequest) ([]entity.I
 	return results, nil
 }
 
-func (s *srv) apply(ctx context.Context, src entity.AlertSource, in entity.IngestedAlert, now time.Time) (entity.IngestResult, error) {
+func (s *srv) apply(ctx context.Context, src entity.AlertSource, in entity.IngestedAlert, now time.Time, rc routingContext) (entity.IngestResult, error) {
 	dedupKey := entity.DeriveDedupKey(src.ID, in.DedupKeyRaw, in.Title, in.SourceLabel, in.Labels)
 
 	upsert := entity.AlertUpsert{
@@ -138,6 +203,9 @@ func (s *srv) apply(ctx context.Context, src entity.AlertSource, in entity.Inges
 		return entity.IngestResult{}, err
 	}
 
+	if err := s.route(ctx, rc, alert, now); err != nil {
+		return entity.IngestResult{}, err
+	}
 	return s.finish(ctx, src, alert.ID, dedupKey, outcome, now)
 }
 
@@ -150,6 +218,11 @@ func (s *srv) applyResolve(ctx context.Context, src entity.AlertSource, upsert e
 	alert, outcome, err := s.alerts.ResolveByDedupKey(ctx, src.WorkspaceID, src.ID, dedupKey, endedAt, in.ResolveMode)
 	switch {
 	case errors.Is(err, entity.ErrAlertNotFound):
+		if existing, findErr := s.alerts.FindResolved(ctx, src.WorkspaceID, src.ID, dedupKey, endedAt); findErr == nil {
+			return s.finish(ctx, src, existing.ID, dedupKey, entity.IngestOutcomeDuplicate, endedAt)
+		} else if !errors.Is(findErr, entity.ErrAlertNotFound) {
+			return entity.IngestResult{}, findErr
+		}
 		created, insertErr := s.alerts.InsertResolved(ctx, upsert, endedAt, in.ResolveMode)
 		if insertErr != nil {
 			return entity.IngestResult{}, insertErr

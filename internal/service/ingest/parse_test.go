@@ -9,9 +9,11 @@ import (
 	"github.com/opsybot/opsybot/internal/entity"
 )
 
+const fixtureDir = "../../../testdata/ingest"
+
 func fixture(t *testing.T, name string) []byte {
 	t.Helper()
-	body, err := os.ReadFile(filepath.Join("testdata", name))
+	body, err := os.ReadFile(filepath.Join(fixtureDir, name))
 	if err != nil {
 		t.Fatalf("read fixture %s: %v", name, err)
 	}

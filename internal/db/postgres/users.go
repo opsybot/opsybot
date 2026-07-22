@@ -160,6 +160,7 @@ var UserWhere = struct {
 
 // UserRels is where relationship names are stored.
 var UserRels = struct {
+	CreatedByUserAlertSilences     string
 	AckedByUserAlerts              string
 	CreatedByAPIKeys               string
 	OwnerUserAPIKeys               string
@@ -175,6 +176,7 @@ var UserRels = struct {
 	WorkspaceMembers               string
 	CreatedByWorkspaces            string
 }{
+	CreatedByUserAlertSilences:     "CreatedByUserAlertSilences",
 	AckedByUserAlerts:              "AckedByUserAlerts",
 	CreatedByAPIKeys:               "CreatedByAPIKeys",
 	OwnerUserAPIKeys:               "OwnerUserAPIKeys",
@@ -193,6 +195,7 @@ var UserRels = struct {
 
 // userR is where relationships are stored.
 type userR struct {
+	CreatedByUserAlertSilences     AlertSilenceSlice       `boil:"CreatedByUserAlertSilences" json:"CreatedByUserAlertSilences" toml:"CreatedByUserAlertSilences" yaml:"CreatedByUserAlertSilences"`
 	AckedByUserAlerts              AlertSlice              `boil:"AckedByUserAlerts" json:"AckedByUserAlerts" toml:"AckedByUserAlerts" yaml:"AckedByUserAlerts"`
 	CreatedByAPIKeys               APIKeySlice             `boil:"CreatedByAPIKeys" json:"CreatedByAPIKeys" toml:"CreatedByAPIKeys" yaml:"CreatedByAPIKeys"`
 	OwnerUserAPIKeys               APIKeySlice             `boil:"OwnerUserAPIKeys" json:"OwnerUserAPIKeys" toml:"OwnerUserAPIKeys" yaml:"OwnerUserAPIKeys"`
@@ -212,6 +215,22 @@ type userR struct {
 // NewStruct creates a new relationship struct
 func (*userR) NewStruct() *userR {
 	return &userR{}
+}
+
+func (o *User) GetCreatedByUserAlertSilences() AlertSilenceSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetCreatedByUserAlertSilences()
+}
+
+func (r *userR) GetCreatedByUserAlertSilences() AlertSilenceSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.CreatedByUserAlertSilences
 }
 
 func (o *User) GetAckedByUserAlerts() AlertSlice {
@@ -754,6 +773,20 @@ func (q userQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (bool,
 	return count > 0, nil
 }
 
+// CreatedByUserAlertSilences retrieves all the alert_silence's AlertSilences with an executor via created_by_user_id column.
+func (o *User) CreatedByUserAlertSilences(mods ...qm.QueryMod) alertSilenceQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"alert_silences\".\"created_by_user_id\"=?", o.ID),
+	)
+
+	return AlertSilences(queryMods...)
+}
+
 // AckedByUserAlerts retrieves all the alert's Alerts with an executor via acked_by_user_id column.
 func (o *User) AckedByUserAlerts(mods ...qm.QueryMod) alertQuery {
 	var queryMods []qm.QueryMod
@@ -948,6 +981,119 @@ func (o *User) CreatedByWorkspaces(mods ...qm.QueryMod) workspaceQuery {
 	)
 
 	return Workspaces(queryMods...)
+}
+
+// LoadCreatedByUserAlertSilences allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (userL) LoadCreatedByUserAlertSilences(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser any, mods queries.Applicator) error {
+	var slice []*User
+	var object *User
+
+	if singular {
+		var ok bool
+		object, ok = maybeUser.(*User)
+		if !ok {
+			object = new(User)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeUser))
+			}
+		}
+	} else {
+		s, ok := maybeUser.(*[]*User)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeUser))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &userR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`alert_silences`),
+		qm.WhereIn(`alert_silences.created_by_user_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load alert_silences")
+	}
+
+	var resultSlice []*AlertSilence
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice alert_silences")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on alert_silences")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for alert_silences")
+	}
+
+	if len(alertSilenceAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.CreatedByUserAlertSilences = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &alertSilenceR{}
+			}
+			foreign.R.CreatedByUser = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if queries.Equal(local.ID, foreign.CreatedByUserID) {
+				local.R.CreatedByUserAlertSilences = append(local.R.CreatedByUserAlertSilences, foreign)
+				if foreign.R == nil {
+					foreign.R = &alertSilenceR{}
+				}
+				foreign.R.CreatedByUser = local
+				break
+			}
+		}
+	}
+
+	return nil
 }
 
 // LoadAckedByUserAlerts allows an eager lookup of values, cached into the
@@ -2526,6 +2672,133 @@ func (userL) LoadCreatedByWorkspaces(ctx context.Context, e boil.ContextExecutor
 				foreign.R.CreatedByUser = local
 				break
 			}
+		}
+	}
+
+	return nil
+}
+
+// AddCreatedByUserAlertSilences adds the given related objects to the existing relationships
+// of the user, optionally inserting them as new records.
+// Appends related to o.R.CreatedByUserAlertSilences.
+// Sets related.R.CreatedByUser appropriately.
+func (o *User) AddCreatedByUserAlertSilences(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*AlertSilence) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			queries.Assign(&rel.CreatedByUserID, o.ID)
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"alert_silences\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"created_by_user_id"}),
+				strmangle.WhereClause("\"", "\"", 2, alertSilencePrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			queries.Assign(&rel.CreatedByUserID, o.ID)
+		}
+	}
+
+	if o.R == nil {
+		o.R = &userR{
+			CreatedByUserAlertSilences: related,
+		}
+	} else {
+		o.R.CreatedByUserAlertSilences = append(o.R.CreatedByUserAlertSilences, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &alertSilenceR{
+				CreatedByUser: o,
+			}
+		} else {
+			rel.R.CreatedByUser = o
+		}
+	}
+	return nil
+}
+
+// SetCreatedByUserAlertSilences removes all previously related items of the
+// user replacing them completely with the passed
+// in related items, optionally inserting them as new records.
+// Sets o.R.CreatedByUser's CreatedByUserAlertSilences accordingly.
+// Replaces o.R.CreatedByUserAlertSilences with related.
+// Sets related.R.CreatedByUser's CreatedByUserAlertSilences accordingly.
+func (o *User) SetCreatedByUserAlertSilences(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*AlertSilence) error {
+	query := "update \"alert_silences\" set \"created_by_user_id\" = null where \"created_by_user_id\" = $1"
+	values := []any{o.ID}
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, query)
+		fmt.Fprintln(writer, values)
+	}
+	_, err := exec.ExecContext(ctx, query, values...)
+	if err != nil {
+		return errors.Wrap(err, "failed to remove relationships before set")
+	}
+
+	if o.R != nil {
+		for _, rel := range o.R.CreatedByUserAlertSilences {
+			queries.SetScanner(&rel.CreatedByUserID, nil)
+			if rel.R == nil {
+				continue
+			}
+
+			rel.R.CreatedByUser = nil
+		}
+		o.R.CreatedByUserAlertSilences = nil
+	}
+
+	return o.AddCreatedByUserAlertSilences(ctx, exec, insert, related...)
+}
+
+// RemoveCreatedByUserAlertSilences relationships from objects passed in.
+// Removes related items from R.CreatedByUserAlertSilences (uses pointer comparison, removal does not keep order)
+// Sets related.R.CreatedByUser.
+func (o *User) RemoveCreatedByUserAlertSilences(ctx context.Context, exec boil.ContextExecutor, related ...*AlertSilence) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	for _, rel := range related {
+		queries.SetScanner(&rel.CreatedByUserID, nil)
+		if rel.R != nil {
+			rel.R.CreatedByUser = nil
+		}
+		if _, err = rel.Update(ctx, exec, boil.Whitelist("created_by_user_id")); err != nil {
+			return err
+		}
+	}
+	if o.R == nil {
+		return nil
+	}
+
+	for _, rel := range related {
+		for i, ri := range o.R.CreatedByUserAlertSilences {
+			if rel != ri {
+				continue
+			}
+
+			ln := len(o.R.CreatedByUserAlertSilences)
+			if ln > 1 && i < ln-1 {
+				o.R.CreatedByUserAlertSilences[i] = o.R.CreatedByUserAlertSilences[ln-1]
+			}
+			o.R.CreatedByUserAlertSilences = o.R.CreatedByUserAlertSilences[:ln-1]
+			break
 		}
 	}
 

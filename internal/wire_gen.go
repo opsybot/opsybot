@@ -20,9 +20,13 @@ import (
 	"github.com/opsybot/opsybot/internal/pkg/postgres"
 	"github.com/opsybot/opsybot/internal/pkg/secretbox"
 	"github.com/opsybot/opsybot/internal/pkg/valkey"
+	"github.com/opsybot/opsybot/internal/repository/alert"
+	"github.com/opsybot/opsybot/internal/repository/alert_route"
+	"github.com/opsybot/opsybot/internal/repository/alert_source"
 	"github.com/opsybot/opsybot/internal/repository/api_key"
 	"github.com/opsybot/opsybot/internal/repository/audit"
 	"github.com/opsybot/opsybot/internal/repository/channel"
+	"github.com/opsybot/opsybot/internal/repository/ingest_event"
 	"github.com/opsybot/opsybot/internal/repository/invite"
 	"github.com/opsybot/opsybot/internal/repository/lock"
 	mailer2 "github.com/opsybot/opsybot/internal/repository/mailer"
@@ -34,6 +38,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/recovery_code"
 	"github.com/opsybot/opsybot/internal/repository/schedule"
 	"github.com/opsybot/opsybot/internal/repository/session"
+	"github.com/opsybot/opsybot/internal/repository/silence"
 	"github.com/opsybot/opsybot/internal/repository/sso_connection"
 	"github.com/opsybot/opsybot/internal/repository/sso_state"
 	"github.com/opsybot/opsybot/internal/repository/team"
@@ -45,6 +50,7 @@ import (
 	"github.com/opsybot/opsybot/internal/service/audits"
 	"github.com/opsybot/opsybot/internal/service/auth"
 	"github.com/opsybot/opsybot/internal/service/channels"
+	"github.com/opsybot/opsybot/internal/service/ingest"
 	"github.com/opsybot/opsybot/internal/service/members"
 	"github.com/opsybot/opsybot/internal/service/ratelimiter"
 	"github.com/opsybot/opsybot/internal/service/references"
@@ -92,6 +98,7 @@ func InitApp(cfgFile string) (*App, func(), error) {
 		return nil, nil, err
 	}
 	configAuth := config.NewAuth(configConfig)
+	configIngest := config.NewIngest(configConfig)
 	repositoryTransactor := transactor.New(postgresClient)
 	repositoryLock := lock.New(postgresClient)
 	secretboxClient, err := secretbox.New(configAuth)
@@ -132,6 +139,12 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	repositoryTeam := team.New(postgresClient)
 	repositorySchedule := schedule.New(postgresClient)
 	serviceSchedules := schedules.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, repositorySchedule, repositoryPolicy, repositoryAudit)
+	alertSource := alert_source.New(postgresClient)
+	repositoryAlert := alert.New(postgresClient)
+	ingestEvent := ingest_event.New(postgresClient)
+	alertRoute := alert_route.New(postgresClient)
+	repositorySilence := silence.New(postgresClient)
+	serviceIngest := ingest.New(repositoryTransactor, alertSource, repositoryAlert, ingestEvent, alertRoute, repositorySilence, configIngest)
 	rateLimiter := ratelimit.New(valkeyClient)
 	serviceRateLimiter := ratelimiter.New(configAuth, rateLimiter)
 	serviceWorkspaces := workspaces.New(repositoryWorkspace, repositoryMember)
@@ -144,7 +157,7 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	serviceTeams := teams.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, repositoryPolicy, repositoryAudit)
 	serviceAudits := audits.New(repositoryWorkspace, repositoryMember, repositoryPolicy, repositoryAudit)
 	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers, serviceUsers, serviceChannels, serviceTeams, serviceSchedules, apiKeys, serviceAudits, serviceSSO)
-	handler := http.NewRouter(slogLogger, configAuth, serviceAuth, apiKeys, serviceSSO, serviceSchedules, serviceRateLimiter, strictServerInterface)
+	handler := http.NewRouter(slogLogger, configAuth, configIngest, serviceAuth, apiKeys, serviceSSO, serviceSchedules, serviceIngest, serviceRateLimiter, strictServerInterface)
 	app := &App{
 		OTel:     client,
 		Cfg:      configConfig,
