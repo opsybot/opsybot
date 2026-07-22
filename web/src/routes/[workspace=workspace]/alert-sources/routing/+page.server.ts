@@ -2,17 +2,17 @@ import { error, fail } from '@sveltejs/kit';
 import { RT_FIELDS, RT_OPS, RT_POLICIES, RT_SAMPLE, type Condition, type ConditionOp } from '$lib/alertsources';
 import {
 	addRule,
-	defaultPolicy,
 	deleteRule,
 	listRules,
-	moveRule,
+	reorderRules,
 	setDefaultPolicy,
 	updateRule
 } from '$lib/server/alertsources';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = () => {
-	return { rules: listRules(), defaultPolicy: defaultPolicy(), sample: RT_SAMPLE };
+export const load: PageServerLoad = async ({ params, cookies }) => {
+	const { rules, defaultPolicy, knownPolicies } = await listRules(cookies, params.workspace);
+	return { rules, defaultPolicy, knownPolicies, sample: RT_SAMPLE };
 };
 
 function parseRule(raw: string): { id: string | null; conditions: Condition[]; policy: string; position: string } | { error: string } {
@@ -51,38 +51,49 @@ function parseRule(raw: string): { id: string | null; conditions: Condition[]; p
 }
 
 export const actions: Actions = {
-	saveRule: async ({ request }) => {
+	saveRule: async ({ request, params, cookies }) => {
 		const form = await request.formData();
 		const parsed = parseRule(String(form.get('definition') ?? ''));
 		if ('error' in parsed) return fail(400, { error: parsed.error });
 
-		if (parsed.id) {
-			if (!updateRule(parsed.id, { conditions: parsed.conditions, policy: parsed.policy })) {
-				error(404, 'That rule no longer exists.');
-			}
-		} else {
-			addRule({ conditions: parsed.conditions, policy: parsed.policy }, parsed.position);
-		}
+		const rule = { conditions: parsed.conditions, policy: parsed.policy };
+		const outcome = parsed.id
+			? await updateRule(cookies, params.workspace, parsed.id, rule)
+			: await addRule(cookies, params.workspace, rule);
+		if (outcome.error) return fail(400, { error: outcome.error });
 		return { saved: true };
 	},
 
-	deleteRule: async ({ request }) => {
+	deleteRule: async ({ request, params, cookies }) => {
 		const form = await request.formData();
-		deleteRule(String(form.get('id')));
+		if (!(await deleteRule(cookies, params.workspace, String(form.get('id'))))) {
+			return fail(400, { error: 'Could not delete that rule.' });
+		}
 		return { deleted: true };
 	},
 
-	moveRule: async ({ request }) => {
+	moveRule: async ({ request, params, cookies }) => {
 		const form = await request.formData();
-		moveRule(String(form.get('id')), form.get('dir') === 'up' ? -1 : 1);
+		const id = String(form.get('id'));
+		const { rules } = await listRules(cookies, params.workspace);
+		const ids = rules.map((rule) => rule.id);
+		const index = ids.indexOf(id);
+		const target = form.get('dir') === 'up' ? index - 1 : index + 1;
+		if (index === -1 || target < 0 || target >= ids.length) return { moved: false };
+
+		[ids[index], ids[target]] = [ids[target], ids[index]];
+		if (!(await reorderRules(cookies, params.workspace, ids))) {
+			return fail(400, { error: 'Could not reorder the rules.' });
+		}
 		return { moved: true };
 	},
 
-	setDefault: async ({ request }) => {
+	setDefault: async ({ request, params, cookies }) => {
 		const form = await request.formData();
 		const policy = String(form.get('policy'));
-		if (!RT_POLICIES.includes(policy)) return fail(400, { error: 'Unknown policy.' });
-		setDefaultPolicy(policy);
+		if (!(await setDefaultPolicy(cookies, params.workspace, policy))) {
+			return fail(400, { error: 'Could not set the default policy.' });
+		}
 		return { policy };
 	}
 };

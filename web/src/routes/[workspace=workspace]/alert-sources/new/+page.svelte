@@ -95,12 +95,12 @@
 		</div>
 	{:else if step === 1}
 		<div class="bg-card flex flex-col gap-4 rounded-xl border p-[18px]">
-			<CopyField label="Endpoint URL" value={url} />
-			<CopyField label="Signing secret" value={data.secret} secret />
 			<p class="text-subtle-foreground m-0 text-[12.5px] leading-[1.55]">
-				Requests are verified with an HMAC of the body using this secret ({format?.id === 'heartbeat'
+				The endpoint URL and signing secret are generated when you create the source, and shown on
+				its page. Requests are verified with an HMAC of the body using that secret ({format?.id ===
+				'heartbeat'
 					? 'optional for heartbeats'
-					: 'header X-Opsy-Signature'}). Rotate it any time from the integration page.
+					: 'header X-Opsy-Signature'}). Rotate it any time.
 			</p>
 			<div class="flex gap-2.5">
 				<Button variant="ghost" onclick={() => (step = 0)}>Back</Button>
@@ -184,7 +184,6 @@
 	>
 		<input type="hidden" name="name" value={name} />
 		<input type="hidden" name="format" value={format?.id ?? ''} />
-		<input type="hidden" name="secret" value={data.secret} />
 		<input type="hidden" name="mapping" value={JSON.stringify(rows)} />
 	</form>
 </div>

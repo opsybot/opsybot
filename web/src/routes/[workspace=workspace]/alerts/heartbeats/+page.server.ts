@@ -1,5 +1,5 @@
 import { fail } from '@sveltejs/kit';
-import { createHeartbeat, listHeartbeats } from '$lib/server/alerts';
+import { createHeartbeat, listHeartbeats } from '$lib/server/heartbeats';
 import type { Actions, PageServerLoad } from './$types';
 
 const INGEST_ORIGIN = 'https://in.opsy.bot';

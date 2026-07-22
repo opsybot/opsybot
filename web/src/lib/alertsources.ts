@@ -15,6 +15,7 @@ export type Source = {
 	volume: number[];
 	failures: number;
 	secret: string;
+	ingestUrl: string;
 	mapping: Mapping[];
 };
 

@@ -46,6 +46,9 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/user"
 	"github.com/opsybot/opsybot/internal/repository/user_identity"
 	"github.com/opsybot/opsybot/internal/repository/workspace"
+	"github.com/opsybot/opsybot/internal/service/alert_routes"
+	"github.com/opsybot/opsybot/internal/service/alert_sources"
+	"github.com/opsybot/opsybot/internal/service/alerts"
 	"github.com/opsybot/opsybot/internal/service/apikeys"
 	"github.com/opsybot/opsybot/internal/service/audits"
 	"github.com/opsybot/opsybot/internal/service/auth"
@@ -55,6 +58,7 @@ import (
 	"github.com/opsybot/opsybot/internal/service/ratelimiter"
 	"github.com/opsybot/opsybot/internal/service/references"
 	"github.com/opsybot/opsybot/internal/service/schedules"
+	"github.com/opsybot/opsybot/internal/service/silences"
 	"github.com/opsybot/opsybot/internal/service/sso"
 	"github.com/opsybot/opsybot/internal/service/teams"
 	"github.com/opsybot/opsybot/internal/service/users"
@@ -156,7 +160,11 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	serviceChannels := channels.New(repositoryChannel, repositoryAudit)
 	serviceTeams := teams.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, repositoryPolicy, repositoryAudit)
 	serviceAudits := audits.New(repositoryWorkspace, repositoryMember, repositoryPolicy, repositoryAudit)
-	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers, serviceUsers, serviceChannels, serviceTeams, serviceSchedules, apiKeys, serviceAudits, serviceSSO)
+	serviceAlerts := alerts.New(repositoryTransactor, repositoryWorkspace, repositoryMember, repositoryAlert, alertSource, ingestEvent, repositoryPolicy, repositoryAudit)
+	alertSources := alert_sources.New(repositoryTransactor, repositoryWorkspace, repositoryMember, alertSource, ingestEvent, repositoryPolicy, repositoryAudit)
+	alertRoutes := alert_routes.New(repositoryWorkspace, repositoryMember, alertRoute, repositoryPolicy)
+	serviceSilences := silences.New(repositoryWorkspace, repositoryMember, repositorySilence, repositoryPolicy)
+	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers, serviceUsers, serviceChannels, serviceTeams, serviceSchedules, apiKeys, serviceAudits, serviceSSO, serviceAlerts, alertSources, alertRoutes, serviceSilences, configIngest)
 	handler := http.NewRouter(slogLogger, configAuth, configIngest, serviceAuth, apiKeys, serviceSSO, serviceSchedules, serviceIngest, serviceRateLimiter, strictServerInterface)
 	app := &App{
 		OTel:     client,

@@ -2,17 +2,16 @@
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import ArrowUpRightIcon from '@lucide/svelte/icons/arrow-up-right';
 	import BellOffIcon from '@lucide/svelte/icons/bell-off';
+	import LinkIcon from '@lucide/svelte/icons/link';
+	import SirenIcon from '@lucide/svelte/icons/siren';
 	import BookOpenIcon from '@lucide/svelte/icons/book-open';
 	import BracesIcon from '@lucide/svelte/icons/braces';
 	import ChartLineIcon from '@lucide/svelte/icons/chart-line';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import CircleCheckIcon from '@lucide/svelte/icons/circle-check';
-	import LinkIcon from '@lucide/svelte/icons/link';
 	import PlugIcon from '@lucide/svelte/icons/plug';
-	import SirenIcon from '@lucide/svelte/icons/siren';
 	import { enhance } from '$app/forms';
 	import AlertStatus from '$lib/components/alerts/alert-status.svelte';
-	import AttachDialog from '$lib/components/alerts/attach-dialog.svelte';
 	import EscalationTimeline from '$lib/components/alerts/escalation-timeline.svelte';
 	import Page from '$lib/components/layout/page.svelte';
 	import Tag from '$lib/components/tag.svelte';
@@ -26,10 +25,12 @@
 
 	let { data }: PageProps = $props();
 
+	const PENDING_ESCALATION = 'Available once escalation policies ship.';
+	const PENDING_INCIDENTS = 'Available once incidents ship.';
+
 	const alert = $derived(data.alert);
 	const LINK_ICON = { runbook: BookOpenIcon, dashboard: ChartLineIcon, source: PlugIcon };
 
-	let attaching = $state(false);
 </script>
 
 <Page title="Alert" subtitle="Deduplicated signals from every connected source">
@@ -88,28 +89,24 @@
 						</form>
 					{/if}
 
-					{#if alert.status === 'open'}
-						<form method="POST" action="?/escalate" use:enhance>
-							<Button type="submit" size="sm" variant="secondary">
-								<ArrowUpRightIcon data-icon="inline-start" />
-								Escalate to next step
-							</Button>
-						</form>
-					{/if}
-
 					<Button size="sm" variant="secondary" href={ws(`/alerts/silences?source=${alert.source}`)}>
 						<BellOffIcon data-icon="inline-start" />
 						Silence source
 					</Button>
 
-					<form method="POST" action="?/promote" use:enhance>
-						<Button type="submit" size="sm" variant="destructive">
-							<SirenIcon data-icon="inline-start" />
-							Promote to incident
+					{#if alert.status === 'open'}
+						<Button size="sm" variant="secondary" disabled title={PENDING_ESCALATION}>
+							<ArrowUpRightIcon data-icon="inline-start" />
+							Escalate to next step
 						</Button>
-					</form>
+					{/if}
 
-					<Button size="sm" variant="ghost" onclick={() => (attaching = true)}>
+					<Button size="sm" variant="destructive" disabled title={PENDING_INCIDENTS}>
+						<SirenIcon data-icon="inline-start" />
+						Promote to incident
+					</Button>
+
+					<Button size="sm" variant="ghost" disabled title={PENDING_INCIDENTS}>
 						<LinkIcon data-icon="inline-start" />
 						Attach to incident
 					</Button>
@@ -180,4 +177,3 @@
 	</div>
 </Page>
 
-<AttachDialog bind:open={attaching} incidents={data.incidents} />

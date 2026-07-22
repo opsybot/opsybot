@@ -73,6 +73,10 @@ var (
 	ErrGroupRuleNotFound    = errors.New("group rule not found")
 )
 
+func ValidatePolicyRef(ref string) error {
+	return policyRefField(ref)
+}
+
 func (o ConditionOp) Validate() error {
 	return conditionOpField(o)
 }

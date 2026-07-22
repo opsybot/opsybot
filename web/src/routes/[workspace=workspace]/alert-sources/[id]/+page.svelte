@@ -104,7 +104,7 @@
 						</tr>
 					</thead>
 					<tbody>
-						{#each data.events as event (event.at)}
+						{#each data.events as event (event.id)}
 							<tr class="border-t">
 								<td class="text-subtle-foreground py-[10px] pr-[10px] pl-4 font-mono whitespace-nowrap">
 									{event.at}

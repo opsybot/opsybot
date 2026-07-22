@@ -1,8 +1,8 @@
+import type { Alert } from '$lib/alerts';
 import { SEVERITY_TONE as ALERT_TONE, SEVERITY_SHORT } from '$lib/alerts';
 import { dependentsOf, type LinkKind, type Service } from '$lib/catalog';
 import { SEVERITY_TONE } from '$lib/dashboard';
 import { isActive } from '$lib/incidents';
-import { listAlerts } from './alerts';
 import { scenario } from './fixtures';
 import { listIncidents } from './incidents';
 
@@ -68,8 +68,8 @@ function seed(): Service[] {
 const store = seed();
 let empty = scenario() === 'empty';
 
-function openAlerts(serviceId: string) {
-	return listAlerts()
+function openAlerts(alerts: Alert[], serviceId: string) {
+	return alerts
 		.filter((alert) => alert.service === serviceId && alert.status !== 'resolved')
 		.sort((a, b) => Date.parse(b.lastSeenAt) - Date.parse(a.lastSeenAt));
 }
@@ -96,14 +96,14 @@ export type ServiceRow = {
 	dependedOnBy: number;
 };
 
-export function listServices(): ServiceRow[] {
+export function listServices(alerts: Alert[] = []): ServiceRow[] {
 	if (empty) return [];
 
 	return store.map((service) => ({
 		id: service.id,
 		team: service.team,
 		description: service.description,
-		openAlerts: openAlerts(service.id).length,
+		openAlerts: openAlerts(alerts, service.id).length,
 		openIncidents: incidentsOn(service.id).filter(isActive).length,
 		dependsOn: service.deps.length,
 		dependedOnBy: dependentsOf(service.id, store).length
@@ -122,7 +122,7 @@ function dependents(serviceId: string): string[] {
 	return dependentsOf(serviceId, store);
 }
 
-export function serviceActivity(serviceId: string) {
+export function serviceActivity(serviceId: string, alerts: Alert[] = []) {
 	return {
 		openIncidents: incidentsOn(serviceId).filter(isActive).length,
 		incidents: incidentsOn(serviceId, Date.now() - THIRTY_DAYS)
@@ -135,7 +135,7 @@ export function serviceActivity(serviceId: string) {
 				status: incident.status,
 				active: isActive(incident)
 			})),
-		alerts: openAlerts(serviceId).map((alert) => ({
+		alerts: openAlerts(alerts, serviceId).map((alert) => ({
 			id: alert.id,
 			title: alert.title,
 			severity: SEVERITY_SHORT[alert.severity],

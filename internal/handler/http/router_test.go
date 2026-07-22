@@ -13,7 +13,7 @@ import (
 func newTestRouter(t *testing.T) http.Handler {
 	t.Helper()
 	cfg := config.Auth{CookieName: "opsybot_session"}
-	h := dashboard.New(cfg, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	h := dashboard.New(cfg, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, config.Ingest{})
 	return NewRouter(slog.New(slog.DiscardHandler), cfg, config.Ingest{}, nil, nil, nil, nil, nil, nil, h)
 }
 

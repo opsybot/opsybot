@@ -30,6 +30,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/user_identity"
 	"github.com/opsybot/opsybot/internal/repository/workspace"
 	"github.com/opsybot/opsybot/internal/service"
+	"github.com/opsybot/opsybot/internal/service/alert_routes"
 	"github.com/opsybot/opsybot/internal/service/alert_sources"
 	"github.com/opsybot/opsybot/internal/service/alerts"
 	"github.com/opsybot/opsybot/internal/service/apikeys"
@@ -41,6 +42,7 @@ import (
 	"github.com/opsybot/opsybot/internal/service/ratelimiter"
 	"github.com/opsybot/opsybot/internal/service/references"
 	"github.com/opsybot/opsybot/internal/service/schedules"
+	"github.com/opsybot/opsybot/internal/service/silences"
 	"github.com/opsybot/opsybot/internal/service/sso"
 	"github.com/opsybot/opsybot/internal/service/teams"
 	"github.com/opsybot/opsybot/internal/service/users"
@@ -93,6 +95,8 @@ var serviceProviders = wire.NewSet(
 	alert_sources.New,
 	alerts.New,
 	ingest.New,
+	alert_routes.New,
+	silences.New,
 )
 
 func scheduleReferenceSources(schedules service.Schedules) []service.ReferenceSource {

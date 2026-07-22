@@ -20,25 +20,26 @@ function filtersFrom(url: URL): ColumnFiltersState {
 	return filters;
 }
 
-export const load: PageServerLoad = ({ url }) => {
-	const alerts = listAlerts();
+export const load: PageServerLoad = async ({ url, params, cookies }) => {
+	const alerts = await listAlerts(cookies, params.workspace);
 
 	return {
 		now: Date.now(),
 		alerts,
 		filters: filtersFrom(url),
 		sources: [...new Set(alerts.map((alert) => alert.source))],
-		services: [...new Set(alerts.map((alert) => alert.service))],
+		services: [...new Set(alerts.map((alert) => alert.service).filter(Boolean))],
 		labels: [...new Set(alerts.flatMap((alert) => alert.labels))]
 	};
 };
 
 export const actions: Actions = {
-	bulk: async ({ request }) => {
+	bulk: async ({ request, params, cookies }) => {
 		const form = await request.formData();
 		const status = String(form.get('status'));
 		if (status !== 'acked' && status !== 'resolved') return;
 
-		for (const id of form.getAll('id')) setStatus(String(id), status);
+		const ids = form.getAll('id').map(String);
+		await setStatus(cookies, params.workspace, ids, status);
 	}
 };
