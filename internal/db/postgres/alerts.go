@@ -47,12 +47,12 @@ type Alert struct {
 	AckedByUserID         null.String `boil:"acked_by_user_id" json:"acked_by_user_id,omitempty" toml:"acked_by_user_id" yaml:"acked_by_user_id,omitempty"`
 	AckedByLabel          string      `boil:"acked_by_label" json:"acked_by_label" toml:"acked_by_label" yaml:"acked_by_label"`
 	ResolveMode           string      `boil:"resolve_mode" json:"resolve_mode" toml:"resolve_mode" yaml:"resolve_mode"`
-	RoutedPolicyRef       string      `boil:"routed_policy_ref" json:"routed_policy_ref" toml:"routed_policy_ref" yaml:"routed_policy_ref"`
 	SuppressedBySilenceID null.String `boil:"suppressed_by_silence_id" json:"suppressed_by_silence_id,omitempty" toml:"suppressed_by_silence_id" yaml:"suppressed_by_silence_id,omitempty"`
 	SuppressedAt          null.Time   `boil:"suppressed_at" json:"suppressed_at,omitempty" toml:"suppressed_at" yaml:"suppressed_at,omitempty"`
 	Payload               string      `boil:"payload" json:"payload" toml:"payload" yaml:"payload"`
 	CreatedAt             time.Time   `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 	UpdatedAt             time.Time   `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
+	EscalationPolicyID    null.String `boil:"escalation_policy_id" json:"escalation_policy_id,omitempty" toml:"escalation_policy_id" yaml:"escalation_policy_id,omitempty"`
 
 	R *alertR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L alertL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -81,12 +81,12 @@ var AlertColumns = struct {
 	AckedByUserID         string
 	AckedByLabel          string
 	ResolveMode           string
-	RoutedPolicyRef       string
 	SuppressedBySilenceID string
 	SuppressedAt          string
 	Payload               string
 	CreatedAt             string
 	UpdatedAt             string
+	EscalationPolicyID    string
 }{
 	ID:                    "id",
 	WorkspaceID:           "workspace_id",
@@ -110,12 +110,12 @@ var AlertColumns = struct {
 	AckedByUserID:         "acked_by_user_id",
 	AckedByLabel:          "acked_by_label",
 	ResolveMode:           "resolve_mode",
-	RoutedPolicyRef:       "routed_policy_ref",
 	SuppressedBySilenceID: "suppressed_by_silence_id",
 	SuppressedAt:          "suppressed_at",
 	Payload:               "payload",
 	CreatedAt:             "created_at",
 	UpdatedAt:             "updated_at",
+	EscalationPolicyID:    "escalation_policy_id",
 }
 
 var AlertTableColumns = struct {
@@ -141,12 +141,12 @@ var AlertTableColumns = struct {
 	AckedByUserID         string
 	AckedByLabel          string
 	ResolveMode           string
-	RoutedPolicyRef       string
 	SuppressedBySilenceID string
 	SuppressedAt          string
 	Payload               string
 	CreatedAt             string
 	UpdatedAt             string
+	EscalationPolicyID    string
 }{
 	ID:                    "alerts.id",
 	WorkspaceID:           "alerts.workspace_id",
@@ -170,36 +170,15 @@ var AlertTableColumns = struct {
 	AckedByUserID:         "alerts.acked_by_user_id",
 	AckedByLabel:          "alerts.acked_by_label",
 	ResolveMode:           "alerts.resolve_mode",
-	RoutedPolicyRef:       "alerts.routed_policy_ref",
 	SuppressedBySilenceID: "alerts.suppressed_by_silence_id",
 	SuppressedAt:          "alerts.suppressed_at",
 	Payload:               "alerts.payload",
 	CreatedAt:             "alerts.created_at",
 	UpdatedAt:             "alerts.updated_at",
+	EscalationPolicyID:    "alerts.escalation_policy_id",
 }
 
 // Generated where
-
-type whereHelpertypes_JSON struct{ field string }
-
-func (w whereHelpertypes_JSON) EQ(x types.JSON) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.EQ, x)
-}
-func (w whereHelpertypes_JSON) NEQ(x types.JSON) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.NEQ, x)
-}
-func (w whereHelpertypes_JSON) LT(x types.JSON) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LT, x)
-}
-func (w whereHelpertypes_JSON) LTE(x types.JSON) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LTE, x)
-}
-func (w whereHelpertypes_JSON) GT(x types.JSON) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GT, x)
-}
-func (w whereHelpertypes_JSON) GTE(x types.JSON) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GTE, x)
-}
 
 var AlertWhere = struct {
 	ID                    whereHelperstring
@@ -224,12 +203,12 @@ var AlertWhere = struct {
 	AckedByUserID         whereHelpernull_String
 	AckedByLabel          whereHelperstring
 	ResolveMode           whereHelperstring
-	RoutedPolicyRef       whereHelperstring
 	SuppressedBySilenceID whereHelpernull_String
 	SuppressedAt          whereHelpernull_Time
 	Payload               whereHelperstring
 	CreatedAt             whereHelpertime_Time
 	UpdatedAt             whereHelpertime_Time
+	EscalationPolicyID    whereHelpernull_String
 }{
 	ID:                    whereHelperstring{field: "\"alerts\".\"id\""},
 	WorkspaceID:           whereHelperstring{field: "\"alerts\".\"workspace_id\""},
@@ -253,29 +232,33 @@ var AlertWhere = struct {
 	AckedByUserID:         whereHelpernull_String{field: "\"alerts\".\"acked_by_user_id\""},
 	AckedByLabel:          whereHelperstring{field: "\"alerts\".\"acked_by_label\""},
 	ResolveMode:           whereHelperstring{field: "\"alerts\".\"resolve_mode\""},
-	RoutedPolicyRef:       whereHelperstring{field: "\"alerts\".\"routed_policy_ref\""},
 	SuppressedBySilenceID: whereHelpernull_String{field: "\"alerts\".\"suppressed_by_silence_id\""},
 	SuppressedAt:          whereHelpernull_Time{field: "\"alerts\".\"suppressed_at\""},
 	Payload:               whereHelperstring{field: "\"alerts\".\"payload\""},
 	CreatedAt:             whereHelpertime_Time{field: "\"alerts\".\"created_at\""},
 	UpdatedAt:             whereHelpertime_Time{field: "\"alerts\".\"updated_at\""},
+	EscalationPolicyID:    whereHelpernull_String{field: "\"alerts\".\"escalation_policy_id\""},
 }
 
 // AlertRels is where relationship names are stored.
 var AlertRels = struct {
 	AckedByUser         string
+	EscalationPolicy    string
 	ParentAlert         string
 	SuppressedBySilence string
 	Workspace           string
+	AlertEscalation     string
 	AlertEvents         string
 	AlertIngestEvents   string
 	AlertLinks          string
 	ParentAlertAlerts   string
 }{
 	AckedByUser:         "AckedByUser",
+	EscalationPolicy:    "EscalationPolicy",
 	ParentAlert:         "ParentAlert",
 	SuppressedBySilence: "SuppressedBySilence",
 	Workspace:           "Workspace",
+	AlertEscalation:     "AlertEscalation",
 	AlertEvents:         "AlertEvents",
 	AlertIngestEvents:   "AlertIngestEvents",
 	AlertLinks:          "AlertLinks",
@@ -285,9 +268,11 @@ var AlertRels = struct {
 // alertR is where relationships are stored.
 type alertR struct {
 	AckedByUser         *User                 `boil:"AckedByUser" json:"AckedByUser" toml:"AckedByUser" yaml:"AckedByUser"`
+	EscalationPolicy    *EscalationPolicy     `boil:"EscalationPolicy" json:"EscalationPolicy" toml:"EscalationPolicy" yaml:"EscalationPolicy"`
 	ParentAlert         *Alert                `boil:"ParentAlert" json:"ParentAlert" toml:"ParentAlert" yaml:"ParentAlert"`
 	SuppressedBySilence *AlertSilence         `boil:"SuppressedBySilence" json:"SuppressedBySilence" toml:"SuppressedBySilence" yaml:"SuppressedBySilence"`
 	Workspace           *Workspace            `boil:"Workspace" json:"Workspace" toml:"Workspace" yaml:"Workspace"`
+	AlertEscalation     *AlertEscalation      `boil:"AlertEscalation" json:"AlertEscalation" toml:"AlertEscalation" yaml:"AlertEscalation"`
 	AlertEvents         AlertEventSlice       `boil:"AlertEvents" json:"AlertEvents" toml:"AlertEvents" yaml:"AlertEvents"`
 	AlertIngestEvents   AlertIngestEventSlice `boil:"AlertIngestEvents" json:"AlertIngestEvents" toml:"AlertIngestEvents" yaml:"AlertIngestEvents"`
 	AlertLinks          AlertLinkSlice        `boil:"AlertLinks" json:"AlertLinks" toml:"AlertLinks" yaml:"AlertLinks"`
@@ -313,6 +298,22 @@ func (r *alertR) GetAckedByUser() *User {
 	}
 
 	return r.AckedByUser
+}
+
+func (o *Alert) GetEscalationPolicy() *EscalationPolicy {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetEscalationPolicy()
+}
+
+func (r *alertR) GetEscalationPolicy() *EscalationPolicy {
+	if r == nil {
+		return nil
+	}
+
+	return r.EscalationPolicy
 }
 
 func (o *Alert) GetParentAlert() *Alert {
@@ -361,6 +362,22 @@ func (r *alertR) GetWorkspace() *Workspace {
 	}
 
 	return r.Workspace
+}
+
+func (o *Alert) GetAlertEscalation() *AlertEscalation {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetAlertEscalation()
+}
+
+func (r *alertR) GetAlertEscalation() *AlertEscalation {
+	if r == nil {
+		return nil
+	}
+
+	return r.AlertEscalation
 }
 
 func (o *Alert) GetAlertEvents() AlertEventSlice {
@@ -431,9 +448,9 @@ func (r *alertR) GetParentAlertAlerts() AlertSlice {
 type alertL struct{}
 
 var (
-	alertAllColumns            = []string{"id", "workspace_id", "source_id", "parent_alert_id", "dedup_key", "group_key", "title", "description", "severity", "status", "source_label", "service_name", "labels", "count", "started_at", "last_seen_at", "ended_at", "acked_at", "resolved_at", "acked_by_user_id", "acked_by_label", "resolve_mode", "routed_policy_ref", "suppressed_by_silence_id", "suppressed_at", "payload", "created_at", "updated_at"}
+	alertAllColumns            = []string{"id", "workspace_id", "source_id", "parent_alert_id", "dedup_key", "group_key", "title", "description", "severity", "status", "source_label", "service_name", "labels", "count", "started_at", "last_seen_at", "ended_at", "acked_at", "resolved_at", "acked_by_user_id", "acked_by_label", "resolve_mode", "suppressed_by_silence_id", "suppressed_at", "payload", "created_at", "updated_at", "escalation_policy_id"}
 	alertColumnsWithoutDefault = []string{"workspace_id", "source_id", "dedup_key", "title", "severity", "started_at", "last_seen_at"}
-	alertColumnsWithDefault    = []string{"id", "parent_alert_id", "group_key", "description", "status", "source_label", "service_name", "labels", "count", "ended_at", "acked_at", "resolved_at", "acked_by_user_id", "acked_by_label", "resolve_mode", "routed_policy_ref", "suppressed_by_silence_id", "suppressed_at", "payload", "created_at", "updated_at"}
+	alertColumnsWithDefault    = []string{"id", "parent_alert_id", "group_key", "description", "status", "source_label", "service_name", "labels", "count", "ended_at", "acked_at", "resolved_at", "acked_by_user_id", "acked_by_label", "resolve_mode", "suppressed_by_silence_id", "suppressed_at", "payload", "created_at", "updated_at", "escalation_policy_id"}
 	alertPrimaryKeyColumns     = []string{"id"}
 	alertGeneratedColumns      = []string{}
 )
@@ -754,6 +771,17 @@ func (o *Alert) AckedByUser(mods ...qm.QueryMod) userQuery {
 	return Users(queryMods...)
 }
 
+// EscalationPolicy pointed to by the foreign key.
+func (o *Alert) EscalationPolicy(mods ...qm.QueryMod) escalationPolicyQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"id\" = ?", o.EscalationPolicyID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return EscalationPolicies(queryMods...)
+}
+
 // ParentAlert pointed to by the foreign key.
 func (o *Alert) ParentAlert(mods ...qm.QueryMod) alertQuery {
 	queryMods := []qm.QueryMod{
@@ -785,6 +813,17 @@ func (o *Alert) Workspace(mods ...qm.QueryMod) workspaceQuery {
 	queryMods = append(queryMods, mods...)
 
 	return Workspaces(queryMods...)
+}
+
+// AlertEscalation pointed to by the foreign key.
+func (o *Alert) AlertEscalation(mods ...qm.QueryMod) alertEscalationQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"alert_id\" = ?", o.ID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return AlertEscalations(queryMods...)
 }
 
 // AlertEvents retrieves all the alert_event's AlertEvents with an executor.
@@ -959,6 +998,130 @@ func (alertL) LoadAckedByUser(ctx context.Context, e boil.ContextExecutor, singu
 					foreign.R = &userR{}
 				}
 				foreign.R.AckedByUserAlerts = append(foreign.R.AckedByUserAlerts, local)
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadEscalationPolicy allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for an N-1 relationship.
+func (alertL) LoadEscalationPolicy(ctx context.Context, e boil.ContextExecutor, singular bool, maybeAlert any, mods queries.Applicator) error {
+	var slice []*Alert
+	var object *Alert
+
+	if singular {
+		var ok bool
+		object, ok = maybeAlert.(*Alert)
+		if !ok {
+			object = new(Alert)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeAlert)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeAlert))
+			}
+		}
+	} else {
+		s, ok := maybeAlert.(*[]*Alert)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeAlert)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeAlert))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &alertR{}
+		}
+		if !queries.IsNil(object.EscalationPolicyID) {
+			args[object.EscalationPolicyID] = struct{}{}
+		}
+
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &alertR{}
+			}
+
+			if !queries.IsNil(obj.EscalationPolicyID) {
+				args[obj.EscalationPolicyID] = struct{}{}
+			}
+
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`escalation_policies`),
+		qm.WhereIn(`escalation_policies.id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load EscalationPolicy")
+	}
+
+	var resultSlice []*EscalationPolicy
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice EscalationPolicy")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for escalation_policies")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for escalation_policies")
+	}
+
+	if len(escalationPolicyAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.EscalationPolicy = foreign
+		if foreign.R == nil {
+			foreign.R = &escalationPolicyR{}
+		}
+		foreign.R.Alerts = append(foreign.R.Alerts, object)
+		return nil
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if queries.Equal(local.EscalationPolicyID, foreign.ID) {
+				local.R.EscalationPolicy = foreign
+				if foreign.R == nil {
+					foreign.R = &escalationPolicyR{}
+				}
+				foreign.R.Alerts = append(foreign.R.Alerts, local)
 				break
 			}
 		}
@@ -1327,6 +1490,123 @@ func (alertL) LoadWorkspace(ctx context.Context, e boil.ContextExecutor, singula
 					foreign.R = &workspaceR{}
 				}
 				foreign.R.Alerts = append(foreign.R.Alerts, local)
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadAlertEscalation allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-1 relationship.
+func (alertL) LoadAlertEscalation(ctx context.Context, e boil.ContextExecutor, singular bool, maybeAlert any, mods queries.Applicator) error {
+	var slice []*Alert
+	var object *Alert
+
+	if singular {
+		var ok bool
+		object, ok = maybeAlert.(*Alert)
+		if !ok {
+			object = new(Alert)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeAlert)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeAlert))
+			}
+		}
+	} else {
+		s, ok := maybeAlert.(*[]*Alert)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeAlert)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeAlert))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &alertR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &alertR{}
+			}
+
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`alert_escalations`),
+		qm.WhereIn(`alert_escalations.alert_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load AlertEscalation")
+	}
+
+	var resultSlice []*AlertEscalation
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice AlertEscalation")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for alert_escalations")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for alert_escalations")
+	}
+
+	if len(alertEscalationAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.AlertEscalation = foreign
+		if foreign.R == nil {
+			foreign.R = &alertEscalationR{}
+		}
+		foreign.R.Alert = object
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if local.ID == foreign.AlertID {
+				local.R.AlertEscalation = foreign
+				if foreign.R == nil {
+					foreign.R = &alertEscalationR{}
+				}
+				foreign.R.Alert = local
 				break
 			}
 		}
@@ -1867,6 +2147,86 @@ func (o *Alert) RemoveAckedByUser(ctx context.Context, exec boil.ContextExecutor
 	return nil
 }
 
+// SetEscalationPolicy of the alert to the related item.
+// Sets o.R.EscalationPolicy to related.
+// Adds o to related.R.Alerts.
+func (o *Alert) SetEscalationPolicy(ctx context.Context, exec boil.ContextExecutor, insert bool, related *EscalationPolicy) error {
+	var err error
+	if insert {
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	}
+
+	updateQuery := fmt.Sprintf(
+		"UPDATE \"alerts\" SET %s WHERE %s",
+		strmangle.SetParamNames("\"", "\"", 1, []string{"escalation_policy_id"}),
+		strmangle.WhereClause("\"", "\"", 2, alertPrimaryKeyColumns),
+	)
+	values := []any{related.ID, o.ID}
+
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, updateQuery)
+		fmt.Fprintln(writer, values)
+	}
+	if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	queries.Assign(&o.EscalationPolicyID, related.ID)
+	if o.R == nil {
+		o.R = &alertR{
+			EscalationPolicy: related,
+		}
+	} else {
+		o.R.EscalationPolicy = related
+	}
+
+	if related.R == nil {
+		related.R = &escalationPolicyR{
+			Alerts: AlertSlice{o},
+		}
+	} else {
+		related.R.Alerts = append(related.R.Alerts, o)
+	}
+
+	return nil
+}
+
+// RemoveEscalationPolicy relationship.
+// Sets o.R.EscalationPolicy to nil.
+// Removes o from all passed in related items' relationships struct.
+func (o *Alert) RemoveEscalationPolicy(ctx context.Context, exec boil.ContextExecutor, related *EscalationPolicy) error {
+	var err error
+
+	queries.SetScanner(&o.EscalationPolicyID, nil)
+	if _, err = o.Update(ctx, exec, boil.Whitelist("escalation_policy_id")); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	if o.R != nil {
+		o.R.EscalationPolicy = nil
+	}
+	if related == nil || related.R == nil {
+		return nil
+	}
+
+	for i, ri := range related.R.Alerts {
+		if queries.Equal(o.EscalationPolicyID, ri.EscalationPolicyID) {
+			continue
+		}
+
+		ln := len(related.R.Alerts)
+		if ln > 1 && i < ln-1 {
+			related.R.Alerts[i] = related.R.Alerts[ln-1]
+		}
+		related.R.Alerts = related.R.Alerts[:ln-1]
+		break
+	}
+	return nil
+}
+
 // SetParentAlert of the alert to the related item.
 // Sets o.R.ParentAlert to related.
 // Adds o to related.R.ParentAlertAlerts.
@@ -2071,6 +2431,56 @@ func (o *Alert) SetWorkspace(ctx context.Context, exec boil.ContextExecutor, ins
 		related.R.Alerts = append(related.R.Alerts, o)
 	}
 
+	return nil
+}
+
+// SetAlertEscalation of the alert to the related item.
+// Sets o.R.AlertEscalation to related.
+// Adds o to related.R.Alert.
+func (o *Alert) SetAlertEscalation(ctx context.Context, exec boil.ContextExecutor, insert bool, related *AlertEscalation) error {
+	var err error
+
+	if insert {
+		related.AlertID = o.ID
+
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	} else {
+		updateQuery := fmt.Sprintf(
+			"UPDATE \"alert_escalations\" SET %s WHERE %s",
+			strmangle.SetParamNames("\"", "\"", 1, []string{"alert_id"}),
+			strmangle.WhereClause("\"", "\"", 2, alertEscalationPrimaryKeyColumns),
+		)
+		values := []any{o.ID, related.ID}
+
+		if boil.IsDebug(ctx) {
+			writer := boil.DebugWriterFrom(ctx)
+			fmt.Fprintln(writer, updateQuery)
+			fmt.Fprintln(writer, values)
+		}
+		if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+			return errors.Wrap(err, "failed to update foreign table")
+		}
+
+		related.AlertID = o.ID
+	}
+
+	if o.R == nil {
+		o.R = &alertR{
+			AlertEscalation: related,
+		}
+	} else {
+		o.R.AlertEscalation = related
+	}
+
+	if related.R == nil {
+		related.R = &alertEscalationR{
+			Alert: o,
+		}
+	} else {
+		related.R.Alert = o
+	}
 	return nil
 }
 

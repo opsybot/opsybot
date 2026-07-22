@@ -62,23 +62,22 @@ func (h *handler) alertDTO(a entity.Alert) api.Alert {
 	}
 
 	dto := api.Alert{
-		Id:              a.ID,
-		DedupKey:        a.DedupKey,
-		Title:           a.Title,
-		Description:     a.Description,
-		Severity:        api.AlertSeverity(a.Severity),
-		Status:          api.AlertStatus(a.Status),
-		Source:          firstNonBlank(a.SourceSlug, a.SourceLabel),
-		Service:         a.ServiceName,
-		Labels:          labels,
-		Count:           a.Count,
-		StartedAt:       a.StartedAt,
-		LastSeenAt:      a.LastSeenAt,
-		RoutedPolicyRef: a.RoutedPolicyRef,
-		Suppressed:      a.SuppressedBySilenceID != "",
-		Payload:         a.Payload,
-		Links:           links,
-		Timeline:        timeline,
+		Id:          a.ID,
+		DedupKey:    a.DedupKey,
+		Title:       a.Title,
+		Description: a.Description,
+		Severity:    api.AlertSeverity(a.Severity),
+		Status:      api.AlertStatus(a.Status),
+		Source:      firstNonBlank(a.SourceSlug, a.SourceLabel),
+		Service:     a.ServiceName,
+		Labels:      labels,
+		Count:       a.Count,
+		StartedAt:   a.StartedAt,
+		LastSeenAt:  a.LastSeenAt,
+		Suppressed:  a.SuppressedBySilenceID != "",
+		Payload:     a.Payload,
+		Links:       links,
+		Timeline:    timeline,
 	}
 	if a.GroupKey != "" {
 		dto.GroupKey = &a.GroupKey
@@ -101,6 +100,28 @@ func (h *handler) alertDTO(a entity.Alert) api.Alert {
 	if a.ResolveMode != "" {
 		mode := string(a.ResolveMode)
 		dto.ResolveMode = &mode
+	}
+	if a.EscalationPolicySlug != "" {
+		slug := a.EscalationPolicySlug
+		dto.EscalationPolicySlug = &slug
+	}
+	if a.Escalation != nil {
+		esc := api.AlertEscalation{
+			State:      api.AlertEscalationState(a.Escalation.State),
+			StepIndex:  a.Escalation.StepIndex,
+			TotalSteps: len(a.Escalation.Path),
+			Cycle:      a.Escalation.Cycle,
+			PolicySlug: a.Escalation.PolicySlug,
+		}
+		if !a.Escalation.NextAt.IsZero() {
+			at := a.Escalation.NextAt
+			esc.NextAt = &at
+		}
+		if !a.Escalation.AckExpiresAt.IsZero() {
+			at := a.Escalation.AckExpiresAt
+			esc.AckExpiresAt = &at
+		}
+		dto.Escalation = &esc
 	}
 	return dto
 }

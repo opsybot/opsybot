@@ -1299,6 +1299,113 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workspaces/{workspaceId}/escalation-policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List escalation policies */
+        get: operations["listEscalationPolicies"];
+        put?: never;
+        /** Create an escalation policy */
+        post: operations["createEscalationPolicy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspaceId}/escalation-policies/{policySlug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get an escalation policy with its linked routes and recent escalations */
+        get: operations["getEscalationPolicy"];
+        /** Update an escalation policy */
+        put: operations["updateEscalationPolicy"];
+        post?: never;
+        /** Delete an escalation policy */
+        delete: operations["deleteEscalationPolicy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspaceId}/escalation-directory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** People, schedules, teams, and webhooks available as escalation targets */
+        get: operations["getEscalationDirectory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspaceId}/escalation-webhooks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List escalation webhook targets */
+        get: operations["listEscalationWebhooks"];
+        put?: never;
+        /** Create an escalation webhook target */
+        post: operations["createEscalationWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspaceId}/escalation-webhooks/{webhookSlug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update an escalation webhook target */
+        put: operations["updateEscalationWebhook"];
+        post?: never;
+        /** Delete an escalation webhook target */
+        delete: operations["deleteEscalationWebhook"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspaceId}/alerts/{alertId}/escalate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Escalate an alert to the next step immediately */
+        post: operations["escalateAlert"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1343,7 +1450,8 @@ export interface components {
             resolvedAt?: string;
             ackedBy?: string;
             resolveMode?: string;
-            routedPolicyRef: string;
+            escalationPolicySlug?: string;
+            escalation?: components["schemas"]["AlertEscalation"];
             suppressed: boolean;
             payload: string;
             links: components["schemas"]["AlertLink"][];
@@ -1358,6 +1466,129 @@ export interface components {
             lastSeenAt: string;
             status: string;
             severity: string;
+        };
+        EscalationHours: {
+            days: number[];
+            startMinute: number;
+            endMinute: number;
+            timezone: string;
+        };
+        EscalationTarget: {
+            /** @enum {string} */
+            type: "person" | "schedule" | "team" | "webhook";
+            ref: string;
+        };
+        EscalationLane: {
+            id: string;
+            key: string;
+            nodes: components["schemas"]["EscalationNode"][];
+        };
+        EscalationNode: {
+            /** @enum {string} */
+            type: "level" | "branch";
+            id: string;
+            targets?: components["schemas"]["EscalationTarget"][];
+            /** @enum {string} */
+            mode?: "all" | "rr";
+            waitSeconds?: number;
+            /** @enum {string} */
+            on?: "priority" | "hours";
+            hours?: components["schemas"]["EscalationHours"];
+            lanes?: components["schemas"]["EscalationLane"][];
+        };
+        EscalationPolicy: {
+            id: string;
+            slug: string;
+            name: string;
+            teamSlug: string;
+            repeat: number;
+            ackTimeoutSeconds: number;
+            nodes: components["schemas"]["EscalationNode"][];
+        };
+        EscalationPolicySummary: {
+            id: string;
+            slug: string;
+            name: string;
+            teamSlug: string;
+            routed: number;
+            stepCount: number;
+            hasBranch: boolean;
+            nodes: components["schemas"]["EscalationNode"][];
+        };
+        EscalationPolicyList: {
+            items: components["schemas"]["EscalationPolicySummary"][];
+        };
+        RecentEscalation: {
+            alertId: string;
+            alertTitle: string;
+            /** Format: date-time */
+            startedAt: string;
+            /** Format: date-time */
+            endedAt?: string;
+            /** @enum {string} */
+            state: "running" | "acked" | "resolved" | "exhausted";
+            outcome: string;
+            by?: string;
+        };
+        EscalationPolicyDetail: {
+            policy: components["schemas"]["EscalationPolicy"];
+            routes: components["schemas"]["AlertRoute"][];
+            recent: components["schemas"]["RecentEscalation"][];
+            routed: number;
+            isDefault: boolean;
+        };
+        SaveEscalationPolicyRequest: {
+            slug?: string;
+            name: string;
+            teamSlug?: string;
+            repeat?: number;
+            ackTimeoutSeconds?: number;
+            nodes: components["schemas"]["EscalationNode"][];
+        };
+        EscalationDirectoryMember: {
+            id: string;
+            name: string;
+            email: string;
+            active: boolean;
+        };
+        EscalationDirectoryEntry: {
+            id: string;
+            slug: string;
+            name: string;
+        };
+        EscalationDirectory: {
+            members: components["schemas"]["EscalationDirectoryMember"][];
+            schedules: components["schemas"]["EscalationDirectoryEntry"][];
+            teams: components["schemas"]["EscalationDirectoryEntry"][];
+            webhooks: components["schemas"]["EscalationDirectoryEntry"][];
+        };
+        EscalationWebhook: {
+            id: string;
+            slug: string;
+            name: string;
+            url: string;
+            hasSecret: boolean;
+        };
+        EscalationWebhookList: {
+            items: components["schemas"]["EscalationWebhook"][];
+        };
+        SaveEscalationWebhookRequest: {
+            slug?: string;
+            name: string;
+            url: string;
+            secret?: string;
+        };
+        AlertEscalation: {
+            /** @enum {string} */
+            state: "running" | "acked" | "resolved" | "exhausted";
+            stepIndex: number;
+            totalSteps: number;
+            cycle: number;
+            policySlug: string;
+            /** Format: date-time */
+            nextAt?: string;
+            /** Format: date-time */
+            ackExpiresAt?: string;
         };
         AlertFacets: {
             sources: string[];
@@ -1453,7 +1684,7 @@ export interface components {
         RoutePreview: {
             matchedRouteId?: string;
             position: number;
-            policyRef: string;
+            policySlug: string;
             groupFields: string[];
         };
         AlertGroupRule: {
@@ -1480,7 +1711,7 @@ export interface components {
             state: "healthy" | "missed" | "paused";
             intervalSeconds: number;
             graceSeconds: number;
-            policyRef: string;
+            policySlug: string;
             /** @enum {string} */
             severity: "critical" | "high" | "warning";
             checkInUrl: string;
@@ -1498,7 +1729,7 @@ export interface components {
             slug?: string;
             intervalSeconds: number;
             graceSeconds?: number;
-            policyRef?: string;
+            policySlug?: string;
             /** @enum {string} */
             severity?: "critical" | "high" | "warning";
         };
@@ -1506,7 +1737,7 @@ export interface components {
             name: string;
             intervalSeconds: number;
             graceSeconds?: number;
-            policyRef?: string;
+            policySlug?: string;
             /** @enum {string} */
             severity?: "critical" | "high" | "warning";
         };
@@ -1519,20 +1750,19 @@ export interface components {
         AlertRoute: {
             id: string;
             position: number;
-            policyRef: string;
+            policySlug: string;
             conditions: components["schemas"]["RouteCondition"][];
         };
         AlertRouteList: {
             items: components["schemas"]["AlertRoute"][];
-            defaultPolicyRef: string;
-            knownPolicyRefs: string[];
+            defaultPolicySlug: string;
         };
         AlertRouteRequest: {
-            policyRef: string;
+            policySlug: string;
             conditions: components["schemas"]["RouteCondition"][];
         };
         DefaultPolicyRequest: {
-            policyRef: string;
+            policySlug: string;
         };
         ReorderAlertRoutesRequest: {
             ids: string[];
@@ -6969,6 +7199,642 @@ export interface operations {
             };
             /** @description The request failed */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listEscalationPolicies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Policies */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EscalationPolicyList"];
+                };
+            };
+            /** @description The request failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createEscalationPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveEscalationPolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description Policy created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EscalationPolicy"];
+                };
+            };
+            /** @description The request failed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getEscalationPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                policySlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Policy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EscalationPolicyDetail"];
+                };
+            };
+            /** @description The request failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateEscalationPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                policySlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveEscalationPolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description Policy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EscalationPolicy"];
+                };
+            };
+            /** @description The request failed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteEscalationPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                policySlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Policy deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The request failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getEscalationDirectory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Directory */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EscalationDirectory"];
+                };
+            };
+            /** @description The request failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listEscalationWebhooks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Webhooks */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EscalationWebhookList"];
+                };
+            };
+            /** @description The request failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createEscalationWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveEscalationWebhookRequest"];
+            };
+        };
+        responses: {
+            /** @description Webhook created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EscalationWebhook"];
+                };
+            };
+            /** @description The request failed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateEscalationWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                webhookSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveEscalationWebhookRequest"];
+            };
+        };
+        responses: {
+            /** @description Webhook */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EscalationWebhook"];
+                };
+            };
+            /** @description The request failed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteEscalationWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                webhookSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Webhook deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The request failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    escalateAlert: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                alertId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Escalated */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The request failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

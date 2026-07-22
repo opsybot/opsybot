@@ -104,6 +104,7 @@ var WorkspaceRels = struct {
 	CreatedByUser       string
 	AlertSetting        string
 	SsoConnection       string
+	AlertEscalations    string
 	AlertGroupRules     string
 	AlertIngestEvents   string
 	AlertIngestFailures string
@@ -114,6 +115,8 @@ var WorkspaceRels = struct {
 	Alerts              string
 	APIKeys             string
 	AuditEvents         string
+	EscalationPolicies  string
+	EscalationWebhooks  string
 	Invites             string
 	Schedules           string
 	Teams               string
@@ -122,6 +125,7 @@ var WorkspaceRels = struct {
 	CreatedByUser:       "CreatedByUser",
 	AlertSetting:        "AlertSetting",
 	SsoConnection:       "SsoConnection",
+	AlertEscalations:    "AlertEscalations",
 	AlertGroupRules:     "AlertGroupRules",
 	AlertIngestEvents:   "AlertIngestEvents",
 	AlertIngestFailures: "AlertIngestFailures",
@@ -132,6 +136,8 @@ var WorkspaceRels = struct {
 	Alerts:              "Alerts",
 	APIKeys:             "APIKeys",
 	AuditEvents:         "AuditEvents",
+	EscalationPolicies:  "EscalationPolicies",
+	EscalationWebhooks:  "EscalationWebhooks",
 	Invites:             "Invites",
 	Schedules:           "Schedules",
 	Teams:               "Teams",
@@ -143,6 +149,7 @@ type workspaceR struct {
 	CreatedByUser       *User                   `boil:"CreatedByUser" json:"CreatedByUser" toml:"CreatedByUser" yaml:"CreatedByUser"`
 	AlertSetting        *AlertSetting           `boil:"AlertSetting" json:"AlertSetting" toml:"AlertSetting" yaml:"AlertSetting"`
 	SsoConnection       *SsoConnection          `boil:"SsoConnection" json:"SsoConnection" toml:"SsoConnection" yaml:"SsoConnection"`
+	AlertEscalations    AlertEscalationSlice    `boil:"AlertEscalations" json:"AlertEscalations" toml:"AlertEscalations" yaml:"AlertEscalations"`
 	AlertGroupRules     AlertGroupRuleSlice     `boil:"AlertGroupRules" json:"AlertGroupRules" toml:"AlertGroupRules" yaml:"AlertGroupRules"`
 	AlertIngestEvents   AlertIngestEventSlice   `boil:"AlertIngestEvents" json:"AlertIngestEvents" toml:"AlertIngestEvents" yaml:"AlertIngestEvents"`
 	AlertIngestFailures AlertIngestFailureSlice `boil:"AlertIngestFailures" json:"AlertIngestFailures" toml:"AlertIngestFailures" yaml:"AlertIngestFailures"`
@@ -153,6 +160,8 @@ type workspaceR struct {
 	Alerts              AlertSlice              `boil:"Alerts" json:"Alerts" toml:"Alerts" yaml:"Alerts"`
 	APIKeys             APIKeySlice             `boil:"APIKeys" json:"APIKeys" toml:"APIKeys" yaml:"APIKeys"`
 	AuditEvents         AuditEventSlice         `boil:"AuditEvents" json:"AuditEvents" toml:"AuditEvents" yaml:"AuditEvents"`
+	EscalationPolicies  EscalationPolicySlice   `boil:"EscalationPolicies" json:"EscalationPolicies" toml:"EscalationPolicies" yaml:"EscalationPolicies"`
+	EscalationWebhooks  EscalationWebhookSlice  `boil:"EscalationWebhooks" json:"EscalationWebhooks" toml:"EscalationWebhooks" yaml:"EscalationWebhooks"`
 	Invites             InviteSlice             `boil:"Invites" json:"Invites" toml:"Invites" yaml:"Invites"`
 	Schedules           ScheduleSlice           `boil:"Schedules" json:"Schedules" toml:"Schedules" yaml:"Schedules"`
 	Teams               TeamSlice               `boil:"Teams" json:"Teams" toml:"Teams" yaml:"Teams"`
@@ -210,6 +219,22 @@ func (r *workspaceR) GetSsoConnection() *SsoConnection {
 	}
 
 	return r.SsoConnection
+}
+
+func (o *Workspace) GetAlertEscalations() AlertEscalationSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetAlertEscalations()
+}
+
+func (r *workspaceR) GetAlertEscalations() AlertEscalationSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.AlertEscalations
 }
 
 func (o *Workspace) GetAlertGroupRules() AlertGroupRuleSlice {
@@ -370,6 +395,38 @@ func (r *workspaceR) GetAuditEvents() AuditEventSlice {
 	}
 
 	return r.AuditEvents
+}
+
+func (o *Workspace) GetEscalationPolicies() EscalationPolicySlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetEscalationPolicies()
+}
+
+func (r *workspaceR) GetEscalationPolicies() EscalationPolicySlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.EscalationPolicies
+}
+
+func (o *Workspace) GetEscalationWebhooks() EscalationWebhookSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetEscalationWebhooks()
+}
+
+func (r *workspaceR) GetEscalationWebhooks() EscalationWebhookSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.EscalationWebhooks
 }
 
 func (o *Workspace) GetInvites() InviteSlice {
@@ -785,6 +842,20 @@ func (o *Workspace) SsoConnection(mods ...qm.QueryMod) ssoConnectionQuery {
 	return SsoConnections(queryMods...)
 }
 
+// AlertEscalations retrieves all the alert_escalation's AlertEscalations with an executor.
+func (o *Workspace) AlertEscalations(mods ...qm.QueryMod) alertEscalationQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"alert_escalations\".\"workspace_id\"=?", o.ID),
+	)
+
+	return AlertEscalations(queryMods...)
+}
+
 // AlertGroupRules retrieves all the alert_group_rule's AlertGroupRules with an executor.
 func (o *Workspace) AlertGroupRules(mods ...qm.QueryMod) alertGroupRuleQuery {
 	var queryMods []qm.QueryMod
@@ -923,6 +994,34 @@ func (o *Workspace) AuditEvents(mods ...qm.QueryMod) auditEventQuery {
 	)
 
 	return AuditEvents(queryMods...)
+}
+
+// EscalationPolicies retrieves all the escalation_policy's EscalationPolicies with an executor.
+func (o *Workspace) EscalationPolicies(mods ...qm.QueryMod) escalationPolicyQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"escalation_policies\".\"workspace_id\"=?", o.ID),
+	)
+
+	return EscalationPolicies(queryMods...)
+}
+
+// EscalationWebhooks retrieves all the escalation_webhook's EscalationWebhooks with an executor.
+func (o *Workspace) EscalationWebhooks(mods ...qm.QueryMod) escalationWebhookQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"escalation_webhooks\".\"workspace_id\"=?", o.ID),
+	)
+
+	return EscalationWebhooks(queryMods...)
 }
 
 // Invites retrieves all the invite's Invites with an executor.
@@ -1329,6 +1428,119 @@ func (workspaceL) LoadSsoConnection(ctx context.Context, e boil.ContextExecutor,
 				local.R.SsoConnection = foreign
 				if foreign.R == nil {
 					foreign.R = &ssoConnectionR{}
+				}
+				foreign.R.Workspace = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadAlertEscalations allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (workspaceL) LoadAlertEscalations(ctx context.Context, e boil.ContextExecutor, singular bool, maybeWorkspace any, mods queries.Applicator) error {
+	var slice []*Workspace
+	var object *Workspace
+
+	if singular {
+		var ok bool
+		object, ok = maybeWorkspace.(*Workspace)
+		if !ok {
+			object = new(Workspace)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeWorkspace))
+			}
+		}
+	} else {
+		s, ok := maybeWorkspace.(*[]*Workspace)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeWorkspace))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &workspaceR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &workspaceR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`alert_escalations`),
+		qm.WhereIn(`alert_escalations.workspace_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load alert_escalations")
+	}
+
+	var resultSlice []*AlertEscalation
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice alert_escalations")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on alert_escalations")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for alert_escalations")
+	}
+
+	if len(alertEscalationAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.AlertEscalations = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &alertEscalationR{}
+			}
+			foreign.R.Workspace = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.WorkspaceID {
+				local.R.AlertEscalations = append(local.R.AlertEscalations, foreign)
+				if foreign.R == nil {
+					foreign.R = &alertEscalationR{}
 				}
 				foreign.R.Workspace = local
 				break
@@ -2469,6 +2681,232 @@ func (workspaceL) LoadAuditEvents(ctx context.Context, e boil.ContextExecutor, s
 	return nil
 }
 
+// LoadEscalationPolicies allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (workspaceL) LoadEscalationPolicies(ctx context.Context, e boil.ContextExecutor, singular bool, maybeWorkspace any, mods queries.Applicator) error {
+	var slice []*Workspace
+	var object *Workspace
+
+	if singular {
+		var ok bool
+		object, ok = maybeWorkspace.(*Workspace)
+		if !ok {
+			object = new(Workspace)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeWorkspace))
+			}
+		}
+	} else {
+		s, ok := maybeWorkspace.(*[]*Workspace)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeWorkspace))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &workspaceR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &workspaceR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`escalation_policies`),
+		qm.WhereIn(`escalation_policies.workspace_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load escalation_policies")
+	}
+
+	var resultSlice []*EscalationPolicy
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice escalation_policies")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on escalation_policies")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for escalation_policies")
+	}
+
+	if len(escalationPolicyAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.EscalationPolicies = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &escalationPolicyR{}
+			}
+			foreign.R.Workspace = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.WorkspaceID {
+				local.R.EscalationPolicies = append(local.R.EscalationPolicies, foreign)
+				if foreign.R == nil {
+					foreign.R = &escalationPolicyR{}
+				}
+				foreign.R.Workspace = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadEscalationWebhooks allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (workspaceL) LoadEscalationWebhooks(ctx context.Context, e boil.ContextExecutor, singular bool, maybeWorkspace any, mods queries.Applicator) error {
+	var slice []*Workspace
+	var object *Workspace
+
+	if singular {
+		var ok bool
+		object, ok = maybeWorkspace.(*Workspace)
+		if !ok {
+			object = new(Workspace)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeWorkspace))
+			}
+		}
+	} else {
+		s, ok := maybeWorkspace.(*[]*Workspace)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeWorkspace))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &workspaceR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &workspaceR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`escalation_webhooks`),
+		qm.WhereIn(`escalation_webhooks.workspace_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load escalation_webhooks")
+	}
+
+	var resultSlice []*EscalationWebhook
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice escalation_webhooks")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on escalation_webhooks")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for escalation_webhooks")
+	}
+
+	if len(escalationWebhookAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.EscalationWebhooks = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &escalationWebhookR{}
+			}
+			foreign.R.Workspace = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.WorkspaceID {
+				local.R.EscalationWebhooks = append(local.R.EscalationWebhooks, foreign)
+				if foreign.R == nil {
+					foreign.R = &escalationWebhookR{}
+				}
+				foreign.R.Workspace = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
 // LoadInvites allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for a 1-M or N-M relationship.
 func (workspaceL) LoadInvites(ctx context.Context, e boil.ContextExecutor, singular bool, maybeWorkspace any, mods queries.Applicator) error {
@@ -3101,6 +3539,59 @@ func (o *Workspace) SetSsoConnection(ctx context.Context, exec boil.ContextExecu
 	return nil
 }
 
+// AddAlertEscalations adds the given related objects to the existing relationships
+// of the workspace, optionally inserting them as new records.
+// Appends related to o.R.AlertEscalations.
+// Sets related.R.Workspace appropriately.
+func (o *Workspace) AddAlertEscalations(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*AlertEscalation) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.WorkspaceID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"alert_escalations\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"workspace_id"}),
+				strmangle.WhereClause("\"", "\"", 2, alertEscalationPrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.WorkspaceID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &workspaceR{
+			AlertEscalations: related,
+		}
+	} else {
+		o.R.AlertEscalations = append(o.R.AlertEscalations, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &alertEscalationR{
+				Workspace: o,
+			}
+		} else {
+			rel.R.Workspace = o
+		}
+	}
+	return nil
+}
+
 // AddAlertGroupRules adds the given related objects to the existing relationships
 // of the workspace, optionally inserting them as new records.
 // Appends related to o.R.AlertGroupRules.
@@ -3702,6 +4193,112 @@ func (o *Workspace) RemoveAuditEvents(ctx context.Context, exec boil.ContextExec
 		}
 	}
 
+	return nil
+}
+
+// AddEscalationPolicies adds the given related objects to the existing relationships
+// of the workspace, optionally inserting them as new records.
+// Appends related to o.R.EscalationPolicies.
+// Sets related.R.Workspace appropriately.
+func (o *Workspace) AddEscalationPolicies(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*EscalationPolicy) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.WorkspaceID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"escalation_policies\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"workspace_id"}),
+				strmangle.WhereClause("\"", "\"", 2, escalationPolicyPrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.WorkspaceID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &workspaceR{
+			EscalationPolicies: related,
+		}
+	} else {
+		o.R.EscalationPolicies = append(o.R.EscalationPolicies, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &escalationPolicyR{
+				Workspace: o,
+			}
+		} else {
+			rel.R.Workspace = o
+		}
+	}
+	return nil
+}
+
+// AddEscalationWebhooks adds the given related objects to the existing relationships
+// of the workspace, optionally inserting them as new records.
+// Appends related to o.R.EscalationWebhooks.
+// Sets related.R.Workspace appropriately.
+func (o *Workspace) AddEscalationWebhooks(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*EscalationWebhook) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.WorkspaceID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"escalation_webhooks\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"workspace_id"}),
+				strmangle.WhereClause("\"", "\"", 2, escalationWebhookPrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.WorkspaceID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &workspaceR{
+			EscalationWebhooks: related,
+		}
+	} else {
+		o.R.EscalationWebhooks = append(o.R.EscalationWebhooks, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &escalationWebhookR{
+				Workspace: o,
+			}
+		} else {
+			rel.R.Workspace = o
+		}
+	}
 	return nil
 }
 

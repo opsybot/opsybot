@@ -11,6 +11,7 @@ import (
 type Schedule interface {
 	Create(ctx context.Context, s entity.Schedule) (entity.Schedule, error)
 	GetBySlug(ctx context.Context, workspaceID, slug string) (entity.Schedule, error)
+	GetByID(ctx context.Context, workspaceID, id string) (entity.Schedule, error)
 	GetByFeedToken(ctx context.Context, feedToken string) (entity.Schedule, error)
 	ListByWorkspace(ctx context.Context, workspaceID string, includeArchived bool) ([]entity.Schedule, error)
 	ListActive(ctx context.Context, workspaceID string) ([]entity.Schedule, error)

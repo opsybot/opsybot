@@ -14,11 +14,25 @@ type srv struct {
 	workspaces repository.Workspace
 	members    repository.Member
 	routes     repository.AlertRoute
+	policies   repository.EscalationPolicy
 	policy     repository.Policy
 }
 
-func New(workspaces repository.Workspace, members repository.Member, routes repository.AlertRoute, policy repository.Policy) service.AlertRoutes {
-	return &srv{workspaces: workspaces, members: members, routes: routes, policy: policy}
+func New(workspaces repository.Workspace, members repository.Member, routes repository.AlertRoute, policies repository.EscalationPolicy, policy repository.Policy) service.AlertRoutes {
+	return &srv{workspaces: workspaces, members: members, routes: routes, policies: policies, policy: policy}
+}
+
+func (s *srv) resolvePolicy(ctx context.Context, workspaceID string, in *entity.NewAlertRoute) error {
+	in.PolicySlug = strings.TrimSpace(in.PolicySlug)
+	if err := in.Validate(); err != nil {
+		return err
+	}
+	p, err := s.policies.GetBySlug(ctx, workspaceID, in.PolicySlug)
+	if err != nil {
+		return err
+	}
+	in.PolicyID = p.ID
+	return nil
 }
 
 func (s *srv) authorize(ctx context.Context, workspaceSlug string, act entity.PolicyAction, obj entity.PolicyObject) (entity.Identity, entity.Workspace, error) {
@@ -76,8 +90,7 @@ func (s *srv) Create(ctx context.Context, workspaceSlug string, in entity.NewAle
 	if err != nil {
 		return entity.AlertRoute{}, err
 	}
-	in.PolicyRef = strings.TrimSpace(in.PolicyRef)
-	if err := in.Validate(); err != nil {
+	if err := s.resolvePolicy(ctx, ws.ID, &in); err != nil {
 		return entity.AlertRoute{}, err
 	}
 	created, err := s.routes.Create(ctx, ws.ID, in)
@@ -92,8 +105,7 @@ func (s *srv) Update(ctx context.Context, workspaceSlug, routeID string, in enti
 	if err != nil {
 		return entity.AlertRoute{}, err
 	}
-	in.PolicyRef = strings.TrimSpace(in.PolicyRef)
-	if err := in.Validate(); err != nil {
+	if err := s.resolvePolicy(ctx, ws.ID, &in); err != nil {
 		return entity.AlertRoute{}, err
 	}
 	return s.routes.Update(ctx, ws.ID, routeID, in)
@@ -138,11 +150,14 @@ func (s *srv) Preview(ctx context.Context, workspaceSlug, payload string) (entit
 		return entity.RoutePreview{}, err
 	}
 
-	matched, policyRef, hit := entity.RouteFor(routes, alert, settings.DefaultPolicyRef)
-	out := entity.RoutePreview{PolicyRef: policyRef, Position: -1}
+	matched, policyID, hit := entity.RouteFor(routes, alert, settings.DefaultPolicyID)
+	out := entity.RoutePreview{Position: -1}
 	if hit {
 		out.MatchedRouteID = matched.ID
 		out.Position = matched.Position
+		out.PolicySlug = matched.PolicySlug
+	} else if policyID != "" {
+		out.PolicySlug = settings.DefaultPolicySlug
 	}
 	if rule, _, grouped := entity.GroupKeyFor(groupRules, alert); grouped {
 		out.GroupFields = rule.Fields
@@ -187,5 +202,9 @@ func (s *srv) SetDefaultPolicy(ctx context.Context, workspaceSlug, policyRef str
 	if err := entity.ValidatePolicyRef(ref); err != nil {
 		return err
 	}
-	return s.routes.SetDefaultPolicy(ctx, ws.ID, ref)
+	p, err := s.policies.GetBySlug(ctx, ws.ID, ref)
+	if err != nil {
+		return err
+	}
+	return s.routes.SetDefaultPolicy(ctx, ws.ID, p.ID)
 }

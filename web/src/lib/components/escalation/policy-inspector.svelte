@@ -5,13 +5,19 @@
 	import { Input } from '$lib/components/ui/input';
 	import * as Select from '$lib/components/ui/select';
 	import { Separator } from '$lib/components/ui/separator';
-	import { REPEAT_OPTIONS, TEAMS, type Analysis, type Tree } from '$lib/escalation';
+	import { ACK_OPTIONS, REPEAT_OPTIONS, type Analysis, type Directory, type Tree } from '$lib/escalation';
 
 	let {
 		tree,
 		analysis,
+		directory,
 		onsetpolicy
-	}: { tree: Tree; analysis: Analysis; onsetpolicy: (patch: Partial<Tree>) => void } = $props();
+	}: {
+		tree: Tree;
+		analysis: Analysis;
+		directory: Directory;
+		onsetpolicy: (patch: Partial<Tree>) => void;
+	} = $props();
 
 	const warns = $derived(
 		[
@@ -23,6 +29,7 @@
 	);
 
 	const repeatLabel = $derived(REPEAT_OPTIONS.find((r) => r.value === tree.repeat)?.label);
+	const ackLabel = $derived(ACK_OPTIONS.find((a) => a.value === tree.ack)?.label ?? 'Never');
 </script>
 
 <div class="flex items-center gap-2 text-[14px] font-semibold">
@@ -45,8 +52,8 @@
 				<Select.Trigger size="sm" class="w-full" aria-label="Team">{tree.team}</Select.Trigger>
 				<Select.Content>
 					<Select.Group>
-						{#each TEAMS as team (team)}
-							<Select.Item value={team} label={team}>{team}</Select.Item>
+						{#each directory.teams as team (team.slug)}
+							<Select.Item value={team.slug} label={team.slug}>{team.slug}</Select.Item>
 						{/each}
 					</Select.Group>
 				</Select.Content>
@@ -64,6 +71,22 @@
 					</Select.Group>
 				</Select.Content>
 			</Select.Root>
+		</div>
+		<div class="flex flex-col gap-1.5">
+			<span class="text-muted-foreground text-[13px] font-medium">Acknowledgement expires</span>
+			<Select.Root type="single" value={tree.ack} onValueChange={(v) => onsetpolicy({ ack: v })}>
+				<Select.Trigger size="sm" class="w-full" aria-label="Acknowledgement expires">{ackLabel}</Select.Trigger>
+				<Select.Content>
+					<Select.Group>
+						{#each ACK_OPTIONS as option (option.value)}
+							<Select.Item value={option.value} label={option.label}>{option.label}</Select.Item>
+						{/each}
+					</Select.Group>
+				</Select.Content>
+			</Select.Root>
+			<span class="text-subtle-foreground text-xs">
+				When an acknowledgement expires, the alert reopens and escalation resumes where it paused.
+			</span>
 		</div>
 	</div>
 </div>

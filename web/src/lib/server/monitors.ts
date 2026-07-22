@@ -19,7 +19,7 @@ function toMonitor(dto: Schemas['AlertMonitor']): Heartbeat {
 		lastSeenAt: dto.lastCheckInAt ?? null,
 		dueAt: dto.dueAt ?? null,
 		checkInUrl: dto.checkInUrl,
-		policy: dto.policyRef
+		policy: dto.policySlug
 	};
 }
 
@@ -41,7 +41,7 @@ export async function createMonitor(
 			name: input.name,
 			intervalSeconds: input.intervalSeconds,
 			graceSeconds: input.graceSeconds,
-			policyRef: input.policyRef
+			policySlug: input.policyRef
 		}
 	});
 	if (error) return { error: error.detail ?? 'Could not create that monitor.' };
@@ -62,7 +62,7 @@ export async function updateMonitor(
 				name: input.name,
 				intervalSeconds: input.intervalSeconds,
 				graceSeconds: input.graceSeconds,
-				policyRef: input.policyRef
+				policySlug: input.policyRef
 			}
 		}
 	);

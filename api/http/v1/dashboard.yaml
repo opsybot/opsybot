@@ -2412,6 +2412,168 @@ paths:
         "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
         "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
         "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/escalation-policies:
+    get:
+      operationId: listEscalationPolicies
+      summary: List escalation policies
+      tags: [escalations]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Policies, content: { application/json: { schema: { $ref: "#/components/schemas/EscalationPolicyList" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    post:
+      operationId: createEscalationPolicy
+      summary: Create an escalation policy
+      tags: [escalations]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SaveEscalationPolicyRequest" }
+      responses:
+        "201": { description: Policy created, content: { application/json: { schema: { $ref: "#/components/schemas/EscalationPolicy" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/escalation-policies/{policySlug}:
+    get:
+      operationId: getEscalationPolicy
+      summary: Get an escalation policy with its linked routes and recent escalations
+      tags: [escalations]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: policySlug, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Policy, content: { application/json: { schema: { $ref: "#/components/schemas/EscalationPolicyDetail" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    put:
+      operationId: updateEscalationPolicy
+      summary: Update an escalation policy
+      tags: [escalations]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: policySlug, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SaveEscalationPolicyRequest" }
+      responses:
+        "200": { description: Policy, content: { application/json: { schema: { $ref: "#/components/schemas/EscalationPolicy" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    delete:
+      operationId: deleteEscalationPolicy
+      summary: Delete an escalation policy
+      tags: [escalations]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: policySlug, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Policy deleted }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/escalation-directory:
+    get:
+      operationId: getEscalationDirectory
+      summary: People, schedules, teams, and webhooks available as escalation targets
+      tags: [escalations]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Directory, content: { application/json: { schema: { $ref: "#/components/schemas/EscalationDirectory" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/escalation-webhooks:
+    get:
+      operationId: listEscalationWebhooks
+      summary: List escalation webhook targets
+      tags: [escalations]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Webhooks, content: { application/json: { schema: { $ref: "#/components/schemas/EscalationWebhookList" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    post:
+      operationId: createEscalationWebhook
+      summary: Create an escalation webhook target
+      tags: [escalations]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SaveEscalationWebhookRequest" }
+      responses:
+        "201": { description: Webhook created, content: { application/json: { schema: { $ref: "#/components/schemas/EscalationWebhook" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/escalation-webhooks/{webhookSlug}:
+    put:
+      operationId: updateEscalationWebhook
+      summary: Update an escalation webhook target
+      tags: [escalations]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: webhookSlug, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SaveEscalationWebhookRequest" }
+      responses:
+        "200": { description: Webhook, content: { application/json: { schema: { $ref: "#/components/schemas/EscalationWebhook" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    delete:
+      operationId: deleteEscalationWebhook
+      summary: Delete an escalation webhook target
+      tags: [escalations]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: webhookSlug, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Webhook deleted }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/alerts/{alertId}/escalate:
+    post:
+      operationId: escalateAlert
+      summary: Escalate an alert to the next step immediately
+      tags: [escalations]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: alertId, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Escalated }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
 components:
   schemas:
     AlertLink:
@@ -2432,7 +2594,7 @@ components:
         result: { type: string }
     Alert:
       type: object
-      required: [id, dedupKey, title, description, severity, status, source, service, labels, count, startedAt, lastSeenAt, links, timeline, routedPolicyRef, suppressed, payload]
+      required: [id, dedupKey, title, description, severity, status, source, service, labels, count, startedAt, lastSeenAt, links, timeline, suppressed, payload]
       properties:
         id: { type: string }
         dedupKey: { type: string }
@@ -2451,7 +2613,8 @@ components:
         resolvedAt: { type: string, format: date-time }
         ackedBy: { type: string }
         resolveMode: { type: string }
-        routedPolicyRef: { type: string }
+        escalationPolicySlug: { type: string }
+        escalation: { $ref: "#/components/schemas/AlertEscalation" }
         suppressed: { type: boolean }
         payload: { type: string }
         links: { type: array, items: { $ref: "#/components/schemas/AlertLink" } }
@@ -2467,6 +2630,153 @@ components:
         lastSeenAt: { type: string, format: date-time }
         status: { type: string }
         severity: { type: string }
+    EscalationHours:
+      type: object
+      required: [days, startMinute, endMinute, timezone]
+      properties:
+        days: { type: array, items: { type: integer } }
+        startMinute: { type: integer }
+        endMinute: { type: integer }
+        timezone: { type: string }
+    EscalationTarget:
+      type: object
+      required: [type, ref]
+      properties:
+        type: { type: string, enum: [person, schedule, team, webhook] }
+        ref: { type: string }
+    EscalationLane:
+      type: object
+      required: [id, key, nodes]
+      properties:
+        id: { type: string }
+        key: { type: string }
+        nodes: { type: array, items: { $ref: "#/components/schemas/EscalationNode" } }
+    EscalationNode:
+      type: object
+      required: [type, id]
+      properties:
+        type: { type: string, enum: [level, branch] }
+        id: { type: string }
+        targets: { type: array, items: { $ref: "#/components/schemas/EscalationTarget" } }
+        mode: { type: string, enum: [all, rr] }
+        waitSeconds: { type: integer }
+        "on": { type: string, enum: [priority, hours] }
+        hours: { $ref: "#/components/schemas/EscalationHours" }
+        lanes: { type: array, items: { $ref: "#/components/schemas/EscalationLane" } }
+    EscalationPolicy:
+      type: object
+      required: [id, slug, name, teamSlug, repeat, ackTimeoutSeconds, nodes]
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        name: { type: string }
+        teamSlug: { type: string }
+        repeat: { type: integer }
+        ackTimeoutSeconds: { type: integer }
+        nodes: { type: array, items: { $ref: "#/components/schemas/EscalationNode" } }
+    EscalationPolicySummary:
+      type: object
+      required: [id, slug, name, teamSlug, routed, stepCount, hasBranch, nodes]
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        name: { type: string }
+        teamSlug: { type: string }
+        routed: { type: integer }
+        stepCount: { type: integer }
+        hasBranch: { type: boolean }
+        nodes: { type: array, items: { $ref: "#/components/schemas/EscalationNode" } }
+    EscalationPolicyList:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/EscalationPolicySummary" } }
+    RecentEscalation:
+      type: object
+      required: [alertId, alertTitle, startedAt, state, outcome]
+      properties:
+        alertId: { type: string }
+        alertTitle: { type: string }
+        startedAt: { type: string, format: date-time }
+        endedAt: { type: string, format: date-time }
+        state: { type: string, enum: [running, acked, resolved, exhausted] }
+        outcome: { type: string }
+        by: { type: string }
+    EscalationPolicyDetail:
+      type: object
+      required: [policy, routes, recent, routed, isDefault]
+      properties:
+        policy: { $ref: "#/components/schemas/EscalationPolicy" }
+        routes: { type: array, items: { $ref: "#/components/schemas/AlertRoute" } }
+        recent: { type: array, items: { $ref: "#/components/schemas/RecentEscalation" } }
+        routed: { type: integer }
+        isDefault: { type: boolean }
+    SaveEscalationPolicyRequest:
+      type: object
+      required: [name, nodes]
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        teamSlug: { type: string }
+        repeat: { type: integer }
+        ackTimeoutSeconds: { type: integer }
+        nodes: { type: array, items: { $ref: "#/components/schemas/EscalationNode" } }
+    EscalationDirectoryMember:
+      type: object
+      required: [id, name, email, active]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string }
+        active: { type: boolean }
+    EscalationDirectoryEntry:
+      type: object
+      required: [id, slug, name]
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        name: { type: string }
+    EscalationDirectory:
+      type: object
+      required: [members, schedules, teams, webhooks]
+      properties:
+        members: { type: array, items: { $ref: "#/components/schemas/EscalationDirectoryMember" } }
+        schedules: { type: array, items: { $ref: "#/components/schemas/EscalationDirectoryEntry" } }
+        teams: { type: array, items: { $ref: "#/components/schemas/EscalationDirectoryEntry" } }
+        webhooks: { type: array, items: { $ref: "#/components/schemas/EscalationDirectoryEntry" } }
+    EscalationWebhook:
+      type: object
+      required: [id, slug, name, url, hasSecret]
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        name: { type: string }
+        url: { type: string }
+        hasSecret: { type: boolean }
+    EscalationWebhookList:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/EscalationWebhook" } }
+    SaveEscalationWebhookRequest:
+      type: object
+      required: [name, url]
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        url: { type: string }
+        secret: { type: string }
+    AlertEscalation:
+      type: object
+      required: [state, stepIndex, totalSteps, cycle, policySlug]
+      properties:
+        state: { type: string, enum: [running, acked, resolved, exhausted] }
+        stepIndex: { type: integer }
+        totalSteps: { type: integer }
+        cycle: { type: integer }
+        policySlug: { type: string }
+        nextAt: { type: string, format: date-time }
+        ackExpiresAt: { type: string, format: date-time }
     AlertFacets:
       type: object
       required: [sources, services, labels]
@@ -2579,11 +2889,11 @@ components:
         payload: { type: string }
     RoutePreview:
       type: object
-      required: [position, policyRef, groupFields]
+      required: [position, policySlug, groupFields]
       properties:
         matchedRouteId: { type: string }
         position: { type: integer }
-        policyRef: { type: string }
+        policySlug: { type: string }
         groupFields: { type: array, items: { type: string } }
     AlertGroupRule:
       type: object
@@ -2611,7 +2921,7 @@ components:
         rules: { type: array, items: { $ref: "#/components/schemas/AlertGroupRuleInput" } }
     AlertMonitor:
       type: object
-      required: [id, slug, name, state, intervalSeconds, graceSeconds, policyRef, severity, checkInUrl, paused]
+      required: [id, slug, name, state, intervalSeconds, graceSeconds, policySlug, severity, checkInUrl, paused]
       properties:
         id: { type: string }
         slug: { type: string }
@@ -2619,7 +2929,7 @@ components:
         state: { type: string, enum: [healthy, missed, paused] }
         intervalSeconds: { type: integer }
         graceSeconds: { type: integer }
-        policyRef: { type: string }
+        policySlug: { type: string }
         severity: { type: string, enum: [critical, high, warning] }
         checkInUrl: { type: string }
         paused: { type: boolean }
@@ -2638,7 +2948,7 @@ components:
         slug: { type: string }
         intervalSeconds: { type: integer }
         graceSeconds: { type: integer }
-        policyRef: { type: string }
+        policySlug: { type: string }
         severity: { type: string, enum: [critical, high, warning] }
     UpdateAlertMonitorRequest:
       type: object
@@ -2647,7 +2957,7 @@ components:
         name: { type: string }
         intervalSeconds: { type: integer }
         graceSeconds: { type: integer }
-        policyRef: { type: string }
+        policySlug: { type: string }
         severity: { type: string, enum: [critical, high, warning] }
     RouteCondition:
       type: object
@@ -2658,30 +2968,29 @@ components:
         value: { type: string }
     AlertRoute:
       type: object
-      required: [id, position, policyRef, conditions]
+      required: [id, position, policySlug, conditions]
       properties:
         id: { type: string }
         position: { type: integer }
-        policyRef: { type: string }
+        policySlug: { type: string }
         conditions: { type: array, items: { $ref: "#/components/schemas/RouteCondition" } }
     AlertRouteList:
       type: object
-      required: [items, defaultPolicyRef, knownPolicyRefs]
+      required: [items, defaultPolicySlug]
       properties:
         items: { type: array, items: { $ref: "#/components/schemas/AlertRoute" } }
-        defaultPolicyRef: { type: string }
-        knownPolicyRefs: { type: array, items: { type: string } }
+        defaultPolicySlug: { type: string }
     AlertRouteRequest:
       type: object
-      required: [policyRef, conditions]
+      required: [policySlug, conditions]
       properties:
-        policyRef: { type: string }
+        policySlug: { type: string }
         conditions: { type: array, items: { $ref: "#/components/schemas/RouteCondition" } }
     DefaultPolicyRequest:
       type: object
-      required: [policyRef]
+      required: [policySlug]
       properties:
-        policyRef: { type: string }
+        policySlug: { type: string }
     ReorderAlertRoutesRequest:
       type: object
       required: [ids]

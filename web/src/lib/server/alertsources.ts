@@ -206,7 +206,7 @@ export async function deleteSource(
 function toRule(dto: Schemas['AlertRoute']): RoutingRule {
 	return {
 		id: dto.id,
-		policy: dto.policyRef,
+		policy: dto.policySlug,
 		conditions: dto.conditions.map((c) => ({
 			field: c.field,
 			op: c.op as ConditionOp,
@@ -218,14 +218,13 @@ function toRule(dto: Schemas['AlertRoute']): RoutingRule {
 export async function listRules(
 	cookies: Cookies,
 	workspace: string
-): Promise<{ rules: RoutingRule[]; defaultPolicy: string; knownPolicies: string[] }> {
+): Promise<{ rules: RoutingRule[]; defaultPolicy: string }> {
 	const { data } = await apiClient(cookies).GET('/workspaces/{workspaceId}/alert-routes', {
 		params: { path: { workspaceId: workspace } }
 	});
 	return {
 		rules: (data?.items ?? []).map(toRule),
-		defaultPolicy: data?.defaultPolicyRef ?? 'platform-default',
-		knownPolicies: data?.knownPolicyRefs ?? []
+		defaultPolicy: data?.defaultPolicySlug ?? ''
 	};
 }
 
@@ -236,7 +235,7 @@ export async function setDefaultPolicy(
 ): Promise<boolean> {
 	const { error } = await apiClient(cookies).PUT('/workspaces/{workspaceId}/alert-routes/default', {
 		params: { path: { workspaceId: workspace } },
-		body: { policyRef: policy }
+		body: { policySlug: policy }
 	});
 	return !error;
 }
@@ -248,7 +247,7 @@ export async function addRule(
 ): Promise<{ error?: string }> {
 	const { error } = await apiClient(cookies).POST('/workspaces/{workspaceId}/alert-routes', {
 		params: { path: { workspaceId: workspace } },
-		body: { policyRef: rule.policy, conditions: rule.conditions }
+		body: { policySlug: rule.policy, conditions: rule.conditions }
 	});
 	return error ? { error: error.detail ?? 'Could not save the rule.' } : {};
 }
@@ -263,7 +262,7 @@ export async function updateRule(
 		'/workspaces/{workspaceId}/alert-routes/{routeId}',
 		{
 			params: { path: { workspaceId: workspace, routeId: id } },
-			body: { policyRef: rule.policy, conditions: rule.conditions }
+			body: { policySlug: rule.policy, conditions: rule.conditions }
 		}
 	);
 	return error ? { error: error.detail ?? 'Could not save the rule.' } : {};
@@ -296,7 +295,7 @@ export async function reorderRules(
 export type RoutePreview = {
 	matchedRouteId: string | null;
 	position: number;
-	policyRef: string;
+	policySlug: string;
 	groupFields: string[];
 };
 
@@ -315,7 +314,7 @@ export async function previewRoute(
 		preview: {
 			matchedRouteId: data.matchedRouteId ?? null,
 			position: data.position,
-			policyRef: data.policyRef,
+			policySlug: data.policySlug,
 			groupFields: data.groupFields
 		}
 	};

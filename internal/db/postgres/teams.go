@@ -94,14 +94,17 @@ var TeamWhere = struct {
 
 // TeamRels is where relationship names are stored.
 var TeamRels = struct {
-	Workspace string
+	Workspace          string
+	EscalationPolicies string
 }{
-	Workspace: "Workspace",
+	Workspace:          "Workspace",
+	EscalationPolicies: "EscalationPolicies",
 }
 
 // teamR is where relationships are stored.
 type teamR struct {
-	Workspace *Workspace `boil:"Workspace" json:"Workspace" toml:"Workspace" yaml:"Workspace"`
+	Workspace          *Workspace            `boil:"Workspace" json:"Workspace" toml:"Workspace" yaml:"Workspace"`
+	EscalationPolicies EscalationPolicySlice `boil:"EscalationPolicies" json:"EscalationPolicies" toml:"EscalationPolicies" yaml:"EscalationPolicies"`
 }
 
 // NewStruct creates a new relationship struct
@@ -123,6 +126,22 @@ func (r *teamR) GetWorkspace() *Workspace {
 	}
 
 	return r.Workspace
+}
+
+func (o *Team) GetEscalationPolicies() EscalationPolicySlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetEscalationPolicies()
+}
+
+func (r *teamR) GetEscalationPolicies() EscalationPolicySlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.EscalationPolicies
 }
 
 // teamL is where Load methods for each relationship are stored.
@@ -452,6 +471,20 @@ func (o *Team) Workspace(mods ...qm.QueryMod) workspaceQuery {
 	return Workspaces(queryMods...)
 }
 
+// EscalationPolicies retrieves all the escalation_policy's EscalationPolicies with an executor.
+func (o *Team) EscalationPolicies(mods ...qm.QueryMod) escalationPolicyQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"escalation_policies\".\"team_id\"=?", o.ID),
+	)
+
+	return EscalationPolicies(queryMods...)
+}
+
 // LoadWorkspace allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for an N-1 relationship.
 func (teamL) LoadWorkspace(ctx context.Context, e boil.ContextExecutor, singular bool, maybeTeam any, mods queries.Applicator) error {
@@ -572,6 +605,119 @@ func (teamL) LoadWorkspace(ctx context.Context, e boil.ContextExecutor, singular
 	return nil
 }
 
+// LoadEscalationPolicies allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (teamL) LoadEscalationPolicies(ctx context.Context, e boil.ContextExecutor, singular bool, maybeTeam any, mods queries.Applicator) error {
+	var slice []*Team
+	var object *Team
+
+	if singular {
+		var ok bool
+		object, ok = maybeTeam.(*Team)
+		if !ok {
+			object = new(Team)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeTeam)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeTeam))
+			}
+		}
+	} else {
+		s, ok := maybeTeam.(*[]*Team)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeTeam)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeTeam))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &teamR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &teamR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`escalation_policies`),
+		qm.WhereIn(`escalation_policies.team_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load escalation_policies")
+	}
+
+	var resultSlice []*EscalationPolicy
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice escalation_policies")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on escalation_policies")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for escalation_policies")
+	}
+
+	if len(escalationPolicyAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.EscalationPolicies = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &escalationPolicyR{}
+			}
+			foreign.R.Team = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if queries.Equal(local.ID, foreign.TeamID) {
+				local.R.EscalationPolicies = append(local.R.EscalationPolicies, foreign)
+				if foreign.R == nil {
+					foreign.R = &escalationPolicyR{}
+				}
+				foreign.R.Team = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
 // SetWorkspace of the team to the related item.
 // Sets o.R.Workspace to related.
 // Adds o to related.R.Teams.
@@ -614,6 +760,133 @@ func (o *Team) SetWorkspace(ctx context.Context, exec boil.ContextExecutor, inse
 		}
 	} else {
 		related.R.Teams = append(related.R.Teams, o)
+	}
+
+	return nil
+}
+
+// AddEscalationPolicies adds the given related objects to the existing relationships
+// of the team, optionally inserting them as new records.
+// Appends related to o.R.EscalationPolicies.
+// Sets related.R.Team appropriately.
+func (o *Team) AddEscalationPolicies(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*EscalationPolicy) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			queries.Assign(&rel.TeamID, o.ID)
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"escalation_policies\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"team_id"}),
+				strmangle.WhereClause("\"", "\"", 2, escalationPolicyPrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			queries.Assign(&rel.TeamID, o.ID)
+		}
+	}
+
+	if o.R == nil {
+		o.R = &teamR{
+			EscalationPolicies: related,
+		}
+	} else {
+		o.R.EscalationPolicies = append(o.R.EscalationPolicies, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &escalationPolicyR{
+				Team: o,
+			}
+		} else {
+			rel.R.Team = o
+		}
+	}
+	return nil
+}
+
+// SetEscalationPolicies removes all previously related items of the
+// team replacing them completely with the passed
+// in related items, optionally inserting them as new records.
+// Sets o.R.Team's EscalationPolicies accordingly.
+// Replaces o.R.EscalationPolicies with related.
+// Sets related.R.Team's EscalationPolicies accordingly.
+func (o *Team) SetEscalationPolicies(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*EscalationPolicy) error {
+	query := "update \"escalation_policies\" set \"team_id\" = null where \"team_id\" = $1"
+	values := []any{o.ID}
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, query)
+		fmt.Fprintln(writer, values)
+	}
+	_, err := exec.ExecContext(ctx, query, values...)
+	if err != nil {
+		return errors.Wrap(err, "failed to remove relationships before set")
+	}
+
+	if o.R != nil {
+		for _, rel := range o.R.EscalationPolicies {
+			queries.SetScanner(&rel.TeamID, nil)
+			if rel.R == nil {
+				continue
+			}
+
+			rel.R.Team = nil
+		}
+		o.R.EscalationPolicies = nil
+	}
+
+	return o.AddEscalationPolicies(ctx, exec, insert, related...)
+}
+
+// RemoveEscalationPolicies relationships from objects passed in.
+// Removes related items from R.EscalationPolicies (uses pointer comparison, removal does not keep order)
+// Sets related.R.Team.
+func (o *Team) RemoveEscalationPolicies(ctx context.Context, exec boil.ContextExecutor, related ...*EscalationPolicy) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	for _, rel := range related {
+		queries.SetScanner(&rel.TeamID, nil)
+		if rel.R != nil {
+			rel.R.Team = nil
+		}
+		if _, err = rel.Update(ctx, exec, boil.Whitelist("team_id")); err != nil {
+			return err
+		}
+	}
+	if o.R == nil {
+		return nil
+	}
+
+	for _, rel := range related {
+		for i, ri := range o.R.EscalationPolicies {
+			if rel != ri {
+				continue
+			}
+
+			ln := len(o.R.EscalationPolicies)
+			if ln > 1 && i < ln-1 {
+				o.R.EscalationPolicies[i] = o.R.EscalationPolicies[ln-1]
+			}
+			o.R.EscalationPolicies = o.R.EscalationPolicies[:ln-1]
+			break
+		}
 	}
 
 	return nil

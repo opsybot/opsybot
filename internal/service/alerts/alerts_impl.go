@@ -11,14 +11,16 @@ import (
 )
 
 type srv struct {
-	tx         repository.Transactor
-	workspaces repository.Workspace
-	members    repository.Member
-	alerts     repository.Alert
-	sources    repository.AlertSource
-	events     repository.IngestEvent
-	policy     repository.Policy
-	audit      repository.Audit
+	tx          repository.Transactor
+	workspaces  repository.Workspace
+	members     repository.Member
+	alerts      repository.Alert
+	sources     repository.AlertSource
+	events      repository.IngestEvent
+	policies    repository.EscalationPolicy
+	policy      repository.Policy
+	audit       repository.Audit
+	escalations service.Escalations
 }
 
 func New(
@@ -28,10 +30,15 @@ func New(
 	alerts repository.Alert,
 	sources repository.AlertSource,
 	events repository.IngestEvent,
+	policies repository.EscalationPolicy,
 	policy repository.Policy,
 	audit repository.Audit,
+	escalations service.Escalations,
 ) service.Alerts {
-	return &srv{tx: tx, workspaces: workspaces, members: members, alerts: alerts, sources: sources, events: events, policy: policy, audit: audit}
+	return &srv{
+		tx: tx, workspaces: workspaces, members: members, alerts: alerts, sources: sources,
+		events: events, policies: policies, policy: policy, audit: audit, escalations: escalations,
+	}
 }
 
 func (s *srv) authorize(ctx context.Context, workspaceSlug string, act entity.PolicyAction) (entity.Identity, entity.Workspace, error) {
@@ -131,6 +138,14 @@ func (s *srv) Get(ctx context.Context, workspaceSlug, alertID string) (entity.Al
 		return entity.Alert{}, err
 	}
 	alert.SourceSlug = slugs[alert.SourceID]
+	if alert.EscalationPolicyID != "" {
+		if p, err := s.policies.GetByID(ctx, ws.ID, alert.EscalationPolicyID); err == nil {
+			alert.EscalationPolicySlug = p.Slug
+		}
+		if run, err := s.escalations.RunForAlert(ctx, alert.ID); err == nil {
+			alert.Escalation = &run
+		}
+	}
 	return alert, nil
 }
 
@@ -144,13 +159,13 @@ func (s *srv) Acknowledge(ctx context.Context, workspaceSlug string, ids []strin
 	}
 
 	now := time.Now().UTC()
-	var affected int
+	var acked []string
 	err = s.tx.WithTx(ctx, func(ctx context.Context) error {
-		affected, err = s.alerts.Acknowledge(ctx, ws.ID, ids, actor.UserID, actor.Label, now)
+		acked, err = s.alerts.Acknowledge(ctx, ws.ID, ids, actor.UserID, actor.Label, now)
 		if err != nil {
 			return fmt.Errorf("acknowledge alerts: %w", err)
 		}
-		for _, id := range ids {
+		for _, id := range acked {
 			if err := s.alerts.AppendEvent(ctx, id, entity.AlertEvent{
 				At:   now,
 				Kind: entity.AlertEventAcked,
@@ -159,9 +174,12 @@ func (s *srv) Acknowledge(ctx context.Context, workspaceSlug string, ids []strin
 				return err
 			}
 		}
-		return s.audit.Create(ctx, s.event(actor, ws.ID, entity.ActionAlertAcknowledged, fmt.Sprintf("%d alerts", affected)))
+		if err := s.escalations.OnAcked(ctx, ws.ID, acked, now); err != nil {
+			return err
+		}
+		return s.audit.Create(ctx, s.event(actor, ws.ID, entity.ActionAlertAcknowledged, fmt.Sprintf("%d alerts", len(acked))))
 	})
-	return affected, err
+	return len(acked), err
 }
 
 func (s *srv) Resolve(ctx context.Context, workspaceSlug string, ids []string) (int, error) {
@@ -174,13 +192,13 @@ func (s *srv) Resolve(ctx context.Context, workspaceSlug string, ids []string) (
 	}
 
 	now := time.Now().UTC()
-	var affected int
+	var resolved []string
 	err = s.tx.WithTx(ctx, func(ctx context.Context) error {
-		affected, err = s.alerts.Resolve(ctx, ws.ID, ids, now, entity.ResolveModeManual)
+		resolved, err = s.alerts.Resolve(ctx, ws.ID, ids, now, entity.ResolveModeManual)
 		if err != nil {
 			return fmt.Errorf("resolve alerts: %w", err)
 		}
-		for _, id := range ids {
+		for _, id := range resolved {
 			if err := s.alerts.AppendEvent(ctx, id, entity.AlertEvent{
 				At:   now,
 				Kind: entity.AlertEventResolved,
@@ -189,9 +207,12 @@ func (s *srv) Resolve(ctx context.Context, workspaceSlug string, ids []string) (
 				return err
 			}
 		}
-		return s.audit.Create(ctx, s.event(actor, ws.ID, entity.ActionAlertResolved, fmt.Sprintf("%d alerts", affected)))
+		if err := s.escalations.OnResolved(ctx, ws.ID, resolved, now); err != nil {
+			return err
+		}
+		return s.audit.Create(ctx, s.event(actor, ws.ID, entity.ActionAlertResolved, fmt.Sprintf("%d alerts", len(resolved))))
 	})
-	return affected, err
+	return len(resolved), err
 }
 
 func (s *srv) Failures(ctx context.Context, workspaceSlug string, limit int) ([]entity.IngestFailure, error) {

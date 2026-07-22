@@ -3,6 +3,7 @@ package mailer
 import (
 	"context"
 
+	"github.com/opsybot/opsybot/internal/entity"
 	pkgmailer "github.com/opsybot/opsybot/internal/pkg/mailer"
 	"github.com/opsybot/opsybot/internal/repository"
 )
@@ -25,4 +26,16 @@ func (r *repo) SendInvite(ctx context.Context, to, inviterName, workspaceName, a
 
 func (r *repo) SendPasswordReset(ctx context.Context, to, resetURL string) error {
 	return r.client.SendPasswordReset(ctx, to, pkgmailer.ResetData{ResetURL: resetURL})
+}
+
+func (r *repo) SendPage(ctx context.Context, to string, page entity.AlertPage) error {
+	return r.client.SendPage(ctx, to, pkgmailer.PageData{
+		Severity:   string(page.Severity),
+		Service:    page.Service,
+		Title:      page.Title,
+		StartedAt:  page.StartedAt.UTC().Format("2006-01-02 15:04"),
+		PolicySlug: page.PolicySlug,
+		Level:      page.Level,
+		AlertURL:   page.AlertURL,
+	})
 }

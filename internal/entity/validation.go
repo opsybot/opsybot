@@ -93,6 +93,24 @@ var (
 	errMonitorInterval    = validation.NewError("monitor_interval_invalid", "A check-in interval runs from 1 minute to 30 days.")
 	errMonitorGrace       = validation.NewError("monitor_grace_invalid", "A grace period runs from 0 up to 24 hours.")
 	errMonitorState       = validation.NewError("monitor_state_invalid", "Choose a valid monitor state.")
+	errEscalationSlug     = validation.NewError("escalation_slug_invalid", "A policy URL uses lowercase letters, numbers, and hyphens, and starts with a letter.")
+	errEscalationName     = validation.NewError("escalation_name_invalid", "Enter a policy name of 60 characters or fewer.")
+	errEscalationRepeat   = validation.NewError("escalation_repeat_invalid", "A policy repeats between 0 and 3 times.")
+	errEscalationAckTTL   = validation.NewError("escalation_ack_timeout_invalid", "An acknowledgement expiry runs up to 24 hours.")
+	errEscalationEmpty    = validation.NewError("escalation_nodes_empty", "A policy needs at least one level.")
+	errEscalationLevel    = validation.NewError("escalation_level_invalid", "Every level needs between 1 and 20 valid targets.")
+	errEscalationWait     = validation.NewError("escalation_wait_invalid", "A level waits between 1 minute and 1 hour for an acknowledgement.")
+	errEscalationMode     = validation.NewError("escalation_mode_invalid", "Choose all at once or round-robin.")
+	errEscalationTarget   = validation.NewError("escalation_target_invalid", "Every target needs a valid type and a reference.")
+	errEscalationBranch   = validation.NewError("escalation_branch_invalid", "A branch splits by priority or working hours into its two lanes.")
+	errEscalationDeadEnd  = validation.NewError("escalation_lane_empty", "Every branch lane needs at least one level.")
+	errEscalationHours    = validation.NewError("escalation_hours_invalid", "A working-hours window needs at least one weekday, a valid time range, and a real timezone.")
+	errEscalationDepth    = validation.NewError("escalation_depth_invalid", "The policy tree is nested too deeply.")
+	errEscalationHookName = validation.NewError("escalation_webhook_name_invalid", "Enter a webhook name of 60 characters or fewer.")
+	errEscalationHookURL  = validation.NewError("escalation_webhook_url_invalid", "Enter a valid https URL for the webhook.")
+	errEscalationGone     = validation.NewError("escalation_target_unknown", "A target no longer exists. Remove it and pick another.")
+	errEscalationDark     = validation.NewError("escalation_level_unreachable", "A level only pages people who can't be paged. Fix its targets.")
+	errEscalationNoReach  = validation.NewError("escalation_no_reach", "This policy can never notify anyone. Add at least one reachable target.")
 )
 
 func nameField(value any) error {
@@ -566,4 +584,202 @@ func monitorStateField(value any) error {
 	default:
 		return errMonitorState
 	}
+}
+
+func escalationSlugField(value any) error {
+	s, _ := value.(string)
+	if !ValidSlugFormat(s) || len(s) > EscalationSlugMaxLength {
+		return errEscalationSlug
+	}
+	if slices.Contains(EscalationReservedSlugs, s) {
+		return errEscalationSlug
+	}
+	return nil
+}
+
+func escalationNameField(value any) error {
+	s, _ := value.(string)
+	name := strings.TrimSpace(s)
+	if name == "" || len(name) > EscalationNameMaxLength {
+		return errEscalationName
+	}
+	return nil
+}
+
+func escalationRepeatField(value any) error {
+	n, _ := value.(int)
+	if n < 0 || n > EscalationRepeatMax {
+		return errEscalationRepeat
+	}
+	return nil
+}
+
+func escalationAckTimeoutField(value any) error {
+	d, _ := value.(time.Duration)
+	if d < 0 || d > EscalationAckTimeoutMax {
+		return errEscalationAckTTL
+	}
+	return nil
+}
+
+func escalationTargetTypeField(value any) error {
+	t, _ := value.(EscalationTargetType)
+	switch t {
+	case EscalationTargetPerson, EscalationTargetSchedule, EscalationTargetTeam, EscalationTargetWebhook:
+		return nil
+	default:
+		return errEscalationTarget
+	}
+}
+
+func notifyModeField(value any) error {
+	m, _ := value.(NotifyMode)
+	switch m {
+	case NotifyModeAll, NotifyModeRoundRobin:
+		return nil
+	default:
+		return errEscalationMode
+	}
+}
+
+func escalationBranchKindField(value any) error {
+	k, _ := value.(EscalationBranchKind)
+	switch k {
+	case EscalationBranchPriority, EscalationBranchHours:
+		return nil
+	default:
+		return errEscalationBranch
+	}
+}
+
+func escalationHoursField(h HoursWindow) error {
+	if len(h.Days) == 0 {
+		return errEscalationHours
+	}
+	for _, d := range h.Days {
+		if d < 0 || d > EscalationHoursDayMax {
+			return errEscalationHours
+		}
+	}
+	if h.StartMinute < 0 || h.StartMinute >= EscalationMinutesPerDay ||
+		h.EndMinute < 0 || h.EndMinute >= EscalationMinutesPerDay ||
+		h.StartMinute == h.EndMinute {
+		return errEscalationHours
+	}
+	if _, err := time.LoadLocation(h.Timezone); err != nil || h.Timezone == "" {
+		return errEscalationHours
+	}
+	return nil
+}
+
+func escalationLevelField(l EscalationLevel) error {
+	if len(l.Targets) == 0 || len(l.Targets) > EscalationMaxTargets {
+		return errEscalationLevel
+	}
+	for _, t := range l.Targets {
+		if err := escalationTargetTypeField(t.Type); err != nil {
+			return err
+		}
+		if strings.TrimSpace(t.Ref) == "" {
+			return errEscalationTarget
+		}
+	}
+	if err := notifyModeField(l.Mode); err != nil {
+		return err
+	}
+	if l.Wait < EscalationWaitMin || l.Wait > EscalationWaitMax {
+		return errEscalationWait
+	}
+	return nil
+}
+
+func escalationLaneKeys(kind EscalationBranchKind) []string {
+	if kind == EscalationBranchHours {
+		return []string{EscalationLaneBusiness, EscalationLaneOff}
+	}
+	return []string{EscalationLaneHigh, EscalationLaneLow}
+}
+
+func escalationBranchField(b EscalationBranch, depth int) error {
+	if err := escalationBranchKindField(b.On); err != nil {
+		return err
+	}
+	if b.On == EscalationBranchHours {
+		if err := escalationHoursField(b.Hours); err != nil {
+			return err
+		}
+	}
+	keys := escalationLaneKeys(b.On)
+	if len(b.Lanes) != len(keys) {
+		return errEscalationBranch
+	}
+	for i, lane := range b.Lanes {
+		if lane.Key != keys[i] {
+			return errEscalationBranch
+		}
+		if len(lane.Nodes) == 0 {
+			return errEscalationDeadEnd
+		}
+		if err := escalationWalk(lane.Nodes, depth+1); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func escalationWalk(nodes []EscalationNode, depth int) error {
+	if depth > EscalationMaxDepth {
+		return errEscalationDepth
+	}
+	for _, node := range nodes {
+		switch {
+		case node.Level != nil:
+			if err := escalationLevelField(*node.Level); err != nil {
+				return err
+			}
+		case node.Branch != nil:
+			if err := escalationBranchField(*node.Branch, depth); err != nil {
+				return err
+			}
+		default:
+			return errEscalationBranch
+		}
+	}
+	return nil
+}
+
+func escalationNodesField(value any) error {
+	nodes, _ := value.([]EscalationNode)
+	if len(nodes) == 0 {
+		return errEscalationEmpty
+	}
+	if err := escalationWalk(nodes, 1); err != nil {
+		return err
+	}
+	if len(collectTargets(nodes)) == 0 {
+		return errEscalationEmpty
+	}
+	return nil
+}
+
+func escalationWebhookNameField(value any) error {
+	s, _ := value.(string)
+	name := strings.TrimSpace(s)
+	if name == "" || len(name) > EscalationWebhookNameMax {
+		return errEscalationHookName
+	}
+	return nil
+}
+
+func escalationWebhookURLField(value any) error {
+	s, _ := value.(string)
+	raw := strings.TrimSpace(s)
+	if raw == "" || len(raw) > EscalationWebhookURLMax {
+		return errEscalationHookURL
+	}
+	u, err := url.ParseRequestURI(raw)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return errEscalationHookURL
+	}
+	return nil
 }

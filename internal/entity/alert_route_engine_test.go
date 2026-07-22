@@ -47,7 +47,7 @@ func TestConditionOperators(t *testing.T) {
 func TestRouteConditionsAreAnded(t *testing.T) {
 	a := sampleAlert()
 
-	both := AlertRoute{PolicyRef: "payments-primary", Conditions: []RouteCondition{
+	both := AlertRoute{PolicyID: "payments-primary", Conditions: []RouteCondition{
 		{"service", ConditionIs, "payments-api"},
 		{"labels.env", ConditionIs, "prod"},
 	}}
@@ -55,7 +55,7 @@ func TestRouteConditionsAreAnded(t *testing.T) {
 		t.Error("route with two satisfied conditions did not match")
 	}
 
-	one := AlertRoute{PolicyRef: "x", Conditions: []RouteCondition{
+	one := AlertRoute{PolicyID: "x", Conditions: []RouteCondition{
 		{"service", ConditionIs, "payments-api"},
 		{"labels.env", ConditionIs, "staging"},
 	}}
@@ -63,7 +63,7 @@ func TestRouteConditionsAreAnded(t *testing.T) {
 		t.Error("route matched with one condition unsatisfied; conditions must be ANDed")
 	}
 
-	if (AlertRoute{PolicyRef: "x"}).Matches(a) {
+	if (AlertRoute{PolicyID: "x"}).Matches(a) {
 		t.Error("route with no conditions matched")
 	}
 }
@@ -71,8 +71,8 @@ func TestRouteConditionsAreAnded(t *testing.T) {
 func TestRouteForFirstMatchWinsAndFallsBackToDefault(t *testing.T) {
 	a := sampleAlert()
 	routes := []AlertRoute{
-		{ID: "r2", Position: 2, PolicyRef: "second", Conditions: []RouteCondition{{"labels.env", ConditionIs, "prod"}}},
-		{ID: "r1", Position: 1, PolicyRef: "first", Conditions: []RouteCondition{{"service", ConditionIs, "payments-api"}}},
+		{ID: "r2", Position: 2, PolicyID: "second", Conditions: []RouteCondition{{"labels.env", ConditionIs, "prod"}}},
+		{ID: "r1", Position: 1, PolicyID: "first", Conditions: []RouteCondition{{"service", ConditionIs, "payments-api"}}},
 	}
 
 	route, ref, matched := RouteFor(routes, a, "platform-default")
@@ -196,11 +196,11 @@ func TestPreviewAlertMapsTheSamplePayload(t *testing.T) {
 		t.Fatalf("PreviewAlert: %v", err)
 	}
 
-	routes := []AlertRoute{{ID: "r1", PolicyRef: "payments-primary", Conditions: []RouteCondition{
+	routes := []AlertRoute{{ID: "r1", PolicyID: "payments-primary", Conditions: []RouteCondition{
 		{Field: "service", Op: ConditionIs, Value: "payments-api"},
 		{Field: "labels.env", Op: ConditionIs, Value: "prod"},
 	}}}
-	if _, policy, matched := RouteFor(routes, alert, DefaultPolicyRef); !matched || policy != "payments-primary" {
+	if _, policy, matched := RouteFor(routes, alert, "default-policy"); !matched || policy != "payments-primary" {
 		t.Errorf("routed to %q (matched %v), want payments-primary: the preview must agree with ingest", policy, matched)
 	}
 	if alert.Severity != SeverityHigh {

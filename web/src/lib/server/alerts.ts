@@ -2,6 +2,7 @@ import type { Cookies } from '@sveltejs/kit';
 import type { components } from '$lib/api/schema';
 import type {
 	Alert,
+	AlertEscalation,
 	AlertSeverity,
 	AlertStatus,
 	EscalationEvent,
@@ -33,9 +34,9 @@ function toTimeline(events: Schemas['AlertEvent'][] | undefined): EscalationEven
 		tone:
 			event.kind === 'resolved'
 				? 'success'
-				: event.kind === 'suppressed'
+				: event.kind === 'suppressed' || event.kind === 'timeout' || event.kind === 'exhausted'
 					? 'warning'
-					: event.kind === 'routed'
+					: event.kind === 'routed' || event.kind === 'escalation'
 						? 'brand'
 						: undefined
 	}));
@@ -55,6 +56,18 @@ function toAlert(dto: Schemas['Alert']): Alert {
 		count: dto.count,
 		firstSeenAt: dto.startedAt,
 		lastSeenAt: dto.lastSeenAt,
+		escalationPolicySlug: dto.escalationPolicySlug ?? null,
+		escalation: dto.escalation
+			? ({
+					state: dto.escalation.state,
+					stepIndex: dto.escalation.stepIndex,
+					totalSteps: dto.escalation.totalSteps,
+					cycle: dto.escalation.cycle,
+					policySlug: dto.escalation.policySlug,
+					nextAt: dto.escalation.nextAt ?? null,
+					ackExpiresAt: dto.escalation.ackExpiresAt ?? null
+				} satisfies AlertEscalation)
+			: null,
 		children: (dto.children ?? []).map((child) => ({
 			id: child.id,
 			title: child.title,

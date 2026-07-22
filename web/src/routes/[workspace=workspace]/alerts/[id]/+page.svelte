@@ -25,7 +25,6 @@
 
 	let { data }: PageProps = $props();
 
-	const PENDING_ESCALATION = 'Available once escalation policies ship.';
 	const PENDING_INCIDENTS = 'Available once incidents ship.';
 
 	const alert = $derived(data.alert);
@@ -66,6 +65,41 @@
 					{alert.description}
 				</p>
 
+				{#if alert.escalation}
+					<div class="text-muted-foreground flex flex-wrap items-center gap-2 text-[12.5px]">
+						<Badge
+							tone={alert.escalation.state === 'exhausted'
+								? 'critical'
+								: alert.escalation.state === 'running'
+									? 'brand'
+									: alert.escalation.state === 'acked'
+										? 'success'
+										: 'neutral'}
+							size="sm"
+							dot
+						>
+							escalation {alert.escalation.state}
+						</Badge>
+						<span>
+							level {Math.min(alert.escalation.stepIndex + (alert.escalation.state === 'running' ? 1 : 0), alert.escalation.totalSteps) || alert.escalation.stepIndex}
+							of {alert.escalation.totalSteps}
+							through
+							<a href={ws(`/escalation-policies/${alert.escalation.policySlug}`)} class="text-brand-foreground font-mono hover:underline">
+								{alert.escalation.policySlug}
+							</a>
+						</span>
+						{#if alert.escalation.state === 'running' && alert.escalation.nextAt}
+							<span class="text-subtle-foreground font-mono text-[11.5px]">
+								next step {formatUtc(alert.escalation.nextAt)}
+							</span>
+						{:else if alert.escalation.state === 'acked' && alert.escalation.ackExpiresAt}
+							<span class="text-subtle-foreground font-mono text-[11.5px]">
+								resumes {formatUtc(alert.escalation.ackExpiresAt)} unless resolved
+							</span>
+						{/if}
+					</div>
+				{/if}
+
 				<div class="flex flex-wrap gap-2">
 					{#if alert.status === 'open'}
 						<form method="POST" action="?/ack" use:enhance>
@@ -94,11 +128,13 @@
 						Silence source
 					</Button>
 
-					{#if alert.status === 'open'}
-						<Button size="sm" variant="secondary" disabled title={PENDING_ESCALATION}>
-							<ArrowUpRightIcon data-icon="inline-start" />
-							Escalate to next step
-						</Button>
+					{#if alert.status === 'open' && alert.escalation && alert.escalation.state === 'running'}
+						<form method="POST" action="?/escalate" use:enhance>
+							<Button size="sm" variant="secondary" type="submit">
+								<ArrowUpRightIcon data-icon="inline-start" />
+								Escalate to next step
+							</Button>
+						</form>
 					{/if}
 
 					<Button size="sm" variant="destructive" disabled title={PENDING_INCIDENTS}>

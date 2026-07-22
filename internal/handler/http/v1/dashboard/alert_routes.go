@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"sort"
 	"time"
 
 	"github.com/opsybot/opsybot/internal/entity"
@@ -31,11 +30,11 @@ func routeDTO(r entity.AlertRoute) api.AlertRoute {
 	for _, c := range r.Conditions {
 		conds = append(conds, api.RouteCondition{Field: c.Field, Op: api.RouteConditionOp(c.Op), Value: c.Value})
 	}
-	return api.AlertRoute{Id: r.ID, Position: r.Position, PolicyRef: r.PolicyRef, Conditions: conds}
+	return api.AlertRoute{Id: r.ID, Position: r.Position, PolicySlug: r.PolicySlug, Conditions: conds}
 }
 
-func routeInput(policyRef string, conditions []api.RouteCondition) entity.NewAlertRoute {
-	in := entity.NewAlertRoute{PolicyRef: policyRef}
+func routeInput(policySlug string, conditions []api.RouteCondition) entity.NewAlertRoute {
+	in := entity.NewAlertRoute{PolicySlug: policySlug}
 	for _, c := range conditions {
 		in.Conditions = append(in.Conditions, entity.RouteCondition{
 			Field: c.Field, Op: entity.ConditionOp(c.Op), Value: c.Value,
@@ -60,28 +59,18 @@ func (h *handler) ListAlertRoutes(ctx context.Context, request api.ListAlertRout
 	}
 
 	items := make([]api.AlertRoute, 0, len(routes))
-	known := map[string]struct{}{settings.DefaultPolicyRef: {}}
 	for _, r := range routes {
 		items = append(items, routeDTO(r))
-		known[r.PolicyRef] = struct{}{}
 	}
-	refs := make([]string, 0, len(known))
-	for ref := range known {
-		if ref != "" {
-			refs = append(refs, ref)
-		}
-	}
-	sort.Strings(refs)
 
 	return api.ListAlertRoutes200JSONResponse{
-		Items:            items,
-		DefaultPolicyRef: settings.DefaultPolicyRef,
-		KnownPolicyRefs:  refs,
+		Items:             items,
+		DefaultPolicySlug: settings.DefaultPolicySlug,
 	}, nil
 }
 
 func (h *handler) CreateAlertRoute(ctx context.Context, request api.CreateAlertRouteRequestObject) (api.CreateAlertRouteResponseObject, error) {
-	created, err := h.routes.Create(ctx, request.WorkspaceId, routeInput(request.Body.PolicyRef, request.Body.Conditions))
+	created, err := h.routes.Create(ctx, request.WorkspaceId, routeInput(request.Body.PolicySlug, request.Body.Conditions))
 	if err != nil {
 		status, p := routeProblem(err)
 		switch status {
@@ -100,7 +89,7 @@ func (h *handler) CreateAlertRoute(ctx context.Context, request api.CreateAlertR
 }
 
 func (h *handler) UpdateAlertRoute(ctx context.Context, request api.UpdateAlertRouteRequestObject) (api.UpdateAlertRouteResponseObject, error) {
-	updated, err := h.routes.Update(ctx, request.WorkspaceId, request.RouteId, routeInput(request.Body.PolicyRef, request.Body.Conditions))
+	updated, err := h.routes.Update(ctx, request.WorkspaceId, request.RouteId, routeInput(request.Body.PolicySlug, request.Body.Conditions))
 	if err != nil {
 		status, p := routeProblem(err)
 		switch status {
@@ -179,7 +168,7 @@ func (h *handler) PreviewAlertRoute(ctx context.Context, request api.PreviewAler
 	}
 	out := api.PreviewAlertRoute200JSONResponse{
 		Position:    preview.Position,
-		PolicyRef:   preview.PolicyRef,
+		PolicySlug:  preview.PolicySlug,
 		GroupFields: fields,
 	}
 	if preview.MatchedRouteID != "" {
@@ -251,7 +240,7 @@ func (h *handler) SaveAlertGroupRules(ctx context.Context, request api.SaveAlert
 }
 
 func (h *handler) SetDefaultAlertPolicy(ctx context.Context, request api.SetDefaultAlertPolicyRequestObject) (api.SetDefaultAlertPolicyResponseObject, error) {
-	if err := h.routes.SetDefaultPolicy(ctx, request.WorkspaceId, request.Body.PolicyRef); err != nil {
+	if err := h.routes.SetDefaultPolicy(ctx, request.WorkspaceId, request.Body.PolicySlug); err != nil {
 		status, p := routeProblem(err)
 		switch status {
 		case http.StatusBadRequest:

@@ -23,78 +23,81 @@ import (
 
 // AlertRoute is an object representing the database table.
 type AlertRoute struct {
-	ID          string    `boil:"id" json:"id" toml:"id" yaml:"id"`
-	WorkspaceID string    `boil:"workspace_id" json:"workspace_id" toml:"workspace_id" yaml:"workspace_id"`
-	Position    int       `boil:"position" json:"position" toml:"position" yaml:"position"`
-	PolicyRef   string    `boil:"policy_ref" json:"policy_ref" toml:"policy_ref" yaml:"policy_ref"`
-	CreatedAt   time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
-	UpdatedAt   time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
+	ID                 string    `boil:"id" json:"id" toml:"id" yaml:"id"`
+	WorkspaceID        string    `boil:"workspace_id" json:"workspace_id" toml:"workspace_id" yaml:"workspace_id"`
+	Position           int       `boil:"position" json:"position" toml:"position" yaml:"position"`
+	CreatedAt          time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	UpdatedAt          time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
+	EscalationPolicyID string    `boil:"escalation_policy_id" json:"escalation_policy_id" toml:"escalation_policy_id" yaml:"escalation_policy_id"`
 
 	R *alertRouteR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L alertRouteL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var AlertRouteColumns = struct {
-	ID          string
-	WorkspaceID string
-	Position    string
-	PolicyRef   string
-	CreatedAt   string
-	UpdatedAt   string
+	ID                 string
+	WorkspaceID        string
+	Position           string
+	CreatedAt          string
+	UpdatedAt          string
+	EscalationPolicyID string
 }{
-	ID:          "id",
-	WorkspaceID: "workspace_id",
-	Position:    "position",
-	PolicyRef:   "policy_ref",
-	CreatedAt:   "created_at",
-	UpdatedAt:   "updated_at",
+	ID:                 "id",
+	WorkspaceID:        "workspace_id",
+	Position:           "position",
+	CreatedAt:          "created_at",
+	UpdatedAt:          "updated_at",
+	EscalationPolicyID: "escalation_policy_id",
 }
 
 var AlertRouteTableColumns = struct {
-	ID          string
-	WorkspaceID string
-	Position    string
-	PolicyRef   string
-	CreatedAt   string
-	UpdatedAt   string
+	ID                 string
+	WorkspaceID        string
+	Position           string
+	CreatedAt          string
+	UpdatedAt          string
+	EscalationPolicyID string
 }{
-	ID:          "alert_routes.id",
-	WorkspaceID: "alert_routes.workspace_id",
-	Position:    "alert_routes.position",
-	PolicyRef:   "alert_routes.policy_ref",
-	CreatedAt:   "alert_routes.created_at",
-	UpdatedAt:   "alert_routes.updated_at",
+	ID:                 "alert_routes.id",
+	WorkspaceID:        "alert_routes.workspace_id",
+	Position:           "alert_routes.position",
+	CreatedAt:          "alert_routes.created_at",
+	UpdatedAt:          "alert_routes.updated_at",
+	EscalationPolicyID: "alert_routes.escalation_policy_id",
 }
 
 // Generated where
 
 var AlertRouteWhere = struct {
-	ID          whereHelperstring
-	WorkspaceID whereHelperstring
-	Position    whereHelperint
-	PolicyRef   whereHelperstring
-	CreatedAt   whereHelpertime_Time
-	UpdatedAt   whereHelpertime_Time
+	ID                 whereHelperstring
+	WorkspaceID        whereHelperstring
+	Position           whereHelperint
+	CreatedAt          whereHelpertime_Time
+	UpdatedAt          whereHelpertime_Time
+	EscalationPolicyID whereHelperstring
 }{
-	ID:          whereHelperstring{field: "\"alert_routes\".\"id\""},
-	WorkspaceID: whereHelperstring{field: "\"alert_routes\".\"workspace_id\""},
-	Position:    whereHelperint{field: "\"alert_routes\".\"position\""},
-	PolicyRef:   whereHelperstring{field: "\"alert_routes\".\"policy_ref\""},
-	CreatedAt:   whereHelpertime_Time{field: "\"alert_routes\".\"created_at\""},
-	UpdatedAt:   whereHelpertime_Time{field: "\"alert_routes\".\"updated_at\""},
+	ID:                 whereHelperstring{field: "\"alert_routes\".\"id\""},
+	WorkspaceID:        whereHelperstring{field: "\"alert_routes\".\"workspace_id\""},
+	Position:           whereHelperint{field: "\"alert_routes\".\"position\""},
+	CreatedAt:          whereHelpertime_Time{field: "\"alert_routes\".\"created_at\""},
+	UpdatedAt:          whereHelpertime_Time{field: "\"alert_routes\".\"updated_at\""},
+	EscalationPolicyID: whereHelperstring{field: "\"alert_routes\".\"escalation_policy_id\""},
 }
 
 // AlertRouteRels is where relationship names are stored.
 var AlertRouteRels = struct {
+	EscalationPolicy          string
 	Workspace                 string
 	RouteAlertRouteConditions string
 }{
+	EscalationPolicy:          "EscalationPolicy",
 	Workspace:                 "Workspace",
 	RouteAlertRouteConditions: "RouteAlertRouteConditions",
 }
 
 // alertRouteR is where relationships are stored.
 type alertRouteR struct {
+	EscalationPolicy          *EscalationPolicy        `boil:"EscalationPolicy" json:"EscalationPolicy" toml:"EscalationPolicy" yaml:"EscalationPolicy"`
 	Workspace                 *Workspace               `boil:"Workspace" json:"Workspace" toml:"Workspace" yaml:"Workspace"`
 	RouteAlertRouteConditions AlertRouteConditionSlice `boil:"RouteAlertRouteConditions" json:"RouteAlertRouteConditions" toml:"RouteAlertRouteConditions" yaml:"RouteAlertRouteConditions"`
 }
@@ -102,6 +105,22 @@ type alertRouteR struct {
 // NewStruct creates a new relationship struct
 func (*alertRouteR) NewStruct() *alertRouteR {
 	return &alertRouteR{}
+}
+
+func (o *AlertRoute) GetEscalationPolicy() *EscalationPolicy {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetEscalationPolicy()
+}
+
+func (r *alertRouteR) GetEscalationPolicy() *EscalationPolicy {
+	if r == nil {
+		return nil
+	}
+
+	return r.EscalationPolicy
 }
 
 func (o *AlertRoute) GetWorkspace() *Workspace {
@@ -140,8 +159,8 @@ func (r *alertRouteR) GetRouteAlertRouteConditions() AlertRouteConditionSlice {
 type alertRouteL struct{}
 
 var (
-	alertRouteAllColumns            = []string{"id", "workspace_id", "position", "policy_ref", "created_at", "updated_at"}
-	alertRouteColumnsWithoutDefault = []string{"workspace_id", "policy_ref"}
+	alertRouteAllColumns            = []string{"id", "workspace_id", "position", "created_at", "updated_at", "escalation_policy_id"}
+	alertRouteColumnsWithoutDefault = []string{"workspace_id", "escalation_policy_id"}
 	alertRouteColumnsWithDefault    = []string{"id", "position", "created_at", "updated_at"}
 	alertRoutePrimaryKeyColumns     = []string{"id"}
 	alertRouteGeneratedColumns      = []string{}
@@ -452,6 +471,17 @@ func (q alertRouteQuery) Exists(ctx context.Context, exec boil.ContextExecutor) 
 	return count > 0, nil
 }
 
+// EscalationPolicy pointed to by the foreign key.
+func (o *AlertRoute) EscalationPolicy(mods ...qm.QueryMod) escalationPolicyQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"id\" = ?", o.EscalationPolicyID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return EscalationPolicies(queryMods...)
+}
+
 // Workspace pointed to by the foreign key.
 func (o *AlertRoute) Workspace(mods ...qm.QueryMod) workspaceQuery {
 	queryMods := []qm.QueryMod{
@@ -475,6 +505,126 @@ func (o *AlertRoute) RouteAlertRouteConditions(mods ...qm.QueryMod) alertRouteCo
 	)
 
 	return AlertRouteConditions(queryMods...)
+}
+
+// LoadEscalationPolicy allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for an N-1 relationship.
+func (alertRouteL) LoadEscalationPolicy(ctx context.Context, e boil.ContextExecutor, singular bool, maybeAlertRoute any, mods queries.Applicator) error {
+	var slice []*AlertRoute
+	var object *AlertRoute
+
+	if singular {
+		var ok bool
+		object, ok = maybeAlertRoute.(*AlertRoute)
+		if !ok {
+			object = new(AlertRoute)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeAlertRoute)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeAlertRoute))
+			}
+		}
+	} else {
+		s, ok := maybeAlertRoute.(*[]*AlertRoute)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeAlertRoute)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeAlertRoute))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &alertRouteR{}
+		}
+		args[object.EscalationPolicyID] = struct{}{}
+
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &alertRouteR{}
+			}
+
+			args[obj.EscalationPolicyID] = struct{}{}
+
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`escalation_policies`),
+		qm.WhereIn(`escalation_policies.id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load EscalationPolicy")
+	}
+
+	var resultSlice []*EscalationPolicy
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice EscalationPolicy")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for escalation_policies")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for escalation_policies")
+	}
+
+	if len(escalationPolicyAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.EscalationPolicy = foreign
+		if foreign.R == nil {
+			foreign.R = &escalationPolicyR{}
+		}
+		foreign.R.AlertRoutes = append(foreign.R.AlertRoutes, object)
+		return nil
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if local.EscalationPolicyID == foreign.ID {
+				local.R.EscalationPolicy = foreign
+				if foreign.R == nil {
+					foreign.R = &escalationPolicyR{}
+				}
+				foreign.R.AlertRoutes = append(foreign.R.AlertRoutes, local)
+				break
+			}
+		}
+	}
+
+	return nil
 }
 
 // LoadWorkspace allows an eager lookup of values, cached into the
@@ -705,6 +855,53 @@ func (alertRouteL) LoadRouteAlertRouteConditions(ctx context.Context, e boil.Con
 				break
 			}
 		}
+	}
+
+	return nil
+}
+
+// SetEscalationPolicy of the alertRoute to the related item.
+// Sets o.R.EscalationPolicy to related.
+// Adds o to related.R.AlertRoutes.
+func (o *AlertRoute) SetEscalationPolicy(ctx context.Context, exec boil.ContextExecutor, insert bool, related *EscalationPolicy) error {
+	var err error
+	if insert {
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	}
+
+	updateQuery := fmt.Sprintf(
+		"UPDATE \"alert_routes\" SET %s WHERE %s",
+		strmangle.SetParamNames("\"", "\"", 1, []string{"escalation_policy_id"}),
+		strmangle.WhereClause("\"", "\"", 2, alertRoutePrimaryKeyColumns),
+	)
+	values := []any{related.ID, o.ID}
+
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, updateQuery)
+		fmt.Fprintln(writer, values)
+	}
+	if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	o.EscalationPolicyID = related.ID
+	if o.R == nil {
+		o.R = &alertRouteR{
+			EscalationPolicy: related,
+		}
+	} else {
+		o.R.EscalationPolicy = related
+	}
+
+	if related.R == nil {
+		related.R = &escalationPolicyR{
+			AlertRoutes: AlertRouteSlice{o},
+		}
+	} else {
+		related.R.AlertRoutes = append(related.R.AlertRoutes, o)
 	}
 
 	return nil

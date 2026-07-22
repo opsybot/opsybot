@@ -29,7 +29,8 @@ func testMonitor() entity.AlertMonitor {
 		Interval:    time.Hour,
 		Grace:       10 * time.Minute,
 		Severity:    entity.SeverityHigh,
-		PolicyRef:   "backups-oncall",
+		PolicyID:    "pol-backups",
+		PolicySlug:  "backups-oncall",
 		CreatedAt:   time.Date(2026, 7, 22, 0, 0, 0, 0, time.UTC),
 	}
 }
@@ -112,7 +113,7 @@ func TestSweepRaisesTheMonitorAlertUnderItsOwnPolicy(t *testing.T) {
 		})
 	h.alerts.EXPECT().ReplaceLinks(gomock.Any(), "al-1", gomock.Any()).Return(nil)
 	h.alerts.EXPECT().AppendEvent(gomock.Any(), "al-1", gomock.Any()).Return(nil).AnyTimes()
-	h.alerts.EXPECT().ApplyRouting(gomock.Any(), "al-1", "backups-oncall", "", "", gomock.Any()).Return(nil)
+	h.alerts.EXPECT().ApplyRouting(gomock.Any(), "al-1", "pol-backups", "", "", gomock.Any()).Return(nil)
 	h.events.EXPECT().Record(gomock.Any(), gomock.Any()).Return(nil)
 
 	fired, err := h.srv.SweepMonitors(context.Background(), now)

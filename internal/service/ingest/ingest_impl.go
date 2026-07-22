@@ -14,16 +14,18 @@ import (
 )
 
 type srv struct {
-	tx       repository.Transactor
-	sources  repository.AlertSource
-	alerts   repository.Alert
-	events   repository.IngestEvent
-	routes   repository.AlertRoute
-	silences repository.Silence
-	monitors repository.AlertMonitor
-	limiter  repository.RateLimiter
-	lock     repository.Lock
-	cfg      config.Ingest
+	tx          repository.Transactor
+	sources     repository.AlertSource
+	alerts      repository.Alert
+	events      repository.IngestEvent
+	routes      repository.AlertRoute
+	silences    repository.Silence
+	monitors    repository.AlertMonitor
+	limiter     repository.RateLimiter
+	lock        repository.Lock
+	policies    repository.EscalationPolicy
+	escalations service.Escalations
+	cfg         config.Ingest
 }
 
 func New(
@@ -36,19 +38,23 @@ func New(
 	monitors repository.AlertMonitor,
 	limiter repository.RateLimiter,
 	lock repository.Lock,
+	policies repository.EscalationPolicy,
+	escalations service.Escalations,
 	cfg config.Ingest,
 ) service.Ingest {
 	return &srv{
 		tx: tx, sources: sources, alerts: alerts, events: events, routes: routes,
-		silences: silences, monitors: monitors, limiter: limiter, lock: lock, cfg: cfg,
+		silences: silences, monitors: monitors, limiter: limiter, lock: lock,
+		policies: policies, escalations: escalations, cfg: cfg,
 	}
 }
 
 type routingContext struct {
-	routes     []entity.AlertRoute
-	groupRules []entity.GroupRule
-	silences   []entity.Silence
-	defaultRef string
+	routes      []entity.AlertRoute
+	groupRules  []entity.GroupRule
+	silences    []entity.Silence
+	defaultID   string
+	policySlugs map[string]string
 }
 
 func (s *srv) routingContext(ctx context.Context, workspaceID string, now time.Time) (routingContext, error) {
@@ -68,7 +74,18 @@ func (s *srv) routingContext(ctx context.Context, workspaceID string, now time.T
 	if err != nil {
 		return routingContext{}, err
 	}
-	return routingContext{routes: routes, groupRules: groupRules, silences: silences, defaultRef: settings.DefaultPolicyRef}, nil
+	policies, err := s.policies.List(ctx, workspaceID)
+	if err != nil {
+		return routingContext{}, err
+	}
+	slugs := make(map[string]string, len(policies))
+	for _, p := range policies {
+		slugs[p.ID] = p.Slug
+	}
+	return routingContext{
+		routes: routes, groupRules: groupRules, silences: silences,
+		defaultID: settings.DefaultPolicyID, policySlugs: slugs,
+	}, nil
 }
 
 func (s *srv) route(ctx context.Context, rc routingContext, alert entity.Alert, upsert entity.AlertUpsert, now time.Time, policyOverride string) error {
@@ -112,24 +129,28 @@ func (s *srv) route(ctx context.Context, rc routingContext, alert entity.Alert, 
 }
 
 func (s *srv) applyRouting(ctx context.Context, rc routingContext, alert entity.Alert, now time.Time, policyOverride string) error {
-	fallback := rc.defaultRef
+	fallback := rc.defaultID
 	if policyOverride != "" {
 		fallback = policyOverride
 	}
-	_, policyRef, _ := entity.RouteFor(rc.routes, alert, fallback)
+	_, policyID, _ := entity.RouteFor(rc.routes, alert, fallback)
 	silence, suppressed := entity.SilenceFor(rc.silences, alert, now)
 
 	silenceID := ""
 	if suppressed {
 		silenceID = silence.ID
 	}
-	if err := s.alerts.ApplyRouting(ctx, alert.ID, policyRef, alert.GroupKey, silenceID, now); err != nil {
+	if err := s.alerts.ApplyRouting(ctx, alert.ID, policyID, alert.GroupKey, silenceID, now); err != nil {
 		return err
+	}
+	routedText := "No escalation policy assigned. Recorded, but no one will be paged."
+	if slug := rc.policySlugs[policyID]; slug != "" {
+		routedText = "Routed to " + slug
 	}
 	if err := s.alerts.AppendEvent(ctx, alert.ID, entity.AlertEvent{
 		At:     now,
 		Kind:   entity.AlertEventRouted,
-		Text:   "Routed to " + policyRef,
+		Text:   routedText,
 		Result: alert.GroupKey,
 	}); err != nil {
 		return err
@@ -140,6 +161,10 @@ func (s *srv) applyRouting(ctx context.Context, rc routingContext, alert entity.
 			Kind: entity.AlertEventSuppressed,
 			Text: "Suppressed by an active silence. Still recorded, but it pages no one.",
 		})
+	}
+	if policyID != "" {
+		alert.SuppressedBySilenceID = silenceID
+		return s.escalations.Start(ctx, alert, policyID)
 	}
 	return nil
 }
@@ -305,6 +330,9 @@ func (s *srv) applyResolve(ctx context.Context, src entity.AlertSource, upsert e
 	}); err != nil {
 		return entity.IngestResult{}, err
 	}
+	if err := s.escalations.OnResolved(ctx, src.WorkspaceID, []string{alert.ID}, endedAt); err != nil {
+		return entity.IngestResult{}, err
+	}
 	if alert.ParentAlertID != "" {
 		if _, err := s.alerts.RollUpParent(ctx, alert.ParentAlertID, endedAt); err != nil {
 			return entity.IngestResult{}, err
@@ -463,7 +491,7 @@ func (s *srv) fireMonitor(ctx context.Context, monitor entity.AlertMonitor, now 
 		if err != nil {
 			return err
 		}
-		if _, err := s.apply(ctx, src, entity.MonitorAlert(monitor, src, now).Normalize(src, now), now, rc, monitor.PolicyRef); err != nil {
+		if _, err := s.apply(ctx, src, entity.MonitorAlert(monitor, src, now).Normalize(src, now), now, rc, monitor.PolicyID); err != nil {
 			return err
 		}
 		raised = true

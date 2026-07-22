@@ -14,6 +14,7 @@ const (
 	PolicyObjectSchedules    PolicyObject = "schedules"
 	PolicyObjectAlerts       PolicyObject = "alerts"
 	PolicyObjectAlertSources PolicyObject = "alert_sources"
+	PolicyObjectPolicies     PolicyObject = "policies"
 )
 
 const PolicyRefMaxLength = 40
@@ -44,7 +45,9 @@ func RolePolicies(role Role) []PolicyRule {
 			{PolicyObjectAudit, PolicyActionRead},
 			{PolicyObjectSchedules, PolicyActionRead}, {PolicyObjectSchedules, PolicyActionWrite},
 			{PolicyObjectAlerts, PolicyActionRead}, {PolicyObjectAlerts, PolicyActionWrite},
-			{PolicyObjectAlertSources, PolicyActionRead}, {PolicyObjectAlertSources, PolicyActionWrite},
+			{PolicyObjectAlertSources, PolicyActionRead},
+			{PolicyObjectPolicies, PolicyActionRead}, {PolicyObjectAlertSources, PolicyActionWrite},
+			{PolicyObjectPolicies, PolicyActionRead}, {PolicyObjectPolicies, PolicyActionWrite},
 		}
 	case RoleMember:
 		return []PolicyRule{
@@ -56,6 +59,7 @@ func RolePolicies(role Role) []PolicyRule {
 			{PolicyObjectSchedules, PolicyActionRead},
 			{PolicyObjectAlerts, PolicyActionRead}, {PolicyObjectAlerts, PolicyActionWrite},
 			{PolicyObjectAlertSources, PolicyActionRead},
+			{PolicyObjectPolicies, PolicyActionRead},
 		}
 	default:
 		return nil
@@ -76,6 +80,8 @@ func ScopeFor(obj PolicyObject, act PolicyAction) (Scope, bool) {
 		return ScopeAlertsWrite, true
 	case obj == PolicyObjectAlertSources && act == PolicyActionWrite:
 		return ScopeAlertsWrite, true
+	case obj == PolicyObjectPolicies && act == PolicyActionWrite:
+		return ScopePoliciesWrite, true
 	default:
 		return "", false
 	}

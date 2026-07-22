@@ -30,13 +30,13 @@ export const actions: Actions = {
 	},
 	deactivate: async ({ request, cookies, params }) => {
 		const form = await request.formData();
-		const roster = new Set((await listMembers(cookies, params.workspace)).map((member) => member.name));
+		const roster = new Set((await listMembers(cookies, params.workspace)).map((member) => member.id));
 		const replacements: Record<string, string> = {};
 		try {
 			const raw = JSON.parse(String(form.get('replacements') ?? '{}'));
 			if (raw && typeof raw === 'object')
-				for (const [ref, name] of Object.entries(raw as Record<string, unknown>))
-					if (typeof name === 'string' && roster.has(name)) replacements[ref] = name;
+				for (const [ref, userId] of Object.entries(raw as Record<string, unknown>))
+					if (typeof userId === 'string' && roster.has(userId)) replacements[ref] = userId;
 		} catch {
 		}
 		if (!(await deactivateMember(cookies, params.workspace, String(form.get('id') ?? ''), replacements)))

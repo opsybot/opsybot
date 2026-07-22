@@ -30,12 +30,17 @@
 		saveBlocked,
 		updateNodes,
 		type BranchKind,
+		type Directory,
 		type Level,
 		type Tree
 	} from '$lib/escalation';
 	import { ws } from '$lib/navigation';
 
-	let { initial, backHref }: { initial: Tree; backHref: string } = $props();
+	let {
+		initial,
+		directory,
+		backHref
+	}: { initial: Tree; directory: Directory; backHref: string } = $props();
 
 	let tree = $state<Tree>(untrack(() => structuredClone(initial)));
 	let selectedId = $state<string | null>(null);
@@ -172,16 +177,31 @@
 			class="bg-card sticky top-2 flex max-h-[calc(100vh-96px)] flex-col gap-3 self-start overflow-y-auto rounded-xl border p-[15px]"
 		>
 			{#if !selected}
-				<PolicyInspector {tree} {analysis} onsetpolicy={(patch) => (tree = { ...tree, ...patch })} />
+				<PolicyInspector {tree} {analysis} {directory} onsetpolicy={(patch) => (tree = { ...tree, ...patch })} />
 			{:else if selected.type === 'branch'}
 				<BranchInspector
 					node={selected}
 					onchangecondition={(id, on) => (tree = { ...tree, nodes: changeCondition(tree.nodes, id, on) })}
+					onsethours={(id, hours) =>
+						(tree = {
+							...tree,
+							nodes: tree.nodes.map(function patch(node): typeof node {
+								if (node.type === 'branch') {
+									if (node.id === id) return { ...node, hours };
+									return {
+										...node,
+										lanes: node.lanes.map((lane) => ({ ...lane, nodes: lane.nodes.map(patch) }))
+									};
+								}
+								return node;
+							})
+						})}
 					onremove={requestDelete}
 					ondeselect={() => (selectedId = null)}
 				/>
 			{:else}
 				<LevelInspector
+					{directory}
 					node={selected}
 					sib={nodeSiblings(tree.nodes, selected.id)}
 					onupdate={update}

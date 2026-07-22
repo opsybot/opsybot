@@ -15,6 +15,7 @@ type srv struct {
 	workspaces repository.Workspace
 	members    repository.Member
 	teams      repository.Team
+	policies   repository.EscalationPolicy
 	policy     repository.Policy
 	audit      repository.Audit
 }
@@ -25,10 +26,11 @@ func New(
 	workspaces repository.Workspace,
 	members repository.Member,
 	teams repository.Team,
+	policies repository.EscalationPolicy,
 	policy repository.Policy,
 	audit repository.Audit,
 ) service.Teams {
-	return &srv{tx: tx, lock: lock, workspaces: workspaces, members: members, teams: teams, policy: policy, audit: audit}
+	return &srv{tx: tx, lock: lock, workspaces: workspaces, members: members, teams: teams, policies: policies, policy: policy, audit: audit}
 }
 
 func (s *srv) authorize(ctx context.Context, workspaceSlug string, act entity.PolicyAction) (entity.Identity, entity.Workspace, error) {
@@ -179,6 +181,15 @@ func (s *srv) setArchived(ctx context.Context, workspaceSlug, teamSlug string, a
 				return entity.ErrTeamArchived
 			}
 			return entity.ErrTeamNotArchived
+		}
+		if archived {
+			referencing, err := s.policies.ListReferencingTeam(ctx, ws.ID, current.ID)
+			if err != nil {
+				return err
+			}
+			if len(referencing) > 0 {
+				return entity.ErrTeamInPolicy
+			}
 		}
 		team, err = s.teams.SetArchived(ctx, ws.ID, teamSlug, archived)
 		if err != nil {

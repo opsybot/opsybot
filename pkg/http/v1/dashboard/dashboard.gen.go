@@ -58,6 +58,30 @@ func (e AlertStatus) Valid() bool {
 	}
 }
 
+// Defines values for AlertEscalationState.
+const (
+	AlertEscalationStateAcked     AlertEscalationState = "acked"
+	AlertEscalationStateExhausted AlertEscalationState = "exhausted"
+	AlertEscalationStateResolved  AlertEscalationState = "resolved"
+	AlertEscalationStateRunning   AlertEscalationState = "running"
+)
+
+// Valid indicates whether the value is a known member of the AlertEscalationState enum.
+func (e AlertEscalationState) Valid() bool {
+	switch e {
+	case AlertEscalationStateAcked:
+		return true
+	case AlertEscalationStateExhausted:
+		return true
+	case AlertEscalationStateResolved:
+		return true
+	case AlertEscalationStateRunning:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AlertLinkKind.
 const (
 	AlertLinkKindDashboard AlertLinkKind = "dashboard"
@@ -418,6 +442,84 @@ func (e CreateSilenceRequestKind) Valid() bool {
 	}
 }
 
+// Defines values for EscalationNodeMode.
+const (
+	All EscalationNodeMode = "all"
+	Rr  EscalationNodeMode = "rr"
+)
+
+// Valid indicates whether the value is a known member of the EscalationNodeMode enum.
+func (e EscalationNodeMode) Valid() bool {
+	switch e {
+	case All:
+		return true
+	case Rr:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EscalationNodeOn.
+const (
+	Hours    EscalationNodeOn = "hours"
+	Priority EscalationNodeOn = "priority"
+)
+
+// Valid indicates whether the value is a known member of the EscalationNodeOn enum.
+func (e EscalationNodeOn) Valid() bool {
+	switch e {
+	case Hours:
+		return true
+	case Priority:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EscalationNodeType.
+const (
+	Branch EscalationNodeType = "branch"
+	Level  EscalationNodeType = "level"
+)
+
+// Valid indicates whether the value is a known member of the EscalationNodeType enum.
+func (e EscalationNodeType) Valid() bool {
+	switch e {
+	case Branch:
+		return true
+	case Level:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EscalationTargetType.
+const (
+	EscalationTargetTypePerson   EscalationTargetType = "person"
+	EscalationTargetTypeSchedule EscalationTargetType = "schedule"
+	EscalationTargetTypeTeam     EscalationTargetType = "team"
+	EscalationTargetTypeWebhook  EscalationTargetType = "webhook"
+)
+
+// Valid indicates whether the value is a known member of the EscalationTargetType enum.
+func (e EscalationTargetType) Valid() bool {
+	switch e {
+	case EscalationTargetTypePerson:
+		return true
+	case EscalationTargetTypeSchedule:
+		return true
+	case EscalationTargetTypeTeam:
+		return true
+	case EscalationTargetTypeWebhook:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for HealthStatus.
 const (
 	HealthStatusOk HealthStatus = "ok"
@@ -487,6 +589,30 @@ func (e MemberStatus) Valid() bool {
 	case MemberStatusDeactivated:
 		return true
 	case MemberStatusInvited:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RecentEscalationState.
+const (
+	RecentEscalationStateAcked     RecentEscalationState = "acked"
+	RecentEscalationStateExhausted RecentEscalationState = "exhausted"
+	RecentEscalationStateResolved  RecentEscalationState = "resolved"
+	RecentEscalationStateRunning   RecentEscalationState = "running"
+)
+
+// Valid indicates whether the value is a known member of the RecentEscalationState enum.
+func (e RecentEscalationState) Valid() bool {
+	switch e {
+	case RecentEscalationStateAcked:
+		return true
+	case RecentEscalationStateExhausted:
+		return true
+	case RecentEscalationStateResolved:
+		return true
+	case RecentEscalationStateRunning:
 		return true
 	default:
 		return false
@@ -730,29 +856,30 @@ type AddOverrideRequest struct {
 
 // Alert defines model for Alert.
 type Alert struct {
-	AckedBy         *string           `json:"ackedBy,omitempty"`
-	AcknowledgedAt  *time.Time        `json:"acknowledgedAt,omitempty"`
-	Children        *[]AlertChild     `json:"children,omitempty"`
-	Count           int               `json:"count"`
-	DedupKey        string            `json:"dedupKey"`
-	Description     string            `json:"description"`
-	GroupKey        *string           `json:"groupKey,omitempty"`
-	Id              string            `json:"id"`
-	Labels          map[string]string `json:"labels"`
-	LastSeenAt      time.Time         `json:"lastSeenAt"`
-	Links           []AlertLink       `json:"links"`
-	Payload         string            `json:"payload"`
-	ResolveMode     *string           `json:"resolveMode,omitempty"`
-	ResolvedAt      *time.Time        `json:"resolvedAt,omitempty"`
-	RoutedPolicyRef string            `json:"routedPolicyRef"`
-	Service         string            `json:"service"`
-	Severity        AlertSeverity     `json:"severity"`
-	Source          string            `json:"source"`
-	StartedAt       time.Time         `json:"startedAt"`
-	Status          AlertStatus       `json:"status"`
-	Suppressed      bool              `json:"suppressed"`
-	Timeline        []AlertEvent      `json:"timeline"`
-	Title           string            `json:"title"`
+	AckedBy              *string           `json:"ackedBy,omitempty"`
+	AcknowledgedAt       *time.Time        `json:"acknowledgedAt,omitempty"`
+	Children             *[]AlertChild     `json:"children,omitempty"`
+	Count                int               `json:"count"`
+	DedupKey             string            `json:"dedupKey"`
+	Description          string            `json:"description"`
+	Escalation           *AlertEscalation  `json:"escalation,omitempty"`
+	EscalationPolicySlug *string           `json:"escalationPolicySlug,omitempty"`
+	GroupKey             *string           `json:"groupKey,omitempty"`
+	Id                   string            `json:"id"`
+	Labels               map[string]string `json:"labels"`
+	LastSeenAt           time.Time         `json:"lastSeenAt"`
+	Links                []AlertLink       `json:"links"`
+	Payload              string            `json:"payload"`
+	ResolveMode          *string           `json:"resolveMode,omitempty"`
+	ResolvedAt           *time.Time        `json:"resolvedAt,omitempty"`
+	Service              string            `json:"service"`
+	Severity             AlertSeverity     `json:"severity"`
+	Source               string            `json:"source"`
+	StartedAt            time.Time         `json:"startedAt"`
+	Status               AlertStatus       `json:"status"`
+	Suppressed           bool              `json:"suppressed"`
+	Timeline             []AlertEvent      `json:"timeline"`
+	Title                string            `json:"title"`
 }
 
 // AlertSeverity defines model for Alert.Severity.
@@ -770,6 +897,20 @@ type AlertChild struct {
 	Status     string    `json:"status"`
 	Title      string    `json:"title"`
 }
+
+// AlertEscalation defines model for AlertEscalation.
+type AlertEscalation struct {
+	AckExpiresAt *time.Time           `json:"ackExpiresAt,omitempty"`
+	Cycle        int                  `json:"cycle"`
+	NextAt       *time.Time           `json:"nextAt,omitempty"`
+	PolicySlug   string               `json:"policySlug"`
+	State        AlertEscalationState `json:"state"`
+	StepIndex    int                  `json:"stepIndex"`
+	TotalSteps   int                  `json:"totalSteps"`
+}
+
+// AlertEscalationState defines model for AlertEscalation.State.
+type AlertEscalationState string
 
 // AlertEvent defines model for AlertEvent.
 type AlertEvent struct {
@@ -838,7 +979,7 @@ type AlertMonitor struct {
 	LastCheckInAt   *time.Time           `json:"lastCheckInAt,omitempty"`
 	Name            string               `json:"name"`
 	Paused          bool                 `json:"paused"`
-	PolicyRef       string               `json:"policyRef"`
+	PolicySlug      string               `json:"policySlug"`
 	Severity        AlertMonitorSeverity `json:"severity"`
 	Slug            string               `json:"slug"`
 	State           AlertMonitorState    `json:"state"`
@@ -859,21 +1000,20 @@ type AlertMonitorList struct {
 type AlertRoute struct {
 	Conditions []RouteCondition `json:"conditions"`
 	Id         string           `json:"id"`
-	PolicyRef  string           `json:"policyRef"`
+	PolicySlug string           `json:"policySlug"`
 	Position   int              `json:"position"`
 }
 
 // AlertRouteList defines model for AlertRouteList.
 type AlertRouteList struct {
-	DefaultPolicyRef string       `json:"defaultPolicyRef"`
-	Items            []AlertRoute `json:"items"`
-	KnownPolicyRefs  []string     `json:"knownPolicyRefs"`
+	DefaultPolicySlug string       `json:"defaultPolicySlug"`
+	Items             []AlertRoute `json:"items"`
 }
 
 // AlertRouteRequest defines model for AlertRouteRequest.
 type AlertRouteRequest struct {
 	Conditions []RouteCondition `json:"conditions"`
-	PolicyRef  string           `json:"policyRef"`
+	PolicySlug string           `json:"policySlug"`
 }
 
 // AlertSource defines model for AlertSource.
@@ -1019,7 +1159,7 @@ type CreateAlertMonitorRequest struct {
 	GraceSeconds    *int                               `json:"graceSeconds,omitempty"`
 	IntervalSeconds int                                `json:"intervalSeconds"`
 	Name            string                             `json:"name"`
-	PolicyRef       *string                            `json:"policyRef,omitempty"`
+	PolicySlug      *string                            `json:"policySlug,omitempty"`
 	Severity        *CreateAlertMonitorRequestSeverity `json:"severity,omitempty"`
 	Slug            *string                            `json:"slug,omitempty"`
 }
@@ -1100,7 +1240,126 @@ type DeactivateMemberRequest struct {
 
 // DefaultPolicyRequest defines model for DefaultPolicyRequest.
 type DefaultPolicyRequest struct {
-	PolicyRef string `json:"policyRef"`
+	PolicySlug string `json:"policySlug"`
+}
+
+// EscalationDirectory defines model for EscalationDirectory.
+type EscalationDirectory struct {
+	Members   []EscalationDirectoryMember `json:"members"`
+	Schedules []EscalationDirectoryEntry  `json:"schedules"`
+	Teams     []EscalationDirectoryEntry  `json:"teams"`
+	Webhooks  []EscalationDirectoryEntry  `json:"webhooks"`
+}
+
+// EscalationDirectoryEntry defines model for EscalationDirectoryEntry.
+type EscalationDirectoryEntry struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+}
+
+// EscalationDirectoryMember defines model for EscalationDirectoryMember.
+type EscalationDirectoryMember struct {
+	Active bool   `json:"active"`
+	Email  string `json:"email"`
+	Id     string `json:"id"`
+	Name   string `json:"name"`
+}
+
+// EscalationHours defines model for EscalationHours.
+type EscalationHours struct {
+	Days        []int  `json:"days"`
+	EndMinute   int    `json:"endMinute"`
+	StartMinute int    `json:"startMinute"`
+	Timezone    string `json:"timezone"`
+}
+
+// EscalationLane defines model for EscalationLane.
+type EscalationLane struct {
+	Id    string           `json:"id"`
+	Key   string           `json:"key"`
+	Nodes []EscalationNode `json:"nodes"`
+}
+
+// EscalationNode defines model for EscalationNode.
+type EscalationNode struct {
+	Hours       *EscalationHours    `json:"hours,omitempty"`
+	Id          string              `json:"id"`
+	Lanes       *[]EscalationLane   `json:"lanes,omitempty"`
+	Mode        *EscalationNodeMode `json:"mode,omitempty"`
+	On          *EscalationNodeOn   `json:"on,omitempty"`
+	Targets     *[]EscalationTarget `json:"targets,omitempty"`
+	Type        EscalationNodeType  `json:"type"`
+	WaitSeconds *int                `json:"waitSeconds,omitempty"`
+}
+
+// EscalationNodeMode defines model for EscalationNode.Mode.
+type EscalationNodeMode string
+
+// EscalationNodeOn defines model for EscalationNode.On.
+type EscalationNodeOn string
+
+// EscalationNodeType defines model for EscalationNode.Type.
+type EscalationNodeType string
+
+// EscalationPolicy defines model for EscalationPolicy.
+type EscalationPolicy struct {
+	AckTimeoutSeconds int              `json:"ackTimeoutSeconds"`
+	Id                string           `json:"id"`
+	Name              string           `json:"name"`
+	Nodes             []EscalationNode `json:"nodes"`
+	Repeat            int              `json:"repeat"`
+	Slug              string           `json:"slug"`
+	TeamSlug          string           `json:"teamSlug"`
+}
+
+// EscalationPolicyDetail defines model for EscalationPolicyDetail.
+type EscalationPolicyDetail struct {
+	IsDefault bool               `json:"isDefault"`
+	Policy    EscalationPolicy   `json:"policy"`
+	Recent    []RecentEscalation `json:"recent"`
+	Routed    int                `json:"routed"`
+	Routes    []AlertRoute       `json:"routes"`
+}
+
+// EscalationPolicyList defines model for EscalationPolicyList.
+type EscalationPolicyList struct {
+	Items []EscalationPolicySummary `json:"items"`
+}
+
+// EscalationPolicySummary defines model for EscalationPolicySummary.
+type EscalationPolicySummary struct {
+	HasBranch bool             `json:"hasBranch"`
+	Id        string           `json:"id"`
+	Name      string           `json:"name"`
+	Nodes     []EscalationNode `json:"nodes"`
+	Routed    int              `json:"routed"`
+	Slug      string           `json:"slug"`
+	StepCount int              `json:"stepCount"`
+	TeamSlug  string           `json:"teamSlug"`
+}
+
+// EscalationTarget defines model for EscalationTarget.
+type EscalationTarget struct {
+	Ref  string               `json:"ref"`
+	Type EscalationTargetType `json:"type"`
+}
+
+// EscalationTargetType defines model for EscalationTarget.Type.
+type EscalationTargetType string
+
+// EscalationWebhook defines model for EscalationWebhook.
+type EscalationWebhook struct {
+	HasSecret bool   `json:"hasSecret"`
+	Id        string `json:"id"`
+	Name      string `json:"name"`
+	Slug      string `json:"slug"`
+	Url       string `json:"url"`
+}
+
+// EscalationWebhookList defines model for EscalationWebhookList.
+type EscalationWebhookList struct {
+	Items []EscalationWebhook `json:"items"`
 }
 
 // ForgotPasswordRequest defines model for ForgotPasswordRequest.
@@ -1268,6 +1527,20 @@ type Profile struct {
 	TwoFactorEnabled bool   `json:"twoFactorEnabled"`
 }
 
+// RecentEscalation defines model for RecentEscalation.
+type RecentEscalation struct {
+	AlertId    string                `json:"alertId"`
+	AlertTitle string                `json:"alertTitle"`
+	By         *string               `json:"by,omitempty"`
+	EndedAt    *time.Time            `json:"endedAt,omitempty"`
+	Outcome    string                `json:"outcome"`
+	StartedAt  time.Time             `json:"startedAt"`
+	State      RecentEscalationState `json:"state"`
+}
+
+// RecentEscalationState defines model for RecentEscalation.State.
+type RecentEscalationState string
+
 // RecoveryCodeRequest defines model for RecoveryCodeRequest.
 type RecoveryCodeRequest struct {
 	Code string `json:"code"`
@@ -1306,13 +1579,31 @@ type RouteConditionOp string
 type RoutePreview struct {
 	GroupFields    []string `json:"groupFields"`
 	MatchedRouteId *string  `json:"matchedRouteId,omitempty"`
-	PolicyRef      string   `json:"policyRef"`
+	PolicySlug     string   `json:"policySlug"`
 	Position       int      `json:"position"`
 }
 
 // RoutePreviewRequest defines model for RoutePreviewRequest.
 type RoutePreviewRequest struct {
 	Payload string `json:"payload"`
+}
+
+// SaveEscalationPolicyRequest defines model for SaveEscalationPolicyRequest.
+type SaveEscalationPolicyRequest struct {
+	AckTimeoutSeconds *int             `json:"ackTimeoutSeconds,omitempty"`
+	Name              string           `json:"name"`
+	Nodes             []EscalationNode `json:"nodes"`
+	Repeat            *int             `json:"repeat,omitempty"`
+	Slug              *string          `json:"slug,omitempty"`
+	TeamSlug          *string          `json:"teamSlug,omitempty"`
+}
+
+// SaveEscalationWebhookRequest defines model for SaveEscalationWebhookRequest.
+type SaveEscalationWebhookRequest struct {
+	Name   string  `json:"name"`
+	Secret *string `json:"secret,omitempty"`
+	Slug   *string `json:"slug,omitempty"`
+	Url    string  `json:"url"`
 }
 
 // Schedule defines model for Schedule.
@@ -1563,7 +1854,7 @@ type UpdateAlertMonitorRequest struct {
 	GraceSeconds    *int                               `json:"graceSeconds,omitempty"`
 	IntervalSeconds int                                `json:"intervalSeconds"`
 	Name            string                             `json:"name"`
-	PolicyRef       *string                            `json:"policyRef,omitempty"`
+	PolicySlug      *string                            `json:"policySlug,omitempty"`
 	Severity        *UpdateAlertMonitorRequestSeverity `json:"severity,omitempty"`
 }
 
@@ -1752,6 +2043,18 @@ type UpdateAlertSourceMappingJSONRequestBody = UpdateAlertSourceMappingRequest
 
 // UpdateAlertStatusJSONRequestBody defines body for UpdateAlertStatus for application/json ContentType.
 type UpdateAlertStatusJSONRequestBody = AlertStatusRequest
+
+// CreateEscalationPolicyJSONRequestBody defines body for CreateEscalationPolicy for application/json ContentType.
+type CreateEscalationPolicyJSONRequestBody = SaveEscalationPolicyRequest
+
+// UpdateEscalationPolicyJSONRequestBody defines body for UpdateEscalationPolicy for application/json ContentType.
+type UpdateEscalationPolicyJSONRequestBody = SaveEscalationPolicyRequest
+
+// CreateEscalationWebhookJSONRequestBody defines body for CreateEscalationWebhook for application/json ContentType.
+type CreateEscalationWebhookJSONRequestBody = SaveEscalationWebhookRequest
+
+// UpdateEscalationWebhookJSONRequestBody defines body for UpdateEscalationWebhook for application/json ContentType.
+type UpdateEscalationWebhookJSONRequestBody = SaveEscalationWebhookRequest
 
 // CreateKeyJSONRequestBody defines body for CreateKey for application/json ContentType.
 type CreateKeyJSONRequestBody = CreateApiKeyRequest
@@ -1965,9 +2268,42 @@ type ServerInterface interface {
 	// Get one alert with its timeline
 	// (GET /workspaces/{workspaceId}/alerts/{alertId})
 	GetAlert(w http.ResponseWriter, r *http.Request, workspaceId string, alertId string)
+	// Escalate an alert to the next step immediately
+	// (POST /workspaces/{workspaceId}/alerts/{alertId}/escalate)
+	EscalateAlert(w http.ResponseWriter, r *http.Request, workspaceId string, alertId string)
 	// Read the workspace audit trail
 	// (GET /workspaces/{workspaceId}/audit)
 	ListAudit(w http.ResponseWriter, r *http.Request, workspaceId string, params ListAuditParams)
+	// People, schedules, teams, and webhooks available as escalation targets
+	// (GET /workspaces/{workspaceId}/escalation-directory)
+	GetEscalationDirectory(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// List escalation policies
+	// (GET /workspaces/{workspaceId}/escalation-policies)
+	ListEscalationPolicies(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Create an escalation policy
+	// (POST /workspaces/{workspaceId}/escalation-policies)
+	CreateEscalationPolicy(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Delete an escalation policy
+	// (DELETE /workspaces/{workspaceId}/escalation-policies/{policySlug})
+	DeleteEscalationPolicy(w http.ResponseWriter, r *http.Request, workspaceId string, policySlug string)
+	// Get an escalation policy with its linked routes and recent escalations
+	// (GET /workspaces/{workspaceId}/escalation-policies/{policySlug})
+	GetEscalationPolicy(w http.ResponseWriter, r *http.Request, workspaceId string, policySlug string)
+	// Update an escalation policy
+	// (PUT /workspaces/{workspaceId}/escalation-policies/{policySlug})
+	UpdateEscalationPolicy(w http.ResponseWriter, r *http.Request, workspaceId string, policySlug string)
+	// List escalation webhook targets
+	// (GET /workspaces/{workspaceId}/escalation-webhooks)
+	ListEscalationWebhooks(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Create an escalation webhook target
+	// (POST /workspaces/{workspaceId}/escalation-webhooks)
+	CreateEscalationWebhook(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Delete an escalation webhook target
+	// (DELETE /workspaces/{workspaceId}/escalation-webhooks/{webhookSlug})
+	DeleteEscalationWebhook(w http.ResponseWriter, r *http.Request, workspaceId string, webhookSlug string)
+	// Update an escalation webhook target
+	// (PUT /workspaces/{workspaceId}/escalation-webhooks/{webhookSlug})
+	UpdateEscalationWebhook(w http.ResponseWriter, r *http.Request, workspaceId string, webhookSlug string)
 	// List API keys in a workspace
 	// (GET /workspaces/{workspaceId}/keys)
 	ListKeys(w http.ResponseWriter, r *http.Request, workspaceId string)
@@ -2433,9 +2769,75 @@ func (_ Unimplemented) GetAlert(w http.ResponseWriter, r *http.Request, workspac
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Escalate an alert to the next step immediately
+// (POST /workspaces/{workspaceId}/alerts/{alertId}/escalate)
+func (_ Unimplemented) EscalateAlert(w http.ResponseWriter, r *http.Request, workspaceId string, alertId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Read the workspace audit trail
 // (GET /workspaces/{workspaceId}/audit)
 func (_ Unimplemented) ListAudit(w http.ResponseWriter, r *http.Request, workspaceId string, params ListAuditParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// People, schedules, teams, and webhooks available as escalation targets
+// (GET /workspaces/{workspaceId}/escalation-directory)
+func (_ Unimplemented) GetEscalationDirectory(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List escalation policies
+// (GET /workspaces/{workspaceId}/escalation-policies)
+func (_ Unimplemented) ListEscalationPolicies(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create an escalation policy
+// (POST /workspaces/{workspaceId}/escalation-policies)
+func (_ Unimplemented) CreateEscalationPolicy(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete an escalation policy
+// (DELETE /workspaces/{workspaceId}/escalation-policies/{policySlug})
+func (_ Unimplemented) DeleteEscalationPolicy(w http.ResponseWriter, r *http.Request, workspaceId string, policySlug string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get an escalation policy with its linked routes and recent escalations
+// (GET /workspaces/{workspaceId}/escalation-policies/{policySlug})
+func (_ Unimplemented) GetEscalationPolicy(w http.ResponseWriter, r *http.Request, workspaceId string, policySlug string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update an escalation policy
+// (PUT /workspaces/{workspaceId}/escalation-policies/{policySlug})
+func (_ Unimplemented) UpdateEscalationPolicy(w http.ResponseWriter, r *http.Request, workspaceId string, policySlug string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List escalation webhook targets
+// (GET /workspaces/{workspaceId}/escalation-webhooks)
+func (_ Unimplemented) ListEscalationWebhooks(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create an escalation webhook target
+// (POST /workspaces/{workspaceId}/escalation-webhooks)
+func (_ Unimplemented) CreateEscalationWebhook(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete an escalation webhook target
+// (DELETE /workspaces/{workspaceId}/escalation-webhooks/{webhookSlug})
+func (_ Unimplemented) DeleteEscalationWebhook(w http.ResponseWriter, r *http.Request, workspaceId string, webhookSlug string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update an escalation webhook target
+// (PUT /workspaces/{workspaceId}/escalation-webhooks/{webhookSlug})
+func (_ Unimplemented) UpdateEscalationWebhook(w http.ResponseWriter, r *http.Request, workspaceId string, webhookSlug string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -4201,6 +4603,41 @@ func (siw *ServerInterfaceWrapper) GetAlert(w http.ResponseWriter, r *http.Reque
 	handler.ServeHTTP(w, r)
 }
 
+// EscalateAlert operation middleware
+func (siw *ServerInterfaceWrapper) EscalateAlert(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "alertId" -------------
+	var alertId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "alertId", chi.URLParam(r, "alertId"), &alertId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "alertId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.EscalateAlert(w, r, workspaceId, alertId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListAudit operation middleware
 func (siw *ServerInterfaceWrapper) ListAudit(w http.ResponseWriter, r *http.Request) {
 
@@ -4286,6 +4723,311 @@ func (siw *ServerInterfaceWrapper) ListAudit(w http.ResponseWriter, r *http.Requ
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListAudit(w, r, workspaceId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetEscalationDirectory operation middleware
+func (siw *ServerInterfaceWrapper) GetEscalationDirectory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetEscalationDirectory(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListEscalationPolicies operation middleware
+func (siw *ServerInterfaceWrapper) ListEscalationPolicies(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListEscalationPolicies(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateEscalationPolicy operation middleware
+func (siw *ServerInterfaceWrapper) CreateEscalationPolicy(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateEscalationPolicy(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteEscalationPolicy operation middleware
+func (siw *ServerInterfaceWrapper) DeleteEscalationPolicy(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "policySlug" -------------
+	var policySlug string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "policySlug", chi.URLParam(r, "policySlug"), &policySlug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "policySlug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteEscalationPolicy(w, r, workspaceId, policySlug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetEscalationPolicy operation middleware
+func (siw *ServerInterfaceWrapper) GetEscalationPolicy(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "policySlug" -------------
+	var policySlug string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "policySlug", chi.URLParam(r, "policySlug"), &policySlug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "policySlug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetEscalationPolicy(w, r, workspaceId, policySlug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateEscalationPolicy operation middleware
+func (siw *ServerInterfaceWrapper) UpdateEscalationPolicy(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "policySlug" -------------
+	var policySlug string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "policySlug", chi.URLParam(r, "policySlug"), &policySlug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "policySlug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateEscalationPolicy(w, r, workspaceId, policySlug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListEscalationWebhooks operation middleware
+func (siw *ServerInterfaceWrapper) ListEscalationWebhooks(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListEscalationWebhooks(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateEscalationWebhook operation middleware
+func (siw *ServerInterfaceWrapper) CreateEscalationWebhook(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateEscalationWebhook(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteEscalationWebhook operation middleware
+func (siw *ServerInterfaceWrapper) DeleteEscalationWebhook(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "webhookSlug" -------------
+	var webhookSlug string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "webhookSlug", chi.URLParam(r, "webhookSlug"), &webhookSlug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "webhookSlug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteEscalationWebhook(w, r, workspaceId, webhookSlug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateEscalationWebhook operation middleware
+func (siw *ServerInterfaceWrapper) UpdateEscalationWebhook(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "webhookSlug" -------------
+	var webhookSlug string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "webhookSlug", chi.URLParam(r, "webhookSlug"), &webhookSlug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "webhookSlug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateEscalationWebhook(w, r, workspaceId, webhookSlug)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5800,7 +6542,40 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/workspaces/{workspaceId}/alerts/{alertId}", wrapper.GetAlert)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/alerts/{alertId}/escalate", wrapper.EscalateAlert)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/workspaces/{workspaceId}/audit", wrapper.ListAudit)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/escalation-directory", wrapper.GetEscalationDirectory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/escalation-policies", wrapper.ListEscalationPolicies)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/escalation-policies", wrapper.CreateEscalationPolicy)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/workspaces/{workspaceId}/escalation-policies/{policySlug}", wrapper.DeleteEscalationPolicy)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/escalation-policies/{policySlug}", wrapper.GetEscalationPolicy)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/workspaces/{workspaceId}/escalation-policies/{policySlug}", wrapper.UpdateEscalationPolicy)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/escalation-webhooks", wrapper.ListEscalationWebhooks)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/escalation-webhooks", wrapper.CreateEscalationWebhook)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/workspaces/{workspaceId}/escalation-webhooks/{webhookSlug}", wrapper.DeleteEscalationWebhook)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/workspaces/{workspaceId}/escalation-webhooks/{webhookSlug}", wrapper.UpdateEscalationWebhook)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/workspaces/{workspaceId}/keys", wrapper.ListKeys)
@@ -9526,6 +10301,79 @@ func (response GetAlert404ApplicationProblemPlusJSONResponse) VisitGetAlertRespo
 	return err
 }
 
+type EscalateAlertRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	AlertId     string `json:"alertId"`
+}
+
+type EscalateAlertResponseObject interface {
+	VisitEscalateAlertResponse(w http.ResponseWriter) error
+}
+
+type EscalateAlert204Response struct {
+}
+
+func (response EscalateAlert204Response) VisitEscalateAlertResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type EscalateAlert401ApplicationProblemPlusJSONResponse Problem
+
+func (response EscalateAlert401ApplicationProblemPlusJSONResponse) VisitEscalateAlertResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EscalateAlert403ApplicationProblemPlusJSONResponse Problem
+
+func (response EscalateAlert403ApplicationProblemPlusJSONResponse) VisitEscalateAlertResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EscalateAlert404ApplicationProblemPlusJSONResponse Problem
+
+func (response EscalateAlert404ApplicationProblemPlusJSONResponse) VisitEscalateAlertResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EscalateAlert409ApplicationProblemPlusJSONResponse Problem
+
+func (response EscalateAlert409ApplicationProblemPlusJSONResponse) VisitEscalateAlertResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListAuditRequestObject struct {
 	WorkspaceId string `json:"workspaceId"`
 	Params      ListAuditParams
@@ -9594,6 +10442,755 @@ func (response ListAudit403ApplicationProblemPlusJSONResponse) VisitListAuditRes
 type ListAudit404ApplicationProblemPlusJSONResponse Problem
 
 func (response ListAudit404ApplicationProblemPlusJSONResponse) VisitListAuditResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEscalationDirectoryRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+}
+
+type GetEscalationDirectoryResponseObject interface {
+	VisitGetEscalationDirectoryResponse(w http.ResponseWriter) error
+}
+
+type GetEscalationDirectory200JSONResponse EscalationDirectory
+
+func (response GetEscalationDirectory200JSONResponse) VisitGetEscalationDirectoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEscalationDirectory401ApplicationProblemPlusJSONResponse Problem
+
+func (response GetEscalationDirectory401ApplicationProblemPlusJSONResponse) VisitGetEscalationDirectoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEscalationDirectory403ApplicationProblemPlusJSONResponse Problem
+
+func (response GetEscalationDirectory403ApplicationProblemPlusJSONResponse) VisitGetEscalationDirectoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEscalationDirectory404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetEscalationDirectory404ApplicationProblemPlusJSONResponse) VisitGetEscalationDirectoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEscalationPoliciesRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+}
+
+type ListEscalationPoliciesResponseObject interface {
+	VisitListEscalationPoliciesResponse(w http.ResponseWriter) error
+}
+
+type ListEscalationPolicies200JSONResponse EscalationPolicyList
+
+func (response ListEscalationPolicies200JSONResponse) VisitListEscalationPoliciesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEscalationPolicies401ApplicationProblemPlusJSONResponse Problem
+
+func (response ListEscalationPolicies401ApplicationProblemPlusJSONResponse) VisitListEscalationPoliciesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEscalationPolicies403ApplicationProblemPlusJSONResponse Problem
+
+func (response ListEscalationPolicies403ApplicationProblemPlusJSONResponse) VisitListEscalationPoliciesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEscalationPolicies404ApplicationProblemPlusJSONResponse Problem
+
+func (response ListEscalationPolicies404ApplicationProblemPlusJSONResponse) VisitListEscalationPoliciesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEscalationPolicyRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	Body        *CreateEscalationPolicyJSONRequestBody
+}
+
+type CreateEscalationPolicyResponseObject interface {
+	VisitCreateEscalationPolicyResponse(w http.ResponseWriter) error
+}
+
+type CreateEscalationPolicy201JSONResponse EscalationPolicy
+
+func (response CreateEscalationPolicy201JSONResponse) VisitCreateEscalationPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEscalationPolicy400ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateEscalationPolicy400ApplicationProblemPlusJSONResponse) VisitCreateEscalationPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEscalationPolicy401ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateEscalationPolicy401ApplicationProblemPlusJSONResponse) VisitCreateEscalationPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEscalationPolicy403ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateEscalationPolicy403ApplicationProblemPlusJSONResponse) VisitCreateEscalationPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEscalationPolicy404ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateEscalationPolicy404ApplicationProblemPlusJSONResponse) VisitCreateEscalationPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEscalationPolicy409ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateEscalationPolicy409ApplicationProblemPlusJSONResponse) VisitCreateEscalationPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteEscalationPolicyRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	PolicySlug  string `json:"policySlug"`
+}
+
+type DeleteEscalationPolicyResponseObject interface {
+	VisitDeleteEscalationPolicyResponse(w http.ResponseWriter) error
+}
+
+type DeleteEscalationPolicy204Response struct {
+}
+
+func (response DeleteEscalationPolicy204Response) VisitDeleteEscalationPolicyResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteEscalationPolicy401ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteEscalationPolicy401ApplicationProblemPlusJSONResponse) VisitDeleteEscalationPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteEscalationPolicy403ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteEscalationPolicy403ApplicationProblemPlusJSONResponse) VisitDeleteEscalationPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteEscalationPolicy404ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteEscalationPolicy404ApplicationProblemPlusJSONResponse) VisitDeleteEscalationPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteEscalationPolicy409ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteEscalationPolicy409ApplicationProblemPlusJSONResponse) VisitDeleteEscalationPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEscalationPolicyRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	PolicySlug  string `json:"policySlug"`
+}
+
+type GetEscalationPolicyResponseObject interface {
+	VisitGetEscalationPolicyResponse(w http.ResponseWriter) error
+}
+
+type GetEscalationPolicy200JSONResponse EscalationPolicyDetail
+
+func (response GetEscalationPolicy200JSONResponse) VisitGetEscalationPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEscalationPolicy401ApplicationProblemPlusJSONResponse Problem
+
+func (response GetEscalationPolicy401ApplicationProblemPlusJSONResponse) VisitGetEscalationPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEscalationPolicy403ApplicationProblemPlusJSONResponse Problem
+
+func (response GetEscalationPolicy403ApplicationProblemPlusJSONResponse) VisitGetEscalationPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEscalationPolicy404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetEscalationPolicy404ApplicationProblemPlusJSONResponse) VisitGetEscalationPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateEscalationPolicyRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	PolicySlug  string `json:"policySlug"`
+	Body        *UpdateEscalationPolicyJSONRequestBody
+}
+
+type UpdateEscalationPolicyResponseObject interface {
+	VisitUpdateEscalationPolicyResponse(w http.ResponseWriter) error
+}
+
+type UpdateEscalationPolicy200JSONResponse EscalationPolicy
+
+func (response UpdateEscalationPolicy200JSONResponse) VisitUpdateEscalationPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateEscalationPolicy400ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateEscalationPolicy400ApplicationProblemPlusJSONResponse) VisitUpdateEscalationPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateEscalationPolicy401ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateEscalationPolicy401ApplicationProblemPlusJSONResponse) VisitUpdateEscalationPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateEscalationPolicy403ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateEscalationPolicy403ApplicationProblemPlusJSONResponse) VisitUpdateEscalationPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateEscalationPolicy404ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateEscalationPolicy404ApplicationProblemPlusJSONResponse) VisitUpdateEscalationPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEscalationWebhooksRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+}
+
+type ListEscalationWebhooksResponseObject interface {
+	VisitListEscalationWebhooksResponse(w http.ResponseWriter) error
+}
+
+type ListEscalationWebhooks200JSONResponse EscalationWebhookList
+
+func (response ListEscalationWebhooks200JSONResponse) VisitListEscalationWebhooksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEscalationWebhooks401ApplicationProblemPlusJSONResponse Problem
+
+func (response ListEscalationWebhooks401ApplicationProblemPlusJSONResponse) VisitListEscalationWebhooksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEscalationWebhooks403ApplicationProblemPlusJSONResponse Problem
+
+func (response ListEscalationWebhooks403ApplicationProblemPlusJSONResponse) VisitListEscalationWebhooksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEscalationWebhooks404ApplicationProblemPlusJSONResponse Problem
+
+func (response ListEscalationWebhooks404ApplicationProblemPlusJSONResponse) VisitListEscalationWebhooksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEscalationWebhookRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	Body        *CreateEscalationWebhookJSONRequestBody
+}
+
+type CreateEscalationWebhookResponseObject interface {
+	VisitCreateEscalationWebhookResponse(w http.ResponseWriter) error
+}
+
+type CreateEscalationWebhook201JSONResponse EscalationWebhook
+
+func (response CreateEscalationWebhook201JSONResponse) VisitCreateEscalationWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEscalationWebhook400ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateEscalationWebhook400ApplicationProblemPlusJSONResponse) VisitCreateEscalationWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEscalationWebhook401ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateEscalationWebhook401ApplicationProblemPlusJSONResponse) VisitCreateEscalationWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEscalationWebhook403ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateEscalationWebhook403ApplicationProblemPlusJSONResponse) VisitCreateEscalationWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEscalationWebhook404ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateEscalationWebhook404ApplicationProblemPlusJSONResponse) VisitCreateEscalationWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEscalationWebhook409ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateEscalationWebhook409ApplicationProblemPlusJSONResponse) VisitCreateEscalationWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteEscalationWebhookRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	WebhookSlug string `json:"webhookSlug"`
+}
+
+type DeleteEscalationWebhookResponseObject interface {
+	VisitDeleteEscalationWebhookResponse(w http.ResponseWriter) error
+}
+
+type DeleteEscalationWebhook204Response struct {
+}
+
+func (response DeleteEscalationWebhook204Response) VisitDeleteEscalationWebhookResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteEscalationWebhook401ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteEscalationWebhook401ApplicationProblemPlusJSONResponse) VisitDeleteEscalationWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteEscalationWebhook403ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteEscalationWebhook403ApplicationProblemPlusJSONResponse) VisitDeleteEscalationWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteEscalationWebhook404ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteEscalationWebhook404ApplicationProblemPlusJSONResponse) VisitDeleteEscalationWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteEscalationWebhook409ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteEscalationWebhook409ApplicationProblemPlusJSONResponse) VisitDeleteEscalationWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateEscalationWebhookRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	WebhookSlug string `json:"webhookSlug"`
+	Body        *UpdateEscalationWebhookJSONRequestBody
+}
+
+type UpdateEscalationWebhookResponseObject interface {
+	VisitUpdateEscalationWebhookResponse(w http.ResponseWriter) error
+}
+
+type UpdateEscalationWebhook200JSONResponse EscalationWebhook
+
+func (response UpdateEscalationWebhook200JSONResponse) VisitUpdateEscalationWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateEscalationWebhook400ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateEscalationWebhook400ApplicationProblemPlusJSONResponse) VisitUpdateEscalationWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateEscalationWebhook401ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateEscalationWebhook401ApplicationProblemPlusJSONResponse) VisitUpdateEscalationWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateEscalationWebhook403ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateEscalationWebhook403ApplicationProblemPlusJSONResponse) VisitUpdateEscalationWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateEscalationWebhook404ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateEscalationWebhook404ApplicationProblemPlusJSONResponse) VisitUpdateEscalationWebhookResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -12478,9 +14075,42 @@ type StrictServerInterface interface {
 	// Get one alert with its timeline
 	// (GET /workspaces/{workspaceId}/alerts/{alertId})
 	GetAlert(ctx context.Context, request GetAlertRequestObject) (GetAlertResponseObject, error)
+	// Escalate an alert to the next step immediately
+	// (POST /workspaces/{workspaceId}/alerts/{alertId}/escalate)
+	EscalateAlert(ctx context.Context, request EscalateAlertRequestObject) (EscalateAlertResponseObject, error)
 	// Read the workspace audit trail
 	// (GET /workspaces/{workspaceId}/audit)
 	ListAudit(ctx context.Context, request ListAuditRequestObject) (ListAuditResponseObject, error)
+	// People, schedules, teams, and webhooks available as escalation targets
+	// (GET /workspaces/{workspaceId}/escalation-directory)
+	GetEscalationDirectory(ctx context.Context, request GetEscalationDirectoryRequestObject) (GetEscalationDirectoryResponseObject, error)
+	// List escalation policies
+	// (GET /workspaces/{workspaceId}/escalation-policies)
+	ListEscalationPolicies(ctx context.Context, request ListEscalationPoliciesRequestObject) (ListEscalationPoliciesResponseObject, error)
+	// Create an escalation policy
+	// (POST /workspaces/{workspaceId}/escalation-policies)
+	CreateEscalationPolicy(ctx context.Context, request CreateEscalationPolicyRequestObject) (CreateEscalationPolicyResponseObject, error)
+	// Delete an escalation policy
+	// (DELETE /workspaces/{workspaceId}/escalation-policies/{policySlug})
+	DeleteEscalationPolicy(ctx context.Context, request DeleteEscalationPolicyRequestObject) (DeleteEscalationPolicyResponseObject, error)
+	// Get an escalation policy with its linked routes and recent escalations
+	// (GET /workspaces/{workspaceId}/escalation-policies/{policySlug})
+	GetEscalationPolicy(ctx context.Context, request GetEscalationPolicyRequestObject) (GetEscalationPolicyResponseObject, error)
+	// Update an escalation policy
+	// (PUT /workspaces/{workspaceId}/escalation-policies/{policySlug})
+	UpdateEscalationPolicy(ctx context.Context, request UpdateEscalationPolicyRequestObject) (UpdateEscalationPolicyResponseObject, error)
+	// List escalation webhook targets
+	// (GET /workspaces/{workspaceId}/escalation-webhooks)
+	ListEscalationWebhooks(ctx context.Context, request ListEscalationWebhooksRequestObject) (ListEscalationWebhooksResponseObject, error)
+	// Create an escalation webhook target
+	// (POST /workspaces/{workspaceId}/escalation-webhooks)
+	CreateEscalationWebhook(ctx context.Context, request CreateEscalationWebhookRequestObject) (CreateEscalationWebhookResponseObject, error)
+	// Delete an escalation webhook target
+	// (DELETE /workspaces/{workspaceId}/escalation-webhooks/{webhookSlug})
+	DeleteEscalationWebhook(ctx context.Context, request DeleteEscalationWebhookRequestObject) (DeleteEscalationWebhookResponseObject, error)
+	// Update an escalation webhook target
+	// (PUT /workspaces/{workspaceId}/escalation-webhooks/{webhookSlug})
+	UpdateEscalationWebhook(ctx context.Context, request UpdateEscalationWebhookRequestObject) (UpdateEscalationWebhookResponseObject, error)
 	// List API keys in a workspace
 	// (GET /workspaces/{workspaceId}/keys)
 	ListKeys(ctx context.Context, request ListKeysRequestObject) (ListKeysResponseObject, error)
@@ -14311,6 +15941,33 @@ func (sh *strictHandler) GetAlert(w http.ResponseWriter, r *http.Request, worksp
 	}
 }
 
+// EscalateAlert operation middleware
+func (sh *strictHandler) EscalateAlert(w http.ResponseWriter, r *http.Request, workspaceId string, alertId string) {
+	var request EscalateAlertRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.AlertId = alertId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.EscalateAlert(ctx, request.(EscalateAlertRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "EscalateAlert")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(EscalateAlertResponseObject); ok {
+		if err := validResponse.VisitEscalateAlertResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListAudit operation middleware
 func (sh *strictHandler) ListAudit(w http.ResponseWriter, r *http.Request, workspaceId string, params ListAuditParams) {
 	var request ListAuditRequestObject
@@ -14331,6 +15988,299 @@ func (sh *strictHandler) ListAudit(w http.ResponseWriter, r *http.Request, works
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListAuditResponseObject); ok {
 		if err := validResponse.VisitListAuditResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetEscalationDirectory operation middleware
+func (sh *strictHandler) GetEscalationDirectory(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request GetEscalationDirectoryRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetEscalationDirectory(ctx, request.(GetEscalationDirectoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetEscalationDirectory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetEscalationDirectoryResponseObject); ok {
+		if err := validResponse.VisitGetEscalationDirectoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListEscalationPolicies operation middleware
+func (sh *strictHandler) ListEscalationPolicies(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request ListEscalationPoliciesRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListEscalationPolicies(ctx, request.(ListEscalationPoliciesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListEscalationPolicies")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListEscalationPoliciesResponseObject); ok {
+		if err := validResponse.VisitListEscalationPoliciesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateEscalationPolicy operation middleware
+func (sh *strictHandler) CreateEscalationPolicy(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request CreateEscalationPolicyRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	var body CreateEscalationPolicyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateEscalationPolicy(ctx, request.(CreateEscalationPolicyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateEscalationPolicy")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateEscalationPolicyResponseObject); ok {
+		if err := validResponse.VisitCreateEscalationPolicyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteEscalationPolicy operation middleware
+func (sh *strictHandler) DeleteEscalationPolicy(w http.ResponseWriter, r *http.Request, workspaceId string, policySlug string) {
+	var request DeleteEscalationPolicyRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.PolicySlug = policySlug
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteEscalationPolicy(ctx, request.(DeleteEscalationPolicyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteEscalationPolicy")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteEscalationPolicyResponseObject); ok {
+		if err := validResponse.VisitDeleteEscalationPolicyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetEscalationPolicy operation middleware
+func (sh *strictHandler) GetEscalationPolicy(w http.ResponseWriter, r *http.Request, workspaceId string, policySlug string) {
+	var request GetEscalationPolicyRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.PolicySlug = policySlug
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetEscalationPolicy(ctx, request.(GetEscalationPolicyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetEscalationPolicy")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetEscalationPolicyResponseObject); ok {
+		if err := validResponse.VisitGetEscalationPolicyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateEscalationPolicy operation middleware
+func (sh *strictHandler) UpdateEscalationPolicy(w http.ResponseWriter, r *http.Request, workspaceId string, policySlug string) {
+	var request UpdateEscalationPolicyRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.PolicySlug = policySlug
+
+	var body UpdateEscalationPolicyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateEscalationPolicy(ctx, request.(UpdateEscalationPolicyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateEscalationPolicy")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateEscalationPolicyResponseObject); ok {
+		if err := validResponse.VisitUpdateEscalationPolicyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListEscalationWebhooks operation middleware
+func (sh *strictHandler) ListEscalationWebhooks(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request ListEscalationWebhooksRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListEscalationWebhooks(ctx, request.(ListEscalationWebhooksRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListEscalationWebhooks")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListEscalationWebhooksResponseObject); ok {
+		if err := validResponse.VisitListEscalationWebhooksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateEscalationWebhook operation middleware
+func (sh *strictHandler) CreateEscalationWebhook(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request CreateEscalationWebhookRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	var body CreateEscalationWebhookJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateEscalationWebhook(ctx, request.(CreateEscalationWebhookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateEscalationWebhook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateEscalationWebhookResponseObject); ok {
+		if err := validResponse.VisitCreateEscalationWebhookResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteEscalationWebhook operation middleware
+func (sh *strictHandler) DeleteEscalationWebhook(w http.ResponseWriter, r *http.Request, workspaceId string, webhookSlug string) {
+	var request DeleteEscalationWebhookRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.WebhookSlug = webhookSlug
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteEscalationWebhook(ctx, request.(DeleteEscalationWebhookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteEscalationWebhook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteEscalationWebhookResponseObject); ok {
+		if err := validResponse.VisitDeleteEscalationWebhookResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateEscalationWebhook operation middleware
+func (sh *strictHandler) UpdateEscalationWebhook(w http.ResponseWriter, r *http.Request, workspaceId string, webhookSlug string) {
+	var request UpdateEscalationWebhookRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.WebhookSlug = webhookSlug
+
+	var body UpdateEscalationWebhookJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateEscalationWebhook(ctx, request.(UpdateEscalationWebhookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateEscalationWebhook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateEscalationWebhookResponseObject); ok {
+		if err := validResponse.VisitUpdateEscalationWebhookResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

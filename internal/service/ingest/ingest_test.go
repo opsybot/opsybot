@@ -14,10 +14,12 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/alert_monitor"
 	"github.com/opsybot/opsybot/internal/repository/alert_route"
 	"github.com/opsybot/opsybot/internal/repository/alert_source"
+	"github.com/opsybot/opsybot/internal/repository/escalation_policy"
 	"github.com/opsybot/opsybot/internal/repository/ingest_event"
 	"github.com/opsybot/opsybot/internal/repository/lock"
 	"github.com/opsybot/opsybot/internal/repository/ratelimit"
 	"github.com/opsybot/opsybot/internal/repository/silence"
+	"github.com/opsybot/opsybot/internal/service/escalations"
 )
 
 type fakeTx struct{}
@@ -34,6 +36,8 @@ type harness struct {
 	monitors *alert_monitor.MockAlertMonitor
 	limiter  *ratelimit.MockRateLimiter
 	lock     *lock.MockLock
+	policies *escalation_policy.MockEscalationPolicy
+	esc      *escalations.MockEscalations
 }
 
 func newHarness(t *testing.T) *harness {
@@ -48,24 +52,31 @@ func newHarness(t *testing.T) *harness {
 		monitors: alert_monitor.NewMockAlertMonitor(ctrl),
 		limiter:  ratelimit.NewMockRateLimiter(ctrl),
 		lock:     lock.NewMockLock(ctrl),
+		policies: escalation_policy.NewMockEscalationPolicy(ctrl),
+		esc:      escalations.NewMockEscalations(ctrl),
 	}
 	h.srv = &srv{
-		tx:       fakeTx{},
-		sources:  h.sources,
-		alerts:   h.alerts,
-		events:   h.events,
-		routes:   h.routes,
-		silences: h.silences,
-		monitors: h.monitors,
-		limiter:  h.limiter,
-		lock:     h.lock,
-		cfg:      config.Ingest{MaxBodyBytes: 1 << 20},
+		tx:          fakeTx{},
+		sources:     h.sources,
+		alerts:      h.alerts,
+		events:      h.events,
+		routes:      h.routes,
+		silences:    h.silences,
+		monitors:    h.monitors,
+		limiter:     h.limiter,
+		lock:        h.lock,
+		policies:    h.policies,
+		escalations: h.esc,
+		cfg:         config.Ingest{MaxBodyBytes: 1 << 20},
 	}
 	h.routes.EXPECT().List(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
 	h.routes.EXPECT().ListGroupRules(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
 	h.routes.EXPECT().Settings(gomock.Any(), gomock.Any()).
-		Return(entity.AlertSettings{DefaultPolicyRef: entity.DefaultPolicyRef}, nil).AnyTimes()
+		Return(entity.AlertSettings{DefaultPolicyID: "pol-default", DefaultPolicySlug: "platform-default"}, nil).AnyTimes()
 	h.silences.EXPECT().ListActive(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
+	h.policies.EXPECT().List(gomock.Any(), gomock.Any()).
+		Return([]entity.EscalationPolicy{{ID: "pol-default", Slug: "platform-default"}}, nil).AnyTimes()
+	h.esc.EXPECT().Start(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	return h
 }
 
@@ -317,13 +328,13 @@ func TestWebhookRoutesToMatchingPolicy(t *testing.T) {
 	h.srv.silences = h.silences
 
 	h.routes.EXPECT().List(gomock.Any(), "ws-1").Return([]entity.AlertRoute{
-		{ID: "r1", Position: 0, PolicyRef: "payments-primary", Conditions: []entity.RouteCondition{
+		{ID: "r1", Position: 0, PolicyID: "pol-payments", PolicySlug: "payments-primary", Conditions: []entity.RouteCondition{
 			{Field: "service", Op: entity.ConditionIs, Value: "payments-api"},
 		}},
 	}, nil)
 	h.routes.EXPECT().ListGroupRules(gomock.Any(), "ws-1").Return(nil, nil)
 	h.routes.EXPECT().Settings(gomock.Any(), "ws-1").
-		Return(entity.AlertSettings{DefaultPolicyRef: "platform-default"}, nil)
+		Return(entity.AlertSettings{DefaultPolicyID: "pol-default", DefaultPolicySlug: "platform-default"}, nil)
 	h.silences.EXPECT().ListActive(gomock.Any(), "ws-1", gomock.Any()).Return(nil, nil)
 
 	h.sources.EXPECT().GetByToken(gomock.Any(), "tok").Return(genericSource(), nil)
@@ -331,7 +342,7 @@ func TestWebhookRoutesToMatchingPolicy(t *testing.T) {
 		Return(entity.Alert{ID: "al-1", ServiceName: "payments-api", Count: 1}, entity.IngestOutcomeCreated, nil)
 	h.alerts.EXPECT().ReplaceLinks(gomock.Any(), "al-1", gomock.Any()).Return(nil)
 	h.alerts.EXPECT().AppendEvent(gomock.Any(), "al-1", gomock.Any()).Return(nil).AnyTimes()
-	h.alerts.EXPECT().ApplyRouting(gomock.Any(), "al-1", "payments-primary", "", "", gomock.Any()).Return(nil)
+	h.alerts.EXPECT().ApplyRouting(gomock.Any(), "al-1", "pol-payments", "", "", gomock.Any()).Return(nil)
 	h.events.EXPECT().Record(gomock.Any(), gomock.Any()).Return(nil)
 	h.sources.EXPECT().MarkDelivery(gomock.Any(), "src-1", gomock.Any(), false).Return(nil)
 
@@ -352,7 +363,7 @@ func TestWebhookRecordsSuppressionButStillCreatesAlert(t *testing.T) {
 	h.routes.EXPECT().List(gomock.Any(), "ws-1").Return(nil, nil)
 	h.routes.EXPECT().ListGroupRules(gomock.Any(), "ws-1").Return(nil, nil)
 	h.routes.EXPECT().Settings(gomock.Any(), "ws-1").
-		Return(entity.AlertSettings{DefaultPolicyRef: "platform-default"}, nil)
+		Return(entity.AlertSettings{DefaultPolicyID: "pol-default", DefaultPolicySlug: "platform-default"}, nil)
 	h.silences.EXPECT().ListActive(gomock.Any(), "ws-1", gomock.Any()).Return([]entity.Silence{
 		{
 			ID:         "sil-1",
@@ -367,7 +378,7 @@ func TestWebhookRecordsSuppressionButStillCreatesAlert(t *testing.T) {
 		Return(entity.Alert{ID: "al-2", ServiceName: "payments-api", Count: 1}, entity.IngestOutcomeCreated, nil)
 	h.alerts.EXPECT().ReplaceLinks(gomock.Any(), "al-2", gomock.Any()).Return(nil)
 	h.alerts.EXPECT().AppendEvent(gomock.Any(), "al-2", gomock.Any()).Return(nil).AnyTimes()
-	h.alerts.EXPECT().ApplyRouting(gomock.Any(), "al-2", "platform-default", "", "sil-1", gomock.Any()).Return(nil)
+	h.alerts.EXPECT().ApplyRouting(gomock.Any(), "al-2", "pol-default", "", "sil-1", gomock.Any()).Return(nil)
 	h.events.EXPECT().Record(gomock.Any(), gomock.Any()).Return(nil)
 	h.sources.EXPECT().MarkDelivery(gomock.Any(), "src-1", gomock.Any(), false).Return(nil)
 

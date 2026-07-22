@@ -43,10 +43,10 @@ func (m *MockAlert) EXPECT() *MockAlertMockRecorder {
 }
 
 // Acknowledge mocks base method.
-func (m *MockAlert) Acknowledge(ctx context.Context, workspaceID string, ids []string, userID, label string, at time.Time) (int, error) {
+func (m *MockAlert) Acknowledge(ctx context.Context, workspaceID string, ids []string, userID, label string, at time.Time) ([]string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Acknowledge", ctx, workspaceID, ids, userID, label, at)
-	ret0, _ := ret[0].(int)
+	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -264,6 +264,21 @@ func (mr *MockAlertMockRecorder) ListLinks(ctx, alertID any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListLinks", reflect.TypeOf((*MockAlert)(nil).ListLinks), ctx, alertID)
 }
 
+// Reopen mocks base method.
+func (m *MockAlert) Reopen(ctx context.Context, alertID string, at time.Time) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Reopen", ctx, alertID, at)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Reopen indicates an expected call of Reopen.
+func (mr *MockAlertMockRecorder) Reopen(ctx, alertID, at any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reopen", reflect.TypeOf((*MockAlert)(nil).Reopen), ctx, alertID, at)
+}
+
 // ReplaceLinks mocks base method.
 func (m *MockAlert) ReplaceLinks(ctx context.Context, alertID string, links []entity.AlertLink) error {
 	m.ctrl.T.Helper()
@@ -279,10 +294,10 @@ func (mr *MockAlertMockRecorder) ReplaceLinks(ctx, alertID, links any) *gomock.C
 }
 
 // Resolve mocks base method.
-func (m *MockAlert) Resolve(ctx context.Context, workspaceID string, ids []string, at time.Time, mode entity.ResolveMode) (int, error) {
+func (m *MockAlert) Resolve(ctx context.Context, workspaceID string, ids []string, at time.Time, mode entity.ResolveMode) ([]string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Resolve", ctx, workspaceID, ids, at, mode)
-	ret0, _ := ret[0].(int)
+	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

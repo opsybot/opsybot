@@ -17,6 +17,7 @@ type srv struct {
 	monitors   repository.AlertMonitor
 	sources    repository.AlertSource
 	routes     repository.AlertRoute
+	policies   repository.EscalationPolicy
 	policy     repository.Policy
 	audit      repository.Audit
 }
@@ -28,12 +29,13 @@ func New(
 	monitors repository.AlertMonitor,
 	sources repository.AlertSource,
 	routes repository.AlertRoute,
+	policies repository.EscalationPolicy,
 	policy repository.Policy,
 	audit repository.Audit,
 ) service.AlertMonitors {
 	return &srv{
 		tx: tx, workspaces: workspaces, members: members, monitors: monitors,
-		sources: sources, routes: routes, policy: policy, audit: audit,
+		sources: sources, routes: routes, policies: policies, policy: policy, audit: audit,
 	}
 }
 
@@ -116,16 +118,22 @@ func (s *srv) Create(ctx context.Context, workspaceSlug string, in entity.NewAle
 	if in.Severity == "" {
 		in.Severity = entity.SeverityHigh
 	}
-	if strings.TrimSpace(in.PolicyRef) == "" {
+	in.PolicySlug = strings.TrimSpace(in.PolicySlug)
+	if in.PolicySlug == "" {
 		settings, err := s.routes.Settings(ctx, ws.ID)
 		if err != nil {
 			return entity.AlertMonitor{}, err
 		}
-		in.PolicyRef = settings.DefaultPolicyRef
+		in.PolicySlug = settings.DefaultPolicySlug
 	}
 	if err := in.Validate(); err != nil {
 		return entity.AlertMonitor{}, err
 	}
+	resolved, err := s.policies.GetBySlug(ctx, ws.ID, in.PolicySlug)
+	if err != nil {
+		return entity.AlertMonitor{}, err
+	}
+	in.PolicyID = resolved.ID
 
 	token, err := entity.GenerateToken(entity.IngestTokenLength)
 	if err != nil {
@@ -172,12 +180,18 @@ func (s *srv) Update(ctx context.Context, workspaceSlug, monitorID string, in en
 	if in.Severity == "" {
 		in.Severity = existing.Severity
 	}
-	if strings.TrimSpace(in.PolicyRef) == "" {
-		in.PolicyRef = existing.PolicyRef
+	in.PolicySlug = strings.TrimSpace(in.PolicySlug)
+	if in.PolicySlug == "" {
+		in.PolicySlug = existing.PolicySlug
 	}
 	if err := in.Validate(); err != nil {
 		return entity.AlertMonitor{}, err
 	}
+	resolved, err := s.policies.GetBySlug(ctx, ws.ID, in.PolicySlug)
+	if err != nil {
+		return entity.AlertMonitor{}, err
+	}
+	in.PolicyID = resolved.ID
 
 	var updated entity.AlertMonitor
 	err = s.tx.WithTx(ctx, func(ctx context.Context) error {
