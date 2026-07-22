@@ -1,0 +1,29 @@
+{
+  "version": "4",
+  "groupKey": "{}:{alertname=\"HighLatency\"}",
+  "truncatedAlerts": 0,
+  "status": "firing",
+  "receiver": "opsybot",
+  "externalURL": "https://alertmanager.internal",
+  "commonLabels": {"alertname": "HighLatency", "job": "payments-api"},
+  "commonAnnotations": {"runbook_url": "https://runbooks.internal/latency"},
+  "alerts": [
+    {
+      "status": "firing",
+      "labels": {"severity": "critical", "service": "payments-api", "env": "prod"},
+      "annotations": {"summary": "payments-api p99 above 800 ms", "description": "p99 latency 1.2s"},
+      "startsAt": "2026-07-21T10:00:00Z",
+      "endsAt": "0001-01-01T00:00:00Z",
+      "generatorURL": "https://prometheus.internal/graph?g0.expr=x",
+      "fingerprint": "aa11bb22"
+    },
+    {
+      "status": "resolved",
+      "labels": {"severity": "warning", "service": "search-api"},
+      "annotations": {"summary": "search-api slow"},
+      "startsAt": "2026-07-21T09:00:00Z",
+      "endsAt": "2026-07-21T09:30:00Z",
+      "fingerprint": "cc33dd44"
+    }
+  ]
+}

@@ -4,22 +4,31 @@
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 	import { enhance } from '$app/forms';
+	import PolicyField from '$lib/components/alertsources/policy-field.svelte';
 	import WfSelect from '$lib/components/workflows/wf-select.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
-	import { RT_FIELDS, RT_OPS, RT_POLICIES, type RoutingRule } from '$lib/alertsources';
+	import { RT_FIELDS, RT_OPS, type RoutingRule } from '$lib/alertsources';
 
 	let {
 		open = $bindable(false),
 		initial,
-		rulesCount
-	}: { open?: boolean; initial: RoutingRule | null; rulesCount: number } = $props();
+		rulesCount,
+		knownPolicies,
+		defaultPolicy
+	}: {
+		open?: boolean;
+		initial: RoutingRule | null;
+		rulesCount: number;
+		knownPolicies: string[];
+		defaultPolicy: string;
+	} = $props();
 
 	const cid = () => Math.random().toString(36).slice(2, 8);
 
 	let conditions = $state<{ id: string; field: string; op: string; value: string }[]>([]);
-	let policy = $state('payments-primary');
+	let policy = $state('');
 	let position = $state('end');
 
 	$effect(() => {
@@ -29,12 +38,12 @@
 			conditions = rule
 				? rule.conditions.map((condition) => ({ id: cid(), ...condition }))
 				: [{ id: cid(), field: 'service', op: 'is', value: '' }];
-			policy = rule ? rule.policy : 'payments-primary';
+			policy = rule ? rule.policy : defaultPolicy;
 			position = 'end';
 		});
 	});
 
-	const valid = $derived(conditions.some((condition) => condition.value.trim()));
+	const valid = $derived(conditions.some((condition) => condition.value.trim()) && !!policy.trim());
 
 	const positionOptions = $derived([
 		{ value: 'start', label: 'First, before rule 1' },
@@ -137,9 +146,9 @@
 					</div>
 
 					<div class="flex flex-wrap gap-2.5">
-						<WfSelect
-							label="Route to policy"
-							options={RT_POLICIES}
+						<PolicyField
+							id="rule-policy"
+							known={knownPolicies}
 							bind:value={policy}
 							class="min-w-[180px] flex-1"
 						/>

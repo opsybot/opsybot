@@ -55,6 +55,20 @@ const (
 	ActionScheduleDeleted     = "schedule.deleted"
 	ActionScheduleOverrideAdd = "schedule.override.added"
 	ActionScheduleReassigned  = "schedule.reassigned"
+
+	ActionAlertSourceCreated       = "alert_source.created"
+	ActionAlertSourceUpdated       = "alert_source.updated"
+	ActionAlertSourceDeleted       = "alert_source.deleted"
+	ActionAlertSourcePaused        = "alert_source.paused"
+	ActionAlertSourceResumed       = "alert_source.resumed"
+	ActionAlertSourceSecretRotated = "alert_source.secret_rotated"
+	ActionAlertSourceMappingSaved  = "alert_source.mapping_saved"
+	ActionAlertAcknowledged        = "alert.acknowledged"
+	ActionAlertResolved            = "alert.resolved"
+	ActionAlertMonitorCreated      = "alert_monitor.created"
+	ActionAlertMonitorUpdated      = "alert_monitor.updated"
+	ActionAlertMonitorDeleted      = "alert_monitor.deleted"
+	ActionAlertGroupRulesSaved     = "alert_group_rules.saved"
 )
 
 const (

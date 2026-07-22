@@ -101,35 +101,62 @@ var WorkspaceWhere = struct {
 
 // WorkspaceRels is where relationship names are stored.
 var WorkspaceRels = struct {
-	CreatedByUser    string
-	SsoConnection    string
-	APIKeys          string
-	AuditEvents      string
-	Invites          string
-	Schedules        string
-	Teams            string
-	WorkspaceMembers string
+	CreatedByUser       string
+	AlertSetting        string
+	SsoConnection       string
+	AlertGroupRules     string
+	AlertIngestEvents   string
+	AlertIngestFailures string
+	AlertMonitors       string
+	AlertRoutes         string
+	AlertSilences       string
+	AlertSources        string
+	Alerts              string
+	APIKeys             string
+	AuditEvents         string
+	Invites             string
+	Schedules           string
+	Teams               string
+	WorkspaceMembers    string
 }{
-	CreatedByUser:    "CreatedByUser",
-	SsoConnection:    "SsoConnection",
-	APIKeys:          "APIKeys",
-	AuditEvents:      "AuditEvents",
-	Invites:          "Invites",
-	Schedules:        "Schedules",
-	Teams:            "Teams",
-	WorkspaceMembers: "WorkspaceMembers",
+	CreatedByUser:       "CreatedByUser",
+	AlertSetting:        "AlertSetting",
+	SsoConnection:       "SsoConnection",
+	AlertGroupRules:     "AlertGroupRules",
+	AlertIngestEvents:   "AlertIngestEvents",
+	AlertIngestFailures: "AlertIngestFailures",
+	AlertMonitors:       "AlertMonitors",
+	AlertRoutes:         "AlertRoutes",
+	AlertSilences:       "AlertSilences",
+	AlertSources:        "AlertSources",
+	Alerts:              "Alerts",
+	APIKeys:             "APIKeys",
+	AuditEvents:         "AuditEvents",
+	Invites:             "Invites",
+	Schedules:           "Schedules",
+	Teams:               "Teams",
+	WorkspaceMembers:    "WorkspaceMembers",
 }
 
 // workspaceR is where relationships are stored.
 type workspaceR struct {
-	CreatedByUser    *User                `boil:"CreatedByUser" json:"CreatedByUser" toml:"CreatedByUser" yaml:"CreatedByUser"`
-	SsoConnection    *SsoConnection       `boil:"SsoConnection" json:"SsoConnection" toml:"SsoConnection" yaml:"SsoConnection"`
-	APIKeys          APIKeySlice          `boil:"APIKeys" json:"APIKeys" toml:"APIKeys" yaml:"APIKeys"`
-	AuditEvents      AuditEventSlice      `boil:"AuditEvents" json:"AuditEvents" toml:"AuditEvents" yaml:"AuditEvents"`
-	Invites          InviteSlice          `boil:"Invites" json:"Invites" toml:"Invites" yaml:"Invites"`
-	Schedules        ScheduleSlice        `boil:"Schedules" json:"Schedules" toml:"Schedules" yaml:"Schedules"`
-	Teams            TeamSlice            `boil:"Teams" json:"Teams" toml:"Teams" yaml:"Teams"`
-	WorkspaceMembers WorkspaceMemberSlice `boil:"WorkspaceMembers" json:"WorkspaceMembers" toml:"WorkspaceMembers" yaml:"WorkspaceMembers"`
+	CreatedByUser       *User                   `boil:"CreatedByUser" json:"CreatedByUser" toml:"CreatedByUser" yaml:"CreatedByUser"`
+	AlertSetting        *AlertSetting           `boil:"AlertSetting" json:"AlertSetting" toml:"AlertSetting" yaml:"AlertSetting"`
+	SsoConnection       *SsoConnection          `boil:"SsoConnection" json:"SsoConnection" toml:"SsoConnection" yaml:"SsoConnection"`
+	AlertGroupRules     AlertGroupRuleSlice     `boil:"AlertGroupRules" json:"AlertGroupRules" toml:"AlertGroupRules" yaml:"AlertGroupRules"`
+	AlertIngestEvents   AlertIngestEventSlice   `boil:"AlertIngestEvents" json:"AlertIngestEvents" toml:"AlertIngestEvents" yaml:"AlertIngestEvents"`
+	AlertIngestFailures AlertIngestFailureSlice `boil:"AlertIngestFailures" json:"AlertIngestFailures" toml:"AlertIngestFailures" yaml:"AlertIngestFailures"`
+	AlertMonitors       AlertMonitorSlice       `boil:"AlertMonitors" json:"AlertMonitors" toml:"AlertMonitors" yaml:"AlertMonitors"`
+	AlertRoutes         AlertRouteSlice         `boil:"AlertRoutes" json:"AlertRoutes" toml:"AlertRoutes" yaml:"AlertRoutes"`
+	AlertSilences       AlertSilenceSlice       `boil:"AlertSilences" json:"AlertSilences" toml:"AlertSilences" yaml:"AlertSilences"`
+	AlertSources        AlertSourceSlice        `boil:"AlertSources" json:"AlertSources" toml:"AlertSources" yaml:"AlertSources"`
+	Alerts              AlertSlice              `boil:"Alerts" json:"Alerts" toml:"Alerts" yaml:"Alerts"`
+	APIKeys             APIKeySlice             `boil:"APIKeys" json:"APIKeys" toml:"APIKeys" yaml:"APIKeys"`
+	AuditEvents         AuditEventSlice         `boil:"AuditEvents" json:"AuditEvents" toml:"AuditEvents" yaml:"AuditEvents"`
+	Invites             InviteSlice             `boil:"Invites" json:"Invites" toml:"Invites" yaml:"Invites"`
+	Schedules           ScheduleSlice           `boil:"Schedules" json:"Schedules" toml:"Schedules" yaml:"Schedules"`
+	Teams               TeamSlice               `boil:"Teams" json:"Teams" toml:"Teams" yaml:"Teams"`
+	WorkspaceMembers    WorkspaceMemberSlice    `boil:"WorkspaceMembers" json:"WorkspaceMembers" toml:"WorkspaceMembers" yaml:"WorkspaceMembers"`
 }
 
 // NewStruct creates a new relationship struct
@@ -153,6 +180,22 @@ func (r *workspaceR) GetCreatedByUser() *User {
 	return r.CreatedByUser
 }
 
+func (o *Workspace) GetAlertSetting() *AlertSetting {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetAlertSetting()
+}
+
+func (r *workspaceR) GetAlertSetting() *AlertSetting {
+	if r == nil {
+		return nil
+	}
+
+	return r.AlertSetting
+}
+
 func (o *Workspace) GetSsoConnection() *SsoConnection {
 	if o == nil {
 		return nil
@@ -167,6 +210,134 @@ func (r *workspaceR) GetSsoConnection() *SsoConnection {
 	}
 
 	return r.SsoConnection
+}
+
+func (o *Workspace) GetAlertGroupRules() AlertGroupRuleSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetAlertGroupRules()
+}
+
+func (r *workspaceR) GetAlertGroupRules() AlertGroupRuleSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.AlertGroupRules
+}
+
+func (o *Workspace) GetAlertIngestEvents() AlertIngestEventSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetAlertIngestEvents()
+}
+
+func (r *workspaceR) GetAlertIngestEvents() AlertIngestEventSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.AlertIngestEvents
+}
+
+func (o *Workspace) GetAlertIngestFailures() AlertIngestFailureSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetAlertIngestFailures()
+}
+
+func (r *workspaceR) GetAlertIngestFailures() AlertIngestFailureSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.AlertIngestFailures
+}
+
+func (o *Workspace) GetAlertMonitors() AlertMonitorSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetAlertMonitors()
+}
+
+func (r *workspaceR) GetAlertMonitors() AlertMonitorSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.AlertMonitors
+}
+
+func (o *Workspace) GetAlertRoutes() AlertRouteSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetAlertRoutes()
+}
+
+func (r *workspaceR) GetAlertRoutes() AlertRouteSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.AlertRoutes
+}
+
+func (o *Workspace) GetAlertSilences() AlertSilenceSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetAlertSilences()
+}
+
+func (r *workspaceR) GetAlertSilences() AlertSilenceSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.AlertSilences
+}
+
+func (o *Workspace) GetAlertSources() AlertSourceSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetAlertSources()
+}
+
+func (r *workspaceR) GetAlertSources() AlertSourceSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.AlertSources
+}
+
+func (o *Workspace) GetAlerts() AlertSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetAlerts()
+}
+
+func (r *workspaceR) GetAlerts() AlertSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.Alerts
 }
 
 func (o *Workspace) GetAPIKeys() APIKeySlice {
@@ -592,6 +763,17 @@ func (o *Workspace) CreatedByUser(mods ...qm.QueryMod) userQuery {
 	return Users(queryMods...)
 }
 
+// AlertSetting pointed to by the foreign key.
+func (o *Workspace) AlertSetting(mods ...qm.QueryMod) alertSettingQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"workspace_id\" = ?", o.ID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return AlertSettings(queryMods...)
+}
+
 // SsoConnection pointed to by the foreign key.
 func (o *Workspace) SsoConnection(mods ...qm.QueryMod) ssoConnectionQuery {
 	queryMods := []qm.QueryMod{
@@ -601,6 +783,118 @@ func (o *Workspace) SsoConnection(mods ...qm.QueryMod) ssoConnectionQuery {
 	queryMods = append(queryMods, mods...)
 
 	return SsoConnections(queryMods...)
+}
+
+// AlertGroupRules retrieves all the alert_group_rule's AlertGroupRules with an executor.
+func (o *Workspace) AlertGroupRules(mods ...qm.QueryMod) alertGroupRuleQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"alert_group_rules\".\"workspace_id\"=?", o.ID),
+	)
+
+	return AlertGroupRules(queryMods...)
+}
+
+// AlertIngestEvents retrieves all the alert_ingest_event's AlertIngestEvents with an executor.
+func (o *Workspace) AlertIngestEvents(mods ...qm.QueryMod) alertIngestEventQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"alert_ingest_events\".\"workspace_id\"=?", o.ID),
+	)
+
+	return AlertIngestEvents(queryMods...)
+}
+
+// AlertIngestFailures retrieves all the alert_ingest_failure's AlertIngestFailures with an executor.
+func (o *Workspace) AlertIngestFailures(mods ...qm.QueryMod) alertIngestFailureQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"alert_ingest_failures\".\"workspace_id\"=?", o.ID),
+	)
+
+	return AlertIngestFailures(queryMods...)
+}
+
+// AlertMonitors retrieves all the alert_monitor's AlertMonitors with an executor.
+func (o *Workspace) AlertMonitors(mods ...qm.QueryMod) alertMonitorQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"alert_monitors\".\"workspace_id\"=?", o.ID),
+	)
+
+	return AlertMonitors(queryMods...)
+}
+
+// AlertRoutes retrieves all the alert_route's AlertRoutes with an executor.
+func (o *Workspace) AlertRoutes(mods ...qm.QueryMod) alertRouteQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"alert_routes\".\"workspace_id\"=?", o.ID),
+	)
+
+	return AlertRoutes(queryMods...)
+}
+
+// AlertSilences retrieves all the alert_silence's AlertSilences with an executor.
+func (o *Workspace) AlertSilences(mods ...qm.QueryMod) alertSilenceQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"alert_silences\".\"workspace_id\"=?", o.ID),
+	)
+
+	return AlertSilences(queryMods...)
+}
+
+// AlertSources retrieves all the alert_source's AlertSources with an executor.
+func (o *Workspace) AlertSources(mods ...qm.QueryMod) alertSourceQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"alert_sources\".\"workspace_id\"=?", o.ID),
+	)
+
+	return AlertSources(queryMods...)
+}
+
+// Alerts retrieves all the alert's Alerts with an executor.
+func (o *Workspace) Alerts(mods ...qm.QueryMod) alertQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"alerts\".\"workspace_id\"=?", o.ID),
+	)
+
+	return Alerts(queryMods...)
 }
 
 // APIKeys retrieves all the api_key's APIKeys with an executor.
@@ -811,6 +1105,123 @@ func (workspaceL) LoadCreatedByUser(ctx context.Context, e boil.ContextExecutor,
 	return nil
 }
 
+// LoadAlertSetting allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-1 relationship.
+func (workspaceL) LoadAlertSetting(ctx context.Context, e boil.ContextExecutor, singular bool, maybeWorkspace any, mods queries.Applicator) error {
+	var slice []*Workspace
+	var object *Workspace
+
+	if singular {
+		var ok bool
+		object, ok = maybeWorkspace.(*Workspace)
+		if !ok {
+			object = new(Workspace)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeWorkspace))
+			}
+		}
+	} else {
+		s, ok := maybeWorkspace.(*[]*Workspace)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeWorkspace))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &workspaceR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &workspaceR{}
+			}
+
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`alert_settings`),
+		qm.WhereIn(`alert_settings.workspace_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load AlertSetting")
+	}
+
+	var resultSlice []*AlertSetting
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice AlertSetting")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for alert_settings")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for alert_settings")
+	}
+
+	if len(alertSettingAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.AlertSetting = foreign
+		if foreign.R == nil {
+			foreign.R = &alertSettingR{}
+		}
+		foreign.R.Workspace = object
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if local.ID == foreign.WorkspaceID {
+				local.R.AlertSetting = foreign
+				if foreign.R == nil {
+					foreign.R = &alertSettingR{}
+				}
+				foreign.R.Workspace = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
 // LoadSsoConnection allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for a 1-1 relationship.
 func (workspaceL) LoadSsoConnection(ctx context.Context, e boil.ContextExecutor, singular bool, maybeWorkspace any, mods queries.Applicator) error {
@@ -918,6 +1329,910 @@ func (workspaceL) LoadSsoConnection(ctx context.Context, e boil.ContextExecutor,
 				local.R.SsoConnection = foreign
 				if foreign.R == nil {
 					foreign.R = &ssoConnectionR{}
+				}
+				foreign.R.Workspace = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadAlertGroupRules allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (workspaceL) LoadAlertGroupRules(ctx context.Context, e boil.ContextExecutor, singular bool, maybeWorkspace any, mods queries.Applicator) error {
+	var slice []*Workspace
+	var object *Workspace
+
+	if singular {
+		var ok bool
+		object, ok = maybeWorkspace.(*Workspace)
+		if !ok {
+			object = new(Workspace)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeWorkspace))
+			}
+		}
+	} else {
+		s, ok := maybeWorkspace.(*[]*Workspace)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeWorkspace))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &workspaceR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &workspaceR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`alert_group_rules`),
+		qm.WhereIn(`alert_group_rules.workspace_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load alert_group_rules")
+	}
+
+	var resultSlice []*AlertGroupRule
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice alert_group_rules")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on alert_group_rules")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for alert_group_rules")
+	}
+
+	if len(alertGroupRuleAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.AlertGroupRules = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &alertGroupRuleR{}
+			}
+			foreign.R.Workspace = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.WorkspaceID {
+				local.R.AlertGroupRules = append(local.R.AlertGroupRules, foreign)
+				if foreign.R == nil {
+					foreign.R = &alertGroupRuleR{}
+				}
+				foreign.R.Workspace = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadAlertIngestEvents allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (workspaceL) LoadAlertIngestEvents(ctx context.Context, e boil.ContextExecutor, singular bool, maybeWorkspace any, mods queries.Applicator) error {
+	var slice []*Workspace
+	var object *Workspace
+
+	if singular {
+		var ok bool
+		object, ok = maybeWorkspace.(*Workspace)
+		if !ok {
+			object = new(Workspace)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeWorkspace))
+			}
+		}
+	} else {
+		s, ok := maybeWorkspace.(*[]*Workspace)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeWorkspace))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &workspaceR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &workspaceR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`alert_ingest_events`),
+		qm.WhereIn(`alert_ingest_events.workspace_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load alert_ingest_events")
+	}
+
+	var resultSlice []*AlertIngestEvent
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice alert_ingest_events")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on alert_ingest_events")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for alert_ingest_events")
+	}
+
+	if len(alertIngestEventAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.AlertIngestEvents = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &alertIngestEventR{}
+			}
+			foreign.R.Workspace = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.WorkspaceID {
+				local.R.AlertIngestEvents = append(local.R.AlertIngestEvents, foreign)
+				if foreign.R == nil {
+					foreign.R = &alertIngestEventR{}
+				}
+				foreign.R.Workspace = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadAlertIngestFailures allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (workspaceL) LoadAlertIngestFailures(ctx context.Context, e boil.ContextExecutor, singular bool, maybeWorkspace any, mods queries.Applicator) error {
+	var slice []*Workspace
+	var object *Workspace
+
+	if singular {
+		var ok bool
+		object, ok = maybeWorkspace.(*Workspace)
+		if !ok {
+			object = new(Workspace)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeWorkspace))
+			}
+		}
+	} else {
+		s, ok := maybeWorkspace.(*[]*Workspace)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeWorkspace))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &workspaceR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &workspaceR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`alert_ingest_failures`),
+		qm.WhereIn(`alert_ingest_failures.workspace_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load alert_ingest_failures")
+	}
+
+	var resultSlice []*AlertIngestFailure
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice alert_ingest_failures")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on alert_ingest_failures")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for alert_ingest_failures")
+	}
+
+	if len(alertIngestFailureAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.AlertIngestFailures = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &alertIngestFailureR{}
+			}
+			foreign.R.Workspace = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.WorkspaceID {
+				local.R.AlertIngestFailures = append(local.R.AlertIngestFailures, foreign)
+				if foreign.R == nil {
+					foreign.R = &alertIngestFailureR{}
+				}
+				foreign.R.Workspace = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadAlertMonitors allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (workspaceL) LoadAlertMonitors(ctx context.Context, e boil.ContextExecutor, singular bool, maybeWorkspace any, mods queries.Applicator) error {
+	var slice []*Workspace
+	var object *Workspace
+
+	if singular {
+		var ok bool
+		object, ok = maybeWorkspace.(*Workspace)
+		if !ok {
+			object = new(Workspace)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeWorkspace))
+			}
+		}
+	} else {
+		s, ok := maybeWorkspace.(*[]*Workspace)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeWorkspace))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &workspaceR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &workspaceR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`alert_monitors`),
+		qm.WhereIn(`alert_monitors.workspace_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load alert_monitors")
+	}
+
+	var resultSlice []*AlertMonitor
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice alert_monitors")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on alert_monitors")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for alert_monitors")
+	}
+
+	if len(alertMonitorAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.AlertMonitors = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &alertMonitorR{}
+			}
+			foreign.R.Workspace = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.WorkspaceID {
+				local.R.AlertMonitors = append(local.R.AlertMonitors, foreign)
+				if foreign.R == nil {
+					foreign.R = &alertMonitorR{}
+				}
+				foreign.R.Workspace = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadAlertRoutes allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (workspaceL) LoadAlertRoutes(ctx context.Context, e boil.ContextExecutor, singular bool, maybeWorkspace any, mods queries.Applicator) error {
+	var slice []*Workspace
+	var object *Workspace
+
+	if singular {
+		var ok bool
+		object, ok = maybeWorkspace.(*Workspace)
+		if !ok {
+			object = new(Workspace)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeWorkspace))
+			}
+		}
+	} else {
+		s, ok := maybeWorkspace.(*[]*Workspace)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeWorkspace))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &workspaceR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &workspaceR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`alert_routes`),
+		qm.WhereIn(`alert_routes.workspace_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load alert_routes")
+	}
+
+	var resultSlice []*AlertRoute
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice alert_routes")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on alert_routes")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for alert_routes")
+	}
+
+	if len(alertRouteAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.AlertRoutes = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &alertRouteR{}
+			}
+			foreign.R.Workspace = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.WorkspaceID {
+				local.R.AlertRoutes = append(local.R.AlertRoutes, foreign)
+				if foreign.R == nil {
+					foreign.R = &alertRouteR{}
+				}
+				foreign.R.Workspace = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadAlertSilences allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (workspaceL) LoadAlertSilences(ctx context.Context, e boil.ContextExecutor, singular bool, maybeWorkspace any, mods queries.Applicator) error {
+	var slice []*Workspace
+	var object *Workspace
+
+	if singular {
+		var ok bool
+		object, ok = maybeWorkspace.(*Workspace)
+		if !ok {
+			object = new(Workspace)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeWorkspace))
+			}
+		}
+	} else {
+		s, ok := maybeWorkspace.(*[]*Workspace)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeWorkspace))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &workspaceR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &workspaceR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`alert_silences`),
+		qm.WhereIn(`alert_silences.workspace_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load alert_silences")
+	}
+
+	var resultSlice []*AlertSilence
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice alert_silences")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on alert_silences")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for alert_silences")
+	}
+
+	if len(alertSilenceAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.AlertSilences = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &alertSilenceR{}
+			}
+			foreign.R.Workspace = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.WorkspaceID {
+				local.R.AlertSilences = append(local.R.AlertSilences, foreign)
+				if foreign.R == nil {
+					foreign.R = &alertSilenceR{}
+				}
+				foreign.R.Workspace = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadAlertSources allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (workspaceL) LoadAlertSources(ctx context.Context, e boil.ContextExecutor, singular bool, maybeWorkspace any, mods queries.Applicator) error {
+	var slice []*Workspace
+	var object *Workspace
+
+	if singular {
+		var ok bool
+		object, ok = maybeWorkspace.(*Workspace)
+		if !ok {
+			object = new(Workspace)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeWorkspace))
+			}
+		}
+	} else {
+		s, ok := maybeWorkspace.(*[]*Workspace)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeWorkspace))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &workspaceR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &workspaceR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`alert_sources`),
+		qm.WhereIn(`alert_sources.workspace_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load alert_sources")
+	}
+
+	var resultSlice []*AlertSource
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice alert_sources")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on alert_sources")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for alert_sources")
+	}
+
+	if len(alertSourceAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.AlertSources = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &alertSourceR{}
+			}
+			foreign.R.Workspace = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.WorkspaceID {
+				local.R.AlertSources = append(local.R.AlertSources, foreign)
+				if foreign.R == nil {
+					foreign.R = &alertSourceR{}
+				}
+				foreign.R.Workspace = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadAlerts allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (workspaceL) LoadAlerts(ctx context.Context, e boil.ContextExecutor, singular bool, maybeWorkspace any, mods queries.Applicator) error {
+	var slice []*Workspace
+	var object *Workspace
+
+	if singular {
+		var ok bool
+		object, ok = maybeWorkspace.(*Workspace)
+		if !ok {
+			object = new(Workspace)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeWorkspace))
+			}
+		}
+	} else {
+		s, ok := maybeWorkspace.(*[]*Workspace)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeWorkspace)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeWorkspace))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &workspaceR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &workspaceR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`alerts`),
+		qm.WhereIn(`alerts.workspace_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load alerts")
+	}
+
+	var resultSlice []*Alert
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice alerts")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on alerts")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for alerts")
+	}
+
+	if len(alertAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.Alerts = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &alertR{}
+			}
+			foreign.R.Workspace = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.WorkspaceID {
+				local.R.Alerts = append(local.R.Alerts, foreign)
+				if foreign.R == nil {
+					foreign.R = &alertR{}
 				}
 				foreign.R.Workspace = local
 				break
@@ -1686,6 +3001,56 @@ func (o *Workspace) RemoveCreatedByUser(ctx context.Context, exec boil.ContextEx
 	return nil
 }
 
+// SetAlertSetting of the workspace to the related item.
+// Sets o.R.AlertSetting to related.
+// Adds o to related.R.Workspace.
+func (o *Workspace) SetAlertSetting(ctx context.Context, exec boil.ContextExecutor, insert bool, related *AlertSetting) error {
+	var err error
+
+	if insert {
+		related.WorkspaceID = o.ID
+
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	} else {
+		updateQuery := fmt.Sprintf(
+			"UPDATE \"alert_settings\" SET %s WHERE %s",
+			strmangle.SetParamNames("\"", "\"", 1, []string{"workspace_id"}),
+			strmangle.WhereClause("\"", "\"", 2, alertSettingPrimaryKeyColumns),
+		)
+		values := []any{o.ID, related.WorkspaceID}
+
+		if boil.IsDebug(ctx) {
+			writer := boil.DebugWriterFrom(ctx)
+			fmt.Fprintln(writer, updateQuery)
+			fmt.Fprintln(writer, values)
+		}
+		if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+			return errors.Wrap(err, "failed to update foreign table")
+		}
+
+		related.WorkspaceID = o.ID
+	}
+
+	if o.R == nil {
+		o.R = &workspaceR{
+			AlertSetting: related,
+		}
+	} else {
+		o.R.AlertSetting = related
+	}
+
+	if related.R == nil {
+		related.R = &alertSettingR{
+			Workspace: o,
+		}
+	} else {
+		related.R.Workspace = o
+	}
+	return nil
+}
+
 // SetSsoConnection of the workspace to the related item.
 // Sets o.R.SsoConnection to related.
 // Adds o to related.R.Workspace.
@@ -1732,6 +3097,430 @@ func (o *Workspace) SetSsoConnection(ctx context.Context, exec boil.ContextExecu
 		}
 	} else {
 		related.R.Workspace = o
+	}
+	return nil
+}
+
+// AddAlertGroupRules adds the given related objects to the existing relationships
+// of the workspace, optionally inserting them as new records.
+// Appends related to o.R.AlertGroupRules.
+// Sets related.R.Workspace appropriately.
+func (o *Workspace) AddAlertGroupRules(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*AlertGroupRule) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.WorkspaceID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"alert_group_rules\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"workspace_id"}),
+				strmangle.WhereClause("\"", "\"", 2, alertGroupRulePrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.WorkspaceID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &workspaceR{
+			AlertGroupRules: related,
+		}
+	} else {
+		o.R.AlertGroupRules = append(o.R.AlertGroupRules, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &alertGroupRuleR{
+				Workspace: o,
+			}
+		} else {
+			rel.R.Workspace = o
+		}
+	}
+	return nil
+}
+
+// AddAlertIngestEvents adds the given related objects to the existing relationships
+// of the workspace, optionally inserting them as new records.
+// Appends related to o.R.AlertIngestEvents.
+// Sets related.R.Workspace appropriately.
+func (o *Workspace) AddAlertIngestEvents(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*AlertIngestEvent) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.WorkspaceID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"alert_ingest_events\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"workspace_id"}),
+				strmangle.WhereClause("\"", "\"", 2, alertIngestEventPrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.WorkspaceID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &workspaceR{
+			AlertIngestEvents: related,
+		}
+	} else {
+		o.R.AlertIngestEvents = append(o.R.AlertIngestEvents, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &alertIngestEventR{
+				Workspace: o,
+			}
+		} else {
+			rel.R.Workspace = o
+		}
+	}
+	return nil
+}
+
+// AddAlertIngestFailures adds the given related objects to the existing relationships
+// of the workspace, optionally inserting them as new records.
+// Appends related to o.R.AlertIngestFailures.
+// Sets related.R.Workspace appropriately.
+func (o *Workspace) AddAlertIngestFailures(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*AlertIngestFailure) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.WorkspaceID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"alert_ingest_failures\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"workspace_id"}),
+				strmangle.WhereClause("\"", "\"", 2, alertIngestFailurePrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.WorkspaceID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &workspaceR{
+			AlertIngestFailures: related,
+		}
+	} else {
+		o.R.AlertIngestFailures = append(o.R.AlertIngestFailures, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &alertIngestFailureR{
+				Workspace: o,
+			}
+		} else {
+			rel.R.Workspace = o
+		}
+	}
+	return nil
+}
+
+// AddAlertMonitors adds the given related objects to the existing relationships
+// of the workspace, optionally inserting them as new records.
+// Appends related to o.R.AlertMonitors.
+// Sets related.R.Workspace appropriately.
+func (o *Workspace) AddAlertMonitors(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*AlertMonitor) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.WorkspaceID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"alert_monitors\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"workspace_id"}),
+				strmangle.WhereClause("\"", "\"", 2, alertMonitorPrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.WorkspaceID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &workspaceR{
+			AlertMonitors: related,
+		}
+	} else {
+		o.R.AlertMonitors = append(o.R.AlertMonitors, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &alertMonitorR{
+				Workspace: o,
+			}
+		} else {
+			rel.R.Workspace = o
+		}
+	}
+	return nil
+}
+
+// AddAlertRoutes adds the given related objects to the existing relationships
+// of the workspace, optionally inserting them as new records.
+// Appends related to o.R.AlertRoutes.
+// Sets related.R.Workspace appropriately.
+func (o *Workspace) AddAlertRoutes(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*AlertRoute) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.WorkspaceID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"alert_routes\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"workspace_id"}),
+				strmangle.WhereClause("\"", "\"", 2, alertRoutePrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.WorkspaceID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &workspaceR{
+			AlertRoutes: related,
+		}
+	} else {
+		o.R.AlertRoutes = append(o.R.AlertRoutes, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &alertRouteR{
+				Workspace: o,
+			}
+		} else {
+			rel.R.Workspace = o
+		}
+	}
+	return nil
+}
+
+// AddAlertSilences adds the given related objects to the existing relationships
+// of the workspace, optionally inserting them as new records.
+// Appends related to o.R.AlertSilences.
+// Sets related.R.Workspace appropriately.
+func (o *Workspace) AddAlertSilences(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*AlertSilence) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.WorkspaceID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"alert_silences\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"workspace_id"}),
+				strmangle.WhereClause("\"", "\"", 2, alertSilencePrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.WorkspaceID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &workspaceR{
+			AlertSilences: related,
+		}
+	} else {
+		o.R.AlertSilences = append(o.R.AlertSilences, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &alertSilenceR{
+				Workspace: o,
+			}
+		} else {
+			rel.R.Workspace = o
+		}
+	}
+	return nil
+}
+
+// AddAlertSources adds the given related objects to the existing relationships
+// of the workspace, optionally inserting them as new records.
+// Appends related to o.R.AlertSources.
+// Sets related.R.Workspace appropriately.
+func (o *Workspace) AddAlertSources(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*AlertSource) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.WorkspaceID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"alert_sources\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"workspace_id"}),
+				strmangle.WhereClause("\"", "\"", 2, alertSourcePrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.WorkspaceID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &workspaceR{
+			AlertSources: related,
+		}
+	} else {
+		o.R.AlertSources = append(o.R.AlertSources, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &alertSourceR{
+				Workspace: o,
+			}
+		} else {
+			rel.R.Workspace = o
+		}
+	}
+	return nil
+}
+
+// AddAlerts adds the given related objects to the existing relationships
+// of the workspace, optionally inserting them as new records.
+// Appends related to o.R.Alerts.
+// Sets related.R.Workspace appropriately.
+func (o *Workspace) AddAlerts(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Alert) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.WorkspaceID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"alerts\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"workspace_id"}),
+				strmangle.WhereClause("\"", "\"", 2, alertPrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.WorkspaceID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &workspaceR{
+			Alerts: related,
+		}
+	} else {
+		o.R.Alerts = append(o.R.Alerts, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &alertR{
+				Workspace: o,
+			}
+		} else {
+			rel.R.Workspace = o
+		}
 	}
 	return nil
 }

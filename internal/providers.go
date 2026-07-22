@@ -3,9 +3,15 @@ package internal
 import (
 	"github.com/goforj/wire"
 
+	"github.com/opsybot/opsybot/internal/cron"
+	"github.com/opsybot/opsybot/internal/repository/alert"
+	"github.com/opsybot/opsybot/internal/repository/alert_monitor"
+	"github.com/opsybot/opsybot/internal/repository/alert_route"
+	"github.com/opsybot/opsybot/internal/repository/alert_source"
 	"github.com/opsybot/opsybot/internal/repository/api_key"
 	"github.com/opsybot/opsybot/internal/repository/audit"
 	"github.com/opsybot/opsybot/internal/repository/channel"
+	"github.com/opsybot/opsybot/internal/repository/ingest_event"
 	"github.com/opsybot/opsybot/internal/repository/invite"
 	"github.com/opsybot/opsybot/internal/repository/lock"
 	"github.com/opsybot/opsybot/internal/repository/mailer"
@@ -17,6 +23,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/recovery_code"
 	"github.com/opsybot/opsybot/internal/repository/schedule"
 	"github.com/opsybot/opsybot/internal/repository/session"
+	"github.com/opsybot/opsybot/internal/repository/silence"
 	"github.com/opsybot/opsybot/internal/repository/sso_connection"
 	"github.com/opsybot/opsybot/internal/repository/sso_state"
 	"github.com/opsybot/opsybot/internal/repository/team"
@@ -25,14 +32,20 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/user_identity"
 	"github.com/opsybot/opsybot/internal/repository/workspace"
 	"github.com/opsybot/opsybot/internal/service"
+	"github.com/opsybot/opsybot/internal/service/alert_monitors"
+	"github.com/opsybot/opsybot/internal/service/alert_routes"
+	"github.com/opsybot/opsybot/internal/service/alert_sources"
+	"github.com/opsybot/opsybot/internal/service/alerts"
 	"github.com/opsybot/opsybot/internal/service/apikeys"
 	"github.com/opsybot/opsybot/internal/service/audits"
 	"github.com/opsybot/opsybot/internal/service/auth"
 	"github.com/opsybot/opsybot/internal/service/channels"
+	"github.com/opsybot/opsybot/internal/service/ingest"
 	"github.com/opsybot/opsybot/internal/service/members"
 	"github.com/opsybot/opsybot/internal/service/ratelimiter"
 	"github.com/opsybot/opsybot/internal/service/references"
 	"github.com/opsybot/opsybot/internal/service/schedules"
+	"github.com/opsybot/opsybot/internal/service/silences"
 	"github.com/opsybot/opsybot/internal/service/sso"
 	"github.com/opsybot/opsybot/internal/service/teams"
 	"github.com/opsybot/opsybot/internal/service/users"
@@ -61,6 +74,12 @@ var repositoryProviders = wire.NewSet(
 	channel.New,
 	pending.New,
 	schedule.New,
+	alert_source.New,
+	alert.New,
+	ingest_event.New,
+	alert_route.New,
+	alert_monitor.New,
+	silence.New,
 )
 
 var serviceProviders = wire.NewSet(
@@ -77,6 +96,18 @@ var serviceProviders = wire.NewSet(
 	audits.New,
 	sso.New,
 	ratelimiter.New,
+	alert_sources.New,
+	alerts.New,
+	ingest.New,
+	alert_routes.New,
+	alert_monitors.New,
+	silences.New,
+)
+
+var cronProviders = wire.NewSet(
+	cron.NewHeartbeatSweep,
+	cron.NewAlertAutoResolve,
+	cron.NewIngestRetention,
 )
 
 func scheduleReferenceSources(schedules service.Schedules) []service.ReferenceSource {

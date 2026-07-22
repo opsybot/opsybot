@@ -1,0 +1,15 @@
+{
+  "version": "4",
+  "status": "firing",
+  "commonAnnotations": {"notification_reason": "repeat interval elapsed"},
+  "alerts": [
+    {
+      "status": "firing",
+      "labels": {"alertname": "DiskFull", "severity": "high"},
+      "annotations": {"summary": "disk full on db-3"},
+      "startsAt": "2026-07-21T10:00:00Z",
+      "endsAt": "0001-01-01T00:00:00Z",
+      "fingerprint": "ee55ff66"
+    }
+  ]
+}

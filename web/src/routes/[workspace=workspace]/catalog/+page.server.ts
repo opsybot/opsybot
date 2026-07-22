@@ -1,10 +1,12 @@
 import { fail } from '@sveltejs/kit';
+import { listAlerts } from '$lib/server/alerts';
 import { getService, listServices, serviceNames } from '$lib/server/catalog';
 import { save } from './save';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = ({ url }) => {
-	const services = listServices();
+export const load: PageServerLoad = async ({ url, params, cookies }) => {
+	const { alerts } = await listAlerts(cookies, params.workspace, { status: ['open', 'acked'] });
+	const services = listServices(alerts);
 
 	const editing = url.searchParams.get('edit');
 	const service = editing ? getService(editing) : null;

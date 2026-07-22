@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
@@ -51,6 +52,28 @@ func GenerateHexToken(byteLen int) (string, error) {
 func HashToken(token string) string {
 	sum := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(sum[:])
+}
+
+func SignBody(secret string, body []byte) string {
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write(body)
+	return SourceSignaturePrefix + hex.EncodeToString(mac.Sum(nil))
+}
+
+func VerifyBodySignature(secrets []string, body []byte, signature string) bool {
+	provided := strings.TrimSpace(signature)
+	if provided == "" {
+		return false
+	}
+	for _, secret := range secrets {
+		if secret == "" {
+			continue
+		}
+		if subtle.ConstantTimeCompare([]byte(SignBody(secret, body)), []byte(provided)) == 1 {
+			return true
+		}
+	}
+	return false
 }
 
 func HashPassword(password string) (string, error) {

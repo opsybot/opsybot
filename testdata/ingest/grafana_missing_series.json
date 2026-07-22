@@ -1,0 +1,16 @@
+{
+  "version": "1",
+  "status": "resolved",
+  "receiver": "opsybot",
+  "alerts": [
+    {
+      "status": "resolved",
+      "labels": {"alertname": "CPUHigh", "severity": "high", "grafana_state_reason": "MissingSeries", "__private__": "hidden"},
+      "annotations": {"summary": "CPU high on web-1"},
+      "startsAt": "2026-07-21T08:00:00+02:00",
+      "endsAt": "2026-07-21T09:00:00+02:00",
+      "dashboardURL": "https://grafana.internal/d/abc",
+      "fingerprint": "gf-1"
+    }
+  ]
+}

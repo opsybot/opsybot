@@ -15,6 +15,7 @@ export type Source = {
 	volume: number[];
 	failures: number;
 	secret: string;
+	ingestUrl: string;
 	mapping: Mapping[];
 };
 
@@ -67,22 +68,17 @@ export const MAPPINGS: Record<string, Mapping[]> = {
 	]
 };
 
-export function mappingKeyFor(formatLabel: string): string {
-	return FORMATS.find((format) => format.label === formatLabel)?.id ?? 'generic';
-}
-
 export const ADD_STEPS = ['Format', 'Endpoint', 'Mapping', 'Verify'];
 
-export type DeliveryEvent = {
-	at: string;
-	title: string;
-	outcome: string;
-	tone: 'neutral' | 'success' | 'critical';
-};
+export type GroupRule = { id: string; fields: string[]; windowSeconds: number };
 
-export function endpointUrl(slug: string): string {
-	return `https://in.opsy.bot/e/acme/${slug}`;
-}
+export const GROUP_WINDOWS = [
+	{ value: '300', label: '5 minutes' },
+	{ value: '900', label: '15 minutes' },
+	{ value: '3600', label: '1 hour' },
+	{ value: '21600', label: '6 hours' },
+	{ value: '86400', label: '24 hours' }
+];
 
 export function slugify(name: string): string {
 	return name
@@ -103,7 +99,6 @@ export type RoutingRule = { id: string; conditions: Condition[]; policy: string 
 
 export const RT_FIELDS = ['source', 'service', 'severity', 'title', 'labels.env', 'labels.team', 'labels.region'];
 export const RT_OPS: ConditionOp[] = ['is', 'is not', 'contains', 'matches'];
-export const RT_POLICIES = ['payments-primary', 'platform-default', 'frontend-daytime'];
 
 export const RT_SAMPLE = `{
   "title": "payments-api p99 above 800 ms",
@@ -112,70 +107,3 @@ export const RT_SAMPLE = `{
   "service": "payments-api",
   "labels": { "env": "prod", "team": "payments", "region": "eu-west-1" }
 }`;
-
-function getPath(object: unknown, path: string): unknown {
-	return path.split('.').reduce<unknown>((value, key) => {
-		if (value == null || typeof value !== 'object') return undefined;
-		return (value as Record<string, unknown>)[key];
-	}, object);
-}
-
-function globMatch(value: string, pattern: string): boolean {
-	const haystack = value.toLowerCase();
-	const parts = pattern.toLowerCase().split('*');
-	if (parts.length === 1) return haystack === parts[0];
-
-	const first = parts[0];
-	const last = parts[parts.length - 1];
-	if (!haystack.startsWith(first) || !haystack.endsWith(last)) return false;
-
-	let cursor = first.length;
-	for (let i = 1; i < parts.length - 1; i++) {
-		const part = parts[i];
-		if (!part) continue;
-		const at = haystack.indexOf(part, cursor);
-		if (at < 0) return false;
-		cursor = at + part.length;
-	}
-	return cursor <= haystack.length - last.length;
-}
-
-export function conditionMatches(alert: unknown, condition: Condition): boolean {
-	const raw = getPath(alert, condition.field);
-	const value = raw == null ? '' : String(raw);
-	switch (condition.op) {
-		case 'is':
-			return value === condition.value;
-		case 'is not':
-			return value !== condition.value;
-		case 'contains':
-			return value.toLowerCase().includes(condition.value.toLowerCase());
-		case 'matches':
-			return globMatch(value, condition.value);
-	}
-}
-
-export function matchRule(alert: unknown, rules: RoutingRule[]): number {
-	for (let index = 0; index < rules.length; index++) {
-		const rule = rules[index];
-		if (rule.conditions.length && rule.conditions.every((condition) => conditionMatches(alert, condition))) {
-			return index;
-		}
-	}
-	return -1;
-}
-
-export function evaluateSample(
-	sample: string,
-	rules: RoutingRule[],
-	defaultPolicy: string
-): { ok: true; index: number; policy: string } | { ok: false; error: string } {
-	let alert: unknown;
-	try {
-		alert = JSON.parse(sample);
-	} catch (error) {
-		return { ok: false, error: `Invalid JSON: ${(error as Error).message}` };
-	}
-	const index = matchRule(alert, rules);
-	return { ok: true, index, policy: index === -1 ? defaultPolicy : rules[index].policy };
-}

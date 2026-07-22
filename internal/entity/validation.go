@@ -72,6 +72,27 @@ var (
 	errScheduleLayer        = validation.NewError("schedule_layer_invalid", "Check each layer: a rotation, a handover hour, a start date, and restriction hours between 00:00 and 24:00.")
 	errOverrideUser         = validation.NewError("override_user_invalid", "Choose who takes the override.")
 	errOverrideReason       = validation.NewError("override_reason_invalid", "Keep the reason to 200 characters or fewer.")
+
+	errSourceSlug         = validation.NewError("source_slug_invalid", "A source URL uses lowercase letters, numbers, and hyphens, and starts with a letter.")
+	errSourceSlugReserved = validation.NewError("source_slug_reserved", "That name is reserved. Pick another.")
+	errSourceName         = validation.NewError("source_name_invalid", "Enter a source name of 60 characters or fewer.")
+	errSourceFormat       = validation.NewError("source_format_invalid", "Choose a supported format: Alertmanager, Grafana, Uptime Kuma, heartbeat, or generic JSON.")
+	errSourceAutoResolve  = validation.NewError("source_auto_resolve_invalid", "Auto-resolve must be between 0 and 30 days.")
+	errSourceMapping      = validation.NewError("source_mapping_invalid", "Each mapping needs a known field and a path, listed once.")
+	errSourceMappingTitle = validation.NewError("source_mapping_title", "Map the title field so alerts have something to show.")
+	errAlertSeverity      = validation.NewError("alert_severity_invalid", "Choose critical, high, or warning.")
+	errAlertStatus        = validation.NewError("alert_status_invalid", "Choose open, acked, or resolved.")
+	errPolicyRef          = validation.NewError("policy_ref_invalid", "Pick an escalation policy.")
+	errRouteCondition     = validation.NewError("route_condition_invalid", "Each condition needs a known field, an operator, and a value.")
+	errRouteConditions    = validation.NewError("route_conditions_empty", "A rule needs at least one condition with a value.")
+	errConditionOp        = validation.NewError("condition_op_invalid", "Choose is, is not, contains, or matches.")
+	errSilenceCondition   = validation.NewError("silence_condition_invalid", "Each scope needs a source, service, or label value.")
+	errSilenceReason      = validation.NewError("silence_reason_invalid", "Keep the reason to 200 characters or fewer.")
+	errGroupRuleFields    = validation.NewError("group_rule_invalid", "A grouping rule needs between 1 and 5 known fields.")
+	errGroupRuleWindow    = validation.NewError("group_window_invalid", "A grouping window runs from 1 minute to 24 hours.")
+	errMonitorInterval    = validation.NewError("monitor_interval_invalid", "A check-in interval runs from 1 minute to 30 days.")
+	errMonitorGrace       = validation.NewError("monitor_grace_invalid", "A grace period runs from 0 up to 24 hours.")
+	errMonitorState       = validation.NewError("monitor_state_invalid", "Choose a valid monitor state.")
 )
 
 func nameField(value any) error {
@@ -340,4 +361,209 @@ func overrideReasonField(value any) error {
 		return errOverrideReason
 	}
 	return nil
+}
+
+func sourceSlugField(value any) error {
+	s, _ := value.(string)
+	if !ValidSlugFormat(s) || len(s) > SourceSlugMaxLength {
+		return errSourceSlug
+	}
+	if slices.Contains(SourceReservedSlugs, s) {
+		return errSourceSlugReserved
+	}
+	return nil
+}
+
+func sourceNameField(value any) error {
+	s, _ := value.(string)
+	name := strings.TrimSpace(s)
+	if name == "" || len(name) > SourceNameMaxLength {
+		return errSourceName
+	}
+	return nil
+}
+
+func sourceFormatField(value any) error {
+	f, _ := value.(SourceFormat)
+	switch f {
+	case SourceFormatAlertmanager, SourceFormatGrafana, SourceFormatKuma, SourceFormatHeartbeat, SourceFormatGeneric:
+		return nil
+	default:
+		return errSourceFormat
+	}
+}
+
+func alertSeverityField(value any) error {
+	s, _ := value.(AlertSeverity)
+	switch s {
+	case SeverityCritical, SeverityHigh, SeverityWarning:
+		return nil
+	default:
+		return errAlertSeverity
+	}
+}
+
+func alertStatusField(value any) error {
+	s, _ := value.(AlertStatus)
+	switch s {
+	case AlertStatusOpen, AlertStatusAcked, AlertStatusResolved:
+		return nil
+	default:
+		return errAlertStatus
+	}
+}
+
+func autoResolveField(value any) error {
+	d, _ := value.(time.Duration)
+	if d < 0 || d > SourceMaxAutoResolve {
+		return errSourceAutoResolve
+	}
+	return nil
+}
+
+func policyRefField(value any) error {
+	s, _ := value.(string)
+	ref := strings.TrimSpace(s)
+	if ref == "" || len(ref) > PolicyRefMaxLength || !ValidSlugFormat(ref) {
+		return errPolicyRef
+	}
+	return nil
+}
+
+func sourceMappingsField(value any) error {
+	mappings, _ := value.([]SourceMapping)
+	if len(mappings) > SourceMaxMappings {
+		return errSourceMapping
+	}
+	seen := make(map[string]struct{}, len(mappings))
+	for _, m := range mappings {
+		if !slices.Contains(MappingFields, m.Field) {
+			return errSourceMapping
+		}
+		if _, dup := seen[m.Field]; dup {
+			return errSourceMapping
+		}
+		seen[m.Field] = struct{}{}
+		path := strings.TrimSpace(m.Path)
+		if path == "" || len(path) > SourceMappingPathMax {
+			return errSourceMapping
+		}
+	}
+	if _, ok := seen[MappingFieldTitle]; !ok {
+		return errSourceMappingTitle
+	}
+	return nil
+}
+
+func conditionOpField(value any) error {
+	op, _ := value.(ConditionOp)
+	switch op {
+	case ConditionIs, ConditionIsNot, ConditionContains, ConditionMatches:
+		return nil
+	default:
+		return errConditionOp
+	}
+}
+
+func routeConditionsField(value any) error {
+	conditions, _ := value.([]RouteCondition)
+	if len(conditions) == 0 || len(conditions) > RouteMaxConditions {
+		return errRouteConditions
+	}
+	for _, c := range conditions {
+		if err := conditionOpField(c.Op); err != nil {
+			return err
+		}
+		if !routeFieldKnown(c.Field) {
+			return errRouteCondition
+		}
+		v := strings.TrimSpace(c.Value)
+		if v == "" || len(v) > RouteValueMaxLength {
+			return errRouteCondition
+		}
+	}
+	return nil
+}
+
+func routeFieldKnown(field string) bool {
+	if strings.HasPrefix(field, "labels.") {
+		return len(field) > len("labels.")
+	}
+	return slices.Contains(RouteFields, field)
+}
+
+func silenceConditionsField(value any) error {
+	conditions, _ := value.([]SilenceCondition)
+	if len(conditions) == 0 || len(conditions) > SilenceMaxConditions {
+		return errSilenceCondition
+	}
+	for _, c := range conditions {
+		if !slices.Contains(SilenceScopeFields, c.Field) {
+			return errSilenceCondition
+		}
+		if strings.TrimSpace(c.Value) == "" {
+			return errSilenceCondition
+		}
+	}
+	return nil
+}
+
+func silenceReasonField(value any) error {
+	s, _ := value.(string)
+	if len(s) > SilenceReasonMax {
+		return errSilenceReason
+	}
+	return nil
+}
+
+func groupRuleFieldsField(value any) error {
+	fields, _ := value.([]string)
+	if len(fields) == 0 || len(fields) > GroupRuleMaxFields {
+		return errGroupRuleFields
+	}
+	seen := make(map[string]struct{}, len(fields))
+	for _, f := range fields {
+		if !routeFieldKnown(f) {
+			return errGroupRuleFields
+		}
+		if _, dup := seen[f]; dup {
+			return errGroupRuleFields
+		}
+		seen[f] = struct{}{}
+	}
+	return nil
+}
+
+func groupRuleWindowField(value any) error {
+	d, _ := value.(time.Duration)
+	if d < GroupWindowMin || d > GroupWindowMax {
+		return errGroupRuleWindow
+	}
+	return nil
+}
+
+func monitorIntervalField(value any) error {
+	d, _ := value.(time.Duration)
+	if d < MonitorIntervalMin || d > MonitorIntervalMax {
+		return errMonitorInterval
+	}
+	return nil
+}
+
+func monitorGraceField(value any) error {
+	d, _ := value.(time.Duration)
+	if d < 0 || d > MonitorGraceMax {
+		return errMonitorGrace
+	}
+	return nil
+}
+
+func monitorStateField(value any) error {
+	s, _ := value.(MonitorState)
+	switch s {
+	case MonitorStateHealthy, MonitorStateMissed, MonitorStatePaused:
+		return nil
+	default:
+		return errMonitorState
+	}
 }

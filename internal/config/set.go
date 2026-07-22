@@ -13,4 +13,6 @@ var Set = wire.NewSet(
 	NewHTTP,
 	NewValkey,
 	NewCasbin,
+	NewIngest,
+	NewCron,
 )

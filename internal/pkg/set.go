@@ -4,6 +4,7 @@ import (
 	"github.com/goforj/wire"
 
 	"github.com/opsybot/opsybot/internal/pkg/casbin"
+	"github.com/opsybot/opsybot/internal/pkg/cron"
 	"github.com/opsybot/opsybot/internal/pkg/logger"
 	"github.com/opsybot/opsybot/internal/pkg/mailer"
 	"github.com/opsybot/opsybot/internal/pkg/otel"
@@ -18,6 +19,7 @@ var Set = wire.NewSet(
 	postgres.New,
 	valkey.New,
 	casbin.New,
+	cron.New,
 	mailer.New,
 	secretbox.New,
 )

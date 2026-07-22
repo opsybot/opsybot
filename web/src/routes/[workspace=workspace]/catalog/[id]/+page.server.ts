@@ -1,15 +1,18 @@
 import { error, fail, redirect } from '@sveltejs/kit';
+import { listAlerts } from '$lib/server/alerts';
 import { getService, serviceActivity, serviceNames } from '$lib/server/catalog';
 import { save } from '../save';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = ({ params, url }) => {
+export const load: PageServerLoad = async ({ params, url, cookies }) => {
 	const service = getService(params.id);
 	if (!service) error(404, `No service called ${params.id}.`);
 
+	const { alerts } = await listAlerts(cookies, params.workspace, { status: ['open', 'acked'] });
+
 	return {
 		service,
-		activity: serviceActivity(params.id),
+		activity: serviceActivity(params.id, alerts),
 		names: serviceNames(),
 		dialogOpen: url.searchParams.has('edit')
 	};

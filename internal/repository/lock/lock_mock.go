@@ -54,6 +54,21 @@ func (mr *MockLockMockRecorder) Instance(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Instance", reflect.TypeOf((*MockLock)(nil).Instance), ctx)
 }
 
+// TryJob mocks base method.
+func (m *MockLock) TryJob(ctx context.Context, name string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TryJob", ctx, name)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// TryJob indicates an expected call of TryJob.
+func (mr *MockLockMockRecorder) TryJob(ctx, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TryJob", reflect.TypeOf((*MockLock)(nil).TryJob), ctx, name)
+}
+
 // Workspace mocks base method.
 func (m *MockLock) Workspace(ctx context.Context, workspaceID string) error {
 	m.ctrl.T.Helper()
