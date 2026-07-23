@@ -10,6 +10,7 @@ import (
 	"github.com/opsybot/opsybot/internal/entity"
 	"github.com/opsybot/opsybot/internal/repository/audit"
 	"github.com/opsybot/opsybot/internal/repository/channel"
+	"github.com/opsybot/opsybot/internal/repository/chat_identity"
 	"github.com/opsybot/opsybot/internal/repository/member"
 	"github.com/opsybot/opsybot/internal/repository/notification_rule"
 	"github.com/opsybot/opsybot/internal/repository/policy"
@@ -28,6 +29,7 @@ type harness struct {
 	users    *user.MockUser
 	rules    *notification_rule.MockNotificationRule
 	channels *channel.MockChannel
+	ids      *chat_identity.MockChatIdentity
 	pol      *policy.MockPolicy
 	audit    *audit.MockAudit
 }
@@ -41,10 +43,11 @@ func newHarness(t *testing.T) *harness {
 		users:    user.NewMockUser(ctrl),
 		rules:    notification_rule.NewMockNotificationRule(ctrl),
 		channels: channel.NewMockChannel(ctrl),
+		ids:      chat_identity.NewMockChatIdentity(ctrl),
 		pol:      policy.NewMockPolicy(ctrl),
 		audit:    audit.NewMockAudit(ctrl),
 	}
-	h.srv = &srv{tx: fakeTx{}, workspaces: h.ws, members: h.members, users: h.users, rules: h.rules, channels: h.channels, policy: h.pol, audit: h.audit}
+	h.srv = &srv{tx: fakeTx{}, workspaces: h.ws, members: h.members, users: h.users, rules: h.rules, channels: h.channels, identities: h.ids, policy: h.pol, audit: h.audit}
 	return h
 }
 
@@ -75,6 +78,7 @@ func TestSaveRejectsUnconnectedChannel(t *testing.T) {
 	h := newHarness(t)
 	h.allowSession()
 	h.channels.EXPECT().ListByUser(gomock.Any(), "u1").Return([]entity.Channel{{Type: entity.ChannelTypeEmail}}, nil)
+	h.ids.EXPECT().LinkedProviders(gomock.Any(), "ws-1", "u1").Return(nil, nil)
 
 	_, err := h.srv.Save(sessionCtx(), "acme", entity.NotificationRule{
 		High: []entity.NotificationStep{{Channel: entity.ChannelTypeSlack}},
@@ -84,10 +88,27 @@ func TestSaveRejectsUnconnectedChannel(t *testing.T) {
 	}
 }
 
+func TestSaveAllowsLinkedChatProvider(t *testing.T) {
+	h := newHarness(t)
+	h.allowSession()
+	h.channels.EXPECT().ListByUser(gomock.Any(), "u1").Return(nil, nil)
+	h.ids.EXPECT().LinkedProviders(gomock.Any(), "ws-1", "u1").Return([]entity.ChatProvider{entity.ChatProviderSlack}, nil)
+	saved := entity.NotificationRule{WorkspaceID: "ws-1", UserID: "u1", High: []entity.NotificationStep{{Channel: entity.ChannelTypeSlack}}}
+	h.rules.EXPECT().Save(gomock.Any(), gomock.Any()).Return(saved, nil)
+	h.audit.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+
+	if _, err := h.srv.Save(sessionCtx(), "acme", entity.NotificationRule{
+		High: []entity.NotificationStep{{Channel: entity.ChannelTypeSlack}},
+	}); err != nil {
+		t.Fatalf("save should allow a slack step backed by a linked chat identity: %v", err)
+	}
+}
+
 func TestSaveAllowsConnectedButUnverifiedChannel(t *testing.T) {
 	h := newHarness(t)
 	h.allowSession()
 	h.channels.EXPECT().ListByUser(gomock.Any(), "u1").Return([]entity.Channel{{Type: entity.ChannelTypeNtfy, Verified: false}}, nil)
+	h.ids.EXPECT().LinkedProviders(gomock.Any(), "ws-1", "u1").Return(nil, nil)
 	saved := entity.NotificationRule{WorkspaceID: "ws-1", UserID: "u1", High: []entity.NotificationStep{{Channel: entity.ChannelTypeNtfy}}}
 	h.rules.EXPECT().Save(gomock.Any(), gomock.Any()).Return(saved, nil)
 	h.audit.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
@@ -104,6 +125,7 @@ func TestSaveDefaultsQuietTimezoneToProfile(t *testing.T) {
 	h.allowSession()
 	h.users.EXPECT().GetByID(gomock.Any(), "u1").Return(entity.User{ID: "u1", Timezone: "Europe/Berlin"}, nil)
 	h.channels.EXPECT().ListByUser(gomock.Any(), "u1").Return([]entity.Channel{{Type: entity.ChannelTypeEmail}}, nil)
+	h.ids.EXPECT().LinkedProviders(gomock.Any(), "ws-1", "u1").Return(nil, nil)
 	h.rules.EXPECT().Save(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(_ context.Context, rule entity.NotificationRule) (entity.NotificationRule, error) {
 			if rule.QuietHours.Window.Timezone != "Europe/Berlin" {

@@ -188,7 +188,7 @@ func TestBuildPlanResolvesVerifiedChannels(t *testing.T) {
 			{Channel: ChannelTypeEmail, Delay: 5 * time.Minute},
 		},
 	}
-	plan := BuildNotificationPlan(rule, channels, NotifyUrgencyHigh, "on-call@acme.test")
+	plan := BuildNotificationPlan(rule, channels, nil, NotifyUrgencyHigh, "on-call@acme.test")
 	if len(plan.Steps) != 2 {
 		t.Fatalf("expected ntfy + email fallback (telegram unverified dropped), got %d steps", len(plan.Steps))
 	}
@@ -202,7 +202,7 @@ func TestBuildPlanResolvesVerifiedChannels(t *testing.T) {
 
 func TestBuildPlanFallsBackToEmailWhenEmpty(t *testing.T) {
 	rule := NotificationRule{High: []NotificationStep{{Channel: ChannelTypeSlack}}}
-	plan := BuildNotificationPlan(rule, nil, NotifyUrgencyHigh, "on-call@acme.test")
+	plan := BuildNotificationPlan(rule, nil, nil, NotifyUrgencyHigh, "on-call@acme.test")
 	if len(plan.Steps) != 1 || plan.Steps[0].Channel != ChannelTypeEmail {
 		t.Fatalf("unreachable rule should fall back to one email step, got %+v", plan.Steps)
 	}
@@ -210,9 +210,24 @@ func TestBuildPlanFallsBackToEmailWhenEmpty(t *testing.T) {
 
 func TestBuildPlanEmptyWhenNoEmailFallback(t *testing.T) {
 	rule := NotificationRule{High: []NotificationStep{{Channel: ChannelTypeSlack}}}
-	plan := BuildNotificationPlan(rule, nil, NotifyUrgencyHigh, "")
+	plan := BuildNotificationPlan(rule, nil, nil, NotifyUrgencyHigh, "")
 	if len(plan.Steps) != 0 {
 		t.Fatalf("no reachable channel and no email should yield an empty plan, got %+v", plan.Steps)
+	}
+}
+
+func TestBuildPlanIncludesLinkedChatIdentity(t *testing.T) {
+	rule := NotificationRule{High: []NotificationStep{
+		{Channel: ChannelTypeTelegram},
+		{Channel: ChannelTypeEmail, Delay: 5 * time.Minute},
+	}}
+	linked := ChatLinkedChannels([]ChatProvider{ChatProviderTelegram})
+	plan := BuildNotificationPlan(rule, nil, linked, NotifyUrgencyHigh, "on-call@acme.test")
+	if len(plan.Steps) != 2 {
+		t.Fatalf("expected telegram (via linked identity) + email, got %d steps", len(plan.Steps))
+	}
+	if plan.Steps[0].Channel != ChannelTypeTelegram || plan.Steps[0].ChannelID != "" {
+		t.Fatalf("telegram step should resolve from the linked identity with no channel row, got %+v", plan.Steps[0])
 	}
 }
 

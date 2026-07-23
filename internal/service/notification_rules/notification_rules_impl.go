@@ -16,6 +16,7 @@ type srv struct {
 	users      repository.User
 	rules      repository.NotificationRule
 	channels   repository.Channel
+	identities repository.ChatIdentity
 	policy     repository.Policy
 	audit      repository.Audit
 }
@@ -27,10 +28,11 @@ func New(
 	users repository.User,
 	rules repository.NotificationRule,
 	channels repository.Channel,
+	identities repository.ChatIdentity,
 	policy repository.Policy,
 	audit repository.Audit,
 ) service.NotificationRules {
-	return &srv{tx: tx, workspaces: workspaces, members: members, users: users, rules: rules, channels: channels, policy: policy, audit: audit}
+	return &srv{tx: tx, workspaces: workspaces, members: members, users: users, rules: rules, channels: channels, identities: identities, policy: policy, audit: audit}
 }
 
 func (s *srv) authorize(ctx context.Context, workspaceSlug string, act entity.PolicyAction) (entity.Identity, entity.Workspace, error) {
@@ -100,7 +102,11 @@ func (s *srv) Save(ctx context.Context, workspaceSlug string, in entity.Notifica
 	if err != nil {
 		return entity.NotificationRule{}, err
 	}
-	connected := connectedSet(channels)
+	providers, err := s.identities.LinkedProviders(ctx, ws.ID, id.UserID)
+	if err != nil {
+		return entity.NotificationRule{}, err
+	}
+	connected := connectedSet(channels, entity.ChatLinkedChannels(providers))
 	if err := entity.ValidateNotificationReach(in, connected); err != nil {
 		return entity.NotificationRule{}, err
 	}
@@ -118,13 +124,16 @@ func (s *srv) Save(ctx context.Context, workspaceSlug string, in entity.Notifica
 	return saved, err
 }
 
-func connectedSet(channels []entity.Channel) func(entity.ChannelType) bool {
+func connectedSet(channels []entity.Channel, linkedChat map[entity.ChannelType]bool) func(entity.ChannelType) bool {
 	seen := make(map[entity.ChannelType]struct{}, len(channels))
 	for _, ch := range channels {
 		seen[ch.Type] = struct{}{}
 	}
 	return func(t entity.ChannelType) bool {
 		if t == entity.ChannelTypeEmail {
+			return true
+		}
+		if linkedChat[t] {
 			return true
 		}
 		_, ok := seen[t]

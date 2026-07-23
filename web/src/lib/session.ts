@@ -1,10 +1,15 @@
+import type { components } from '$lib/api/schema';
+
 export type WorkspaceHealth = 'operational' | 'degraded' | 'outage';
+
+export type Role = components['schemas']['Role'];
 
 export type Workspace = {
 	id: string;
 	name: string;
 	environment: string;
 	health: WorkspaceHealth;
+	role: Role;
 };
 
 export type SessionUser = {

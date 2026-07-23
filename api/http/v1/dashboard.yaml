@@ -2918,6 +2918,8 @@ components:
         archiveOnResolve: { type: boolean }
         linked: { type: boolean }
         linkedHandle: { type: string }
+        linkedVerified: { type: boolean }
+        linkMethod: { type: string, enum: [email, oauth, telegram] }
     ChatConnectionList:
       type: object
       required: [items]
@@ -3370,6 +3372,7 @@ components:
         name: { type: string }
         timezone: { type: string }
         environment: { type: string }
+        role: { $ref: "#/components/schemas/Role" }
     WorkspaceList:
       type: object
       required: [items]

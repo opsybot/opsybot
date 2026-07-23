@@ -56,6 +56,21 @@ func (mr *MockChatIdentityMockRecorder) GetForUser(ctx, connectionID, userID any
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetForUser", reflect.TypeOf((*MockChatIdentity)(nil).GetForUser), ctx, connectionID, userID)
 }
 
+// LinkedProviders mocks base method.
+func (m *MockChatIdentity) LinkedProviders(ctx context.Context, workspaceID, userID string) ([]entity.ChatProvider, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LinkedProviders", ctx, workspaceID, userID)
+	ret0, _ := ret[0].([]entity.ChatProvider)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LinkedProviders indicates an expected call of LinkedProviders.
+func (mr *MockChatIdentityMockRecorder) LinkedProviders(ctx, workspaceID, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LinkedProviders", reflect.TypeOf((*MockChatIdentity)(nil).LinkedProviders), ctx, workspaceID, userID)
+}
+
 // SetDMChannel mocks base method.
 func (m *MockChatIdentity) SetDMChannel(ctx context.Context, id, dmChannelID string) error {
 	m.ctrl.T.Helper()

@@ -90,6 +90,7 @@ func TestConnectUsesEnvTokenAndStoresNoSecret(t *testing.T) {
 			return entity.ChatConnection{Provider: in.Provider, ExternalName: in.ExternalName}, nil
 		})
 	h.audit.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+	h.members.EXPECT().ListByWorkspace(gomock.Any(), gomock.Any()).Return(nil, nil)
 
 	conn, err := h.srv.Connect(sessionCtx(), "acme", entity.ChatConnectInput{Provider: entity.ChatProviderSlack})
 	if err != nil {
@@ -103,6 +104,33 @@ func TestConnectUsesEnvTokenAndStoresNoSecret(t *testing.T) {
 	}
 	if saved.ExternalID != "T1" || saved.BotUserID != "U0" {
 		t.Errorf("validated identity not carried into Save: %+v", saved)
+	}
+}
+
+func TestConnectSweepsSlackIdentitiesByEmail(t *testing.T) {
+	h := newHarness(t, config.Slack{BotToken: "xoxb-env-token"}, config.Discord{})
+	h.allowWrite()
+	h.courier.EXPECT().
+		Validate(gomock.Any(), entity.ChatProviderSlack, "xoxb-env-token", "").
+		Return(entity.ChatValidation{ExternalID: "T1", ExternalName: "Acme", BotUserID: "U0"}, nil)
+	h.connections.EXPECT().Save(gomock.Any(), "ws-1", gomock.Any()).
+		Return(entity.ChatConnection{ID: "conn-1", WorkspaceID: "ws-1", Provider: entity.ChatProviderSlack, ExternalID: "T1"}, nil)
+	h.audit.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+	h.members.EXPECT().ListByWorkspace(gomock.Any(), "ws-1").Return([]entity.Member{
+		{UserID: "u1", Email: "vlad@acme.test", Status: entity.MemberStatusActive},
+		{UserID: "u2", Email: "", Status: entity.MemberStatusActive},
+		{UserID: "u3", Email: "old@acme.test", Status: entity.MemberStatusInvited},
+	}, nil)
+	h.courier.EXPECT().
+		LookupUser(gomock.Any(), entity.ChatProviderSlack, "xoxb-env-token", "T1", "vlad@acme.test").
+		Return(entity.ChatUser{ProviderUserID: "U100", Handle: "vlad"}, nil)
+	h.identities.EXPECT().Upsert(gomock.Any(), gomock.Cond(func(in entity.ChatIdentity) bool {
+		return in.ConnectionID == "conn-1" && in.UserID == "u1" && in.ProviderUserID == "U100" &&
+			in.ResolvedBy == "email" && in.Verified
+	})).Return(entity.ChatIdentity{}, nil)
+
+	if _, err := h.srv.Connect(sessionCtx(), "acme", entity.ChatConnectInput{Provider: entity.ChatProviderSlack}); err != nil {
+		t.Fatalf("Connect: %v", err)
 	}
 }
 
@@ -252,6 +280,7 @@ func TestCompleteOAuthExchangesAndSaves(t *testing.T) {
 			return entity.ChatConnection{Provider: in.Provider}, nil
 		})
 	h.audit.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+	h.members.EXPECT().ListByWorkspace(gomock.Any(), gomock.Any()).Return(nil, nil)
 
 	slug, err := h.srv.CompleteOAuth(sessionCtx(), entity.ChatProviderSlack, "code-abc", "", "state-xyz")
 	if err != nil {

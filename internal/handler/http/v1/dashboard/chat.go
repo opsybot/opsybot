@@ -50,6 +50,14 @@ func chatConnectionDTO(c entity.ChatConnection) api.ChatConnection {
 		handle := c.LinkedHandle
 		dto.LinkedHandle = &handle
 	}
+	if c.Linked {
+		verified := c.LinkedVerified
+		dto.LinkedVerified = &verified
+	}
+	if c.LinkedMethod != "" {
+		method := api.ChatConnectionLinkMethod(c.LinkedMethod)
+		dto.LinkMethod = &method
+	}
 	if !c.HealthCheckedAt.IsZero() {
 		at := c.HealthCheckedAt
 		dto.HealthCheckedAt = &at

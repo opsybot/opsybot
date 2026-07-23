@@ -6,6 +6,7 @@ import (
 
 	"github.com/opsybot/opsybot/internal/config"
 	"github.com/opsybot/opsybot/internal/entity"
+	"github.com/opsybot/opsybot/internal/pkg/logger"
 	"github.com/opsybot/opsybot/internal/repository"
 	"github.com/opsybot/opsybot/internal/service"
 )
@@ -113,6 +114,7 @@ func (s *srv) List(ctx context.Context, workspaceSlug string) ([]entity.ChatConn
 			conns[i].Linked = true
 			conns[i].LinkedHandle = ident.ProviderHandle
 			conns[i].LinkedVerified = ident.Verified
+			conns[i].LinkedMethod = ident.ResolvedBy
 		}
 	}
 	return conns, nil
@@ -158,7 +160,33 @@ func (s *srv) Connect(ctx context.Context, workspaceSlug string, in entity.ChatC
 		WorkspaceID: ws.ID, ActorType: entity.AuditActorUser, ActorUserID: actor.UserID,
 		ActorLabel: actor.Label, Action: entity.ActionChatConnected, Target: string(in.Provider),
 	})
+	if in.Provider == entity.ChatProviderSlack {
+		s.sweepSlackIdentities(ctx, conn, token)
+	}
 	return conn, nil
+}
+
+func (s *srv) sweepSlackIdentities(ctx context.Context, conn entity.ChatConnection, token string) {
+	members, err := s.members.ListByWorkspace(ctx, conn.WorkspaceID)
+	if err != nil {
+		logger.From(ctx).WarnContext(ctx, "slack identity sweep skipped", "error", err, "workspace_id", conn.WorkspaceID)
+		return
+	}
+	for _, m := range members {
+		if m.Status != entity.MemberStatusActive || m.Email == "" {
+			continue
+		}
+		user, err := s.courier.LookupUser(ctx, entity.ChatProviderSlack, token, conn.ExternalID, m.Email)
+		if err != nil || user.ProviderUserID == "" {
+			continue
+		}
+		if _, err := s.identities.Upsert(ctx, entity.ChatIdentity{
+			ConnectionID: conn.ID, UserID: m.UserID, ProviderUserID: user.ProviderUserID,
+			ProviderHandle: user.Handle, ResolvedBy: "email", Verified: true,
+		}); err != nil {
+			logger.From(ctx).WarnContext(ctx, "slack identity upsert failed", "error", err, "user_id", m.UserID)
+		}
+	}
 }
 
 func (s *srv) Delete(ctx context.Context, workspaceSlug string, provider entity.ChatProvider) error {
@@ -344,13 +372,17 @@ func (s *srv) CompleteOAuth(ctx context.Context, provider entity.ChatProvider, c
 	default:
 		return st.WorkspaceSlug, entity.ErrChatOAuthUnsupported
 	}
-	if _, err := s.connections.Save(ctx, st.WorkspaceID, in); err != nil {
+	savedConn, err := s.connections.Save(ctx, st.WorkspaceID, in)
+	if err != nil {
 		return st.WorkspaceSlug, err
 	}
 	_ = s.audit.Create(ctx, entity.AuditEvent{
 		WorkspaceID: st.WorkspaceID, ActorType: entity.AuditActorUser, ActorUserID: st.UserID,
 		Action: entity.ActionChatConnected, Target: string(provider),
 	})
+	if provider == entity.ChatProviderSlack {
+		s.sweepSlackIdentities(ctx, savedConn, in.BotToken)
+	}
 	return st.WorkspaceSlug, nil
 }
 

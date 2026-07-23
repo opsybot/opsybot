@@ -9,6 +9,7 @@ import (
 
 	"github.com/aarondl/null/v8"
 	"github.com/aarondl/sqlboiler/v4/boil"
+	"github.com/aarondl/sqlboiler/v4/queries"
 	"github.com/aarondl/sqlboiler/v4/queries/qm"
 
 	dbpostgres "github.com/opsybot/opsybot/internal/db/postgres"
@@ -62,6 +63,23 @@ func (r *repo) GetForUser(ctx context.Context, connectionID, userID string) (ent
 		return entity.ChatIdentity{}, fmt.Errorf("get chat identity: %w", err)
 	}
 	return toEntity(m), nil
+}
+
+func (r *repo) LinkedProviders(ctx context.Context, workspaceID, userID string) ([]entity.ChatProvider, error) {
+	var rows []struct {
+		Provider string `boil:"provider"`
+	}
+	const sql = `SELECT cc.provider FROM chat_identities ci
+JOIN chat_connections cc ON cc.id = ci.connection_id
+WHERE cc.workspace_id = $1 AND ci.user_id = $2 AND ci.verified_at IS NOT NULL`
+	if err := queries.Raw(sql, workspaceID, userID).Bind(ctx, r.db.Querier(ctx), &rows); err != nil {
+		return nil, fmt.Errorf("list linked providers: %w", err)
+	}
+	out := make([]entity.ChatProvider, 0, len(rows))
+	for _, m := range rows {
+		out = append(out, entity.ChatProvider(m.Provider))
+	}
+	return out, nil
 }
 
 func (r *repo) SetDMChannel(ctx context.Context, id, dmChannelID string) error {

@@ -1755,6 +1755,9 @@ export interface components {
             archiveOnResolve: boolean;
             linked: boolean;
             linkedHandle?: string;
+            linkedVerified?: boolean;
+            /** @enum {string} */
+            linkMethod?: "email" | "oauth" | "telegram";
         };
         ChatConnectionList: {
             items: components["schemas"]["ChatConnection"][];
@@ -2107,6 +2110,7 @@ export interface components {
             name: string;
             timezone: string;
             environment?: string;
+            role?: components["schemas"]["Role"];
         };
         WorkspaceList: {
             items: components["schemas"]["Workspace"][];

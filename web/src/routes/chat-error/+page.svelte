@@ -9,7 +9,7 @@
 	const MESSAGES: Record<string, { title: string; detail: string }> = {
 		invalid_state: {
 			title: 'That connection link expired',
-			detail: 'The install took too long or was retried in another tab. Open Chat connections and click Connect again.'
+			detail: 'The install took too long or was retried in another tab. Open Integrations and click Connect again.'
 		},
 		denied: {
 			title: 'Install cancelled',
@@ -34,7 +34,7 @@
 	};
 	const FALLBACK = {
 		title: 'The connection could not be completed',
-		detail: 'Something went wrong finishing the install. Open Chat connections and try again.'
+		detail: 'Something went wrong finishing the install. Open Integrations and try again.'
 	};
 
 	const message = $derived(MESSAGES[data.code] ?? FALLBACK);

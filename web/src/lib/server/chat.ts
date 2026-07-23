@@ -17,7 +17,9 @@ function connectionFromApi(dto: Schemas['ChatConnection']): Connection {
 			archiveOnResolve: dto.archiveOnResolve
 		},
 		linked: dto.linked ?? false,
-		linkedHandle: dto.linkedHandle ?? ''
+		linkedHandle: dto.linkedHandle ?? '',
+		linkedVerified: dto.linkedVerified ?? false,
+		linkMethod: dto.linkMethod
 	};
 }
 

@@ -45,6 +45,7 @@ type ChatConnection struct {
 	Linked           bool
 	LinkedHandle     string
 	LinkedVerified   bool
+	LinkedMethod     string
 }
 
 type ChatConnectionInput struct {
@@ -231,4 +232,12 @@ func (p ChatProvider) Valid() bool {
 	default:
 		return false
 	}
+}
+
+func ChatLinkedChannels(providers []ChatProvider) map[ChannelType]bool {
+	linked := make(map[ChannelType]bool, len(providers))
+	for _, p := range providers {
+		linked[ChannelType(p)] = true
+	}
+	return linked
 }

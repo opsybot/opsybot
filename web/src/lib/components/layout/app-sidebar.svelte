@@ -17,6 +17,7 @@
 	} = $props();
 
 	const current = $derived(workspacePath(page.url.pathname, page.params.workspace ?? ''));
+	const isAdmin = $derived(session.activeWorkspace.role === 'admin');
 </script>
 
 <Sidebar.Root>
@@ -44,8 +45,9 @@
 				<Sidebar.GroupContent>
 					<Sidebar.Menu class="gap-[2px]">
 						{#each section.items as item (item.href)}
-							{@const active = isCurrentSection(current, item.href)}
-							<Sidebar.MenuItem>
+							{#if !item.adminOnly || isAdmin}
+								{@const active = isCurrentSection(current, item.href)}
+								<Sidebar.MenuItem>
 								<Sidebar.MenuButton
 									isActive={active}
 									class="h-auto gap-[11px] rounded-sm px-[11px] py-2 text-[13.5px] leading-[18px] font-medium"
@@ -63,6 +65,7 @@
 									{/snippet}
 								</Sidebar.MenuButton>
 							</Sidebar.MenuItem>
+							{/if}
 						{/each}
 					</Sidebar.Menu>
 				</Sidebar.GroupContent>

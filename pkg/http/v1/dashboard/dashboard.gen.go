@@ -350,6 +350,27 @@ func (e ChatConnectionHealth) Valid() bool {
 	}
 }
 
+// Defines values for ChatConnectionLinkMethod.
+const (
+	ChatConnectionLinkMethodEmail    ChatConnectionLinkMethod = "email"
+	ChatConnectionLinkMethodOauth    ChatConnectionLinkMethod = "oauth"
+	ChatConnectionLinkMethodTelegram ChatConnectionLinkMethod = "telegram"
+)
+
+// Valid indicates whether the value is a known member of the ChatConnectionLinkMethod enum.
+func (e ChatConnectionLinkMethod) Valid() bool {
+	switch e {
+	case ChatConnectionLinkMethodEmail:
+		return true
+	case ChatConnectionLinkMethodOauth:
+		return true
+	case ChatConnectionLinkMethodTelegram:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ChatConnectionProvider.
 const (
 	ChatConnectionProviderDiscord  ChatConnectionProvider = "discord"
@@ -691,31 +712,31 @@ func (e MemberStatus) Valid() bool {
 
 // Defines values for NotificationStepChannelType.
 const (
-	Discord  NotificationStepChannelType = "discord"
-	Email    NotificationStepChannelType = "email"
-	Ntfy     NotificationStepChannelType = "ntfy"
-	Slack    NotificationStepChannelType = "slack"
-	Teams    NotificationStepChannelType = "teams"
-	Telegram NotificationStepChannelType = "telegram"
-	Webhook  NotificationStepChannelType = "webhook"
+	NotificationStepChannelTypeDiscord  NotificationStepChannelType = "discord"
+	NotificationStepChannelTypeEmail    NotificationStepChannelType = "email"
+	NotificationStepChannelTypeNtfy     NotificationStepChannelType = "ntfy"
+	NotificationStepChannelTypeSlack    NotificationStepChannelType = "slack"
+	NotificationStepChannelTypeTeams    NotificationStepChannelType = "teams"
+	NotificationStepChannelTypeTelegram NotificationStepChannelType = "telegram"
+	NotificationStepChannelTypeWebhook  NotificationStepChannelType = "webhook"
 )
 
 // Valid indicates whether the value is a known member of the NotificationStepChannelType enum.
 func (e NotificationStepChannelType) Valid() bool {
 	switch e {
-	case Discord:
+	case NotificationStepChannelTypeDiscord:
 		return true
-	case Email:
+	case NotificationStepChannelTypeEmail:
 		return true
-	case Ntfy:
+	case NotificationStepChannelTypeNtfy:
 		return true
-	case Slack:
+	case NotificationStepChannelTypeSlack:
 		return true
-	case Teams:
+	case NotificationStepChannelTypeTeams:
 		return true
-	case Telegram:
+	case NotificationStepChannelTypeTelegram:
 		return true
-	case Webhook:
+	case NotificationStepChannelTypeWebhook:
 		return true
 	default:
 		return false
@@ -1300,21 +1321,26 @@ type ChannelVerificationMethod string
 
 // ChatConnection defines model for ChatConnection.
 type ChatConnection struct {
-	AnnounceChannel  string                 `json:"announceChannel"`
-	ArchiveOnResolve bool                   `json:"archiveOnResolve"`
-	Enabled          bool                   `json:"enabled"`
-	ExternalName     string                 `json:"externalName"`
-	Health           ChatConnectionHealth   `json:"health"`
-	HealthCheckedAt  *time.Time             `json:"healthCheckedAt,omitempty"`
-	HealthNote       string                 `json:"healthNote"`
-	Linked           bool                   `json:"linked"`
-	LinkedHandle     *string                `json:"linkedHandle,omitempty"`
-	NamingPattern    string                 `json:"namingPattern"`
-	Provider         ChatConnectionProvider `json:"provider"`
+	AnnounceChannel  string                    `json:"announceChannel"`
+	ArchiveOnResolve bool                      `json:"archiveOnResolve"`
+	Enabled          bool                      `json:"enabled"`
+	ExternalName     string                    `json:"externalName"`
+	Health           ChatConnectionHealth      `json:"health"`
+	HealthCheckedAt  *time.Time                `json:"healthCheckedAt,omitempty"`
+	HealthNote       string                    `json:"healthNote"`
+	LinkMethod       *ChatConnectionLinkMethod `json:"linkMethod,omitempty"`
+	Linked           bool                      `json:"linked"`
+	LinkedHandle     *string                   `json:"linkedHandle,omitempty"`
+	LinkedVerified   *bool                     `json:"linkedVerified,omitempty"`
+	NamingPattern    string                    `json:"namingPattern"`
+	Provider         ChatConnectionProvider    `json:"provider"`
 }
 
 // ChatConnectionHealth defines model for ChatConnection.Health.
 type ChatConnectionHealth string
+
+// ChatConnectionLinkMethod defines model for ChatConnection.LinkMethod.
+type ChatConnectionLinkMethod string
 
 // ChatConnectionProvider defines model for ChatConnection.Provider.
 type ChatConnectionProvider string
@@ -2136,6 +2162,7 @@ type Workspace struct {
 	Environment *string `json:"environment,omitempty"`
 	Id          string  `json:"id"`
 	Name        string  `json:"name"`
+	Role        *Role   `json:"role,omitempty"`
 	Timezone    string  `json:"timezone"`
 }
 

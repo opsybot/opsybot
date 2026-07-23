@@ -20,6 +20,7 @@ type srv struct {
 	runs       repository.NotificationRun
 	rules      repository.NotificationRule
 	channels   repository.Channel
+	identities repository.ChatIdentity
 	alerts     repository.Alert
 	workspaces repository.Workspace
 	actions    repository.ActionToken
@@ -35,6 +36,7 @@ func New(
 	runs repository.NotificationRun,
 	rules repository.NotificationRule,
 	channels repository.Channel,
+	identities repository.ChatIdentity,
 	alerts repository.Alert,
 	workspaces repository.Workspace,
 	actions repository.ActionToken,
@@ -43,7 +45,7 @@ func New(
 	cfg config.Auth,
 	chat config.Chat,
 ) service.Notifications {
-	return &srv{tx: tx, lock: lock, runs: runs, rules: rules, channels: channels, alerts: alerts, workspaces: workspaces, actions: actions, notifier: notifier, limiter: limiter, cfg: cfg, chat: chat}
+	return &srv{tx: tx, lock: lock, runs: runs, rules: rules, channels: channels, identities: identities, alerts: alerts, workspaces: workspaces, actions: actions, notifier: notifier, limiter: limiter, cfg: cfg, chat: chat}
 }
 
 func (s *srv) Page(ctx context.Context, req entity.NotifyRequest) (entity.NotificationRun, error) {
@@ -58,7 +60,11 @@ func (s *srv) Page(ctx context.Context, req entity.NotifyRequest) (entity.Notifi
 	if err != nil {
 		return entity.NotificationRun{}, err
 	}
-	plan := entity.BuildNotificationPlan(rule, channels, entity.NotifyUrgencyFor(req.Severity), req.Email)
+	providers, err := s.identities.LinkedProviders(ctx, req.WorkspaceID, req.UserID)
+	if err != nil {
+		return entity.NotificationRun{}, err
+	}
+	plan := entity.BuildNotificationPlan(rule, channels, entity.ChatLinkedChannels(providers), entity.NotifyUrgencyFor(req.Severity), req.Email)
 	run := entity.StartNotificationRun(req, plan)
 	created, _, err := s.runs.Create(ctx, run)
 	if err != nil {

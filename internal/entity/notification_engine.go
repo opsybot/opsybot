@@ -21,7 +21,7 @@ func DefaultNotificationRule(workspaceID, userID string) NotificationRule {
 	}
 }
 
-func BuildNotificationPlan(rule NotificationRule, channels []Channel, urgency NotifyUrgency, fallbackEmail string) NotificationPlan {
+func BuildNotificationPlan(rule NotificationRule, channels []Channel, linkedChat map[ChannelType]bool, urgency NotifyUrgency, fallbackEmail string) NotificationPlan {
 	steps := rule.High
 	if urgency == NotifyUrgencyLow {
 		steps = rule.Low
@@ -31,6 +31,12 @@ func BuildNotificationPlan(rule NotificationRule, channels []Channel, urgency No
 		if ch, ok := resolveChannel(channels, step.Channel); ok {
 			plan.Steps = append(plan.Steps, NotificationPlanStep{
 				Channel: step.Channel, Delay: step.Delay, ChannelID: ch.ID, Detail: ch.Detail,
+			})
+			continue
+		}
+		if step.Channel.EventKind() == AlertEventChat && linkedChat[step.Channel] {
+			plan.Steps = append(plan.Steps, NotificationPlanStep{
+				Channel: step.Channel, Delay: step.Delay,
 			})
 			continue
 		}

@@ -24,21 +24,21 @@ func (h *chatOAuthRoutes) callback(provider entity.ChatProvider) http.HandlerFun
 		ctx := h.withSession(r)
 		q := r.URL.Query()
 		if q.Get("error") != "" {
-			h.redirect(w, r, "", "denied")
+			h.redirect(w, r, "", "integrations", "denied")
 			return
 		}
 		code, state := q.Get("code"), q.Get("state")
 		if code == "" || state == "" {
-			h.redirect(w, r, "", "invalid_state")
+			h.redirect(w, r, "", "integrations", "invalid_state")
 			return
 		}
 		slug, err := h.chats.CompleteOAuth(ctx, provider, code, q.Get("guild_id"), state)
 		if err != nil {
 			logger.From(ctx).WarnContext(ctx, "chat oauth failed", "error", err, "provider", string(provider))
-			h.redirect(w, r, slug, chatOAuthErrorCode(err))
+			h.redirect(w, r, slug, "integrations", chatOAuthErrorCode(err))
 			return
 		}
-		http.Redirect(w, r, h.base()+"/"+slug+"/chat?connected="+url.QueryEscape(string(provider)), http.StatusFound)
+		http.Redirect(w, r, h.base()+"/"+slug+"/integrations?connected="+url.QueryEscape(string(provider)), http.StatusFound)
 	}
 }
 
@@ -47,18 +47,18 @@ func (h *chatOAuthRoutes) identityCallback(provider entity.ChatProvider) http.Ha
 		ctx := h.withSession(r)
 		q := r.URL.Query()
 		if q.Get("error") != "" {
-			h.redirect(w, r, "", "denied")
+			h.redirect(w, r, "", "chat", "denied")
 			return
 		}
 		code, state := q.Get("code"), q.Get("state")
 		if code == "" || state == "" {
-			h.redirect(w, r, "", "invalid_state")
+			h.redirect(w, r, "", "chat", "invalid_state")
 			return
 		}
 		slug, err := h.chats.CompleteIdentityOAuth(ctx, provider, code, state)
 		if err != nil {
 			logger.From(ctx).WarnContext(ctx, "chat identity oauth failed", "error", err, "provider", string(provider))
-			h.redirect(w, r, slug, chatOAuthErrorCode(err))
+			h.redirect(w, r, slug, "chat", chatOAuthErrorCode(err))
 			return
 		}
 		http.Redirect(w, r, h.base()+"/"+slug+"/chat?linked="+url.QueryEscape(string(provider)), http.StatusFound)
@@ -81,10 +81,10 @@ func (h *chatOAuthRoutes) withSession(r *http.Request) context.Context {
 	return entity.WithIdentity(ctx, id)
 }
 
-func (h *chatOAuthRoutes) redirect(w http.ResponseWriter, r *http.Request, slug, code string) {
+func (h *chatOAuthRoutes) redirect(w http.ResponseWriter, r *http.Request, slug, page, code string) {
 	var dest string
 	if slug != "" {
-		dest = h.base() + "/" + slug + "/chat?chat_error=" + url.QueryEscape(code)
+		dest = h.base() + "/" + slug + "/" + page + "?chat_error=" + url.QueryEscape(code)
 	} else {
 		dest = h.base() + "/chat-error?code=" + url.QueryEscape(code)
 	}

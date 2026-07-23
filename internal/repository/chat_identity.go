@@ -11,5 +11,6 @@ import (
 type ChatIdentity interface {
 	Upsert(ctx context.Context, in entity.ChatIdentity) (entity.ChatIdentity, error)
 	GetForUser(ctx context.Context, connectionID, userID string) (entity.ChatIdentity, error)
+	LinkedProviders(ctx context.Context, workspaceID, userID string) ([]entity.ChatProvider, error)
 	SetDMChannel(ctx context.Context, id, dmChannelID string) error
 }

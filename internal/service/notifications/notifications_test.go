@@ -12,6 +12,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/action_token"
 	"github.com/opsybot/opsybot/internal/repository/alert"
 	"github.com/opsybot/opsybot/internal/repository/channel"
+	"github.com/opsybot/opsybot/internal/repository/chat_identity"
 	"github.com/opsybot/opsybot/internal/repository/lock"
 	"github.com/opsybot/opsybot/internal/repository/notification_rule"
 	"github.com/opsybot/opsybot/internal/repository/notification_run"
@@ -29,6 +30,7 @@ type harness struct {
 	runs     *notification_run.MockNotificationRun
 	rules    *notification_rule.MockNotificationRule
 	channels *channel.MockChannel
+	ids      *chat_identity.MockChatIdentity
 	alerts   *alert.MockAlert
 	ws       *workspace.MockWorkspace
 	notify   *notifier.MockNotifier
@@ -43,6 +45,7 @@ func newHarness(t *testing.T) *harness {
 		runs:     notification_run.NewMockNotificationRun(ctrl),
 		rules:    notification_rule.NewMockNotificationRule(ctrl),
 		channels: channel.NewMockChannel(ctrl),
+		ids:      chat_identity.NewMockChatIdentity(ctrl),
 		alerts:   alert.NewMockAlert(ctrl),
 		ws:       workspace.NewMockWorkspace(ctrl),
 		notify:   notifier.NewMockNotifier(ctrl),
@@ -50,7 +53,7 @@ func newHarness(t *testing.T) *harness {
 		lock:     lock.NewMockLock(ctrl),
 	}
 	h.srv = &srv{
-		tx: fakeTx{}, lock: h.lock, runs: h.runs, rules: h.rules, channels: h.channels,
+		tx: fakeTx{}, lock: h.lock, runs: h.runs, rules: h.rules, channels: h.channels, identities: h.ids,
 		alerts: h.alerts, workspaces: h.ws, actions: action_token.NewMockActionToken(ctrl),
 		notifier: h.notify, limiter: h.limiter,
 		cfg: config.Auth{BaseURL: "http://localhost:8080"},
@@ -82,6 +85,7 @@ func TestPageCreatesRunFromRule(t *testing.T) {
 	h.channels.EXPECT().ListByUser(gomock.Any(), "u1").Return([]entity.Channel{
 		{ID: "c1", Type: entity.ChannelTypeNtfy, Detail: "ntfy.sh/x", Verified: true},
 	}, nil)
+	h.ids.EXPECT().LinkedProviders(gomock.Any(), "ws-1", "u1").Return(nil, nil)
 	h.runs.EXPECT().Create(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(_ context.Context, run entity.NotificationRun) (entity.NotificationRun, bool, error) {
 			if len(run.Plan.Steps) != 1 || run.Plan.Steps[0].Channel != entity.ChannelTypeNtfy {
@@ -105,6 +109,7 @@ func TestPageFallsBackToDefaultRuleAndEmail(t *testing.T) {
 	now := time.Now().UTC()
 	h.rules.EXPECT().Get(gomock.Any(), "ws-1", "u1").Return(entity.NotificationRule{}, entity.ErrNotificationRuleNotFound)
 	h.channels.EXPECT().ListByUser(gomock.Any(), "u1").Return(nil, nil)
+	h.ids.EXPECT().LinkedProviders(gomock.Any(), "ws-1", "u1").Return(nil, nil)
 	h.runs.EXPECT().Create(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(_ context.Context, run entity.NotificationRun) (entity.NotificationRun, bool, error) {
 			if len(run.Plan.Steps) != 1 || run.Plan.Steps[0].Channel != entity.ChannelTypeEmail || run.Plan.Steps[0].Detail != "p@acme.test" {

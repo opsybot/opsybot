@@ -9,6 +9,7 @@
 	import * as Field from '$lib/components/ui/field';
 	import { Input } from '$lib/components/ui/input';
 	import { CHANNEL_ICONS } from '$lib/components/notifications/icons';
+	import { ws } from '$lib/navigation';
 	import { channelMeta, type ChannelType } from '$lib/notifications';
 
 	let { type, onclose }: { type: ChannelType | null; onclose: () => void } = $props();
@@ -104,9 +105,10 @@
 						</form>
 					{:else if !selfServe}
 						<Dialog.Description class="text-muted-foreground text-[13px] leading-[1.6]">
-							{meta.label} connects through your workspace's chat integration. Set it up on the Chat
-							connections page once it is available, then it appears here.
+							{meta.label} is delivered through your workspace's chat integration. Link your {meta.label}
+							account on the Chat connections page, then it appears here.
 						</Dialog.Description>
+						<Button href={ws('/chat')} variant="secondary" class="self-start">Open Chat connections</Button>
 					{:else}
 						<form
 							bind:this={connectForm}

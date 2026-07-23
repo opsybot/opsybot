@@ -15,6 +15,8 @@ export type ChannelDefaults = {
 	archiveOnResolve: boolean;
 };
 
+export type LinkMethod = 'email' | 'oauth' | 'telegram';
+
 export type Connection = {
 	workspace: string;
 	health: Health;
@@ -22,6 +24,8 @@ export type Connection = {
 	defaults: ChannelDefaults;
 	linked: boolean;
 	linkedHandle: string;
+	linkedVerified: boolean;
+	linkMethod?: LinkMethod;
 };
 
 export type Platform = {
@@ -102,6 +106,21 @@ export function connectionBadge(platform: Pick<Platform, 'connection'>): { tone:
 	if (connection.health === 'failing') return { tone: 'critical', label: 'not responding', dot: true };
 	return { tone: 'success', label: 'connected', dot: true };
 }
+
+export function linkBadge(connection: Connection | null): { tone: Tone; label: string; dot: boolean } {
+	if (!connection || !connection.linked) return { tone: 'neutral', label: 'not linked', dot: false };
+	return { tone: 'success', label: 'linked', dot: true };
+}
+
+export const OAUTH_ERRORS: Record<string, string> = {
+	invalid_state: 'That sign-in link expired. Start the connection again.',
+	forbidden: 'Your permission to manage chat connections changed before the install finished.',
+	exchange_failed: 'The provider rejected the install. Try connecting again.',
+	not_configured: 'This provider is not configured on the server yet.',
+	secret_unavailable: 'Secret storage is not configured, so the token could not be saved.',
+	denied: 'The install was cancelled.',
+	error: 'The connection could not be completed.'
+};
 
 export function previewChannelName(
 	pattern: string,
