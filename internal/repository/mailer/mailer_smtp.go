@@ -46,5 +46,7 @@ func (r *repo) SendPage(ctx context.Context, to string, page entity.AlertPage) e
 		PolicySlug: page.PolicySlug,
 		Level:      page.Level,
 		AlertURL:   page.AlertURL,
+		AckURL:     page.AckURL,
+		ResolveURL: page.ResolveURL,
 	})
 }

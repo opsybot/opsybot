@@ -35,6 +35,7 @@ type NotifyOutcome string
 
 const (
 	NotifyOutcomeDelivered  NotifyOutcome = "delivered"
+	NotifyOutcomeAccepted   NotifyOutcome = "accepted"
 	NotifyOutcomeFailed     NotifyOutcome = "failed"
 	NotifyOutcomeSuppressed NotifyOutcome = "suppressed"
 	NotifyOutcomeSkipped    NotifyOutcome = "skipped"
@@ -46,6 +47,8 @@ const (
 	NotificationStepDelayMax    = time.Hour
 	NotificationRunSweepBatch   = 200
 	NotificationSendConcurrency = 8
+	NotificationStepLeaseTTL    = time.Minute
+	NotificationStepMaxAttempts = 5
 	NotificationSymptomMax      = 140
 	NotificationRecentLimit     = 50
 )
@@ -101,8 +104,10 @@ type NotificationRun struct {
 	State           NotifyRunState
 	StopReason      NotifyStopReason
 	StepIndex       int
+	StepAttempts    int
 	Plan            NotificationPlan
 	NextAt          time.Time
+	LeasedUntil     time.Time
 	StartedAt       time.Time
 	EndedAt         time.Time
 	UpdatedAt       time.Time
@@ -151,13 +156,15 @@ type NotifyTarget struct {
 }
 
 type NtfyMessage struct {
-	Server   string
-	Topic    string
-	Token    string
-	Title    string
-	Body     string
-	Priority int
-	Click    string
+	Server     string
+	Topic      string
+	Token      string
+	Title      string
+	Body       string
+	Priority   int
+	Click      string
+	AckURL     string
+	ResolveURL string
 }
 
 var (

@@ -14,6 +14,8 @@ type NotificationRun interface {
 	GetByID(ctx context.Context, id string) (entity.NotificationRun, error)
 	ListDue(ctx context.Context, now time.Time, limit int) ([]entity.NotificationRun, error)
 	SaveProgress(ctx context.Context, run entity.NotificationRun) (bool, error)
+	Claim(ctx context.Context, runID string, stepIndex int, leasedUntil time.Time) (bool, error)
+	AdvanceStep(ctx context.Context, runID string, fromStepIndex int, run entity.NotificationRun) (bool, error)
 	Reschedule(ctx context.Context, runID string, stepIndex int, at time.Time) (bool, error)
 	StopByAlerts(ctx context.Context, workspaceID string, alertIDs []string, reason entity.NotifyStopReason, at time.Time) (int, error)
 	ListByAlert(ctx context.Context, alertID string) ([]entity.NotificationRun, error)

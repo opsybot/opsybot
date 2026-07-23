@@ -3,8 +3,14 @@
 {{.Title}}
 
 Started {{.StartedAt}} UTC. You are being paged by the {{.PolicySlug}} escalation policy (level {{.Level}}).
+{{if .AckURL}}
+Acknowledge:
+{{.AckURL}}
 
-Acknowledge or resolve:
+Resolve:
+{{.ResolveURL}}
+{{end}}
+Open alert:
 {{.AlertURL}}
 
 — Opsybot

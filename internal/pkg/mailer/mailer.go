@@ -44,6 +44,8 @@ type PageData struct {
 	PolicySlug string
 	Level      int
 	AlertURL   string
+	AckURL     string
+	ResolveURL string
 }
 
 func New(cfg config.Mailer) (Client, error) {

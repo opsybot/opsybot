@@ -43,6 +43,8 @@ type NotificationRun struct {
 	StartedAt       time.Time   `boil:"started_at" json:"started_at" toml:"started_at" yaml:"started_at"`
 	EndedAt         null.Time   `boil:"ended_at" json:"ended_at,omitempty" toml:"ended_at" yaml:"ended_at,omitempty"`
 	UpdatedAt       time.Time   `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
+	StepAttempts    int         `boil:"step_attempts" json:"step_attempts" toml:"step_attempts" yaml:"step_attempts"`
+	LeasedUntil     null.Time   `boil:"leased_until" json:"leased_until,omitempty" toml:"leased_until" yaml:"leased_until,omitempty"`
 
 	R *notificationRunR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L notificationRunL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -67,6 +69,8 @@ var NotificationRunColumns = struct {
 	StartedAt       string
 	EndedAt         string
 	UpdatedAt       string
+	StepAttempts    string
+	LeasedUntil     string
 }{
 	ID:              "id",
 	WorkspaceID:     "workspace_id",
@@ -86,6 +90,8 @@ var NotificationRunColumns = struct {
 	StartedAt:       "started_at",
 	EndedAt:         "ended_at",
 	UpdatedAt:       "updated_at",
+	StepAttempts:    "step_attempts",
+	LeasedUntil:     "leased_until",
 }
 
 var NotificationRunTableColumns = struct {
@@ -107,6 +113,8 @@ var NotificationRunTableColumns = struct {
 	StartedAt       string
 	EndedAt         string
 	UpdatedAt       string
+	StepAttempts    string
+	LeasedUntil     string
 }{
 	ID:              "notification_runs.id",
 	WorkspaceID:     "notification_runs.workspace_id",
@@ -126,6 +134,8 @@ var NotificationRunTableColumns = struct {
 	StartedAt:       "notification_runs.started_at",
 	EndedAt:         "notification_runs.ended_at",
 	UpdatedAt:       "notification_runs.updated_at",
+	StepAttempts:    "notification_runs.step_attempts",
+	LeasedUntil:     "notification_runs.leased_until",
 }
 
 // Generated where
@@ -149,6 +159,8 @@ var NotificationRunWhere = struct {
 	StartedAt       whereHelpertime_Time
 	EndedAt         whereHelpernull_Time
 	UpdatedAt       whereHelpertime_Time
+	StepAttempts    whereHelperint
+	LeasedUntil     whereHelpernull_Time
 }{
 	ID:              whereHelperstring{field: "\"notification_runs\".\"id\""},
 	WorkspaceID:     whereHelperstring{field: "\"notification_runs\".\"workspace_id\""},
@@ -168,6 +180,8 @@ var NotificationRunWhere = struct {
 	StartedAt:       whereHelpertime_Time{field: "\"notification_runs\".\"started_at\""},
 	EndedAt:         whereHelpernull_Time{field: "\"notification_runs\".\"ended_at\""},
 	UpdatedAt:       whereHelpertime_Time{field: "\"notification_runs\".\"updated_at\""},
+	StepAttempts:    whereHelperint{field: "\"notification_runs\".\"step_attempts\""},
+	LeasedUntil:     whereHelpernull_Time{field: "\"notification_runs\".\"leased_until\""},
 }
 
 // NotificationRunRels is where relationship names are stored.
@@ -283,9 +297,9 @@ func (r *notificationRunR) GetRunNotificationAttempts() NotificationAttemptSlice
 type notificationRunL struct{}
 
 var (
-	notificationRunAllColumns            = []string{"id", "workspace_id", "alert_id", "user_id", "escalation_id", "escalation_cycle", "level", "policy_slug", "label", "urgency", "state", "stop_reason", "step_index", "plan", "next_at", "started_at", "ended_at", "updated_at"}
+	notificationRunAllColumns            = []string{"id", "workspace_id", "alert_id", "user_id", "escalation_id", "escalation_cycle", "level", "policy_slug", "label", "urgency", "state", "stop_reason", "step_index", "plan", "next_at", "started_at", "ended_at", "updated_at", "step_attempts", "leased_until"}
 	notificationRunColumnsWithoutDefault = []string{"workspace_id", "alert_id", "user_id", "urgency", "plan"}
-	notificationRunColumnsWithDefault    = []string{"id", "escalation_id", "escalation_cycle", "level", "policy_slug", "label", "state", "stop_reason", "step_index", "next_at", "started_at", "ended_at", "updated_at"}
+	notificationRunColumnsWithDefault    = []string{"id", "escalation_id", "escalation_cycle", "level", "policy_slug", "label", "state", "stop_reason", "step_index", "next_at", "started_at", "ended_at", "updated_at", "step_attempts", "leased_until"}
 	notificationRunPrimaryKeyColumns     = []string{"id"}
 	notificationRunGeneratedColumns      = []string{}
 )

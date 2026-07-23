@@ -120,7 +120,9 @@ func toEntity(m *dbpostgres.NotificationRun) (entity.NotificationRun, error) {
 		State:           entity.NotifyRunState(m.State),
 		StopReason:      entity.NotifyStopReason(m.StopReason),
 		StepIndex:       m.StepIndex,
+		StepAttempts:    m.StepAttempts,
 		NextAt:          m.NextAt.Time,
+		LeasedUntil:     m.LeasedUntil.Time,
 		StartedAt:       m.StartedAt,
 		EndedAt:         m.EndedAt.Time,
 		UpdatedAt:       m.UpdatedAt,
@@ -208,6 +210,7 @@ func (r *repo) ListDue(ctx context.Context, now time.Time, limit int) ([]entity.
 	}
 	rows, err := dbpostgres.NotificationRuns(
 		qm.Where("state = 'running' AND next_at IS NOT NULL AND next_at <= ?", now),
+		qm.Where("leased_until IS NULL OR leased_until <= ?", now),
 		qm.OrderBy("next_at, id"),
 		qm.Limit(limit),
 	).All(ctx, r.db.Querier(ctx))
@@ -251,8 +254,50 @@ func (r *repo) SaveProgress(ctx context.Context, run entity.NotificationRun) (bo
 	return affected > 0, nil
 }
 
+const claimSQL = `
+UPDATE notification_runs
+   SET leased_until = $1, step_attempts = step_attempts + 1, updated_at = $2
+ WHERE id = $3 AND state = 'running' AND step_index = $4`
+
+func (r *repo) Claim(ctx context.Context, runID string, stepIndex int, leasedUntil time.Time) (bool, error) {
+	res, err := r.db.Querier(ctx).ExecContext(ctx, claimSQL, leasedUntil, time.Now().UTC(), runID, stepIndex)
+	if err != nil {
+		return false, fmt.Errorf("claim notification step: %w", err)
+	}
+	affected, _ := res.RowsAffected()
+	return affected > 0, nil
+}
+
+func (r *repo) AdvanceStep(ctx context.Context, runID string, fromStepIndex int, run entity.NotificationRun) (bool, error) {
+	values := dbpostgres.M{
+		"step_index":    run.StepIndex,
+		"state":         string(run.State),
+		"stop_reason":   string(run.StopReason),
+		"step_attempts": 0,
+		"leased_until":  nil,
+		"updated_at":    time.Now().UTC(),
+	}
+	if run.NextAt.IsZero() {
+		values["next_at"] = nil
+	} else {
+		values["next_at"] = run.NextAt
+	}
+	if run.EndedAt.IsZero() {
+		values["ended_at"] = nil
+	} else {
+		values["ended_at"] = run.EndedAt
+	}
+	affected, err := dbpostgres.NotificationRuns(
+		qm.Where("id = ? AND state = 'running' AND step_index = ?", runID, fromStepIndex),
+	).UpdateAll(ctx, r.db.Querier(ctx), values)
+	if err != nil {
+		return false, fmt.Errorf("advance notification step: %w", err)
+	}
+	return affected > 0, nil
+}
+
 func (r *repo) Reschedule(ctx context.Context, runID string, stepIndex int, at time.Time) (bool, error) {
-	values := dbpostgres.M{"next_at": at, "updated_at": time.Now().UTC()}
+	values := dbpostgres.M{"next_at": at, "leased_until": nil, "step_attempts": 0, "updated_at": time.Now().UTC()}
 	affected, err := dbpostgres.NotificationRuns(
 		qm.Where("id = ? AND state = 'running' AND step_index = ?", runID, stepIndex),
 	).UpdateAll(ctx, r.db.Querier(ctx), values)

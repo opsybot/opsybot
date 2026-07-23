@@ -23,9 +23,24 @@ func (r *repo) Publish(ctx context.Context, msg entity.NtfyMessage) (entity.Noti
 		Message:  msg.Body,
 		Priority: msg.Priority,
 		Click:    msg.Click,
+		Actions:  ntfyActions(msg),
 	})
 	if err != nil {
 		return entity.NotifyResult{Detail: err.Error()}, nil
 	}
 	return entity.NotifyResult{Delivered: true, Detail: "ntfy published", MessageID: published.ID}, nil
+}
+
+func ntfyActions(msg entity.NtfyMessage) []pkgntfy.Action {
+	var actions []pkgntfy.Action
+	if msg.AckURL != "" {
+		actions = append(actions, pkgntfy.Action{Action: "http", Label: "Acknowledge", URL: msg.AckURL, Method: "POST", Clear: true})
+	}
+	if msg.ResolveURL != "" {
+		actions = append(actions, pkgntfy.Action{Action: "http", Label: "Resolve", URL: msg.ResolveURL, Method: "POST", Clear: true})
+	}
+	if msg.Click != "" {
+		actions = append(actions, pkgntfy.Action{Action: "view", Label: "Open alert", URL: msg.Click})
+	}
+	return actions
 }

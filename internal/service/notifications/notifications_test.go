@@ -36,6 +36,7 @@ type harness struct {
 	notify   *notifier.MockNotifier
 	limiter  *ratelimiter.MockRateLimiter
 	lock     *lock.MockLock
+	actions  *action_token.MockActionToken
 }
 
 func newHarness(t *testing.T) *harness {
@@ -51,10 +52,12 @@ func newHarness(t *testing.T) *harness {
 		notify:   notifier.NewMockNotifier(ctrl),
 		limiter:  ratelimiter.NewMockRateLimiter(ctrl),
 		lock:     lock.NewMockLock(ctrl),
+		actions:  action_token.NewMockActionToken(ctrl),
 	}
+	h.actions.EXPECT().Mint(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	h.srv = &srv{
 		tx: fakeTx{}, lock: h.lock, runs: h.runs, rules: h.rules, channels: h.channels, identities: h.ids,
-		alerts: h.alerts, workspaces: h.ws, actions: action_token.NewMockActionToken(ctrl),
+		alerts: h.alerts, workspaces: h.ws, actions: h.actions,
 		notifier: h.notify, limiter: h.limiter,
 		cfg: config.Auth{BaseURL: "http://localhost:8080"},
 	}
@@ -63,6 +66,39 @@ func newHarness(t *testing.T) *harness {
 
 func step(kind entity.ChannelType, delay time.Duration, detail string) entity.NotificationPlanStep {
 	return entity.NotificationPlanStep{Channel: kind, Delay: delay, Detail: detail}
+}
+
+func TestOutcomeForDistinguishesConfirmedAcceptedFailed(t *testing.T) {
+	cases := []struct {
+		name   string
+		result entity.NotifyResult
+		want   entity.NotifyOutcome
+	}{
+		{"confirmed with provider id", entity.NotifyResult{Delivered: true, MessageID: "m1"}, entity.NotifyOutcomeDelivered},
+		{"accepted without id (email/webhook)", entity.NotifyResult{Delivered: true}, entity.NotifyOutcomeAccepted},
+		{"failed", entity.NotifyResult{Delivered: false, Detail: "boom"}, entity.NotifyOutcomeFailed},
+	}
+	for _, c := range cases {
+		if got := outcomeFor(c.result); got != c.want {
+			t.Errorf("%s: outcomeFor = %s, want %s", c.name, got, c.want)
+		}
+	}
+}
+
+func TestActionableChannelCoversChatEmailNtfy(t *testing.T) {
+	cases := map[entity.ChannelType]bool{
+		entity.ChannelTypeSlack:    true,
+		entity.ChannelTypeTelegram: true,
+		entity.ChannelTypeDiscord:  true,
+		entity.ChannelTypeEmail:    true,
+		entity.ChannelTypeNtfy:     true,
+		entity.ChannelTypeWebhook:  false,
+	}
+	for channel, want := range cases {
+		if got := actionableChannel(channel); got != want {
+			t.Errorf("actionableChannel(%s) = %v, want %v", channel, got, want)
+		}
+	}
 }
 
 func runWith(steps []entity.NotificationPlanStep, index int, next time.Time) entity.NotificationRun {
@@ -135,17 +171,18 @@ func TestAdvanceSendsStepAndSchedulesNext(t *testing.T) {
 	h.lock.EXPECT().TryJob(gomock.Any(), "notify:nrun-1").Return(true, nil)
 	h.runs.EXPECT().GetByID(gomock.Any(), "nrun-1").Return(run, nil)
 	h.alerts.EXPECT().GetByID(gomock.Any(), "ws-1", "al-1").Return(openAlert(), nil)
-	h.runs.EXPECT().SaveProgress(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(_ context.Context, saved entity.NotificationRun) (bool, error) {
-			if saved.StepIndex != 1 || !saved.NextAt.Equal(now.Add(5*time.Minute)) {
-				t.Errorf("saved step %d next %v", saved.StepIndex, saved.NextAt)
-			}
-			return true, nil
-		})
+	h.runs.EXPECT().Claim(gomock.Any(), "nrun-1", 0, gomock.Any()).Return(true, nil)
 	h.ws.EXPECT().GetByID(gomock.Any(), "ws-1").Return(entity.Workspace{ID: "ws-1", Slug: "acme"}, nil)
 	h.runs.EXPECT().GetByID(gomock.Any(), "nrun-1").Return(run, nil)
 	h.limiter.EXPECT().Allow(gomock.Any(), entity.RateScopeNotify, "u1").Return(entity.RateResult{Allowed: true}, nil)
 	h.notify.EXPECT().Send(gomock.Any(), gomock.Any(), gomock.Any()).Return(entity.NotifyResult{Delivered: true, Detail: "email sent"})
+	h.runs.EXPECT().AdvanceStep(gomock.Any(), "nrun-1", 0, gomock.Any()).DoAndReturn(
+		func(_ context.Context, _ string, _ int, saved entity.NotificationRun) (bool, error) {
+			if saved.StepIndex != 1 || !saved.NextAt.Equal(now.Add(5*time.Minute)) {
+				t.Errorf("advanced step %d next %v (want 1, now+5m)", saved.StepIndex, saved.NextAt)
+			}
+			return true, nil
+		})
 	h.runs.EXPECT().AppendAttempt(gomock.Any(), gomock.Any()).Return(nil)
 	h.alerts.EXPECT().AppendEvent(gomock.Any(), "al-1", gomock.Any()).Return(nil)
 
@@ -165,11 +202,18 @@ func TestFailedDeliveryPullsNextStepForward(t *testing.T) {
 	h.lock.EXPECT().TryJob(gomock.Any(), "notify:nrun-1").Return(true, nil)
 	h.runs.EXPECT().GetByID(gomock.Any(), "nrun-1").Return(run, nil)
 	h.alerts.EXPECT().GetByID(gomock.Any(), "ws-1", "al-1").Return(openAlert(), nil)
-	h.runs.EXPECT().SaveProgress(gomock.Any(), gomock.Any()).Return(true, nil)
+	h.runs.EXPECT().Claim(gomock.Any(), "nrun-1", 0, gomock.Any()).Return(true, nil)
 	h.ws.EXPECT().GetByID(gomock.Any(), "ws-1").Return(entity.Workspace{ID: "ws-1", Slug: "acme"}, nil)
 	h.runs.EXPECT().GetByID(gomock.Any(), "nrun-1").Return(run, nil)
 	h.limiter.EXPECT().Allow(gomock.Any(), entity.RateScopeNotify, "u1").Return(entity.RateResult{Allowed: true}, nil)
 	h.notify.EXPECT().Send(gomock.Any(), gomock.Any(), gomock.Any()).Return(entity.NotifyResult{Detail: "connection refused"})
+	h.runs.EXPECT().AdvanceStep(gomock.Any(), "nrun-1", 0, gomock.Any()).DoAndReturn(
+		func(_ context.Context, _ string, _ int, saved entity.NotificationRun) (bool, error) {
+			if saved.StepIndex != 1 || !saved.NextAt.Equal(now) {
+				t.Errorf("a failed step should pull the next one to now, got step %d next %v", saved.StepIndex, saved.NextAt)
+			}
+			return true, nil
+		})
 	h.runs.EXPECT().AppendAttempt(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(_ context.Context, a entity.NotificationAttempt) error {
 			if a.Outcome != entity.NotifyOutcomeFailed {
@@ -178,7 +222,6 @@ func TestFailedDeliveryPullsNextStepForward(t *testing.T) {
 			return nil
 		})
 	h.alerts.EXPECT().AppendEvent(gomock.Any(), "al-1", gomock.Any()).Return(nil)
-	h.runs.EXPECT().Reschedule(gomock.Any(), "nrun-1", 1, now).Return(true, nil)
 
 	if _, err := h.srv.Advance(context.Background(), now); err != nil {
 		t.Fatalf("advance: %v", err)
@@ -200,7 +243,7 @@ func TestQuietHoursSuppressesWithoutSending(t *testing.T) {
 	h.lock.EXPECT().TryJob(gomock.Any(), "notify:nrun-1").Return(true, nil)
 	h.runs.EXPECT().GetByID(gomock.Any(), "nrun-1").Return(run, nil)
 	h.alerts.EXPECT().GetByID(gomock.Any(), "ws-1", "al-1").Return(openAlert(), nil)
-	h.runs.EXPECT().SaveProgress(gomock.Any(), gomock.Any()).Return(true, nil)
+	h.runs.EXPECT().AdvanceStep(gomock.Any(), "nrun-1", 0, gomock.Any()).Return(true, nil)
 	h.runs.EXPECT().AppendAttempt(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(_ context.Context, a entity.NotificationAttempt) error {
 			if a.Outcome != entity.NotifyOutcomeSuppressed {
@@ -225,20 +268,20 @@ func TestFinalStepDeliversWhenRunExhausts(t *testing.T) {
 	h.lock.EXPECT().TryJob(gomock.Any(), "notify:nrun-1").Return(true, nil)
 	h.runs.EXPECT().GetByID(gomock.Any(), "nrun-1").Return(run, nil)
 	h.alerts.EXPECT().GetByID(gomock.Any(), "ws-1", "al-1").Return(openAlert(), nil)
-	exhausted := run.Advanced(now, entity.NotifyOutcomeDelivered)
-	h.runs.EXPECT().SaveProgress(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(_ context.Context, saved entity.NotificationRun) (bool, error) {
+	h.runs.EXPECT().Claim(gomock.Any(), "nrun-1", 0, gomock.Any()).Return(true, nil)
+	h.ws.EXPECT().GetByID(gomock.Any(), "ws-1").Return(entity.Workspace{ID: "ws-1", Slug: "acme"}, nil)
+	h.runs.EXPECT().GetByID(gomock.Any(), "nrun-1").Return(run, nil)
+	h.limiter.EXPECT().Allow(gomock.Any(), entity.RateScopeNotify, "u1").Return(entity.RateResult{Allowed: true}, nil)
+	h.notify.EXPECT().Send(gomock.Any(), gomock.Any(), gomock.Any()).Return(entity.NotifyResult{Delivered: true, Detail: "email sent"})
+	h.runs.EXPECT().AdvanceStep(gomock.Any(), "nrun-1", 0, gomock.Any()).DoAndReturn(
+		func(_ context.Context, _ string, _ int, saved entity.NotificationRun) (bool, error) {
 			if saved.State != entity.NotifyRunExhausted {
-				t.Errorf("single-step run should exhaust, got %s", saved.State)
+				t.Errorf("single-step run should exhaust after send, got %s", saved.State)
 			}
 			return true, nil
 		})
-	h.ws.EXPECT().GetByID(gomock.Any(), "ws-1").Return(entity.Workspace{ID: "ws-1", Slug: "acme"}, nil)
-	h.runs.EXPECT().GetByID(gomock.Any(), "nrun-1").Return(exhausted, nil)
-	h.limiter.EXPECT().Allow(gomock.Any(), entity.RateScopeNotify, "u1").Return(entity.RateResult{Allowed: true}, nil)
-	h.notify.EXPECT().Send(gomock.Any(), gomock.Any(), gomock.Any()).Return(entity.NotifyResult{Delivered: true, Detail: "email sent"})
 	h.runs.EXPECT().AppendAttempt(gomock.Any(), gomock.Cond(func(a entity.NotificationAttempt) bool {
-		return a.Outcome == entity.NotifyOutcomeDelivered
+		return a.Outcome == entity.NotifyOutcomeAccepted
 	})).Return(nil)
 	h.alerts.EXPECT().AppendEvent(gomock.Any(), "al-1", gomock.Any()).Return(nil)
 
@@ -257,7 +300,7 @@ func TestDeliveryAbortsIfRunStoppedBetweenCasAndSend(t *testing.T) {
 	h.lock.EXPECT().TryJob(gomock.Any(), "notify:nrun-1").Return(true, nil)
 	h.runs.EXPECT().GetByID(gomock.Any(), "nrun-1").Return(run, nil)
 	h.alerts.EXPECT().GetByID(gomock.Any(), "ws-1", "al-1").Return(openAlert(), nil)
-	h.runs.EXPECT().SaveProgress(gomock.Any(), gomock.Any()).Return(true, nil)
+	h.runs.EXPECT().Claim(gomock.Any(), "nrun-1", 0, gomock.Any()).Return(true, nil)
 	h.ws.EXPECT().GetByID(gomock.Any(), "ws-1").Return(entity.Workspace{ID: "ws-1", Slug: "acme"}, nil)
 	stopped := run
 	stopped.State = entity.NotifyRunStopped
@@ -271,6 +314,57 @@ func TestDeliveryAbortsIfRunStoppedBetweenCasAndSend(t *testing.T) {
 			return nil
 		})
 	h.alerts.EXPECT().AppendEvent(gomock.Any(), "al-1", gomock.Any()).Return(nil)
+
+	if _, err := h.srv.Advance(context.Background(), now); err != nil {
+		t.Fatalf("advance: %v", err)
+	}
+}
+
+func TestStepGivesUpAfterMaxAttempts(t *testing.T) {
+	h := newHarness(t)
+	now := time.Now().UTC()
+	steps := []entity.NotificationPlanStep{step(entity.ChannelTypeEmail, 0, "p@acme.test"), step(entity.ChannelTypeEmail, time.Minute, "p@acme.test")}
+	run := runWith(steps, 0, now)
+	run.StepAttempts = entity.NotificationStepMaxAttempts
+
+	h.runs.EXPECT().ListDue(gomock.Any(), now, entity.NotificationRunSweepBatch).Return([]entity.NotificationRun{run}, nil)
+	h.lock.EXPECT().TryJob(gomock.Any(), "notify:nrun-1").Return(true, nil)
+	h.runs.EXPECT().GetByID(gomock.Any(), "nrun-1").Return(run, nil)
+	h.alerts.EXPECT().GetByID(gomock.Any(), "ws-1", "al-1").Return(openAlert(), nil)
+	h.runs.EXPECT().AdvanceStep(gomock.Any(), "nrun-1", 0, gomock.Any()).DoAndReturn(
+		func(_ context.Context, _ string, _ int, saved entity.NotificationRun) (bool, error) {
+			if saved.StepIndex != 1 {
+				t.Errorf("a poison step should be abandoned and advance to the next, got step %d", saved.StepIndex)
+			}
+			return true, nil
+		})
+	h.runs.EXPECT().AppendAttempt(gomock.Any(), gomock.Cond(func(a entity.NotificationAttempt) bool {
+		return a.Outcome == entity.NotifyOutcomeFailed
+	})).Return(nil)
+	// no Claim, no Send: a step past the attempt budget is never sent again.
+
+	if _, err := h.srv.Advance(context.Background(), now); err != nil {
+		t.Fatalf("advance: %v", err)
+	}
+}
+
+func TestThrottleReschedulesSameStep(t *testing.T) {
+	h := newHarness(t)
+	now := time.Now().UTC()
+	run := runWith([]entity.NotificationPlanStep{step(entity.ChannelTypeEmail, 0, "p@acme.test")}, 0, now)
+
+	h.runs.EXPECT().ListDue(gomock.Any(), now, entity.NotificationRunSweepBatch).Return([]entity.NotificationRun{run}, nil)
+	h.lock.EXPECT().TryJob(gomock.Any(), "notify:nrun-1").Return(true, nil)
+	h.runs.EXPECT().GetByID(gomock.Any(), "nrun-1").Return(run, nil)
+	h.alerts.EXPECT().GetByID(gomock.Any(), "ws-1", "al-1").Return(openAlert(), nil)
+	h.runs.EXPECT().Claim(gomock.Any(), "nrun-1", 0, gomock.Any()).Return(true, nil)
+	h.ws.EXPECT().GetByID(gomock.Any(), "ws-1").Return(entity.Workspace{ID: "ws-1", Slug: "acme"}, nil)
+	h.runs.EXPECT().GetByID(gomock.Any(), "nrun-1").Return(run, nil)
+	h.limiter.EXPECT().Allow(gomock.Any(), entity.RateScopeNotify, "u1").Return(entity.RateResult{Allowed: false, RetryAfter: 30 * time.Second}, nil)
+	h.runs.EXPECT().AppendAttempt(gomock.Any(), gomock.Cond(func(a entity.NotificationAttempt) bool {
+		return a.Outcome == entity.NotifyOutcomeThrottled
+	})).Return(nil)
+	h.runs.EXPECT().Reschedule(gomock.Any(), "nrun-1", 0, now.Add(30*time.Second)).Return(true, nil)
 
 	if _, err := h.srv.Advance(context.Background(), now); err != nil {
 		t.Fatalf("advance: %v", err)

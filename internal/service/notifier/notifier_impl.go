@@ -41,6 +41,8 @@ func (s *srv) Send(ctx context.Context, target entity.NotifyTarget, page entity.
 		if target.Detail == "" {
 			return entity.NotifyResult{Detail: "no email address on file"}
 		}
+		page.AckURL = actionURL(s.cfg.BaseURL, target.AckToken)
+		page.ResolveURL = actionURL(s.cfg.BaseURL, target.ResolveToken)
 		if err := s.mailer.SendPage(ctx, target.Detail, page); err != nil {
 			return entity.NotifyResult{Detail: err.Error()}
 		}
@@ -81,12 +83,25 @@ func (s *srv) sendChat(ctx context.Context, target entity.NotifyTarget, page ent
 		Page: page, AckToken: target.AckToken, ResolveToken: target.ResolveToken, BaseURL: s.cfg.BaseURL,
 	})
 	if err != nil {
+		s.setChatHealth(ctx, target.WorkspaceID, provider, conn.Health, entity.ChatFailing, err.Error())
 		return entity.NotifyResult{Detail: err.Error()}
+	}
+	if result.Result.Delivered {
+		s.setChatHealth(ctx, target.WorkspaceID, provider, conn.Health, entity.ChatHealthy, "")
+	} else {
+		s.setChatHealth(ctx, target.WorkspaceID, provider, conn.Health, entity.ChatFailing, result.Result.Detail)
 	}
 	if result.DMChannelID != "" && result.DMChannelID != ident.DMChannelID {
 		_ = s.chatIDs.SetDMChannel(ctx, ident.ID, result.DMChannelID)
 	}
 	return result.Result
+}
+
+func (s *srv) setChatHealth(ctx context.Context, workspaceID string, provider entity.ChatProvider, current, want entity.ChatHealth, note string) {
+	if want == current {
+		return
+	}
+	_ = s.chatConns.SetHealth(ctx, workspaceID, provider, want, note, time.Now().UTC())
 }
 
 func (s *srv) sendNtfy(ctx context.Context, target entity.NotifyTarget, page entity.AlertPage) entity.NotifyResult {
@@ -95,18 +110,27 @@ func (s *srv) sendNtfy(ctx context.Context, target entity.NotifyTarget, page ent
 		return entity.NotifyResult{Detail: "ntfy topic is missing"}
 	}
 	result, err := s.ntfy.Publish(ctx, entity.NtfyMessage{
-		Server:   server,
-		Topic:    topic,
-		Token:    target.Secret,
-		Title:    page.Subject(),
-		Body:     page.PlainText(),
-		Priority: ntfyPriority(page.Severity),
-		Click:    page.AlertURL,
+		Server:     server,
+		Topic:      topic,
+		Token:      target.Secret,
+		Title:      page.Subject(),
+		Body:       page.PlainText(),
+		Priority:   ntfyPriority(page.Severity),
+		Click:      page.AlertURL,
+		AckURL:     actionURL(s.cfg.BaseURL, target.AckToken),
+		ResolveURL: actionURL(s.cfg.BaseURL, target.ResolveToken),
 	})
 	if err != nil {
 		return entity.NotifyResult{Detail: err.Error()}
 	}
 	return result
+}
+
+func actionURL(base, token string) string {
+	if base == "" || token == "" {
+		return ""
+	}
+	return strings.TrimRight(base, "/") + "/v1/act/" + token
 }
 
 func splitNtfy(detail string) (string, string) {

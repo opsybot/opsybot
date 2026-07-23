@@ -168,7 +168,7 @@ func (s *srv) executeStep(ctx context.Context, runID string, now time.Time) (*pe
 			return nil
 		case entity.NotifyStepSuppress:
 			advanced := run.Advanced(now, entity.NotifyOutcomeSuppressed)
-			saved, err := s.runs.SaveProgress(ctx, advanced)
+			saved, err := s.runs.AdvanceStep(ctx, run.ID, run.StepIndex, advanced)
 			if err != nil || !saved {
 				return err
 			}
@@ -183,9 +183,15 @@ func (s *srv) executeStep(ctx context.Context, runID string, now time.Time) (*pe
 			}
 			return nil
 		case entity.NotifyStepSend:
-			advanced := run.Advanced(now, entity.NotifyOutcomeDelivered)
-			saved, err := s.runs.SaveProgress(ctx, advanced)
-			if err != nil || !saved {
+			if run.StepAttempts >= entity.NotificationStepMaxAttempts {
+				gaveUp := run.Advanced(now, entity.NotifyOutcomeFailed)
+				if _, err := s.runs.AdvanceStep(ctx, run.ID, run.StepIndex, gaveUp); err != nil {
+					return err
+				}
+				return s.runs.AppendAttempt(ctx, s.attempt(run, tick, entity.NotifyOutcomeFailed, entity.NotifyResult{Detail: "gave up after repeated delivery attempts"}))
+			}
+			claimed, err := s.runs.Claim(ctx, run.ID, run.StepIndex, now.Add(entity.NotificationStepLeaseTTL))
+			if err != nil || !claimed {
 				return err
 			}
 			slug := ""
@@ -196,7 +202,7 @@ func (s *srv) executeStep(ctx context.Context, runID string, now time.Time) (*pe
 				WorkspaceID: run.WorkspaceID, UserID: run.UserID, Name: run.Label, Channel: tick.Step.Channel,
 				ChannelID: tick.Step.ChannelID, Detail: tick.Step.Detail,
 			}
-			if tick.Step.Channel.EventKind() == entity.AlertEventChat {
+			if actionableChannel(tick.Step.Channel) {
 				ack, resolve, err := s.mintActions(ctx, run, tick.Step.ChannelID, now)
 				if err != nil {
 					return err
@@ -234,7 +240,7 @@ func (s *srv) deliver(ctx context.Context, p *pendingSend, now time.Time) {
 	allowed, err := s.limiter.Allow(ctx, entity.RateScopeNotify, p.run.UserID)
 	if err == nil && !allowed.Allowed {
 		_ = s.runs.AppendAttempt(ctx, s.attempt(p.run, p.tick, entity.NotifyOutcomeThrottled, entity.NotifyResult{Detail: "rate limited"}))
-		_, _ = s.runs.Reschedule(ctx, p.run.ID, p.tick.Index+1, now.Add(allowed.RetryAfter))
+		_, _ = s.runs.Reschedule(ctx, p.run.ID, p.tick.Index, now.Add(allowed.RetryAfter))
 		return
 	}
 	target := p.target
@@ -244,19 +250,19 @@ func (s *srv) deliver(ctx context.Context, p *pendingSend, now time.Time) {
 		}
 	}
 	result := s.notifier.Send(ctx, target, p.page)
-	outcome := entity.NotifyOutcomeDelivered
-	if !result.Delivered {
-		outcome = entity.NotifyOutcomeFailed
+	outcome := outcomeFor(result)
+	saved, err := s.runs.AdvanceStep(ctx, p.run.ID, p.tick.Index, current.Advanced(now, outcome))
+	if err != nil {
+		logger.From(ctx).ErrorContext(ctx, "advance notification step failed", "run", p.run.ID, "error", err)
+		return
+	}
+	if !saved {
+		return
 	}
 	if err := s.runs.AppendAttempt(ctx, s.attempt(p.run, p.tick, outcome, result)); err != nil {
 		logger.From(ctx).ErrorContext(ctx, "record notification attempt failed", "alert", p.run.AlertID, "error", err)
 	}
 	s.recordEvent(ctx, p, outcome, result)
-	if !result.Delivered {
-		if _, err := s.runs.Reschedule(ctx, p.run.ID, p.tick.Index+1, now); err != nil {
-			logger.From(ctx).ErrorContext(ctx, "reschedule notification failed", "run", p.run.ID, "error", err)
-		}
-	}
 }
 
 func (s *srv) recordEvent(ctx context.Context, p *pendingSend, outcome entity.NotifyOutcome, result entity.NotifyResult) {
@@ -266,6 +272,9 @@ func (s *srv) recordEvent(ctx context.Context, p *pendingSend, outcome entity.No
 	}
 	if outcome == entity.NotifyOutcomeSkipped {
 		text = text + " skipped"
+	}
+	if outcome == entity.NotifyOutcomeAccepted {
+		text = text + " · delivery unconfirmed"
 	}
 	if err := s.alerts.AppendEvent(ctx, p.run.AlertID, entity.AlertEvent{
 		At:     time.Now().UTC(),
@@ -285,8 +294,18 @@ func (s *srv) attempt(run entity.NotificationRun, tick entity.NotifyStepTick, ou
 	}
 }
 
+func outcomeFor(result entity.NotifyResult) entity.NotifyOutcome {
+	if !result.Delivered {
+		return entity.NotifyOutcomeFailed
+	}
+	if result.MessageID == "" {
+		return entity.NotifyOutcomeAccepted
+	}
+	return entity.NotifyOutcomeDelivered
+}
+
 func errorDetail(outcome entity.NotifyOutcome, result entity.NotifyResult) string {
-	if outcome == entity.NotifyOutcomeDelivered {
+	if outcome == entity.NotifyOutcomeDelivered || outcome == entity.NotifyOutcomeAccepted {
 		return ""
 	}
 	return result.Detail
@@ -315,6 +334,10 @@ func deliveryLabel(channel entity.ChannelType, name string) string {
 
 func needsSecret(channel entity.ChannelType) bool {
 	return channel == entity.ChannelTypeWebhook || channel == entity.ChannelTypeNtfy
+}
+
+func actionableChannel(channel entity.ChannelType) bool {
+	return channel.EventKind() == entity.AlertEventChat || channel == entity.ChannelTypeEmail || channel == entity.ChannelTypeNtfy
 }
 
 func (s *srv) mintActions(ctx context.Context, run entity.NotificationRun, channelID string, now time.Time) (string, string, error) {
@@ -346,7 +369,7 @@ func deliveredAny(ctx context.Context, runs repository.NotificationRun, run enti
 		return true
 	}
 	for _, a := range attempts {
-		if a.RunID == run.ID && a.Outcome == entity.NotifyOutcomeDelivered {
+		if a.RunID == run.ID && (a.Outcome == entity.NotifyOutcomeDelivered || a.Outcome == entity.NotifyOutcomeAccepted) {
 			return true
 		}
 	}

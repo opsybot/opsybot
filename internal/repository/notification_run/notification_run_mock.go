@@ -42,6 +42,21 @@ func (m *MockNotificationRun) EXPECT() *MockNotificationRunMockRecorder {
 	return m.recorder
 }
 
+// AdvanceStep mocks base method.
+func (m *MockNotificationRun) AdvanceStep(ctx context.Context, runID string, fromStepIndex int, run entity.NotificationRun) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AdvanceStep", ctx, runID, fromStepIndex, run)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AdvanceStep indicates an expected call of AdvanceStep.
+func (mr *MockNotificationRunMockRecorder) AdvanceStep(ctx, runID, fromStepIndex, run any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdvanceStep", reflect.TypeOf((*MockNotificationRun)(nil).AdvanceStep), ctx, runID, fromStepIndex, run)
+}
+
 // AppendAttempt mocks base method.
 func (m *MockNotificationRun) AppendAttempt(ctx context.Context, attempt entity.NotificationAttempt) error {
 	m.ctrl.T.Helper()
@@ -54,6 +69,21 @@ func (m *MockNotificationRun) AppendAttempt(ctx context.Context, attempt entity.
 func (mr *MockNotificationRunMockRecorder) AppendAttempt(ctx, attempt any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AppendAttempt", reflect.TypeOf((*MockNotificationRun)(nil).AppendAttempt), ctx, attempt)
+}
+
+// Claim mocks base method.
+func (m *MockNotificationRun) Claim(ctx context.Context, runID string, stepIndex int, leasedUntil time.Time) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Claim", ctx, runID, stepIndex, leasedUntil)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Claim indicates an expected call of Claim.
+func (mr *MockNotificationRunMockRecorder) Claim(ctx, runID, stepIndex, leasedUntil any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Claim", reflect.TypeOf((*MockNotificationRun)(nil).Claim), ctx, runID, stepIndex, leasedUntil)
 }
 
 // Create mocks base method.

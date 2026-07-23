@@ -335,6 +335,8 @@ type AlertPage struct {
 	PolicySlug string
 	Level      int
 	AlertURL   string
+	AckURL     string
+	ResolveURL string
 }
 
 type NotifyResult struct {
