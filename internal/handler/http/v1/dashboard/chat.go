@@ -171,6 +171,26 @@ func (h *handler) TestChatConnection(ctx context.Context, request api.TestChatCo
 	return api.TestChatConnection200JSONResponse{Delivered: result.Result.Delivered, Detail: detail}, nil
 }
 
+func (h *handler) StartTelegramLink(ctx context.Context, request api.StartTelegramLinkRequestObject) (api.StartTelegramLinkResponseObject, error) {
+	url, err := h.chats.StartTelegramLink(ctx, request.WorkspaceId)
+	if err != nil {
+		status, p := chatProblem(err)
+		switch status {
+		case http.StatusBadRequest:
+			return api.StartTelegramLink400ApplicationProblemPlusJSONResponse(p), nil
+		case http.StatusUnauthorized:
+			return api.StartTelegramLink401ApplicationProblemPlusJSONResponse(p), nil
+		case http.StatusForbidden:
+			return api.StartTelegramLink403ApplicationProblemPlusJSONResponse(p), nil
+		case http.StatusNotFound:
+			return api.StartTelegramLink404ApplicationProblemPlusJSONResponse(p), nil
+		default:
+			return nil, err
+		}
+	}
+	return api.StartTelegramLink200JSONResponse{AuthorizeUrl: url}, nil
+}
+
 func (h *handler) StartChatIdentityOAuth(ctx context.Context, request api.StartChatIdentityOAuthRequestObject) (api.StartChatIdentityOAuthResponseObject, error) {
 	url, err := h.chats.StartIdentityOAuth(ctx, request.WorkspaceId, entity.ChatProvider(request.Provider))
 	if err != nil {

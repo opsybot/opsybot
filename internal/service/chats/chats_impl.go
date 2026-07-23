@@ -23,6 +23,7 @@ type srv struct {
 	cfg         config.Auth
 	slack       config.Slack
 	discord     config.Discord
+	telegram    config.Telegram
 }
 
 func New(
@@ -38,8 +39,9 @@ func New(
 	cfg config.Auth,
 	slack config.Slack,
 	discord config.Discord,
+	telegram config.Telegram,
 ) service.Chats {
-	return &srv{tx: tx, workspaces: workspaces, members: members, policy: policy, connections: connections, identities: identities, courier: courier, oauthStates: oauthStates, audit: audit, cfg: cfg, slack: slack, discord: discord}
+	return &srv{tx: tx, workspaces: workspaces, members: members, policy: policy, connections: connections, identities: identities, courier: courier, oauthStates: oauthStates, audit: audit, cfg: cfg, slack: slack, discord: discord, telegram: telegram}
 }
 
 func (s *srv) redirectURI(provider entity.ChatProvider) string {
@@ -52,6 +54,8 @@ func (s *srv) envToken(provider entity.ChatProvider) string {
 		return s.slack.BotToken
 	case entity.ChatProviderDiscord:
 		return s.discord.BotToken
+	case entity.ChatProviderTelegram:
+		return s.telegram.BotToken
 	default:
 		return ""
 	}
@@ -134,6 +138,13 @@ func (s *srv) Connect(ctx context.Context, workspaceSlug string, in entity.ChatC
 	valid, err := s.courier.Validate(ctx, in.Provider, token, in.ExternalID)
 	if err != nil {
 		return entity.ChatConnection{}, err
+	}
+	if in.Provider == entity.ChatProviderTelegram {
+		secret := entity.TelegramWebhookSecret(token)
+		hookURL := strings.TrimRight(s.cfg.BaseURL, "/") + "/v1/chat/telegram/hook/" + secret
+		if err := s.courier.SetWebhook(ctx, in.Provider, token, hookURL, secret); err != nil {
+			return entity.ChatConnection{}, entity.ErrChatConnectionInvalid
+		}
 	}
 	conn, err := s.connections.Save(ctx, ws.ID, entity.ChatConnectionInput{
 		Provider: in.Provider, ExternalID: valid.ExternalID, ExternalName: valid.ExternalName,
@@ -218,6 +229,21 @@ func (s *srv) TestConnection(ctx context.Context, workspaceSlug string, provider
 	token, err := s.connections.BotToken(ctx, ws.ID, provider)
 	if err != nil || token == "" {
 		return entity.ChatSendResult{}, entity.ErrChatNotConnected
+	}
+	if provider == entity.ChatProviderTelegram {
+		ident, iErr := s.identities.GetForUser(ctx, conn.ID, id.UserID)
+		if iErr != nil {
+			return entity.ChatSendResult{Result: entity.NotifyResult{Detail: "Link your Telegram account first, then test."}}, nil
+		}
+		result, err := s.courier.SendToChannel(ctx, provider, token, "", ident.ProviderUserID,
+			"Opsybot test — your Telegram alerts are working. Pages will arrive here.")
+		if err != nil {
+			return entity.ChatSendResult{}, err
+		}
+		if result.Result.Delivered {
+			result.Result.Detail = "Sent you a test message on Telegram."
+		}
+		return result, nil
 	}
 	channel := conn.AnnounceChannel
 	if channel == "" {
@@ -403,4 +429,65 @@ func (s *srv) CompleteIdentityOAuth(ctx context.Context, provider entity.ChatPro
 		return st.WorkspaceSlug, err
 	}
 	return st.WorkspaceSlug, nil
+}
+
+func (s *srv) StartTelegramLink(ctx context.Context, workspaceSlug string) (string, error) {
+	actor, ws, err := s.authorize(ctx, workspaceSlug, entity.PolicyActionRead)
+	if err != nil {
+		return "", err
+	}
+	if actor.Kind != entity.IdentityKindSession {
+		return "", entity.ErrUnauthenticated
+	}
+	conn, err := s.connections.Get(ctx, ws.ID, entity.ChatProviderTelegram)
+	if err != nil {
+		return "", err
+	}
+	botName := conn.ExternalName
+	if botName == "" {
+		botName = s.telegram.BotName
+	}
+	if botName == "" {
+		return "", entity.ErrChatProviderNotConfigured
+	}
+	state, err := entity.GenerateToken(entity.ChatOAuthStateLength)
+	if err != nil {
+		return "", err
+	}
+	if err := s.oauthStates.Store(ctx, state, entity.ChatOAuthState{
+		Provider: entity.ChatProviderTelegram, Purpose: entity.ChatOAuthLink,
+		WorkspaceID: ws.ID, WorkspaceSlug: ws.Slug, UserID: actor.UserID, ConnectionID: conn.ID,
+	}, entity.ChatOAuthStateTTL); err != nil {
+		return "", err
+	}
+	return "https://t.me/" + botName + "?start=" + state, nil
+}
+
+func (s *srv) CompleteTelegramLink(ctx context.Context, token, telegramUserID, handle string) error {
+	st, err := s.oauthStates.Consume(ctx, token)
+	if err != nil {
+		return err
+	}
+	if st.Provider != entity.ChatProviderTelegram || st.Purpose != entity.ChatOAuthLink {
+		return entity.ErrChatOAuthStateInvalid
+	}
+	if _, err := s.identities.Upsert(ctx, entity.ChatIdentity{
+		ConnectionID: st.ConnectionID, UserID: st.UserID, ProviderUserID: telegramUserID,
+		ProviderHandle: handle, DMChannelID: telegramUserID, ResolvedBy: "telegram", Verified: true,
+	}); err != nil {
+		return err
+	}
+	if botToken := s.envToken(entity.ChatProviderTelegram); botToken != "" {
+		_, _ = s.courier.SendToChannel(ctx, entity.ChatProviderTelegram, botToken, "", telegramUserID,
+			"Your Telegram is now linked to Opsybot. You'll receive your alerts here.")
+	}
+	return nil
+}
+
+func (s *srv) AnswerTelegramCallback(ctx context.Context, callbackID, text string) error {
+	token := s.envToken(entity.ChatProviderTelegram)
+	if token == "" {
+		return nil
+	}
+	return s.courier.AnswerCallback(ctx, entity.ChatProviderTelegram, token, callbackID, text)
 }

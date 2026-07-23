@@ -87,8 +87,8 @@
 							Opsybot will send you to {current.label} to approve the install for this workspace, then
 							bring you back here. It asks for exactly these permissions, nothing broader:
 						{:else}
-							Opsybot connects with the workspace app your admin registered — no token to paste here. It
-							uses exactly these permissions, nothing broader:
+							Opsybot uses the {current.label} bot your admin configured — no token to paste here. Once
+							connected, each person links their own account. It can:
 						{/if}
 					</Dialog.Description>
 					<ScopeList scopes={current.scopes} />

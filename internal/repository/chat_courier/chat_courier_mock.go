@@ -41,6 +41,20 @@ func (m *MockChatCourier) EXPECT() *MockChatCourierMockRecorder {
 	return m.recorder
 }
 
+// AnswerCallback mocks base method.
+func (m *MockChatCourier) AnswerCallback(ctx context.Context, provider entity.ChatProvider, token, callbackID, text string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AnswerCallback", ctx, provider, token, callbackID, text)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AnswerCallback indicates an expected call of AnswerCallback.
+func (mr *MockChatCourierMockRecorder) AnswerCallback(ctx, provider, token, callbackID, text any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AnswerCallback", reflect.TypeOf((*MockChatCourier)(nil).AnswerCallback), ctx, provider, token, callbackID, text)
+}
+
 // AuthorizeURL mocks base method.
 func (m *MockChatCourier) AuthorizeURL(ctx context.Context, provider entity.ChatProvider, scopes []string, redirectURI, state string) (string, error) {
 	m.ctrl.T.Helper()
@@ -144,6 +158,20 @@ func (m *MockChatCourier) SendToChannel(ctx context.Context, provider entity.Cha
 func (mr *MockChatCourierMockRecorder) SendToChannel(ctx, provider, token, guildID, channel, text any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendToChannel", reflect.TypeOf((*MockChatCourier)(nil).SendToChannel), ctx, provider, token, guildID, channel, text)
+}
+
+// SetWebhook mocks base method.
+func (m *MockChatCourier) SetWebhook(ctx context.Context, provider entity.ChatProvider, token, webhookURL, secret string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetWebhook", ctx, provider, token, webhookURL, secret)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetWebhook indicates an expected call of SetWebhook.
+func (mr *MockChatCourierMockRecorder) SetWebhook(ctx, provider, token, webhookURL, secret any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetWebhook", reflect.TypeOf((*MockChatCourier)(nil).SetWebhook), ctx, provider, token, webhookURL, secret)
 }
 
 // Validate mocks base method.

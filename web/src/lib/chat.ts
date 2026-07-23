@@ -1,11 +1,11 @@
 import type { Tone } from '$lib/dashboard';
 
-export type PlatformId = 'slack' | 'teams' | 'discord';
+export type PlatformId = 'slack' | 'teams' | 'discord' | 'telegram';
 export type Health = 'healthy' | 'failing';
 
 export type Scope = { what: string; why: string };
 
-export type AuthKind = 'oauth' | 'bot-token';
+export type AuthKind = 'oauth' | 'bot-token' | 'telegram';
 
 export type ExternalIdField = { label: string; placeholder: string; hint: string };
 
@@ -77,6 +77,17 @@ export const PLATFORMS: Omit<Platform, 'connection'>[] = [
 			{ what: 'Manage channels in one category', why: 'incident rooms are created under it' },
 			{ what: 'Post and read in incident channels', why: 'the timeline scribe works from channel messages' },
 			{ what: 'Send DMs', why: 'pages and personal notifications' }
+		]
+	},
+	{
+		id: 'telegram',
+		label: 'Telegram',
+		icon: 'message-square',
+		tagline: 'Get paged in Telegram and acknowledge without leaving the chat.',
+		authKind: 'telegram',
+		scopes: [
+			{ what: 'Message you directly', why: 'your pages and notifications arrive as a DM' },
+			{ what: 'Show Acknowledge / Resolve buttons', why: 'act on a page from the message' }
 		]
 	}
 ];

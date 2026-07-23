@@ -25,6 +25,7 @@ type Config struct {
 	Ntfy            Ntfy          `mapstructure:"ntfy"`
 	Slack           Slack         `mapstructure:"slack"`
 	Discord         Discord       `mapstructure:"discord"`
+	Telegram        Telegram      `mapstructure:"telegram"`
 	Chat            Chat          `mapstructure:"chat"`
 }
 
@@ -58,6 +59,14 @@ type Discord struct {
 	BaseURL       string        `mapstructure:"base_url"`
 	Timeout       time.Duration `mapstructure:"timeout"`
 	UserAgent     string        `mapstructure:"user_agent"`
+}
+
+type Telegram struct {
+	BotToken  string        `mapstructure:"bot_token"`
+	BotName   string        `mapstructure:"bot_name"`
+	BaseURL   string        `mapstructure:"base_url"`
+	Timeout   time.Duration `mapstructure:"timeout"`
+	UserAgent string        `mapstructure:"user_agent"`
 }
 
 type Chat struct {
@@ -216,6 +225,10 @@ func NewDiscord(cfg Config) Discord {
 	return cfg.Discord
 }
 
+func NewTelegram(cfg Config) Telegram {
+	return cfg.Telegram
+}
+
 func NewChat(cfg Config) Chat {
 	return cfg.Chat
 }
@@ -328,6 +341,11 @@ func New(cfgFile string) (Config, error) {
 	v.SetDefault("discord.base_url", "https://discord.com/api/v10")
 	v.SetDefault("discord.timeout", "10s")
 	v.SetDefault("discord.user_agent", "opsybot")
+	v.SetDefault("telegram.bot_token", "")
+	v.SetDefault("telegram.bot_name", "")
+	v.SetDefault("telegram.base_url", "https://api.telegram.org")
+	v.SetDefault("telegram.timeout", "10s")
+	v.SetDefault("telegram.user_agent", "opsybot")
 	v.SetDefault("chat.interaction_skew", "5m")
 	v.SetDefault("chat.action_token_ttl", "24h")
 	v.SetDefault("mailer.host", "")

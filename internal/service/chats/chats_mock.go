@@ -41,6 +41,20 @@ func (m *MockChats) EXPECT() *MockChatsMockRecorder {
 	return m.recorder
 }
 
+// AnswerTelegramCallback mocks base method.
+func (m *MockChats) AnswerTelegramCallback(ctx context.Context, callbackID, text string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AnswerTelegramCallback", ctx, callbackID, text)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AnswerTelegramCallback indicates an expected call of AnswerTelegramCallback.
+func (mr *MockChatsMockRecorder) AnswerTelegramCallback(ctx, callbackID, text any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AnswerTelegramCallback", reflect.TypeOf((*MockChats)(nil).AnswerTelegramCallback), ctx, callbackID, text)
+}
+
 // CompleteIdentityOAuth mocks base method.
 func (m *MockChats) CompleteIdentityOAuth(ctx context.Context, provider entity.ChatProvider, code, state string) (string, error) {
 	m.ctrl.T.Helper()
@@ -69,6 +83,20 @@ func (m *MockChats) CompleteOAuth(ctx context.Context, provider entity.ChatProvi
 func (mr *MockChatsMockRecorder) CompleteOAuth(ctx, provider, code, guildID, state any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompleteOAuth", reflect.TypeOf((*MockChats)(nil).CompleteOAuth), ctx, provider, code, guildID, state)
+}
+
+// CompleteTelegramLink mocks base method.
+func (m *MockChats) CompleteTelegramLink(ctx context.Context, token, telegramUserID, handle string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CompleteTelegramLink", ctx, token, telegramUserID, handle)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CompleteTelegramLink indicates an expected call of CompleteTelegramLink.
+func (mr *MockChatsMockRecorder) CompleteTelegramLink(ctx, token, telegramUserID, handle any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompleteTelegramLink", reflect.TypeOf((*MockChats)(nil).CompleteTelegramLink), ctx, token, telegramUserID, handle)
 }
 
 // Connect mocks base method.
@@ -172,6 +200,21 @@ func (m *MockChats) StartOAuth(ctx context.Context, workspaceSlug string, provid
 func (mr *MockChatsMockRecorder) StartOAuth(ctx, workspaceSlug, provider any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartOAuth", reflect.TypeOf((*MockChats)(nil).StartOAuth), ctx, workspaceSlug, provider)
+}
+
+// StartTelegramLink mocks base method.
+func (m *MockChats) StartTelegramLink(ctx context.Context, workspaceSlug string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StartTelegramLink", ctx, workspaceSlug)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StartTelegramLink indicates an expected call of StartTelegramLink.
+func (mr *MockChatsMockRecorder) StartTelegramLink(ctx, workspaceSlug any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartTelegramLink", reflect.TypeOf((*MockChats)(nil).StartTelegramLink), ctx, workspaceSlug)
 }
 
 // TestConnection mocks base method.

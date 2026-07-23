@@ -83,6 +83,18 @@ export async function setDefaults(
 	return error ? { error: error.detail ?? 'Could not save those defaults.' } : {};
 }
 
+export async function startTelegramLink(
+	cookies: Cookies,
+	workspace: string
+): Promise<{ url?: string; error?: string }> {
+	const { data, error } = await apiClient(cookies).POST(
+		'/workspaces/{workspaceId}/chat/connections/telegram/link/start',
+		{ params: { path: { workspaceId: workspace } } }
+	);
+	if (error) return { error: error.detail ?? 'Could not start Telegram linking.' };
+	return { url: data?.authorizeUrl };
+}
+
 export async function startIdentityOAuth(
 	cookies: Cookies,
 	workspace: string,

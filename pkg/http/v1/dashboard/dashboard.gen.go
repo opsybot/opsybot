@@ -2543,6 +2543,9 @@ type ServerInterface interface {
 	// Connect a chat provider with a validated bot token
 	// (POST /workspaces/{workspaceId}/chat/connections)
 	ConnectChat(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Begin the Telegram account link, returning a deep link to open in Telegram
+	// (POST /workspaces/{workspaceId}/chat/connections/telegram/link/start)
+	StartTelegramLink(w http.ResponseWriter, r *http.Request, workspaceId string)
 	// Disconnect a chat provider
 	// (DELETE /workspaces/{workspaceId}/chat/connections/{provider})
 	DeleteChatConnection(w http.ResponseWriter, r *http.Request, workspaceId string, provider string)
@@ -3095,6 +3098,12 @@ func (_ Unimplemented) ListChatConnections(w http.ResponseWriter, r *http.Reques
 // Connect a chat provider with a validated bot token
 // (POST /workspaces/{workspaceId}/chat/connections)
 func (_ Unimplemented) ConnectChat(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Begin the Telegram account link, returning a deep link to open in Telegram
+// (POST /workspaces/{workspaceId}/chat/connections/telegram/link/start)
+func (_ Unimplemented) StartTelegramLink(w http.ResponseWriter, r *http.Request, workspaceId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -5201,6 +5210,32 @@ func (siw *ServerInterfaceWrapper) ConnectChat(w http.ResponseWriter, r *http.Re
 	handler.ServeHTTP(w, r)
 }
 
+// StartTelegramLink operation middleware
+func (siw *ServerInterfaceWrapper) StartTelegramLink(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StartTelegramLink(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // DeleteChatConnection operation middleware
 func (siw *ServerInterfaceWrapper) DeleteChatConnection(w http.ResponseWriter, r *http.Request) {
 
@@ -7289,6 +7324,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/workspaces/{workspaceId}/chat/connections", wrapper.ConnectChat)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/chat/connections/telegram/link/start", wrapper.StartTelegramLink)
 	})
 	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/workspaces/{workspaceId}/chat/connections/{provider}", wrapper.DeleteChatConnection)
@@ -11506,6 +11544,84 @@ func (response ConnectChat404ApplicationProblemPlusJSONResponse) VisitConnectCha
 	return err
 }
 
+type StartTelegramLinkRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+}
+
+type StartTelegramLinkResponseObject interface {
+	VisitStartTelegramLinkResponse(w http.ResponseWriter) error
+}
+
+type StartTelegramLink200JSONResponse ChatOAuthStart
+
+func (response StartTelegramLink200JSONResponse) VisitStartTelegramLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartTelegramLink400ApplicationProblemPlusJSONResponse Problem
+
+func (response StartTelegramLink400ApplicationProblemPlusJSONResponse) VisitStartTelegramLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartTelegramLink401ApplicationProblemPlusJSONResponse Problem
+
+func (response StartTelegramLink401ApplicationProblemPlusJSONResponse) VisitStartTelegramLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartTelegramLink403ApplicationProblemPlusJSONResponse Problem
+
+func (response StartTelegramLink403ApplicationProblemPlusJSONResponse) VisitStartTelegramLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartTelegramLink404ApplicationProblemPlusJSONResponse Problem
+
+func (response StartTelegramLink404ApplicationProblemPlusJSONResponse) VisitStartTelegramLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type DeleteChatConnectionRequestObject struct {
 	WorkspaceId string `json:"workspaceId"`
 	Provider    string `json:"provider"`
@@ -15710,6 +15826,9 @@ type StrictServerInterface interface {
 	// Connect a chat provider with a validated bot token
 	// (POST /workspaces/{workspaceId}/chat/connections)
 	ConnectChat(ctx context.Context, request ConnectChatRequestObject) (ConnectChatResponseObject, error)
+	// Begin the Telegram account link, returning a deep link to open in Telegram
+	// (POST /workspaces/{workspaceId}/chat/connections/telegram/link/start)
+	StartTelegramLink(ctx context.Context, request StartTelegramLinkRequestObject) (StartTelegramLinkResponseObject, error)
 	// Disconnect a chat provider
 	// (DELETE /workspaces/{workspaceId}/chat/connections/{provider})
 	DeleteChatConnection(ctx context.Context, request DeleteChatConnectionRequestObject) (DeleteChatConnectionResponseObject, error)
@@ -17762,6 +17881,32 @@ func (sh *strictHandler) ConnectChat(w http.ResponseWriter, r *http.Request, wor
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ConnectChatResponseObject); ok {
 		if err := validResponse.VisitConnectChatResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// StartTelegramLink operation middleware
+func (sh *strictHandler) StartTelegramLink(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request StartTelegramLinkRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.StartTelegramLink(ctx, request.(StartTelegramLinkRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StartTelegramLink")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(StartTelegramLinkResponseObject); ok {
+		if err := validResponse.VisitStartTelegramLinkResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -19,4 +19,7 @@ type Chats interface {
 	CompleteOAuth(ctx context.Context, provider entity.ChatProvider, code, guildID, state string) (string, error)
 	StartIdentityOAuth(ctx context.Context, workspaceSlug string, provider entity.ChatProvider) (string, error)
 	CompleteIdentityOAuth(ctx context.Context, provider entity.ChatProvider, code, state string) (string, error)
+	StartTelegramLink(ctx context.Context, workspaceSlug string) (string, error)
+	CompleteTelegramLink(ctx context.Context, token, telegramUserID, handle string) error
+	AnswerTelegramCallback(ctx context.Context, callbackID, text string) error
 }

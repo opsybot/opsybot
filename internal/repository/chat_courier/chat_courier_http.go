@@ -3,21 +3,24 @@ package chat_courier
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/opsybot/opsybot/internal/entity"
 	"github.com/opsybot/opsybot/internal/pkg/discord"
 	"github.com/opsybot/opsybot/internal/pkg/slack"
+	"github.com/opsybot/opsybot/internal/pkg/telegram"
 	"github.com/opsybot/opsybot/internal/repository"
 )
 
 type repo struct {
-	slack   slack.Client
-	discord discord.Client
+	slack    slack.Client
+	discord  discord.Client
+	telegram telegram.Client
 }
 
-func New(slackClient slack.Client, discordClient discord.Client) repository.ChatCourier {
-	return &repo{slack: slackClient, discord: discordClient}
+func New(slackClient slack.Client, discordClient discord.Client, telegramClient telegram.Client) repository.ChatCourier {
+	return &repo{slack: slackClient, discord: discordClient, telegram: telegramClient}
 }
 
 func (r *repo) Send(ctx context.Context, in entity.ChatDelivery) (entity.ChatSendResult, error) {
@@ -26,9 +29,40 @@ func (r *repo) Send(ctx context.Context, in entity.ChatDelivery) (entity.ChatSen
 		return r.sendSlack(ctx, in)
 	case entity.ChatProviderDiscord:
 		return r.sendDiscord(ctx, in)
+	case entity.ChatProviderTelegram:
+		return r.sendTelegram(ctx, in)
 	default:
 		return entity.ChatSendResult{Result: entity.NotifyResult{Detail: "chat provider not supported yet"}}, nil
 	}
+}
+
+func (r *repo) sendTelegram(ctx context.Context, in entity.ChatDelivery) (entity.ChatSendResult, error) {
+	chatID := in.DMChannelID
+	if chatID == "" {
+		chatID = in.ProviderUserID
+	}
+	mid, err := r.telegram.SendMessage(ctx, in.BotToken, chatID, in.Page.PlainText(), telegramKeyboard(in))
+	if err != nil {
+		return entity.ChatSendResult{DMChannelID: chatID, Result: entity.NotifyResult{Detail: err.Error()}}, nil
+	}
+	return entity.ChatSendResult{DMChannelID: chatID, Result: entity.NotifyResult{Delivered: true, Detail: "delivered to Telegram", MessageID: strconv.FormatInt(mid, 10)}}, nil
+}
+
+func telegramKeyboard(in entity.ChatDelivery) any {
+	row := []map[string]any{}
+	if in.AckToken != "" {
+		row = append(row, map[string]any{"text": "Acknowledge", "callback_data": in.AckToken})
+	}
+	if in.ResolveToken != "" {
+		row = append(row, map[string]any{"text": "Resolve", "callback_data": in.ResolveToken})
+	}
+	if in.Page.AlertURL != "" {
+		row = append(row, map[string]any{"text": "Open alert", "url": in.Page.AlertURL})
+	}
+	if len(row) == 0 {
+		return nil
+	}
+	return map[string]any{"inline_keyboard": [][]map[string]any{row}}
 }
 
 func (r *repo) sendSlack(ctx context.Context, in entity.ChatDelivery) (entity.ChatSendResult, error) {
@@ -114,8 +148,33 @@ func (r *repo) Validate(ctx context.Context, provider entity.ChatProvider, token
 			}
 		}
 		return entity.ChatValidation{ExternalID: externalID, ExternalName: name, BotUserID: app.ID}, nil
+	case entity.ChatProviderTelegram:
+		bot, err := r.telegram.Me(ctx, token)
+		if err != nil {
+			return entity.ChatValidation{}, entity.ErrChatConnectionInvalid
+		}
+		id := strconv.FormatInt(bot.ID, 10)
+		return entity.ChatValidation{ExternalID: id, ExternalName: bot.Username, BotUserID: id}, nil
 	default:
 		return entity.ChatValidation{}, entity.ErrChatConnectionInvalid
+	}
+}
+
+func (r *repo) SetWebhook(ctx context.Context, provider entity.ChatProvider, token, webhookURL, secret string) error {
+	switch provider {
+	case entity.ChatProviderTelegram:
+		return r.telegram.SetWebhook(ctx, token, webhookURL, secret)
+	default:
+		return entity.ErrChatOAuthUnsupported
+	}
+}
+
+func (r *repo) AnswerCallback(ctx context.Context, provider entity.ChatProvider, token, callbackID, text string) error {
+	switch provider {
+	case entity.ChatProviderTelegram:
+		return r.telegram.AnswerCallbackQuery(ctx, token, callbackID, text)
+	default:
+		return nil
 	}
 }
 
@@ -180,6 +239,15 @@ func (r *repo) SendToChannel(ctx context.Context, provider entity.ChatProvider, 
 			return entity.ChatSendResult{DMChannelID: channelID, Result: entity.NotifyResult{Detail: err.Error()}}, nil
 		}
 		return entity.ChatSendResult{DMChannelID: channelID, Result: entity.NotifyResult{Delivered: true, Detail: "delivered to Discord", MessageID: id}}, nil
+	case entity.ChatProviderTelegram:
+		if channel == "" {
+			return entity.ChatSendResult{Result: entity.NotifyResult{Detail: "Set a Telegram channel (@name or id) as the announcement channel first."}}, nil
+		}
+		mid, err := r.telegram.SendMessage(ctx, token, channel, text, nil)
+		if err != nil {
+			return entity.ChatSendResult{Result: entity.NotifyResult{Detail: err.Error()}}, nil
+		}
+		return entity.ChatSendResult{DMChannelID: channel, Result: entity.NotifyResult{Delivered: true, Detail: "delivered to Telegram", MessageID: strconv.FormatInt(mid, 10)}}, nil
 	default:
 		return entity.ChatSendResult{Result: entity.NotifyResult{Detail: "chat provider not supported yet"}}, nil
 	}

@@ -113,7 +113,12 @@ type ChatOAuthPurpose string
 const (
 	ChatOAuthInstall  ChatOAuthPurpose = "install"
 	ChatOAuthIdentity ChatOAuthPurpose = "identity"
+	ChatOAuthLink     ChatOAuthPurpose = "link"
 )
+
+func TelegramWebhookSecret(botToken string) string {
+	return HashToken(botToken)
+}
 
 type ChatOAuthState struct {
 	Provider      ChatProvider

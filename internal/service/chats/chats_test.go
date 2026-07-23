@@ -447,3 +447,127 @@ func TestTestConnectionFallsBackToDefaultChannel(t *testing.T) {
 		t.Fatalf("TestConnection: %v", err)
 	}
 }
+
+func TestStartTelegramLinkReturnsDeepLink(t *testing.T) {
+	h := newHarness(t, config.Slack{}, config.Discord{})
+	h.allowRead()
+	h.connections.EXPECT().Get(gomock.Any(), "ws-1", entity.ChatProviderTelegram).
+		Return(entity.ChatConnection{ID: "conn-1", ExternalName: "opsy_bot"}, nil)
+	var storedKey string
+	var stored entity.ChatOAuthState
+	h.oauthStates.EXPECT().Store(gomock.Any(), gomock.Any(), gomock.Any(), entity.ChatOAuthStateTTL).
+		DoAndReturn(func(_ context.Context, key string, data entity.ChatOAuthState, _ time.Duration) error {
+			storedKey, stored = key, data
+			return nil
+		})
+
+	url, err := h.srv.StartTelegramLink(sessionCtx(), "acme")
+	if err != nil {
+		t.Fatalf("StartTelegramLink: %v", err)
+	}
+	if url != "https://t.me/opsy_bot?start="+storedKey {
+		t.Errorf("deep link = %q", url)
+	}
+	if stored.Purpose != entity.ChatOAuthLink || stored.Provider != entity.ChatProviderTelegram || stored.ConnectionID != "conn-1" || stored.UserID != "u1" {
+		t.Errorf("stored link state = %+v", stored)
+	}
+}
+
+func TestCompleteTelegramLinkStoresIdentity(t *testing.T) {
+	h := newHarness(t, config.Slack{}, config.Discord{})
+	h.srv.telegram = config.Telegram{BotToken: "tg-token"}
+	h.oauthStates.EXPECT().Consume(gomock.Any(), "linktok").Return(entity.ChatOAuthState{
+		Provider: entity.ChatProviderTelegram, Purpose: entity.ChatOAuthLink,
+		WorkspaceID: "ws-1", WorkspaceSlug: "acme", UserID: "u1", ConnectionID: "conn-1",
+	}, nil)
+	var up entity.ChatIdentity
+	h.identities.EXPECT().Upsert(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ context.Context, in entity.ChatIdentity) (entity.ChatIdentity, error) {
+			up = in
+			return in, nil
+		})
+	h.courier.EXPECT().
+		SendToChannel(gomock.Any(), entity.ChatProviderTelegram, "tg-token", "", "88888", gomock.Any()).
+		Return(entity.ChatSendResult{Result: entity.NotifyResult{Delivered: true}}, nil)
+
+	if err := h.srv.CompleteTelegramLink(context.Background(), "linktok", "88888", "vlad_tg"); err != nil {
+		t.Fatalf("CompleteTelegramLink: %v", err)
+	}
+	if up.ProviderUserID != "88888" || up.DMChannelID != "88888" || up.ConnectionID != "conn-1" || up.ResolvedBy != "telegram" || !up.Verified {
+		t.Errorf("telegram identity stored wrong: %+v", up)
+	}
+}
+
+func TestConnectTelegramSetsWebhook(t *testing.T) {
+	h := newHarness(t, config.Slack{}, config.Discord{})
+	h.srv.telegram = config.Telegram{BotToken: "tg-token"}
+	h.allowWrite()
+	h.courier.EXPECT().Validate(gomock.Any(), entity.ChatProviderTelegram, "tg-token", "").
+		Return(entity.ChatValidation{ExternalID: "42", ExternalName: "opsy_bot", BotUserID: "42"}, nil)
+	h.courier.EXPECT().SetWebhook(gomock.Any(), entity.ChatProviderTelegram, "tg-token", gomock.Any(), gomock.Any()).Return(nil)
+	var saved entity.ChatConnectionInput
+	h.connections.EXPECT().Save(gomock.Any(), "ws-1", gomock.Any()).
+		DoAndReturn(func(_ context.Context, _ string, in entity.ChatConnectionInput) (entity.ChatConnection, error) {
+			saved = in
+			return entity.ChatConnection{Provider: in.Provider}, nil
+		})
+	h.audit.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+
+	if _, err := h.srv.Connect(sessionCtx(), "acme", entity.ChatConnectInput{Provider: entity.ChatProviderTelegram}); err != nil {
+		t.Fatalf("Connect(telegram): %v", err)
+	}
+	if saved.ExternalName != "opsy_bot" || saved.BotToken != "" {
+		t.Errorf("telegram connection saved wrong (env token, not stored): %+v", saved)
+	}
+}
+
+func TestTestConnectionTelegramDMsTheUser(t *testing.T) {
+	h := newHarness(t, config.Slack{}, config.Discord{})
+	h.allowRead()
+	h.connections.EXPECT().Get(gomock.Any(), "ws-1", entity.ChatProviderTelegram).
+		Return(entity.ChatConnection{ID: "conn-1", ExternalName: "opsy_bot"}, nil)
+	h.connections.EXPECT().BotToken(gomock.Any(), "ws-1", entity.ChatProviderTelegram).Return("tg", nil)
+	h.identities.EXPECT().GetForUser(gomock.Any(), "conn-1", "u1").
+		Return(entity.ChatIdentity{ProviderUserID: "426937641"}, nil)
+	h.courier.EXPECT().
+		SendToChannel(gomock.Any(), entity.ChatProviderTelegram, "tg", "", "426937641", gomock.Any()).
+		Return(entity.ChatSendResult{Result: entity.NotifyResult{Delivered: true}}, nil)
+
+	res, err := h.srv.TestConnection(sessionCtx(), "acme", entity.ChatProviderTelegram)
+	if err != nil {
+		t.Fatalf("TestConnection(telegram): %v", err)
+	}
+	if !res.Result.Delivered || res.Result.Detail != "Sent you a test message on Telegram." {
+		t.Errorf("telegram test should DM the user: %+v", res.Result)
+	}
+}
+
+func TestTestConnectionTelegramNeedsLinkFirst(t *testing.T) {
+	h := newHarness(t, config.Slack{}, config.Discord{})
+	h.allowRead()
+	h.connections.EXPECT().Get(gomock.Any(), "ws-1", entity.ChatProviderTelegram).
+		Return(entity.ChatConnection{ID: "conn-1"}, nil)
+	h.connections.EXPECT().BotToken(gomock.Any(), "ws-1", entity.ChatProviderTelegram).Return("tg", nil)
+	h.identities.EXPECT().GetForUser(gomock.Any(), "conn-1", "u1").
+		Return(entity.ChatIdentity{}, entity.ErrChatNotConnected)
+
+	res, err := h.srv.TestConnection(sessionCtx(), "acme", entity.ChatProviderTelegram)
+	if err != nil {
+		t.Fatalf("TestConnection(telegram): %v", err)
+	}
+	if res.Result.Delivered || res.Result.Detail != "Link your Telegram account first, then test." {
+		t.Errorf("unlinked telegram test should ask to link first: %+v", res.Result)
+	}
+}
+
+func TestAnswerTelegramCallbackDelegates(t *testing.T) {
+	h := newHarness(t, config.Slack{}, config.Discord{})
+	h.srv.telegram = config.Telegram{BotToken: "tg"}
+	h.courier.EXPECT().
+		AnswerCallback(gomock.Any(), entity.ChatProviderTelegram, "tg", "cbid", "Acknowledged: DB down").
+		Return(nil)
+
+	if err := h.srv.AnswerTelegramCallback(context.Background(), "cbid", "Acknowledged: DB down"); err != nil {
+		t.Fatalf("AnswerTelegramCallback: %v", err)
+	}
+}

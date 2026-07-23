@@ -6,6 +6,7 @@
 	import UnplugIcon from '@lucide/svelte/icons/unplug';
 	import { toast } from 'svelte-sonner';
 	import { enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { CHAT_ICONS } from '$lib/components/chat/icons';
@@ -26,6 +27,23 @@
 	const linkLabel = $derived(
 		linked ? (connection?.linkedHandle ? connection.linkedHandle : 'Linked') : 'Link my account'
 	);
+
+	let linkPoll: ReturnType<typeof setInterval> | undefined;
+	function pollForLink() {
+		clearInterval(linkPoll);
+		let tries = 0;
+		linkPoll = setInterval(async () => {
+			tries += 1;
+			await invalidateAll();
+			if (linked) {
+				clearInterval(linkPoll);
+				toast.success(`${platform.label} linked!`);
+			} else if (tries >= 13) {
+				clearInterval(linkPoll);
+			}
+		}, 3000);
+	}
+	$effect(() => () => clearInterval(linkPoll));
 </script>
 
 <section
@@ -78,7 +96,36 @@
 						Send test
 					</Button>
 				</form>
-				{#if platform.authKind === 'oauth'}
+				{#if platform.authKind === 'telegram'}
+					<form
+						method="POST"
+						action="?/linkTelegram"
+						use:enhance={() =>
+							async ({ result, update }) => {
+								await update({ reset: false });
+								if (result.type === 'success' && result.data?.telegramUrl) {
+									window.open(String(result.data.telegramUrl), '_blank', 'noopener');
+									toast.info('Opened Telegram — tap Start to link your account.');
+									pollForLink();
+								} else if (result.type === 'failure') {
+									toast.error(String(result.data?.error ?? 'Could not start Telegram linking.'));
+								}
+							}}
+					>
+						<input type="hidden" name="platform" value={platform.id} />
+						<Button
+							type="submit"
+							size="sm"
+							variant="ghost"
+							title={linked ? 'Re-link your account' : undefined}
+						>
+							{#if linked}<CircleCheckIcon data-icon="inline-start" class="text-success-ink" />{:else}<LinkIcon
+									data-icon="inline-start"
+								/>{/if}
+							{linkLabel}
+						</Button>
+					</form>
+				{:else if platform.authKind === 'oauth'}
 					<form
 						method="POST"
 						action="?/linkOAuth"
@@ -158,6 +205,8 @@
 			</div>
 			<ScopeList scopes={platform.scopes} />
 		</div>
-		<WorkspaceDefaults {platform} />
+		{#if platform.authKind !== 'telegram'}
+			<WorkspaceDefaults {platform} />
+		{/if}
 	{/if}
 </section>

@@ -2558,6 +2558,19 @@ paths:
         "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
         "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
         "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/chat/connections/telegram/link/start:
+    post:
+      operationId: startTelegramLink
+      summary: Begin the Telegram account link, returning a deep link to open in Telegram
+      tags: [chat]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Deep link, content: { application/json: { schema: { $ref: "#/components/schemas/ChatOAuthStart" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
   /workspaces/{workspaceId}/chat/connections/{provider}/oauth/start:
     post:
       operationId: startChatOAuth

@@ -8,6 +8,7 @@ import {
 	setDefaults,
 	startIdentityOAuth,
 	startOAuth,
+	startTelegramLink,
 	testConnection
 } from '$lib/server/chat';
 import type { Actions, PageServerLoad } from './$types';
@@ -65,6 +66,11 @@ export const actions: Actions = {
 		const { url, error } = await startIdentityOAuth(cookies, params.workspace, provider);
 		if (error || !url) return fail(400, { error: error ?? 'Could not start Slack sign-in.' });
 		return { oauthUrl: url };
+	},
+	linkTelegram: async ({ cookies, params }) => {
+		const { url, error } = await startTelegramLink(cookies, params.workspace);
+		if (error || !url) return fail(400, { error: error ?? 'Could not start Telegram linking.' });
+		return { telegramUrl: url };
 	},
 	test: async ({ request, cookies, params }) => {
 		const provider = String((await request.formData()).get('platform') ?? '');

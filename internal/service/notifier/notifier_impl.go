@@ -49,7 +49,7 @@ func (s *srv) Send(ctx context.Context, target entity.NotifyTarget, page entity.
 		return s.sendNtfy(ctx, target, page)
 	case entity.ChannelTypeWebhook:
 		return s.sendWebhook(ctx, target, page)
-	case entity.ChannelTypeSlack, entity.ChannelTypeDiscord:
+	case entity.ChannelTypeSlack, entity.ChannelTypeDiscord, entity.ChannelTypeTelegram:
 		return s.sendChat(ctx, target, page)
 	default:
 		return entity.NotifyResult{Detail: "channel not connected yet"}

@@ -22,7 +22,7 @@ const (
 	tracerName       = "opsybot/http"
 )
 
-func NewRouter(log *slog.Logger, cfg config.Auth, cfgIngest config.Ingest, auth service.Auth, keys service.APIKeys, sso service.SSO, schedules service.Schedules, ingest service.Ingest, limiter service.RateLimiter, channels service.Channels, interactions service.Interactions, actions service.Actions, chats service.Chats, dashboard dashboardapi.StrictServerInterface) http.Handler {
+func NewRouter(log *slog.Logger, cfg config.Auth, cfgIngest config.Ingest, cfgTelegram config.Telegram, auth service.Auth, keys service.APIKeys, sso service.SSO, schedules service.Schedules, ingest service.Ingest, limiter service.RateLimiter, channels service.Channels, interactions service.Interactions, actions service.Actions, chats service.Chats, dashboard dashboardapi.StrictServerInterface) http.Handler {
 	r := chi.NewRouter()
 	r.Use(chimiddleware.RequestID)
 	r.Use(otelMiddleware)
@@ -59,6 +59,9 @@ func NewRouter(log *slog.Logger, cfg config.Auth, cfgIngest config.Ingest, auth 
 	r.Get("/v1/chat/slack/identity/callback", chatOAuthRoutes.identityCallback(entity.ChatProviderSlack))
 	r.Get("/v1/chat/discord/oauth/callback", chatOAuthRoutes.callback(entity.ChatProviderDiscord))
 	r.Get("/v1/chat/discord/identity/callback", chatOAuthRoutes.identityCallback(entity.ChatProviderDiscord))
+
+	telegramRoutes := &telegramWebhookRoutes{chats: chats, actions: actions, cfg: cfgTelegram}
+	r.Post("/v1/chat/telegram/hook/{secret}", telegramRoutes.handle)
 
 	actionRoutes := &actionLinkRoutes{actions: actions}
 	r.Get("/v1/act/{token}", actionRoutes.prompt)

@@ -17,4 +17,6 @@ type ChatCourier interface {
 	ExchangeOAuth(ctx context.Context, provider entity.ChatProvider, code, redirectURI string) (entity.ChatOAuthResult, error)
 	IdentityAuthorizeURL(ctx context.Context, provider entity.ChatProvider, scopes []string, redirectURI, state, teamID string) (string, error)
 	ExchangeIdentity(ctx context.Context, provider entity.ChatProvider, code, redirectURI string) (entity.ChatIdentityResult, error)
+	SetWebhook(ctx context.Context, provider entity.ChatProvider, token, webhookURL, secret string) error
+	AnswerCallback(ctx context.Context, provider entity.ChatProvider, token, callbackID, text string) error
 }
