@@ -131,19 +131,19 @@ func (mr *MockChatCourierMockRecorder) Send(ctx, in any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockChatCourier)(nil).Send), ctx, in)
 }
 
-// SendDirect mocks base method.
-func (m *MockChatCourier) SendDirect(ctx context.Context, provider entity.ChatProvider, token, providerUserID, dmChannelID, text string) (entity.ChatSendResult, error) {
+// SendToChannel mocks base method.
+func (m *MockChatCourier) SendToChannel(ctx context.Context, provider entity.ChatProvider, token, guildID, channel, text string) (entity.ChatSendResult, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendDirect", ctx, provider, token, providerUserID, dmChannelID, text)
+	ret := m.ctrl.Call(m, "SendToChannel", ctx, provider, token, guildID, channel, text)
 	ret0, _ := ret[0].(entity.ChatSendResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// SendDirect indicates an expected call of SendDirect.
-func (mr *MockChatCourierMockRecorder) SendDirect(ctx, provider, token, providerUserID, dmChannelID, text any) *gomock.Call {
+// SendToChannel indicates an expected call of SendToChannel.
+func (mr *MockChatCourierMockRecorder) SendToChannel(ctx, provider, token, guildID, channel, text any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendDirect", reflect.TypeOf((*MockChatCourier)(nil).SendDirect), ctx, provider, token, providerUserID, dmChannelID, text)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendToChannel", reflect.TypeOf((*MockChatCourier)(nil).SendToChannel), ctx, provider, token, guildID, channel, text)
 }
 
 // Validate mocks base method.

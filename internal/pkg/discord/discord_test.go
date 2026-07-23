@@ -82,3 +82,25 @@ func TestOAuthTokenAndCurrentUser(t *testing.T) {
 		t.Errorf("user = %+v", u)
 	}
 }
+
+func TestGuildChannels(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/guilds/G9/channels" {
+			t.Errorf("path = %q", r.URL.Path)
+		}
+		if r.Header.Get("Authorization") != "Bot the-bot" {
+			t.Errorf("authorization = %q", r.Header.Get("Authorization"))
+		}
+		_, _ = w.Write([]byte(`[{"id":"100","name":"general","type":0},{"id":"200","name":"incidents","type":0},{"id":"300","name":"Voice","type":2}]`))
+	}))
+	defer srv.Close()
+
+	c := New(config.Discord{BaseURL: srv.URL})
+	chans, err := c.GuildChannels(context.Background(), "the-bot", "G9")
+	if err != nil {
+		t.Fatalf("GuildChannels: %v", err)
+	}
+	if len(chans) != 3 || chans[1].Name != "incidents" || chans[1].ID != "200" || chans[1].Type != 0 {
+		t.Errorf("channels = %+v", chans)
+	}
+}

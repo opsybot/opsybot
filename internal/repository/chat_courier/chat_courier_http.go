@@ -147,36 +147,39 @@ func (r *repo) LookupUser(ctx context.Context, provider entity.ChatProvider, tok
 	}
 }
 
-func (r *repo) SendDirect(ctx context.Context, provider entity.ChatProvider, token, providerUserID, dmChannelID, text string) (entity.ChatSendResult, error) {
+func (r *repo) SendToChannel(ctx context.Context, provider entity.ChatProvider, token, guildID, channel, text string) (entity.ChatSendResult, error) {
 	switch provider {
 	case entity.ChatProviderSlack:
-		dm := dmChannelID
-		if dm == "" {
-			opened, err := r.slack.OpenIM(ctx, token, providerUserID)
-			if err != nil {
-				return entity.ChatSendResult{Result: entity.NotifyResult{Detail: err.Error()}}, nil
-			}
-			dm = opened
-		}
-		ts, err := r.slack.PostMessage(ctx, token, dm, text, nil)
+		target := strings.TrimPrefix(channel, "#")
+		ts, err := r.slack.PostMessage(ctx, token, target, text, nil)
 		if err != nil {
-			return entity.ChatSendResult{DMChannelID: dm, Result: entity.NotifyResult{Detail: err.Error()}}, nil
+			return entity.ChatSendResult{Result: entity.NotifyResult{Detail: err.Error()}}, nil
 		}
-		return entity.ChatSendResult{DMChannelID: dm, Result: entity.NotifyResult{Delivered: true, Detail: "delivered to Slack", MessageID: ts}}, nil
+		return entity.ChatSendResult{DMChannelID: target, Result: entity.NotifyResult{Delivered: true, Detail: "delivered to Slack", MessageID: ts}}, nil
 	case entity.ChatProviderDiscord:
-		dm := dmChannelID
-		if dm == "" {
-			created, err := r.discord.CreateDM(ctx, token, providerUserID)
-			if err != nil {
-				return entity.ChatSendResult{Result: entity.NotifyResult{Detail: err.Error()}}, nil
-			}
-			dm = created
+		if guildID == "" {
+			return entity.ChatSendResult{Result: entity.NotifyResult{Detail: "Connect Discord to a server first."}}, nil
 		}
-		id, err := r.discord.CreateMessage(ctx, token, dm, text, nil)
+		channels, err := r.discord.GuildChannels(ctx, token, guildID)
 		if err != nil {
-			return entity.ChatSendResult{DMChannelID: dm, Result: entity.NotifyResult{Detail: err.Error()}}, nil
+			return entity.ChatSendResult{Result: entity.NotifyResult{Detail: err.Error()}}, nil
 		}
-		return entity.ChatSendResult{DMChannelID: dm, Result: entity.NotifyResult{Delivered: true, Detail: "delivered to Discord", MessageID: id}}, nil
+		want := strings.ToLower(strings.TrimPrefix(channel, "#"))
+		channelID := ""
+		for _, gc := range channels {
+			if (gc.Type == 0 || gc.Type == 5) && strings.ToLower(gc.Name) == want {
+				channelID = gc.ID
+				break
+			}
+		}
+		if channelID == "" {
+			return entity.ChatSendResult{Result: entity.NotifyResult{Detail: "Channel " + channel + " was not found in the server."}}, nil
+		}
+		id, err := r.discord.CreateMessage(ctx, token, channelID, text, nil)
+		if err != nil {
+			return entity.ChatSendResult{DMChannelID: channelID, Result: entity.NotifyResult{Detail: err.Error()}}, nil
+		}
+		return entity.ChatSendResult{DMChannelID: channelID, Result: entity.NotifyResult{Delivered: true, Detail: "delivered to Discord", MessageID: id}}, nil
 	default:
 		return entity.ChatSendResult{Result: entity.NotifyResult{Detail: "chat provider not supported yet"}}, nil
 	}

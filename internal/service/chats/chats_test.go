@@ -410,26 +410,15 @@ func TestListEnrichesWithLinkedIdentity(t *testing.T) {
 	}
 }
 
-func TestTestConnectionLinksOnEmailResolve(t *testing.T) {
+func TestTestConnectionPostsToAnnounceChannel(t *testing.T) {
 	h := newHarness(t, config.Slack{}, config.Discord{})
 	h.allowRead()
 	h.connections.EXPECT().Get(gomock.Any(), "ws-1", entity.ChatProviderSlack).
-		Return(entity.ChatConnection{ID: "conn-1", ExternalID: "T9"}, nil)
+		Return(entity.ChatConnection{ID: "conn-1", ExternalID: "T9", AnnounceChannel: "#ops"}, nil)
 	h.connections.EXPECT().BotToken(gomock.Any(), "ws-1", entity.ChatProviderSlack).Return("xoxb", nil)
-	h.identities.EXPECT().GetForUser(gomock.Any(), "conn-1", "u1").
-		Return(entity.ChatIdentity{}, entity.ErrChatNotConnected)
-	h.members.EXPECT().Get(gomock.Any(), "ws-1", "u1").
-		Return(entity.Member{Email: "vlad@corp.com"}, nil)
-	h.courier.EXPECT().LookupUser(gomock.Any(), entity.ChatProviderSlack, "xoxb", "T9", "vlad@corp.com").
-		Return(entity.ChatUser{ProviderUserID: "U9", Handle: "vlad"}, nil)
-	h.courier.EXPECT().SendDirect(gomock.Any(), entity.ChatProviderSlack, "xoxb", "U9", "", gomock.Any()).
-		Return(entity.ChatSendResult{DMChannelID: "D1", Result: entity.NotifyResult{Delivered: true}}, nil)
-	var up entity.ChatIdentity
-	h.identities.EXPECT().Upsert(gomock.Any(), gomock.Any()).
-		DoAndReturn(func(_ context.Context, in entity.ChatIdentity) (entity.ChatIdentity, error) {
-			up = in
-			return in, nil
-		})
+	h.courier.EXPECT().
+		SendToChannel(gomock.Any(), entity.ChatProviderSlack, "xoxb", "T9", "#ops", gomock.Any()).
+		Return(entity.ChatSendResult{Result: entity.NotifyResult{Delivered: true}}, nil)
 
 	res, err := h.srv.TestConnection(sessionCtx(), "acme", entity.ChatProviderSlack)
 	if err != nil {
@@ -438,7 +427,23 @@ func TestTestConnectionLinksOnEmailResolve(t *testing.T) {
 	if !res.Result.Delivered {
 		t.Fatalf("expected delivered")
 	}
-	if up.ProviderUserID != "U9" || up.ConnectionID != "conn-1" || up.ResolvedBy != "email" || !up.Verified || up.DMChannelID != "D1" {
-		t.Errorf("email-resolved test did not link the identity correctly: %+v", up)
+	if res.Result.Detail != "Posted a test message to #ops." {
+		t.Errorf("detail = %q, want channel confirmation", res.Result.Detail)
+	}
+}
+
+func TestTestConnectionFallsBackToDefaultChannel(t *testing.T) {
+	h := newHarness(t, config.Slack{}, config.Discord{})
+	h.allowRead()
+	// No announce channel configured -> uses the default.
+	h.connections.EXPECT().Get(gomock.Any(), "ws-1", entity.ChatProviderDiscord).
+		Return(entity.ChatConnection{ID: "conn-1", ExternalID: "G9"}, nil)
+	h.connections.EXPECT().BotToken(gomock.Any(), "ws-1", entity.ChatProviderDiscord).Return("bot", nil)
+	h.courier.EXPECT().
+		SendToChannel(gomock.Any(), entity.ChatProviderDiscord, "bot", "G9", entity.DefaultAnnounceChannel, gomock.Any()).
+		Return(entity.ChatSendResult{Result: entity.NotifyResult{Delivered: true}}, nil)
+
+	if _, err := h.srv.TestConnection(sessionCtx(), "acme", entity.ChatProviderDiscord); err != nil {
+		t.Fatalf("TestConnection: %v", err)
 	}
 }

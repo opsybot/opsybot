@@ -219,35 +219,17 @@ func (s *srv) TestConnection(ctx context.Context, workspaceSlug string, provider
 	if err != nil || token == "" {
 		return entity.ChatSendResult{}, entity.ErrChatNotConnected
 	}
-	providerUserID, dmChannel, handle := "", "", ""
-	linked := false
-	if ident, iErr := s.identities.GetForUser(ctx, conn.ID, id.UserID); iErr == nil {
-		providerUserID, dmChannel, handle, linked = ident.ProviderUserID, ident.DMChannelID, ident.ProviderHandle, true
-	} else {
-		member, mErr := s.members.Get(ctx, ws.ID, id.UserID)
-		if mErr != nil {
-			return entity.ChatSendResult{}, mErr
-		}
-		user, uErr := s.courier.LookupUser(ctx, provider, token, conn.ExternalID, member.Email)
-		if uErr != nil {
-			return entity.ChatSendResult{Result: entity.NotifyResult{Detail: "Could not find your " + string(provider) + " account by email. Link your account first, then test again."}}, nil
-		}
-		providerUserID, handle = user.ProviderUserID, user.Handle
+	channel := conn.AnnounceChannel
+	if channel == "" {
+		channel = entity.DefaultAnnounceChannel
 	}
-	text := "Opsybot test message for " + ws.Name + ". Your " + string(provider) + " connection works — this is where your pages will arrive."
-	result, err := s.courier.SendDirect(ctx, provider, token, providerUserID, dmChannel, text)
+	text := "Opsybot test — " + string(provider) + " is connected to " + ws.Name + ". Alerts and announcements will post to this channel."
+	result, err := s.courier.SendToChannel(ctx, provider, token, conn.ExternalID, channel, text)
 	if err != nil {
 		return entity.ChatSendResult{}, err
 	}
-	if result.Result.Delivered && !linked {
-		_, _ = s.identities.Upsert(ctx, entity.ChatIdentity{
-			ConnectionID: conn.ID, UserID: id.UserID, ProviderUserID: providerUserID,
-			ProviderHandle: handle, DMChannelID: result.DMChannelID, ResolvedBy: "email", Verified: true,
-		})
-	} else if linked && dmChannel == "" && result.DMChannelID != "" {
-		if ident, iErr := s.identities.GetForUser(ctx, conn.ID, id.UserID); iErr == nil {
-			_ = s.identities.SetDMChannel(ctx, ident.ID, result.DMChannelID)
-		}
+	if result.Result.Delivered {
+		result.Result.Detail = "Posted a test message to " + channel + "."
 	}
 	return result, nil
 }

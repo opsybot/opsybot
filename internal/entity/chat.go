@@ -175,6 +175,8 @@ var DiscordIdentityScopes = []string{"identify"}
 
 const DiscordBotPermissions = "68624"
 
+const DefaultAnnounceChannel = "#incidents"
+
 type AlertAction struct {
 	Token  string
 	Action ActionKind

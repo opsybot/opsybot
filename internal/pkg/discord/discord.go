@@ -199,6 +199,18 @@ func (c Client) SearchMembers(ctx context.Context, token, guildID, query string)
 	return members, err
 }
 
+type GuildChannel struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Type int    `json:"type"`
+}
+
+func (c Client) GuildChannels(ctx context.Context, token, guildID string) ([]GuildChannel, error) {
+	var channels []GuildChannel
+	_, err := c.do(ctx, token, http.MethodGet, "/guilds/"+guildID+"/channels", nil, &channels)
+	return channels, err
+}
+
 type channel struct {
 	ID string `json:"id"`
 }

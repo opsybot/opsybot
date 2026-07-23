@@ -10,7 +10,7 @@ import (
 
 type ChatCourier interface {
 	Send(ctx context.Context, in entity.ChatDelivery) (entity.ChatSendResult, error)
-	SendDirect(ctx context.Context, provider entity.ChatProvider, token, providerUserID, dmChannelID, text string) (entity.ChatSendResult, error)
+	SendToChannel(ctx context.Context, provider entity.ChatProvider, token, guildID, channel, text string) (entity.ChatSendResult, error)
 	Validate(ctx context.Context, provider entity.ChatProvider, token, externalID string) (entity.ChatValidation, error)
 	LookupUser(ctx context.Context, provider entity.ChatProvider, token, externalID, email string) (entity.ChatUser, error)
 	AuthorizeURL(ctx context.Context, provider entity.ChatProvider, scopes []string, redirectURI, state string) (string, error)
