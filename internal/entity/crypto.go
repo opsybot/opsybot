@@ -54,6 +54,14 @@ func HashToken(token string) string {
 	return hex.EncodeToString(sum[:])
 }
 
+func GenerateNumericCode() (string, error) {
+	n, err := rand.Int(rand.Reader, big.NewInt(ChannelVerifyCodeMax))
+	if err != nil {
+		return "", fmt.Errorf("random code: %w", err)
+	}
+	return fmt.Sprintf("%06d", n.Int64()), nil
+}
+
 func SignBody(secret string, body []byte) string {
 	mac := hmac.New(sha256.New, []byte(secret))
 	mac.Write(body)

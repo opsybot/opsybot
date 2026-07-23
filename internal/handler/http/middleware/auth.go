@@ -39,6 +39,7 @@ func isPublic(r *http.Request) bool {
 	}
 	return strings.HasPrefix(r.URL.Path, "/v1/auth/sso/") ||
 		strings.HasPrefix(r.URL.Path, "/v1/ingest/") ||
+		strings.HasPrefix(r.URL.Path, "/v1/channels/verify/") ||
 		(r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/v1/oncall/feed/"))
 }
 

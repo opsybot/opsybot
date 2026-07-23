@@ -24,13 +24,15 @@ import (
 
 // UserChannel is an object representing the database table.
 type UserChannel struct {
-	ID         string    `boil:"id" json:"id" toml:"id" yaml:"id"`
-	UserID     string    `boil:"user_id" json:"user_id" toml:"user_id" yaml:"user_id"`
-	Type       string    `boil:"type" json:"type" toml:"type" yaml:"type"`
-	Detail     string    `boil:"detail" json:"detail" toml:"detail" yaml:"detail"`
-	VerifiedAt null.Time `boil:"verified_at" json:"verified_at,omitempty" toml:"verified_at" yaml:"verified_at,omitempty"`
-	CreatedAt  time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
-	UpdatedAt  time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
+	ID         string     `boil:"id" json:"id" toml:"id" yaml:"id"`
+	UserID     string     `boil:"user_id" json:"user_id" toml:"user_id" yaml:"user_id"`
+	Type       string     `boil:"type" json:"type" toml:"type" yaml:"type"`
+	Detail     string     `boil:"detail" json:"detail" toml:"detail" yaml:"detail"`
+	VerifiedAt null.Time  `boil:"verified_at" json:"verified_at,omitempty" toml:"verified_at" yaml:"verified_at,omitempty"`
+	CreatedAt  time.Time  `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	UpdatedAt  time.Time  `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
+	SecretEnc  null.Bytes `boil:"secret_enc" json:"secret_enc,omitempty" toml:"secret_enc" yaml:"secret_enc,omitempty"`
+	Label      string     `boil:"label" json:"label" toml:"label" yaml:"label"`
 
 	R *userChannelR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L userChannelL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -44,6 +46,8 @@ var UserChannelColumns = struct {
 	VerifiedAt string
 	CreatedAt  string
 	UpdatedAt  string
+	SecretEnc  string
+	Label      string
 }{
 	ID:         "id",
 	UserID:     "user_id",
@@ -52,6 +56,8 @@ var UserChannelColumns = struct {
 	VerifiedAt: "verified_at",
 	CreatedAt:  "created_at",
 	UpdatedAt:  "updated_at",
+	SecretEnc:  "secret_enc",
+	Label:      "label",
 }
 
 var UserChannelTableColumns = struct {
@@ -62,6 +68,8 @@ var UserChannelTableColumns = struct {
 	VerifiedAt string
 	CreatedAt  string
 	UpdatedAt  string
+	SecretEnc  string
+	Label      string
 }{
 	ID:         "user_channels.id",
 	UserID:     "user_channels.user_id",
@@ -70,6 +78,8 @@ var UserChannelTableColumns = struct {
 	VerifiedAt: "user_channels.verified_at",
 	CreatedAt:  "user_channels.created_at",
 	UpdatedAt:  "user_channels.updated_at",
+	SecretEnc:  "user_channels.secret_enc",
+	Label:      "user_channels.label",
 }
 
 // Generated where
@@ -82,6 +92,8 @@ var UserChannelWhere = struct {
 	VerifiedAt whereHelpernull_Time
 	CreatedAt  whereHelpertime_Time
 	UpdatedAt  whereHelpertime_Time
+	SecretEnc  whereHelpernull_Bytes
+	Label      whereHelperstring
 }{
 	ID:         whereHelperstring{field: "\"user_channels\".\"id\""},
 	UserID:     whereHelperstring{field: "\"user_channels\".\"user_id\""},
@@ -90,20 +102,25 @@ var UserChannelWhere = struct {
 	VerifiedAt: whereHelpernull_Time{field: "\"user_channels\".\"verified_at\""},
 	CreatedAt:  whereHelpertime_Time{field: "\"user_channels\".\"created_at\""},
 	UpdatedAt:  whereHelpertime_Time{field: "\"user_channels\".\"updated_at\""},
+	SecretEnc:  whereHelpernull_Bytes{field: "\"user_channels\".\"secret_enc\""},
+	Label:      whereHelperstring{field: "\"user_channels\".\"label\""},
 }
 
 // UserChannelRels is where relationship names are stored.
 var UserChannelRels = struct {
 	User                        string
+	ChannelChannelVerifications string
 	ChannelNotificationAttempts string
 }{
 	User:                        "User",
+	ChannelChannelVerifications: "ChannelChannelVerifications",
 	ChannelNotificationAttempts: "ChannelNotificationAttempts",
 }
 
 // userChannelR is where relationships are stored.
 type userChannelR struct {
 	User                        *User                    `boil:"User" json:"User" toml:"User" yaml:"User"`
+	ChannelChannelVerifications ChannelVerificationSlice `boil:"ChannelChannelVerifications" json:"ChannelChannelVerifications" toml:"ChannelChannelVerifications" yaml:"ChannelChannelVerifications"`
 	ChannelNotificationAttempts NotificationAttemptSlice `boil:"ChannelNotificationAttempts" json:"ChannelNotificationAttempts" toml:"ChannelNotificationAttempts" yaml:"ChannelNotificationAttempts"`
 }
 
@@ -128,6 +145,22 @@ func (r *userChannelR) GetUser() *User {
 	return r.User
 }
 
+func (o *UserChannel) GetChannelChannelVerifications() ChannelVerificationSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetChannelChannelVerifications()
+}
+
+func (r *userChannelR) GetChannelChannelVerifications() ChannelVerificationSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.ChannelChannelVerifications
+}
+
 func (o *UserChannel) GetChannelNotificationAttempts() NotificationAttemptSlice {
 	if o == nil {
 		return nil
@@ -148,9 +181,9 @@ func (r *userChannelR) GetChannelNotificationAttempts() NotificationAttemptSlice
 type userChannelL struct{}
 
 var (
-	userChannelAllColumns            = []string{"id", "user_id", "type", "detail", "verified_at", "created_at", "updated_at"}
+	userChannelAllColumns            = []string{"id", "user_id", "type", "detail", "verified_at", "created_at", "updated_at", "secret_enc", "label"}
 	userChannelColumnsWithoutDefault = []string{"user_id", "type", "detail"}
-	userChannelColumnsWithDefault    = []string{"id", "verified_at", "created_at", "updated_at"}
+	userChannelColumnsWithDefault    = []string{"id", "verified_at", "created_at", "updated_at", "secret_enc", "label"}
 	userChannelPrimaryKeyColumns     = []string{"id"}
 	userChannelGeneratedColumns      = []string{}
 )
@@ -471,6 +504,20 @@ func (o *UserChannel) User(mods ...qm.QueryMod) userQuery {
 	return Users(queryMods...)
 }
 
+// ChannelChannelVerifications retrieves all the channel_verification's ChannelVerifications with an executor via channel_id column.
+func (o *UserChannel) ChannelChannelVerifications(mods ...qm.QueryMod) channelVerificationQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"channel_verifications\".\"channel_id\"=?", o.ID),
+	)
+
+	return ChannelVerifications(queryMods...)
+}
+
 // ChannelNotificationAttempts retrieves all the notification_attempt's NotificationAttempts with an executor via channel_id column.
 func (o *UserChannel) ChannelNotificationAttempts(mods ...qm.QueryMod) notificationAttemptQuery {
 	var queryMods []qm.QueryMod
@@ -597,6 +644,119 @@ func (userChannelL) LoadUser(ctx context.Context, e boil.ContextExecutor, singul
 					foreign.R = &userR{}
 				}
 				foreign.R.UserChannels = append(foreign.R.UserChannels, local)
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadChannelChannelVerifications allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (userChannelL) LoadChannelChannelVerifications(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUserChannel any, mods queries.Applicator) error {
+	var slice []*UserChannel
+	var object *UserChannel
+
+	if singular {
+		var ok bool
+		object, ok = maybeUserChannel.(*UserChannel)
+		if !ok {
+			object = new(UserChannel)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeUserChannel)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeUserChannel))
+			}
+		}
+	} else {
+		s, ok := maybeUserChannel.(*[]*UserChannel)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeUserChannel)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeUserChannel))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &userChannelR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userChannelR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`channel_verifications`),
+		qm.WhereIn(`channel_verifications.channel_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load channel_verifications")
+	}
+
+	var resultSlice []*ChannelVerification
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice channel_verifications")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on channel_verifications")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for channel_verifications")
+	}
+
+	if len(channelVerificationAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.ChannelChannelVerifications = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &channelVerificationR{}
+			}
+			foreign.R.Channel = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.ChannelID {
+				local.R.ChannelChannelVerifications = append(local.R.ChannelChannelVerifications, foreign)
+				if foreign.R == nil {
+					foreign.R = &channelVerificationR{}
+				}
+				foreign.R.Channel = local
 				break
 			}
 		}
@@ -762,6 +922,59 @@ func (o *UserChannel) SetUser(ctx context.Context, exec boil.ContextExecutor, in
 		related.R.UserChannels = append(related.R.UserChannels, o)
 	}
 
+	return nil
+}
+
+// AddChannelChannelVerifications adds the given related objects to the existing relationships
+// of the user_channel, optionally inserting them as new records.
+// Appends related to o.R.ChannelChannelVerifications.
+// Sets related.R.Channel appropriately.
+func (o *UserChannel) AddChannelChannelVerifications(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*ChannelVerification) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.ChannelID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"channel_verifications\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"channel_id"}),
+				strmangle.WhereClause("\"", "\"", 2, channelVerificationPrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.ChannelID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &userChannelR{
+			ChannelChannelVerifications: related,
+		}
+	} else {
+		o.R.ChannelChannelVerifications = append(o.R.ChannelChannelVerifications, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &channelVerificationR{
+				Channel: o,
+			}
+		} else {
+			rel.R.Channel = o
+		}
+	}
 	return nil
 }
 

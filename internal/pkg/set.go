@@ -7,6 +7,7 @@ import (
 	"github.com/opsybot/opsybot/internal/pkg/cron"
 	"github.com/opsybot/opsybot/internal/pkg/logger"
 	"github.com/opsybot/opsybot/internal/pkg/mailer"
+	"github.com/opsybot/opsybot/internal/pkg/ntfy"
 	"github.com/opsybot/opsybot/internal/pkg/otel"
 	"github.com/opsybot/opsybot/internal/pkg/postgres"
 	"github.com/opsybot/opsybot/internal/pkg/secretbox"
@@ -24,4 +25,5 @@ var Set = wire.NewSet(
 	mailer.New,
 	secretbox.New,
 	webhook.New,
+	ntfy.New,
 )

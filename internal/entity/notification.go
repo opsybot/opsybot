@@ -144,6 +144,17 @@ type NotifyTarget struct {
 	Channel   ChannelType
 	ChannelID string
 	Detail    string
+	Secret    string
+}
+
+type NtfyMessage struct {
+	Server   string
+	Topic    string
+	Token    string
+	Title    string
+	Body     string
+	Priority int
+	Click    string
 }
 
 var (

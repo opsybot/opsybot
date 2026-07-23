@@ -55,3 +55,18 @@ func (mr *MockPagerMockRecorder) Deliver(ctx, hook, payload any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Deliver", reflect.TypeOf((*MockPager)(nil).Deliver), ctx, hook, payload)
 }
+
+// DeliverTo mocks base method.
+func (m *MockPager) DeliverTo(ctx context.Context, url, secret string, payload []byte) (entity.NotifyResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeliverTo", ctx, url, secret, payload)
+	ret0, _ := ret[0].(entity.NotifyResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeliverTo indicates an expected call of DeliverTo.
+func (mr *MockPagerMockRecorder) DeliverTo(ctx, url, secret, payload any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeliverTo", reflect.TypeOf((*MockPager)(nil).DeliverTo), ctx, url, secret, payload)
+}

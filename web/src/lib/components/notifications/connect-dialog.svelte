@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { onDestroy, untrack } from 'svelte';
-	import ArrowUpRightIcon from '@lucide/svelte/icons/arrow-up-right';
+	import { untrack } from 'svelte';
 	import CircleCheckIcon from '@lucide/svelte/icons/circle-check';
+	import { toast } from 'svelte-sonner';
 	import { enhance } from '$app/forms';
 	import * as Alert from '$lib/components/ui/alert';
 	import { Button } from '$lib/components/ui/button';
@@ -14,65 +14,39 @@
 	let { type, onclose }: { type: ChannelType | null; onclose: () => void } = $props();
 
 	let current = $state<ChannelType | null>(null);
-	let step = $state<'form' | 'waiting' | 'done'>('form');
-	const open = $derived(!!type);
-
-	let timer: ReturnType<typeof setTimeout> | undefined;
+	let step = $state<'form' | 'code' | 'done'>('form');
+	let channelId = $state('');
+	let hint = $state('');
+	let ntfyServer = $state('https://ntfy.sh');
+	let ntfyTopic = $state('');
+	let detail = $state('');
+	let secret = $state('');
 	let connectForm: HTMLFormElement;
+
+	const open = $derived(!!type);
+	const meta = $derived(current ? channelMeta(current) : null);
+	const Icon = $derived(meta ? CHANNEL_ICONS[meta.icon] : null);
+	const selfServe = $derived(current === 'email' || current === 'ntfy' || current === 'webhook');
+	const composedDetail = $derived(
+		current === 'ntfy' ? `${ntfyServer.replace(/\/+$/, '')}/${ntfyTopic.trim()}` : detail.trim()
+	);
 
 	$effect(() => {
 		const next = type;
 		untrack(() => {
-			clearTimeout(timer);
 			if (next) {
 				current = next;
 				step = 'form';
+				channelId = '';
+				hint = '';
+				detail = '';
+				secret = '';
+				ntfyServer = 'https://ntfy.sh';
+				ntfyTopic = '';
 			}
 		});
 	});
-
-	const meta = $derived(current ? channelMeta(current) : null);
-	const Icon = $derived(meta ? CHANNEL_ICONS[meta.icon] : null);
-	const waiting = $derived(
-		meta?.connect === 'oauth'
-			? 'Waiting for authorization…'
-			: meta?.connect === 'telegram'
-				? 'Waiting for the code…'
-				: meta?.connect === 'ntfy'
-					? 'Sending a test push…'
-					: meta?.connect === 'email'
-						? 'Waiting for you to click the link…'
-						: 'POSTing a test event…'
-	);
-
-	function submit() {
-		step = 'waiting';
-		clearTimeout(timer);
-		timer = setTimeout(() => {
-			step = 'done';
-			connectForm.requestSubmit();
-		}, 1800);
-	}
-
-	onDestroy(() => clearTimeout(timer));
 </script>
-
-{#snippet actionRow(label: string, icon = false)}
-	{#if step === 'waiting'}
-		<div class="text-muted-foreground flex items-center gap-2.5">
-			<span
-				class="border-border border-t-primary size-4 shrink-0 animate-spin rounded-full border-2 [animation-duration:0.8s] motion-reduce:animate-none"
-				aria-hidden="true"
-			></span>
-			<span class="text-[13px]">{waiting}</span>
-		</div>
-	{:else}
-		<Button class="self-start" onclick={submit}>
-			{#if icon}<ArrowUpRightIcon data-icon="inline-start" />{/if}
-			{label}
-		</Button>
-	{/if}
-{/snippet}
 
 <Dialog.Root {open} onOpenChange={(value) => (value ? undefined : onclose())}>
 	<Dialog.Content class="sm:max-w-[460px]">
@@ -94,105 +68,124 @@
 						<Alert.Root tone="success">
 							<CircleCheckIcon />
 							<Alert.Content>
-								<Alert.Title>Channel verified</Alert.Title>
+								<Alert.Title>Channel connected</Alert.Title>
 								<Dialog.Description class="text-muted-foreground text-sm">
-									A test message was delivered. This channel is ready for your notification rules.
+									This channel is ready for your notification rules.
 								</Dialog.Description>
 							</Alert.Content>
 						</Alert.Root>
-					{:else if meta.connect === 'oauth'}
+					{:else if step === 'code'}
 						<Dialog.Description class="text-muted-foreground text-[13px] leading-[1.6]">
-							You'll be sent to {meta.label} to authorize Opsybot. It only gets permission to DM you, nothing
-							else.
+							{hint || 'Enter the code we just sent to confirm you own this channel.'}
 						</Dialog.Description>
-						{@render actionRow(`Continue to ${meta.label}`, true)}
-					{:else if meta.connect === 'telegram'}
-						<Dialog.Description class="text-muted-foreground text-[13px] leading-[1.6]">
-							Two quick steps to link Telegram:
-						</Dialog.Description>
-						<ol class="text-muted-foreground m-0 list-decimal pl-[18px] text-[13px] leading-[1.8]">
-							<li>
-								Open
-								<a href="https://t.me/opsybot_bot" target="_blank" rel="noopener noreferrer">t.me/opsybot_bot</a>
-								and press <strong class="text-foreground font-semibold">Start</strong>.
-							</li>
-							<li>Send the bot this code:</li>
-						</ol>
-						<code
-							class="bg-inset text-foreground self-start rounded-md border px-3.5 py-[9px] font-mono text-[16px] tracking-[0.15em]"
-							>824 913</code
+						<form
+							method="POST"
+							action="?/verify"
+							use:enhance={() =>
+								async ({ result, update }) => {
+									if (result.type === 'failure') {
+										toast.error(String(result.data?.error ?? 'That code did not work.'));
+										return;
+									}
+									if (result.type === 'success') {
+										step = 'done';
+										await update({ reset: false });
+									}
+								}}
 						>
-						{@render actionRow('I sent the code')}
-					{:else if meta.connect === 'ntfy'}
+							<input type="hidden" name="id" value={channelId} />
+							<Field.Field class="gap-1.5 space-y-0">
+								<Field.FieldLabel for="verify-code" class="text-muted-foreground text-[13px] font-medium">
+									Confirmation code
+								</Field.FieldLabel>
+								<Input id="verify-code" name="code" class="font-mono tracking-[0.15em]" placeholder="000000" inputmode="numeric" />
+							</Field.Field>
+							<Button type="submit" class="mt-3 self-start">Confirm channel</Button>
+						</form>
+					{:else if !selfServe}
 						<Dialog.Description class="text-muted-foreground text-[13px] leading-[1.6]">
-							Get a push on any ntfy topic you choose.
+							{meta.label} connects through your workspace's chat integration. Set it up on the Chat
+							connections page once it is available, then it appears here.
 						</Dialog.Description>
-						<Field.Field class="gap-1.5 space-y-0">
-							<Field.FieldLabel for="ntfy-server" class="text-muted-foreground text-[13px] font-medium">
-								Server URL
-							</Field.FieldLabel>
-							<Input id="ntfy-server" value="https://ntfy.sh" />
-							<Field.FieldDescription class="text-subtle-foreground text-xs">
-								Self-hosted servers work too.
-							</Field.FieldDescription>
-						</Field.Field>
-						<Field.Field class="gap-1.5 space-y-0">
-							<Field.FieldLabel for="ntfy-topic" class="text-muted-foreground text-[13px] font-medium">
-								Topic
-							</Field.FieldLabel>
-							<Input id="ntfy-topic" class="font-mono" placeholder="maya-pages-x7k2" />
-							<Field.FieldDescription class="text-subtle-foreground text-xs">
-								Pick something unguessable. Anyone who knows the topic can read it.
-							</Field.FieldDescription>
-						</Field.Field>
-						{@render actionRow('Connect and send test')}
-					{:else if meta.connect === 'email'}
-						<Dialog.Description class="text-muted-foreground text-[13px] leading-[1.6]">
-							Verify the address Opsybot should email.
-						</Dialog.Description>
-						<Field.Field class="gap-1.5 space-y-0">
-							<Field.FieldLabel for="email-addr" class="text-muted-foreground text-[13px] font-medium">
-								Email address
-							</Field.FieldLabel>
-							<Input id="email-addr" type="email" value="maya@acme.dev" />
-						</Field.Field>
-						{@render actionRow('Send verification link')}
 					{:else}
-						<Dialog.Description class="text-muted-foreground text-[13px] leading-[1.6]">
-							Opsybot will POST each notification to your endpoint.
-						</Dialog.Description>
-						<Field.Field class="gap-1.5 space-y-0">
-							<Field.FieldLabel for="hook-url" class="text-muted-foreground text-[13px] font-medium">
-								Endpoint URL
-							</Field.FieldLabel>
-							<Input id="hook-url" class="font-mono" placeholder="https://hooks.example.dev/page" />
-						</Field.Field>
-						<Field.Field class="gap-1.5 space-y-0">
-							<Field.FieldLabel for="hook-secret" class="text-muted-foreground text-[13px] font-medium">
-								Secret (optional)
-							</Field.FieldLabel>
-							<Input id="hook-secret" class="font-mono" placeholder="Used to sign the payload" />
-						</Field.Field>
-						{@render actionRow('Connect and send test')}
+						<form
+							bind:this={connectForm}
+							method="POST"
+							action="?/connect"
+							use:enhance={() =>
+								async ({ result, update }) => {
+									if (result.type === 'failure') {
+										toast.error(String(result.data?.error ?? 'Could not connect that channel.'));
+										return;
+									}
+									if (result.type === 'success') {
+										channelId = String(result.data?.channelId ?? '');
+										hint = String(result.data?.detail ?? '');
+										await update({ reset: false });
+										step = current === 'webhook' ? 'done' : 'code';
+									}
+								}}
+						>
+							<input type="hidden" name="type" value={current} />
+							<input type="hidden" name="detail" value={composedDetail} />
+							{#if current === 'ntfy'}
+								<Dialog.Description class="text-muted-foreground mb-3.5 text-[13px] leading-[1.6]">
+									Get a push on any ntfy topic you choose.
+								</Dialog.Description>
+								<Field.Field class="gap-1.5 space-y-0">
+									<Field.FieldLabel for="ntfy-server" class="text-muted-foreground text-[13px] font-medium">
+										Server URL
+									</Field.FieldLabel>
+									<Input id="ntfy-server" bind:value={ntfyServer} />
+								</Field.Field>
+								<Field.Field class="mt-3 gap-1.5 space-y-0">
+									<Field.FieldLabel for="ntfy-topic" class="text-muted-foreground text-[13px] font-medium">
+										Topic
+									</Field.FieldLabel>
+									<Input id="ntfy-topic" class="font-mono" placeholder="my-pages-x7k2" bind:value={ntfyTopic} />
+									<Field.FieldDescription class="text-subtle-foreground text-xs">
+										Pick something unguessable. Anyone who knows the topic can read it.
+									</Field.FieldDescription>
+								</Field.Field>
+								<Input name="secret" type="hidden" bind:value={secret} />
+							{:else if current === 'email'}
+								<Dialog.Description class="text-muted-foreground mb-3.5 text-[13px] leading-[1.6]">
+									Verify the address Opsybot should email.
+								</Dialog.Description>
+								<Field.Field class="gap-1.5 space-y-0">
+									<Field.FieldLabel for="email-addr" class="text-muted-foreground text-[13px] font-medium">
+										Email address
+									</Field.FieldLabel>
+									<Input id="email-addr" type="email" placeholder="you@company.com" bind:value={detail} />
+								</Field.Field>
+							{:else}
+								<Dialog.Description class="text-muted-foreground mb-3.5 text-[13px] leading-[1.6]">
+									Opsybot will POST each notification to your endpoint.
+								</Dialog.Description>
+								<Field.Field class="gap-1.5 space-y-0">
+									<Field.FieldLabel for="hook-url" class="text-muted-foreground text-[13px] font-medium">
+										Endpoint URL
+									</Field.FieldLabel>
+									<Input id="hook-url" class="font-mono" placeholder="https://hooks.example.com/page" bind:value={detail} />
+								</Field.Field>
+								<Field.Field class="mt-3 gap-1.5 space-y-0">
+									<Field.FieldLabel for="hook-secret" class="text-muted-foreground text-[13px] font-medium">
+										Signing secret (optional)
+									</Field.FieldLabel>
+									<Input id="hook-secret" name="secret" class="font-mono" placeholder="Signs the payload" bind:value={secret} />
+								</Field.Field>
+							{/if}
+							<Button type="submit" class="mt-4 self-start">
+								{current === 'webhook' ? 'Connect and send challenge' : 'Connect and verify'}
+							</Button>
+						</form>
 					{/if}
 				</div>
 			</div>
 
 			<div class="flex justify-end gap-2 border-t bg-black/20 px-6 py-4">
-				<Button variant="ghost" onclick={onclose}>Close</Button>
+				<Button variant="ghost" onclick={onclose}>{step === 'done' ? 'Done' : 'Close'}</Button>
 			</div>
 		{/if}
 	</Dialog.Content>
 </Dialog.Root>
-
-<form
-	bind:this={connectForm}
-	method="POST"
-	action="?/connect"
-	class="hidden"
-	use:enhance={() => async ({ result, update }) => {
-		if (result.type === 'success') await update({ reset: false });
-	}}
->
-	<input type="hidden" name="type" value={current ?? ''} />
-</form>

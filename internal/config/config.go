@@ -22,11 +22,46 @@ type Config struct {
 	Ingest          Ingest        `mapstructure:"ingest"`
 	Cron            Cron          `mapstructure:"cron"`
 	Webhook         Webhook       `mapstructure:"webhook"`
+	Ntfy            Ntfy          `mapstructure:"ntfy"`
+	Slack           Slack         `mapstructure:"slack"`
+	Discord         Discord       `mapstructure:"discord"`
+	Chat            Chat          `mapstructure:"chat"`
 }
 
 type Webhook struct {
 	Timeout   time.Duration `mapstructure:"timeout"`
 	UserAgent string        `mapstructure:"user_agent"`
+}
+
+type Ntfy struct {
+	DefaultServer string        `mapstructure:"default_server"`
+	Timeout       time.Duration `mapstructure:"timeout"`
+	UserAgent     string        `mapstructure:"user_agent"`
+}
+
+type Slack struct {
+	ClientID      string        `mapstructure:"client_id"`
+	ClientSecret  string        `mapstructure:"client_secret"`
+	SigningSecret string        `mapstructure:"signing_secret"`
+	BaseURL       string        `mapstructure:"base_url"`
+	Timeout       time.Duration `mapstructure:"timeout"`
+	UserAgent     string        `mapstructure:"user_agent"`
+}
+
+type Discord struct {
+	ApplicationID string        `mapstructure:"application_id"`
+	ClientID      string        `mapstructure:"client_id"`
+	ClientSecret  string        `mapstructure:"client_secret"`
+	PublicKey     string        `mapstructure:"public_key"`
+	BotToken      string        `mapstructure:"bot_token"`
+	BaseURL       string        `mapstructure:"base_url"`
+	Timeout       time.Duration `mapstructure:"timeout"`
+	UserAgent     string        `mapstructure:"user_agent"`
+}
+
+type Chat struct {
+	InteractionSkew time.Duration `mapstructure:"interaction_skew"`
+	ActionTokenTTL  time.Duration `mapstructure:"action_token_ttl"`
 }
 
 type Cron struct {
@@ -168,6 +203,10 @@ func NewWebhook(cfg Config) Webhook {
 	return cfg.Webhook
 }
 
+func NewNtfy(cfg Config) Ntfy {
+	return cfg.Ntfy
+}
+
 func NewMailer(cfg Config) Mailer {
 	return cfg.Mailer
 }
@@ -258,6 +297,9 @@ func New(cfgFile string) (Config, error) {
 	v.SetDefault("cron.notification_sweep", "5s")
 	v.SetDefault("webhook.timeout", "10s")
 	v.SetDefault("webhook.user_agent", "opsybot")
+	v.SetDefault("ntfy.default_server", "https://ntfy.sh")
+	v.SetDefault("ntfy.timeout", "10s")
+	v.SetDefault("ntfy.user_agent", "opsybot")
 	v.SetDefault("mailer.host", "")
 	v.SetDefault("mailer.port", 587)
 	v.SetDefault("mailer.username", "")

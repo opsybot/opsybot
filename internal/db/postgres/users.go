@@ -165,6 +165,7 @@ var UserRels = struct {
 	CreatedByAPIKeys               string
 	OwnerUserAPIKeys               string
 	ActorUserAuditEvents           string
+	ChannelVerifications           string
 	InvitedByInvites               string
 	Invites                        string
 	NotificationAttempts           string
@@ -184,6 +185,7 @@ var UserRels = struct {
 	CreatedByAPIKeys:               "CreatedByAPIKeys",
 	OwnerUserAPIKeys:               "OwnerUserAPIKeys",
 	ActorUserAuditEvents:           "ActorUserAuditEvents",
+	ChannelVerifications:           "ChannelVerifications",
 	InvitedByInvites:               "InvitedByInvites",
 	Invites:                        "Invites",
 	NotificationAttempts:           "NotificationAttempts",
@@ -206,6 +208,7 @@ type userR struct {
 	CreatedByAPIKeys               APIKeySlice               `boil:"CreatedByAPIKeys" json:"CreatedByAPIKeys" toml:"CreatedByAPIKeys" yaml:"CreatedByAPIKeys"`
 	OwnerUserAPIKeys               APIKeySlice               `boil:"OwnerUserAPIKeys" json:"OwnerUserAPIKeys" toml:"OwnerUserAPIKeys" yaml:"OwnerUserAPIKeys"`
 	ActorUserAuditEvents           AuditEventSlice           `boil:"ActorUserAuditEvents" json:"ActorUserAuditEvents" toml:"ActorUserAuditEvents" yaml:"ActorUserAuditEvents"`
+	ChannelVerifications           ChannelVerificationSlice  `boil:"ChannelVerifications" json:"ChannelVerifications" toml:"ChannelVerifications" yaml:"ChannelVerifications"`
 	InvitedByInvites               InviteSlice               `boil:"InvitedByInvites" json:"InvitedByInvites" toml:"InvitedByInvites" yaml:"InvitedByInvites"`
 	Invites                        InviteSlice               `boil:"Invites" json:"Invites" toml:"Invites" yaml:"Invites"`
 	NotificationAttempts           NotificationAttemptSlice  `boil:"NotificationAttempts" json:"NotificationAttempts" toml:"NotificationAttempts" yaml:"NotificationAttempts"`
@@ -304,6 +307,22 @@ func (r *userR) GetActorUserAuditEvents() AuditEventSlice {
 	}
 
 	return r.ActorUserAuditEvents
+}
+
+func (o *User) GetChannelVerifications() ChannelVerificationSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetChannelVerifications()
+}
+
+func (r *userR) GetChannelVerifications() ChannelVerificationSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.ChannelVerifications
 }
 
 func (o *User) GetInvitedByInvites() InviteSlice {
@@ -898,6 +917,20 @@ func (o *User) ActorUserAuditEvents(mods ...qm.QueryMod) auditEventQuery {
 	)
 
 	return AuditEvents(queryMods...)
+}
+
+// ChannelVerifications retrieves all the channel_verification's ChannelVerifications with an executor.
+func (o *User) ChannelVerifications(mods ...qm.QueryMod) channelVerificationQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"channel_verifications\".\"user_id\"=?", o.ID),
+	)
+
+	return ChannelVerifications(queryMods...)
 }
 
 // InvitedByInvites retrieves all the invite's Invites with an executor via invited_by column.
@@ -1639,6 +1672,119 @@ func (userL) LoadActorUserAuditEvents(ctx context.Context, e boil.ContextExecuto
 					foreign.R = &auditEventR{}
 				}
 				foreign.R.ActorUser = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadChannelVerifications allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (userL) LoadChannelVerifications(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser any, mods queries.Applicator) error {
+	var slice []*User
+	var object *User
+
+	if singular {
+		var ok bool
+		object, ok = maybeUser.(*User)
+		if !ok {
+			object = new(User)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeUser))
+			}
+		}
+	} else {
+		s, ok := maybeUser.(*[]*User)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeUser))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &userR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`channel_verifications`),
+		qm.WhereIn(`channel_verifications.user_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load channel_verifications")
+	}
+
+	var resultSlice []*ChannelVerification
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice channel_verifications")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on channel_verifications")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for channel_verifications")
+	}
+
+	if len(channelVerificationAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.ChannelVerifications = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &channelVerificationR{}
+			}
+			foreign.R.User = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.UserID {
+				local.R.ChannelVerifications = append(local.R.ChannelVerifications, foreign)
+				if foreign.R == nil {
+					foreign.R = &channelVerificationR{}
+				}
+				foreign.R.User = local
 				break
 			}
 		}
@@ -3748,6 +3894,59 @@ func (o *User) RemoveActorUserAuditEvents(ctx context.Context, exec boil.Context
 		}
 	}
 
+	return nil
+}
+
+// AddChannelVerifications adds the given related objects to the existing relationships
+// of the user, optionally inserting them as new records.
+// Appends related to o.R.ChannelVerifications.
+// Sets related.R.User appropriately.
+func (o *User) AddChannelVerifications(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*ChannelVerification) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.UserID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"channel_verifications\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"user_id"}),
+				strmangle.WhereClause("\"", "\"", 2, channelVerificationPrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.UserID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &userR{
+			ChannelVerifications: related,
+		}
+	} else {
+		o.R.ChannelVerifications = append(o.R.ChannelVerifications, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &channelVerificationR{
+				User: o,
+			}
+		} else {
+			rel.R.User = o
+		}
+	}
 	return nil
 }
 

@@ -13,6 +13,7 @@ type Channel interface {
 	ListByUser(ctx context.Context, userID string) ([]entity.Channel, error)
 	ListByUsers(ctx context.Context, userIDs []string) (map[string][]entity.Channel, error)
 	Get(ctx context.Context, id, userID string) (entity.Channel, error)
+	Secret(ctx context.Context, id, userID string) (string, error)
 	MarkVerified(ctx context.Context, id, userID string) error
 	Delete(ctx context.Context, id, userID string) error
 }

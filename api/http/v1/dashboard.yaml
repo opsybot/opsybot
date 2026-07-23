@@ -1420,31 +1420,47 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+  /me/channels/{channelId}/verify/start:
+    post:
+      operationId: startChannelVerification
+      summary: Start verifying a channel by sending it a challenge
+      tags: [me]
+      parameters:
+        - { name: channelId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Challenge sent, content: { application/json: { schema: { $ref: "#/components/schemas/ChannelVerification" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
   /me/channels/{channelId}/verify:
     post:
       operationId: verifyChannel
-      summary: Mark a channel verified
+      summary: Confirm a channel with the code from its challenge
       tags: [me]
       parameters:
-        - name: channelId
-          in: path
-          required: true
-          schema:
-            type: string
+        - { name: channelId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ConfirmVerificationRequest" }
       responses:
         "204": { description: Channel verified }
-        "401":
-          description: The request failed
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/Problem"
-        "404":
-          description: The request failed
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /me/channels/{channelId}/test:
+    post:
+      operationId: testChannel
+      summary: Send a test notification to a verified channel
+      tags: [me]
+      parameters:
+        - { name: channelId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Test result, content: { application/json: { schema: { $ref: "#/components/schemas/ChannelDeliveryResult" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "429": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
   /me/channels/{channelId}:
     delete:
       operationId: deleteChannel
@@ -3321,6 +3337,26 @@ components:
       required: [type, detail]
       properties:
         type: { type: string, enum: [slack, teams, discord, telegram, ntfy, email, webhook] }
+        detail: { type: string }
+        label: { type: string }
+        secret: { type: string }
+    ChannelVerification:
+      type: object
+      required: [method, expiresAt]
+      properties:
+        method: { type: string, enum: [email, ntfy, webhook, telegram, chat] }
+        deepLink: { type: string }
+        detail: { type: string }
+        expiresAt: { type: string, format: date-time }
+    ConfirmVerificationRequest:
+      type: object
+      properties:
+        code: { type: string }
+    ChannelDeliveryResult:
+      type: object
+      required: [delivered, detail]
+      properties:
+        delivered: { type: boolean }
         detail: { type: string }
     TwoFactorEnrollment:
       type: object

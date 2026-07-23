@@ -16,4 +16,5 @@ var Set = wire.NewSet(
 	NewIngest,
 	NewCron,
 	NewWebhook,
+	NewNtfy,
 )

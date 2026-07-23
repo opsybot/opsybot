@@ -539,6 +539,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/channels/{channelId}/verify/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start verifying a channel by sending it a challenge */
+        post: operations["startChannelVerification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/channels/{channelId}/verify": {
         parameters: {
             query?: never;
@@ -548,8 +565,25 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Mark a channel verified */
+        /** Confirm a channel with the code from its challenge */
         post: operations["verifyChannel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/channels/{channelId}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a test notification to a verified channel */
+        post: operations["testChannel"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2003,6 +2037,23 @@ export interface components {
         CreateChannelRequest: {
             /** @enum {string} */
             type: "slack" | "teams" | "discord" | "telegram" | "ntfy" | "email" | "webhook";
+            detail: string;
+            label?: string;
+            secret?: string;
+        };
+        ChannelVerification: {
+            /** @enum {string} */
+            method: "email" | "ntfy" | "webhook" | "telegram" | "chat";
+            deepLink?: string;
+            detail?: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        ConfirmVerificationRequest: {
+            code?: string;
+        };
+        ChannelDeliveryResult: {
+            delivered: boolean;
             detail: string;
         };
         TwoFactorEnrollment: {
@@ -4179,7 +4230,7 @@ export interface operations {
             };
         };
     };
-    verifyChannel: {
+    startChannelVerification: {
         parameters: {
             query?: never;
             header?: never;
@@ -4190,12 +4241,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Channel verified */
-            204: {
+            /** @description Challenge sent */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ChannelVerification"];
+                };
             };
             /** @description The request failed */
             401: {
@@ -4208,6 +4261,115 @@ export interface operations {
             };
             /** @description The request failed */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    verifyChannel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                channelId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ConfirmVerificationRequest"];
+            };
+        };
+        responses: {
+            /** @description Channel verified */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The request failed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    testChannel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                channelId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Test result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChannelDeliveryResult"];
+                };
+            };
+            /** @description The request failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The request failed */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

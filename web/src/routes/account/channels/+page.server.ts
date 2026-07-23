@@ -31,11 +31,12 @@ export const actions: Actions = {
 		const data = await request.formData();
 		const id = String(data.get('id') ?? '');
 		if (!id) return fail(400, { error: 'Missing channel.' });
-		const { error, response } = await apiClient(cookies).POST('/me/channels/{channelId}/verify', {
-			params: { path: { channelId: id } }
-		});
-		if (error) return fail(response.status, { error: 'Could not verify that channel.' });
-		return { verified: true };
+		const { error, response } = await apiClient(cookies).POST(
+			'/me/channels/{channelId}/verify/start',
+			{ params: { path: { channelId: id } } }
+		);
+		if (error) return fail(response.status, { error: 'Could not start verification.' });
+		return { started: true };
 	},
 	remove: async ({ request, cookies }) => {
 		const data = await request.formData();

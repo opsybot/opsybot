@@ -25,7 +25,14 @@ func (h *handler) CreateChannel(ctx context.Context, request api.CreateChannelRe
 	if request.Body == nil {
 		return api.CreateChannel400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid request", "The request body was empty.", "")), nil
 	}
-	ch, err := h.channels.Add(ctx, entity.NewChannel{Type: entity.ChannelType(request.Body.Type), Detail: request.Body.Detail})
+	in := entity.NewChannel{Type: entity.ChannelType(request.Body.Type), Detail: request.Body.Detail}
+	if request.Body.Label != nil {
+		in.Label = *request.Body.Label
+	}
+	if request.Body.Secret != nil {
+		in.Secret = *request.Body.Secret
+	}
+	ch, err := h.channels.Add(ctx, in)
 	if err != nil {
 		switch {
 		case isValidation(err):
@@ -39,15 +46,66 @@ func (h *handler) CreateChannel(ctx context.Context, request api.CreateChannelRe
 	return api.CreateChannel201JSONResponse(channelDTO(ch)), nil
 }
 
-func (h *handler) VerifyChannel(ctx context.Context, request api.VerifyChannelRequestObject) (api.VerifyChannelResponseObject, error) {
-	err := h.channels.Verify(ctx, request.ChannelId)
+func (h *handler) StartChannelVerification(ctx context.Context, request api.StartChannelVerificationRequestObject) (api.StartChannelVerificationResponseObject, error) {
+	v, err := h.channels.StartVerification(ctx, request.ChannelId)
 	if err != nil {
-		if errors.Is(err, entity.ErrChannelNotFound) {
-			return api.VerifyChannel404ApplicationProblemPlusJSONResponse(prob(http.StatusNotFound, "Not found", "No such channel.", "")), nil
+		switch {
+		case errors.Is(err, entity.ErrUnauthenticated):
+			return api.StartChannelVerification401ApplicationProblemPlusJSONResponse(prob(http.StatusUnauthorized, "Unauthenticated", "Sign in to continue.", "")), nil
+		case errors.Is(err, entity.ErrChannelNotFound):
+			return api.StartChannelVerification404ApplicationProblemPlusJSONResponse(prob(http.StatusNotFound, "Not found", "No such channel.", "")), nil
+		default:
+			return nil, err
 		}
-		return nil, err
+	}
+	out := api.ChannelVerification{Method: api.ChannelVerificationMethod(v.Method), ExpiresAt: v.ExpiresAt}
+	if v.DeepLink != "" {
+		out.DeepLink = ptr(v.DeepLink)
+	}
+	if v.Detail != "" {
+		out.Detail = ptr(v.Detail)
+	}
+	return api.StartChannelVerification200JSONResponse(out), nil
+}
+
+func (h *handler) VerifyChannel(ctx context.Context, request api.VerifyChannelRequestObject) (api.VerifyChannelResponseObject, error) {
+	code := ""
+	if request.Body != nil && request.Body.Code != nil {
+		code = *request.Body.Code
+	}
+	err := h.channels.CompleteVerification(ctx, request.ChannelId, code)
+	if err != nil {
+		switch {
+		case errors.Is(err, entity.ErrChannelVerifyInvalid), errors.Is(err, entity.ErrChannelVerifyExpired):
+			return api.VerifyChannel400ApplicationProblemPlusJSONResponse(prob(http.StatusBadRequest, "Invalid code", "That code is wrong or expired. Start verification again.", "")), nil
+		case errors.Is(err, entity.ErrUnauthenticated):
+			return api.VerifyChannel401ApplicationProblemPlusJSONResponse(prob(http.StatusUnauthorized, "Unauthenticated", "Sign in to continue.", "")), nil
+		case errors.Is(err, entity.ErrChannelNotFound):
+			return api.VerifyChannel404ApplicationProblemPlusJSONResponse(prob(http.StatusNotFound, "Not found", "No such channel.", "")), nil
+		default:
+			return nil, err
+		}
 	}
 	return api.VerifyChannel204Response{}, nil
+}
+
+func (h *handler) TestChannel(ctx context.Context, request api.TestChannelRequestObject) (api.TestChannelResponseObject, error) {
+	result, err := h.channels.SendTest(ctx, request.ChannelId)
+	if err != nil {
+		switch {
+		case errors.Is(err, entity.ErrUnauthenticated):
+			return api.TestChannel401ApplicationProblemPlusJSONResponse(prob(http.StatusUnauthorized, "Unauthenticated", "Sign in to continue.", "")), nil
+		case errors.Is(err, entity.ErrChannelNotFound):
+			return api.TestChannel404ApplicationProblemPlusJSONResponse(prob(http.StatusNotFound, "Not found", "No such channel.", "")), nil
+		case errors.Is(err, entity.ErrChannelNotVerified):
+			return api.TestChannel409ApplicationProblemPlusJSONResponse(prob(http.StatusConflict, "Not verified", "Verify this channel before sending a test.", "")), nil
+		case errors.Is(err, entity.ErrRateLimited):
+			return api.TestChannel429ApplicationProblemPlusJSONResponse(prob(http.StatusTooManyRequests, "Slow down", "You've sent too many test notifications. Try again later.", "")), nil
+		default:
+			return nil, err
+		}
+	}
+	return api.TestChannel200JSONResponse{Delivered: result.Delivered, Detail: result.Detail}, nil
 }
 
 func (h *handler) DeleteChannel(ctx context.Context, request api.DeleteChannelRequestObject) (api.DeleteChannelResponseObject, error) {

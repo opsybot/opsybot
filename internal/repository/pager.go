@@ -10,4 +10,5 @@ import (
 
 type Pager interface {
 	Deliver(ctx context.Context, hook entity.EscalationWebhook, payload []byte) (entity.NotifyResult, error)
+	DeliverTo(ctx context.Context, url, secret string, payload []byte) (entity.NotifyResult, error)
 }

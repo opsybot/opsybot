@@ -207,7 +207,7 @@ func (s *srv) deliver(ctx context.Context, p *pendingSend, now time.Time) {
 		logger.From(ctx).ErrorContext(ctx, "notification deliver reload failed", "run", p.run.ID, "error", err)
 		return
 	}
-	if current.State != entity.NotifyRunRunning {
+	if current.State == entity.NotifyRunStopped {
 		_ = s.runs.AppendAttempt(ctx, s.attempt(p.run, p.tick, entity.NotifyOutcomeSkipped, entity.NotifyResult{Detail: "already " + string(current.StopReason)}))
 		s.recordEvent(ctx, p, entity.NotifyOutcomeSkipped, entity.NotifyResult{Detail: "already " + string(current.StopReason)})
 		return
@@ -218,7 +218,13 @@ func (s *srv) deliver(ctx context.Context, p *pendingSend, now time.Time) {
 		_, _ = s.runs.Reschedule(ctx, p.run.ID, p.tick.Index+1, now.Add(allowed.RetryAfter))
 		return
 	}
-	result := s.notifier.Send(ctx, p.target, p.page)
+	target := p.target
+	if target.ChannelID != "" && needsSecret(target.Channel) {
+		if secret, serr := s.channels.Secret(ctx, target.ChannelID, p.run.UserID); serr == nil {
+			target.Secret = secret
+		}
+	}
+	result := s.notifier.Send(ctx, target, p.page)
 	outcome := entity.NotifyOutcomeDelivered
 	if !result.Delivered {
 		outcome = entity.NotifyOutcomeFailed
@@ -286,6 +292,10 @@ func deliveryLabel(channel entity.ChannelType, name string) string {
 	default:
 		return "Paged " + name
 	}
+}
+
+func needsSecret(channel entity.ChannelType) bool {
+	return channel == entity.ChannelTypeWebhook || channel == entity.ChannelTypeNtfy
 }
 
 func deliveredAny(ctx context.Context, runs repository.NotificationRun, run entity.NotificationRun) bool {

@@ -11,6 +11,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/api_key"
 	"github.com/opsybot/opsybot/internal/repository/audit"
 	"github.com/opsybot/opsybot/internal/repository/channel"
+	"github.com/opsybot/opsybot/internal/repository/channel_verification"
 	"github.com/opsybot/opsybot/internal/repository/escalation_policy"
 	"github.com/opsybot/opsybot/internal/repository/escalation_run"
 	"github.com/opsybot/opsybot/internal/repository/ingest_event"
@@ -20,6 +21,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/member"
 	"github.com/opsybot/opsybot/internal/repository/notification_rule"
 	"github.com/opsybot/opsybot/internal/repository/notification_run"
+	"github.com/opsybot/opsybot/internal/repository/ntfy"
 	"github.com/opsybot/opsybot/internal/repository/pager"
 	"github.com/opsybot/opsybot/internal/repository/password_reset"
 	"github.com/opsybot/opsybot/internal/repository/pending"
@@ -93,7 +95,9 @@ var repositoryProviders = wire.NewSet(
 	escalation_run.New,
 	notification_rule.New,
 	notification_run.New,
+	channel_verification.New,
 	pager.New,
+	ntfy.New,
 )
 
 var serviceProviders = wire.NewSet(

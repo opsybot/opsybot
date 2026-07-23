@@ -21,6 +21,7 @@ var TableNames = struct {
 	Alerts                    string
 	APIKeys                   string
 	AuditEvents               string
+	ChannelVerifications      string
 	EscalationPolicies        string
 	EscalationPolicyTargets   string
 	EscalationRRState         string
@@ -64,6 +65,7 @@ var TableNames = struct {
 	Alerts:                    "alerts",
 	APIKeys:                   "api_keys",
 	AuditEvents:               "audit_events",
+	ChannelVerifications:      "channel_verifications",
 	EscalationPolicies:        "escalation_policies",
 	EscalationPolicyTargets:   "escalation_policy_targets",
 	EscalationRRState:         "escalation_rr_state",

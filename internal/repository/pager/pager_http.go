@@ -19,11 +19,15 @@ func New(client webhook.Client) repository.Pager {
 }
 
 func (r *repo) Deliver(ctx context.Context, hook entity.EscalationWebhook, payload []byte) (entity.NotifyResult, error) {
+	return r.DeliverTo(ctx, hook.URL, hook.Secret, payload)
+}
+
+func (r *repo) DeliverTo(ctx context.Context, url, secret string, payload []byte) (entity.NotifyResult, error) {
 	signature := ""
-	if hook.Secret != "" {
-		signature = entity.SignBody(hook.Secret, payload)
+	if secret != "" {
+		signature = entity.SignBody(secret, payload)
 	}
-	status, err := r.client.Post(ctx, hook.URL, signature, payload)
+	status, err := r.client.Post(ctx, url, signature, payload)
 	if err != nil {
 		return entity.NotifyResult{Detail: err.Error()}, nil
 	}

@@ -21,7 +21,7 @@ const (
 	tracerName       = "opsybot/http"
 )
 
-func NewRouter(log *slog.Logger, cfg config.Auth, cfgIngest config.Ingest, auth service.Auth, keys service.APIKeys, sso service.SSO, schedules service.Schedules, ingest service.Ingest, limiter service.RateLimiter, dashboard dashboardapi.StrictServerInterface) http.Handler {
+func NewRouter(log *slog.Logger, cfg config.Auth, cfgIngest config.Ingest, auth service.Auth, keys service.APIKeys, sso service.SSO, schedules service.Schedules, ingest service.Ingest, limiter service.RateLimiter, channels service.Channels, dashboard dashboardapi.StrictServerInterface) http.Handler {
 	r := chi.NewRouter()
 	r.Use(chimiddleware.RequestID)
 	r.Use(otelMiddleware)
@@ -44,6 +44,10 @@ func NewRouter(log *slog.Logger, cfg config.Auth, cfgIngest config.Ingest, auth 
 	r.Post("/v1/ingest/e/{token}", ingestRoutes.webhook)
 	r.Get("/v1/ingest/hb/{token}", ingestRoutes.checkIn)
 	r.Post("/v1/ingest/hb/{token}", ingestRoutes.checkIn)
+
+	verifyRoutes := &channelVerifyRoutes{channels: channels}
+	r.Get("/v1/channels/verify/{token}", verifyRoutes.confirm)
+	r.Post("/v1/channels/verify/{token}", verifyRoutes.confirm)
 
 	dashboardapi.HandlerWithOptions(
 		dashboardapi.NewStrictHandler(dashboard, nil),

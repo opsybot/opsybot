@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -298,6 +299,33 @@ func (e ChannelType) Valid() bool {
 	case ChannelTypeTelegram:
 		return true
 	case ChannelTypeWebhook:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ChannelVerificationMethod.
+const (
+	ChannelVerificationMethodChat     ChannelVerificationMethod = "chat"
+	ChannelVerificationMethodEmail    ChannelVerificationMethod = "email"
+	ChannelVerificationMethodNtfy     ChannelVerificationMethod = "ntfy"
+	ChannelVerificationMethodTelegram ChannelVerificationMethod = "telegram"
+	ChannelVerificationMethodWebhook  ChannelVerificationMethod = "webhook"
+)
+
+// Valid indicates whether the value is a known member of the ChannelVerificationMethod enum.
+func (e ChannelVerificationMethod) Valid() bool {
+	switch e {
+	case ChannelVerificationMethodChat:
+		return true
+	case ChannelVerificationMethodEmail:
+		return true
+	case ChannelVerificationMethodNtfy:
+		return true
+	case ChannelVerificationMethodTelegram:
+		return true
+	case ChannelVerificationMethodWebhook:
 		return true
 	default:
 		return false
@@ -597,31 +625,31 @@ func (e MemberStatus) Valid() bool {
 
 // Defines values for NotificationStepChannelType.
 const (
-	NotificationStepChannelTypeDiscord  NotificationStepChannelType = "discord"
-	NotificationStepChannelTypeEmail    NotificationStepChannelType = "email"
-	NotificationStepChannelTypeNtfy     NotificationStepChannelType = "ntfy"
-	NotificationStepChannelTypeSlack    NotificationStepChannelType = "slack"
-	NotificationStepChannelTypeTeams    NotificationStepChannelType = "teams"
-	NotificationStepChannelTypeTelegram NotificationStepChannelType = "telegram"
-	NotificationStepChannelTypeWebhook  NotificationStepChannelType = "webhook"
+	Discord  NotificationStepChannelType = "discord"
+	Email    NotificationStepChannelType = "email"
+	Ntfy     NotificationStepChannelType = "ntfy"
+	Slack    NotificationStepChannelType = "slack"
+	Teams    NotificationStepChannelType = "teams"
+	Telegram NotificationStepChannelType = "telegram"
+	Webhook  NotificationStepChannelType = "webhook"
 )
 
 // Valid indicates whether the value is a known member of the NotificationStepChannelType enum.
 func (e NotificationStepChannelType) Valid() bool {
 	switch e {
-	case NotificationStepChannelTypeDiscord:
+	case Discord:
 		return true
-	case NotificationStepChannelTypeEmail:
+	case Email:
 		return true
-	case NotificationStepChannelTypeNtfy:
+	case Ntfy:
 		return true
-	case NotificationStepChannelTypeSlack:
+	case Slack:
 		return true
-	case NotificationStepChannelTypeTeams:
+	case Teams:
 		return true
-	case NotificationStepChannelTypeTelegram:
+	case Telegram:
 		return true
-	case NotificationStepChannelTypeWebhook:
+	case Webhook:
 		return true
 	default:
 		return false
@@ -1182,9 +1210,31 @@ type Channel struct {
 // ChannelType defines model for Channel.Type.
 type ChannelType string
 
+// ChannelDeliveryResult defines model for ChannelDeliveryResult.
+type ChannelDeliveryResult struct {
+	Delivered bool   `json:"delivered"`
+	Detail    string `json:"detail"`
+}
+
 // ChannelList defines model for ChannelList.
 type ChannelList struct {
 	Items []Channel `json:"items"`
+}
+
+// ChannelVerification defines model for ChannelVerification.
+type ChannelVerification struct {
+	DeepLink  *string                   `json:"deepLink,omitempty"`
+	Detail    *string                   `json:"detail,omitempty"`
+	ExpiresAt time.Time                 `json:"expiresAt"`
+	Method    ChannelVerificationMethod `json:"method"`
+}
+
+// ChannelVerificationMethod defines model for ChannelVerification.Method.
+type ChannelVerificationMethod string
+
+// ConfirmVerificationRequest defines model for ConfirmVerificationRequest.
+type ConfirmVerificationRequest struct {
+	Code *string `json:"code,omitempty"`
 }
 
 // CreateAlertMonitorRequest defines model for CreateAlertMonitorRequest.
@@ -1228,6 +1278,8 @@ type CreateApiKeyRequestKind string
 // CreateChannelRequest defines model for CreateChannelRequest.
 type CreateChannelRequest struct {
 	Detail string                   `json:"detail"`
+	Label  *string                  `json:"label,omitempty"`
+	Secret *string                  `json:"secret,omitempty"`
 	Type   CreateChannelRequestType `json:"type"`
 }
 
@@ -2060,6 +2112,9 @@ type UpdateMeJSONRequestBody = UpdateProfileRequest
 // CreateChannelJSONRequestBody defines body for CreateChannel for application/json ContentType.
 type CreateChannelJSONRequestBody = CreateChannelRequest
 
+// VerifyChannelJSONRequestBody defines body for VerifyChannel for application/json ContentType.
+type VerifyChannelJSONRequestBody = ConfirmVerificationRequest
+
 // ChangePasswordJSONRequestBody defines body for ChangePassword for application/json ContentType.
 type ChangePasswordJSONRequestBody = ChangePasswordRequest
 
@@ -2212,9 +2267,15 @@ type ServerInterface interface {
 	// Remove a notification channel
 	// (DELETE /me/channels/{channelId})
 	DeleteChannel(w http.ResponseWriter, r *http.Request, channelId string)
-	// Mark a channel verified
+	// Send a test notification to a verified channel
+	// (POST /me/channels/{channelId}/test)
+	TestChannel(w http.ResponseWriter, r *http.Request, channelId string)
+	// Confirm a channel with the code from its challenge
 	// (POST /me/channels/{channelId}/verify)
 	VerifyChannel(w http.ResponseWriter, r *http.Request, channelId string)
+	// Start verifying a channel by sending it a challenge
+	// (POST /me/channels/{channelId}/verify/start)
+	StartChannelVerification(w http.ResponseWriter, r *http.Request, channelId string)
 	// Change the signed-in user's password
 	// (PUT /me/password)
 	ChangePassword(w http.ResponseWriter, r *http.Request)
@@ -2596,9 +2657,21 @@ func (_ Unimplemented) DeleteChannel(w http.ResponseWriter, r *http.Request, cha
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Mark a channel verified
+// Send a test notification to a verified channel
+// (POST /me/channels/{channelId}/test)
+func (_ Unimplemented) TestChannel(w http.ResponseWriter, r *http.Request, channelId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Confirm a channel with the code from its challenge
 // (POST /me/channels/{channelId}/verify)
 func (_ Unimplemented) VerifyChannel(w http.ResponseWriter, r *http.Request, channelId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Start verifying a channel by sending it a challenge
+// (POST /me/channels/{channelId}/verify/start)
+func (_ Unimplemented) StartChannelVerification(w http.ResponseWriter, r *http.Request, channelId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -3428,6 +3501,32 @@ func (siw *ServerInterfaceWrapper) DeleteChannel(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// TestChannel operation middleware
+func (siw *ServerInterfaceWrapper) TestChannel(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "channelId" -------------
+	var channelId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "channelId", chi.URLParam(r, "channelId"), &channelId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "channelId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.TestChannel(w, r, channelId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // VerifyChannel operation middleware
 func (siw *ServerInterfaceWrapper) VerifyChannel(w http.ResponseWriter, r *http.Request) {
 
@@ -3445,6 +3544,32 @@ func (siw *ServerInterfaceWrapper) VerifyChannel(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.VerifyChannel(w, r, channelId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// StartChannelVerification operation middleware
+func (siw *ServerInterfaceWrapper) StartChannelVerification(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "channelId" -------------
+	var channelId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "channelId", chi.URLParam(r, "channelId"), &channelId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "channelId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StartChannelVerification(w, r, channelId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6556,7 +6681,13 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Delete(options.BaseURL+"/me/channels/{channelId}", wrapper.DeleteChannel)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/me/channels/{channelId}/test", wrapper.TestChannel)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/me/channels/{channelId}/verify", wrapper.VerifyChannel)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/me/channels/{channelId}/verify/start", wrapper.StartChannelVerification)
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/me/password", wrapper.ChangePassword)
@@ -7782,8 +7913,87 @@ func (response DeleteChannel404ApplicationProblemPlusJSONResponse) VisitDeleteCh
 	return err
 }
 
+type TestChannelRequestObject struct {
+	ChannelId string `json:"channelId"`
+}
+
+type TestChannelResponseObject interface {
+	VisitTestChannelResponse(w http.ResponseWriter) error
+}
+
+type TestChannel200JSONResponse ChannelDeliveryResult
+
+func (response TestChannel200JSONResponse) VisitTestChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TestChannel401ApplicationProblemPlusJSONResponse Problem
+
+func (response TestChannel401ApplicationProblemPlusJSONResponse) VisitTestChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TestChannel404ApplicationProblemPlusJSONResponse Problem
+
+func (response TestChannel404ApplicationProblemPlusJSONResponse) VisitTestChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TestChannel409ApplicationProblemPlusJSONResponse Problem
+
+func (response TestChannel409ApplicationProblemPlusJSONResponse) VisitTestChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TestChannel429ApplicationProblemPlusJSONResponse Problem
+
+func (response TestChannel429ApplicationProblemPlusJSONResponse) VisitTestChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type VerifyChannelRequestObject struct {
 	ChannelId string `json:"channelId"`
+	Body      *VerifyChannelJSONRequestBody
 }
 
 type VerifyChannelResponseObject interface {
@@ -7796,6 +8006,20 @@ type VerifyChannel204Response struct {
 func (response VerifyChannel204Response) VisitVerifyChannelResponse(w http.ResponseWriter) error {
 	w.WriteHeader(204)
 	return nil
+}
+
+type VerifyChannel400ApplicationProblemPlusJSONResponse Problem
+
+func (response VerifyChannel400ApplicationProblemPlusJSONResponse) VisitVerifyChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
 }
 
 type VerifyChannel401ApplicationProblemPlusJSONResponse Problem
@@ -7815,6 +8039,56 @@ func (response VerifyChannel401ApplicationProblemPlusJSONResponse) VisitVerifyCh
 type VerifyChannel404ApplicationProblemPlusJSONResponse Problem
 
 func (response VerifyChannel404ApplicationProblemPlusJSONResponse) VisitVerifyChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartChannelVerificationRequestObject struct {
+	ChannelId string `json:"channelId"`
+}
+
+type StartChannelVerificationResponseObject interface {
+	VisitStartChannelVerificationResponse(w http.ResponseWriter) error
+}
+
+type StartChannelVerification200JSONResponse ChannelVerification
+
+func (response StartChannelVerification200JSONResponse) VisitStartChannelVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartChannelVerification401ApplicationProblemPlusJSONResponse Problem
+
+func (response StartChannelVerification401ApplicationProblemPlusJSONResponse) VisitStartChannelVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartChannelVerification404ApplicationProblemPlusJSONResponse Problem
+
+func (response StartChannelVerification404ApplicationProblemPlusJSONResponse) VisitStartChannelVerificationResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -14238,9 +14512,15 @@ type StrictServerInterface interface {
 	// Remove a notification channel
 	// (DELETE /me/channels/{channelId})
 	DeleteChannel(ctx context.Context, request DeleteChannelRequestObject) (DeleteChannelResponseObject, error)
-	// Mark a channel verified
+	// Send a test notification to a verified channel
+	// (POST /me/channels/{channelId}/test)
+	TestChannel(ctx context.Context, request TestChannelRequestObject) (TestChannelResponseObject, error)
+	// Confirm a channel with the code from its challenge
 	// (POST /me/channels/{channelId}/verify)
 	VerifyChannel(ctx context.Context, request VerifyChannelRequestObject) (VerifyChannelResponseObject, error)
+	// Start verifying a channel by sending it a challenge
+	// (POST /me/channels/{channelId}/verify/start)
+	StartChannelVerification(ctx context.Context, request StartChannelVerificationRequestObject) (StartChannelVerificationResponseObject, error)
 	// Change the signed-in user's password
 	// (PUT /me/password)
 	ChangePassword(ctx context.Context, request ChangePasswordRequestObject) (ChangePasswordResponseObject, error)
@@ -15052,11 +15332,47 @@ func (sh *strictHandler) DeleteChannel(w http.ResponseWriter, r *http.Request, c
 	}
 }
 
+// TestChannel operation middleware
+func (sh *strictHandler) TestChannel(w http.ResponseWriter, r *http.Request, channelId string) {
+	var request TestChannelRequestObject
+
+	request.ChannelId = channelId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.TestChannel(ctx, request.(TestChannelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "TestChannel")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(TestChannelResponseObject); ok {
+		if err := validResponse.VisitTestChannelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // VerifyChannel operation middleware
 func (sh *strictHandler) VerifyChannel(w http.ResponseWriter, r *http.Request, channelId string) {
 	var request VerifyChannelRequestObject
 
 	request.ChannelId = channelId
+
+	var body VerifyChannelJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.VerifyChannel(ctx, request.(VerifyChannelRequestObject))
@@ -15071,6 +15387,32 @@ func (sh *strictHandler) VerifyChannel(w http.ResponseWriter, r *http.Request, c
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(VerifyChannelResponseObject); ok {
 		if err := validResponse.VisitVerifyChannelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// StartChannelVerification operation middleware
+func (sh *strictHandler) StartChannelVerification(w http.ResponseWriter, r *http.Request, channelId string) {
+	var request StartChannelVerificationRequestObject
+
+	request.ChannelId = channelId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.StartChannelVerification(ctx, request.(StartChannelVerificationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StartChannelVerification")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(StartChannelVerificationResponseObject); ok {
+		if err := validResponse.VisitStartChannelVerificationResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -208,6 +208,38 @@ func TestQuietHoursSuppressesWithoutSending(t *testing.T) {
 	}
 }
 
+func TestFinalStepDeliversWhenRunExhausts(t *testing.T) {
+	h := newHarness(t)
+	now := time.Now().UTC()
+	steps := []entity.NotificationPlanStep{step(entity.ChannelTypeEmail, 0, "p@acme.test")}
+	run := runWith(steps, 0, now)
+
+	h.runs.EXPECT().ListDue(gomock.Any(), now, entity.NotificationRunSweepBatch).Return([]entity.NotificationRun{run}, nil)
+	h.lock.EXPECT().TryJob(gomock.Any(), "notify:nrun-1").Return(true, nil)
+	h.runs.EXPECT().GetByID(gomock.Any(), "nrun-1").Return(run, nil)
+	h.alerts.EXPECT().GetByID(gomock.Any(), "ws-1", "al-1").Return(openAlert(), nil)
+	exhausted := run.Advanced(now, entity.NotifyOutcomeDelivered)
+	h.runs.EXPECT().SaveProgress(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, saved entity.NotificationRun) (bool, error) {
+			if saved.State != entity.NotifyRunExhausted {
+				t.Errorf("single-step run should exhaust, got %s", saved.State)
+			}
+			return true, nil
+		})
+	h.ws.EXPECT().GetByID(gomock.Any(), "ws-1").Return(entity.Workspace{ID: "ws-1", Slug: "acme"}, nil)
+	h.runs.EXPECT().GetByID(gomock.Any(), "nrun-1").Return(exhausted, nil)
+	h.limiter.EXPECT().Allow(gomock.Any(), entity.RateScopeNotify, "u1").Return(entity.RateResult{Allowed: true}, nil)
+	h.notify.EXPECT().Send(gomock.Any(), gomock.Any(), gomock.Any()).Return(entity.NotifyResult{Delivered: true, Detail: "email sent"})
+	h.runs.EXPECT().AppendAttempt(gomock.Any(), gomock.Cond(func(a entity.NotificationAttempt) bool {
+		return a.Outcome == entity.NotifyOutcomeDelivered
+	})).Return(nil)
+	h.alerts.EXPECT().AppendEvent(gomock.Any(), "al-1", gomock.Any()).Return(nil)
+
+	if _, err := h.srv.Advance(context.Background(), now); err != nil {
+		t.Fatalf("advance: %v", err)
+	}
+}
+
 func TestDeliveryAbortsIfRunStoppedBetweenCasAndSend(t *testing.T) {
 	h := newHarness(t)
 	now := time.Now().UTC()
