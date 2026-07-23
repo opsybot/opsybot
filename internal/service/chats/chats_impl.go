@@ -1,0 +1,395 @@
+package chats
+
+import (
+	"context"
+	"strings"
+
+	"github.com/opsybot/opsybot/internal/config"
+	"github.com/opsybot/opsybot/internal/entity"
+	"github.com/opsybot/opsybot/internal/repository"
+	"github.com/opsybot/opsybot/internal/service"
+)
+
+type srv struct {
+	tx          repository.Transactor
+	workspaces  repository.Workspace
+	members     repository.Member
+	policy      repository.Policy
+	connections repository.ChatConnection
+	identities  repository.ChatIdentity
+	courier     repository.ChatCourier
+	oauthStates repository.ChatOAuthState
+	audit       repository.Audit
+	cfg         config.Auth
+	slack       config.Slack
+	discord     config.Discord
+}
+
+func New(
+	tx repository.Transactor,
+	workspaces repository.Workspace,
+	members repository.Member,
+	policy repository.Policy,
+	connections repository.ChatConnection,
+	identities repository.ChatIdentity,
+	courier repository.ChatCourier,
+	oauthStates repository.ChatOAuthState,
+	audit repository.Audit,
+	cfg config.Auth,
+	slack config.Slack,
+	discord config.Discord,
+) service.Chats {
+	return &srv{tx: tx, workspaces: workspaces, members: members, policy: policy, connections: connections, identities: identities, courier: courier, oauthStates: oauthStates, audit: audit, cfg: cfg, slack: slack, discord: discord}
+}
+
+func (s *srv) redirectURI(provider entity.ChatProvider) string {
+	return strings.TrimRight(s.cfg.BaseURL, "/") + "/v1/chat/" + string(provider) + "/oauth/callback"
+}
+
+func (s *srv) envToken(provider entity.ChatProvider) string {
+	switch provider {
+	case entity.ChatProviderSlack:
+		return s.slack.BotToken
+	case entity.ChatProviderDiscord:
+		return s.discord.BotToken
+	default:
+		return ""
+	}
+}
+
+func (s *srv) authorize(ctx context.Context, workspaceSlug string, act entity.PolicyAction) (entity.Identity, entity.Workspace, error) {
+	id, ok := entity.IdentityFrom(ctx)
+	if !ok {
+		return entity.Identity{}, entity.Workspace{}, entity.ErrUnauthenticated
+	}
+	ws, err := s.workspaces.GetBySlug(ctx, workspaceSlug)
+	if err != nil {
+		return entity.Identity{}, entity.Workspace{}, err
+	}
+	if id.Kind == entity.IdentityKindAPIKey && id.WorkspaceID != ws.ID {
+		return entity.Identity{}, entity.Workspace{}, entity.ErrForbidden
+	}
+	if id.UserID != "" {
+		active, err := s.members.IsActive(ctx, ws.ID, id.UserID)
+		if err != nil {
+			return entity.Identity{}, entity.Workspace{}, err
+		}
+		if !active {
+			return entity.Identity{}, entity.Workspace{}, entity.ErrNotMember
+		}
+	}
+	if !id.ScopePermits(entity.PolicyObjectChat, act) {
+		return entity.Identity{}, entity.Workspace{}, entity.ErrForbidden
+	}
+	allowed, err := s.policy.Allowed(ctx, id.Subject(), ws.ID, entity.PolicyObjectChat, act)
+	if err != nil {
+		return entity.Identity{}, entity.Workspace{}, err
+	}
+	if !allowed {
+		return entity.Identity{}, entity.Workspace{}, entity.ErrForbidden
+	}
+	return id, ws, nil
+}
+
+func (s *srv) List(ctx context.Context, workspaceSlug string) ([]entity.ChatConnection, error) {
+	id, ws, err := s.authorize(ctx, workspaceSlug, entity.PolicyActionRead)
+	if err != nil {
+		return nil, err
+	}
+	conns, err := s.connections.List(ctx, ws.ID)
+	if err != nil {
+		return nil, err
+	}
+	if id.Kind == entity.IdentityKindSession && id.UserID != "" {
+		for i := range conns {
+			ident, iErr := s.identities.GetForUser(ctx, conns[i].ID, id.UserID)
+			if iErr != nil {
+				continue
+			}
+			conns[i].Linked = true
+			conns[i].LinkedHandle = ident.ProviderHandle
+			conns[i].LinkedVerified = ident.Verified
+		}
+	}
+	return conns, nil
+}
+
+func (s *srv) Connect(ctx context.Context, workspaceSlug string, in entity.ChatConnectInput) (entity.ChatConnection, error) {
+	actor, ws, err := s.authorize(ctx, workspaceSlug, entity.PolicyActionWrite)
+	if err != nil {
+		return entity.ChatConnection{}, err
+	}
+	if !in.Provider.Valid() {
+		return entity.ChatConnection{}, entity.ErrChatConnectionInvalid
+	}
+	token := in.BotToken
+	storedToken := in.BotToken
+	if token == "" {
+		token = s.envToken(in.Provider)
+		storedToken = ""
+	}
+	if token == "" {
+		return entity.ChatConnection{}, entity.ErrChatProviderNotConfigured
+	}
+	valid, err := s.courier.Validate(ctx, in.Provider, token, in.ExternalID)
+	if err != nil {
+		return entity.ChatConnection{}, err
+	}
+	conn, err := s.connections.Save(ctx, ws.ID, entity.ChatConnectionInput{
+		Provider: in.Provider, ExternalID: valid.ExternalID, ExternalName: valid.ExternalName,
+		BotUserID: valid.BotUserID, BotToken: storedToken, ConnectedBy: actor.UserID,
+		ArchiveOnResolve: true,
+	})
+	if err != nil {
+		return entity.ChatConnection{}, err
+	}
+	_ = s.audit.Create(ctx, entity.AuditEvent{
+		WorkspaceID: ws.ID, ActorType: entity.AuditActorUser, ActorUserID: actor.UserID,
+		ActorLabel: actor.Label, Action: entity.ActionChatConnected, Target: string(in.Provider),
+	})
+	return conn, nil
+}
+
+func (s *srv) Delete(ctx context.Context, workspaceSlug string, provider entity.ChatProvider) error {
+	actor, ws, err := s.authorize(ctx, workspaceSlug, entity.PolicyActionWrite)
+	if err != nil {
+		return err
+	}
+	if err := s.connections.Delete(ctx, ws.ID, provider); err != nil {
+		return err
+	}
+	_ = s.audit.Create(ctx, entity.AuditEvent{
+		WorkspaceID: ws.ID, ActorType: entity.AuditActorUser, ActorUserID: actor.UserID,
+		ActorLabel: actor.Label, Action: entity.ActionChatDisconnected, Target: string(provider),
+	})
+	return nil
+}
+
+func (s *srv) SetDefaults(ctx context.Context, workspaceSlug string, provider entity.ChatProvider, namingPattern, announceChannel string, archiveOnResolve bool) error {
+	_, ws, err := s.authorize(ctx, workspaceSlug, entity.PolicyActionWrite)
+	if err != nil {
+		return err
+	}
+	return s.connections.SetDefaults(ctx, ws.ID, provider, namingPattern, announceChannel, archiveOnResolve)
+}
+
+func (s *srv) LinkIdentity(ctx context.Context, workspaceSlug string, provider entity.ChatProvider) (entity.ChatIdentity, error) {
+	id, ws, err := s.authorize(ctx, workspaceSlug, entity.PolicyActionRead)
+	if err != nil {
+		return entity.ChatIdentity{}, err
+	}
+	if id.Kind != entity.IdentityKindSession {
+		return entity.ChatIdentity{}, entity.ErrUnauthenticated
+	}
+	conn, err := s.connections.Get(ctx, ws.ID, provider)
+	if err != nil {
+		return entity.ChatIdentity{}, err
+	}
+	token, err := s.connections.BotToken(ctx, ws.ID, provider)
+	if err != nil || token == "" {
+		return entity.ChatIdentity{}, entity.ErrChatNotConnected
+	}
+	member, err := s.members.Get(ctx, ws.ID, id.UserID)
+	if err != nil {
+		return entity.ChatIdentity{}, err
+	}
+	user, err := s.courier.LookupUser(ctx, provider, token, conn.ExternalID, member.Email)
+	if err != nil {
+		return entity.ChatIdentity{}, err
+	}
+	return s.identities.Upsert(ctx, entity.ChatIdentity{
+		ConnectionID: conn.ID, UserID: id.UserID, ProviderUserID: user.ProviderUserID,
+		ProviderHandle: user.Handle, ResolvedBy: "email", Verified: true,
+	})
+}
+
+func (s *srv) TestConnection(ctx context.Context, workspaceSlug string, provider entity.ChatProvider) (entity.ChatSendResult, error) {
+	id, ws, err := s.authorize(ctx, workspaceSlug, entity.PolicyActionRead)
+	if err != nil {
+		return entity.ChatSendResult{}, err
+	}
+	if id.Kind != entity.IdentityKindSession {
+		return entity.ChatSendResult{}, entity.ErrUnauthenticated
+	}
+	conn, err := s.connections.Get(ctx, ws.ID, provider)
+	if err != nil {
+		return entity.ChatSendResult{}, err
+	}
+	token, err := s.connections.BotToken(ctx, ws.ID, provider)
+	if err != nil || token == "" {
+		return entity.ChatSendResult{}, entity.ErrChatNotConnected
+	}
+	providerUserID, dmChannel, handle := "", "", ""
+	linked := false
+	if ident, iErr := s.identities.GetForUser(ctx, conn.ID, id.UserID); iErr == nil {
+		providerUserID, dmChannel, handle, linked = ident.ProviderUserID, ident.DMChannelID, ident.ProviderHandle, true
+	} else {
+		member, mErr := s.members.Get(ctx, ws.ID, id.UserID)
+		if mErr != nil {
+			return entity.ChatSendResult{}, mErr
+		}
+		user, uErr := s.courier.LookupUser(ctx, provider, token, conn.ExternalID, member.Email)
+		if uErr != nil {
+			return entity.ChatSendResult{Result: entity.NotifyResult{Detail: "Could not find your " + string(provider) + " account by email. Link your account first, then test again."}}, nil
+		}
+		providerUserID, handle = user.ProviderUserID, user.Handle
+	}
+	text := "Opsybot test message for " + ws.Name + ". Your " + string(provider) + " connection works — this is where your pages will arrive."
+	result, err := s.courier.SendDirect(ctx, provider, token, providerUserID, dmChannel, text)
+	if err != nil {
+		return entity.ChatSendResult{}, err
+	}
+	if result.Result.Delivered && !linked {
+		_, _ = s.identities.Upsert(ctx, entity.ChatIdentity{
+			ConnectionID: conn.ID, UserID: id.UserID, ProviderUserID: providerUserID,
+			ProviderHandle: handle, DMChannelID: result.DMChannelID, ResolvedBy: "email", Verified: true,
+		})
+	} else if linked && dmChannel == "" && result.DMChannelID != "" {
+		if ident, iErr := s.identities.GetForUser(ctx, conn.ID, id.UserID); iErr == nil {
+			_ = s.identities.SetDMChannel(ctx, ident.ID, result.DMChannelID)
+		}
+	}
+	return result, nil
+}
+
+func (s *srv) StartOAuth(ctx context.Context, workspaceSlug string, provider entity.ChatProvider) (string, error) {
+	actor, ws, err := s.authorize(ctx, workspaceSlug, entity.PolicyActionWrite)
+	if err != nil {
+		return "", err
+	}
+	if provider != entity.ChatProviderSlack {
+		return "", entity.ErrChatOAuthUnsupported
+	}
+	if !s.connections.SecretsEnabled(ctx) {
+		return "", entity.ErrChatSecretUnavailable
+	}
+	state, err := entity.GenerateToken(entity.ChatOAuthStateLength)
+	if err != nil {
+		return "", err
+	}
+	url, err := s.courier.AuthorizeURL(ctx, provider, entity.SlackOAuthScopes, s.redirectURI(provider), state)
+	if err != nil {
+		return "", err
+	}
+	if err := s.oauthStates.Store(ctx, state, entity.ChatOAuthState{
+		Provider: provider, Purpose: entity.ChatOAuthInstall, WorkspaceID: ws.ID, WorkspaceSlug: ws.Slug, UserID: actor.UserID,
+	}, entity.ChatOAuthStateTTL); err != nil {
+		return "", err
+	}
+	return url, nil
+}
+
+func (s *srv) CompleteOAuth(ctx context.Context, provider entity.ChatProvider, code, state string) (string, error) {
+	st, err := s.oauthStates.Consume(ctx, state)
+	if err != nil {
+		return "", err
+	}
+	if st.Provider != provider || st.Purpose == entity.ChatOAuthIdentity {
+		return st.WorkspaceSlug, entity.ErrChatOAuthStateInvalid
+	}
+	id, ok := entity.IdentityFrom(ctx)
+	if !ok || id.UserID == "" || id.UserID != st.UserID {
+		return st.WorkspaceSlug, entity.ErrChatOAuthStateInvalid
+	}
+	active, err := s.members.IsActive(ctx, st.WorkspaceID, st.UserID)
+	if err != nil {
+		return st.WorkspaceSlug, err
+	}
+	if !active {
+		return st.WorkspaceSlug, entity.ErrForbidden
+	}
+	allowed, err := s.policy.Allowed(ctx, id.Subject(), st.WorkspaceID, entity.PolicyObjectChat, entity.PolicyActionWrite)
+	if err != nil {
+		return st.WorkspaceSlug, err
+	}
+	if !allowed {
+		return st.WorkspaceSlug, entity.ErrForbidden
+	}
+	result, err := s.courier.ExchangeOAuth(ctx, provider, code, s.redirectURI(provider))
+	if err != nil {
+		return st.WorkspaceSlug, err
+	}
+	if _, err := s.connections.Save(ctx, st.WorkspaceID, entity.ChatConnectionInput{
+		Provider: provider, ExternalID: result.ExternalID, ExternalName: result.ExternalName,
+		BotUserID: result.BotUserID, BotToken: result.BotToken, Scopes: result.Scopes,
+		ConnectedBy: st.UserID, ArchiveOnResolve: true,
+	}); err != nil {
+		return st.WorkspaceSlug, err
+	}
+	_ = s.audit.Create(ctx, entity.AuditEvent{
+		WorkspaceID: st.WorkspaceID, ActorType: entity.AuditActorUser, ActorUserID: st.UserID,
+		Action: entity.ActionChatConnected, Target: string(provider),
+	})
+	return st.WorkspaceSlug, nil
+}
+
+func (s *srv) identityRedirectURI(provider entity.ChatProvider) string {
+	return strings.TrimRight(s.cfg.BaseURL, "/") + "/v1/chat/" + string(provider) + "/identity/callback"
+}
+
+func (s *srv) StartIdentityOAuth(ctx context.Context, workspaceSlug string, provider entity.ChatProvider) (string, error) {
+	actor, ws, err := s.authorize(ctx, workspaceSlug, entity.PolicyActionRead)
+	if err != nil {
+		return "", err
+	}
+	if actor.Kind != entity.IdentityKindSession {
+		return "", entity.ErrUnauthenticated
+	}
+	if provider != entity.ChatProviderSlack {
+		return "", entity.ErrChatOAuthUnsupported
+	}
+	conn, err := s.connections.Get(ctx, ws.ID, provider)
+	if err != nil {
+		return "", err
+	}
+	state, err := entity.GenerateToken(entity.ChatOAuthStateLength)
+	if err != nil {
+		return "", err
+	}
+	url, err := s.courier.IdentityAuthorizeURL(ctx, provider, entity.SlackOIDCScopes, s.identityRedirectURI(provider), state, conn.ExternalID)
+	if err != nil {
+		return "", err
+	}
+	if err := s.oauthStates.Store(ctx, state, entity.ChatOAuthState{
+		Provider: provider, Purpose: entity.ChatOAuthIdentity, WorkspaceID: ws.ID, WorkspaceSlug: ws.Slug,
+		UserID: actor.UserID, ConnectionID: conn.ID, TeamID: conn.ExternalID,
+	}, entity.ChatOAuthStateTTL); err != nil {
+		return "", err
+	}
+	return url, nil
+}
+
+func (s *srv) CompleteIdentityOAuth(ctx context.Context, provider entity.ChatProvider, code, state string) (string, error) {
+	st, err := s.oauthStates.Consume(ctx, state)
+	if err != nil {
+		return "", err
+	}
+	if st.Provider != provider || st.Purpose != entity.ChatOAuthIdentity {
+		return st.WorkspaceSlug, entity.ErrChatOAuthStateInvalid
+	}
+	id, ok := entity.IdentityFrom(ctx)
+	if !ok || id.UserID == "" || id.UserID != st.UserID {
+		return st.WorkspaceSlug, entity.ErrChatOAuthStateInvalid
+	}
+	active, err := s.members.IsActive(ctx, st.WorkspaceID, st.UserID)
+	if err != nil {
+		return st.WorkspaceSlug, err
+	}
+	if !active {
+		return st.WorkspaceSlug, entity.ErrForbidden
+	}
+	result, err := s.courier.ExchangeIdentity(ctx, provider, code, s.identityRedirectURI(provider))
+	if err != nil {
+		return st.WorkspaceSlug, err
+	}
+	if st.TeamID != "" && result.TeamID != "" && result.TeamID != st.TeamID {
+		return st.WorkspaceSlug, entity.ErrChatOAuthStateInvalid
+	}
+	if _, err := s.identities.Upsert(ctx, entity.ChatIdentity{
+		ConnectionID: st.ConnectionID, UserID: st.UserID, ProviderUserID: result.ProviderUserID,
+		ProviderHandle: result.Handle, ResolvedBy: "oauth", Verified: true,
+	}); err != nil {
+		return st.WorkspaceSlug, err
+	}
+	return st.WorkspaceSlug, nil
+}

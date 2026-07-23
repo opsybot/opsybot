@@ -7,19 +7,32 @@ import (
 	"strings"
 	"time"
 
+	"github.com/opsybot/opsybot/internal/config"
 	"github.com/opsybot/opsybot/internal/entity"
 	"github.com/opsybot/opsybot/internal/repository"
 	"github.com/opsybot/opsybot/internal/service"
 )
 
 type srv struct {
-	mailer repository.Mailer
-	pager  repository.Pager
-	ntfy   repository.Ntfy
+	mailer      repository.Mailer
+	pager       repository.Pager
+	ntfy        repository.Ntfy
+	chatConns   repository.ChatConnection
+	chatIDs     repository.ChatIdentity
+	chatCourier repository.ChatCourier
+	cfg         config.Auth
 }
 
-func New(mailer repository.Mailer, pager repository.Pager, ntfy repository.Ntfy) service.Notifier {
-	return &srv{mailer: mailer, pager: pager, ntfy: ntfy}
+func New(
+	mailer repository.Mailer,
+	pager repository.Pager,
+	ntfy repository.Ntfy,
+	chatConns repository.ChatConnection,
+	chatIDs repository.ChatIdentity,
+	chatCourier repository.ChatCourier,
+	cfg config.Auth,
+) service.Notifier {
+	return &srv{mailer: mailer, pager: pager, ntfy: ntfy, chatConns: chatConns, chatIDs: chatIDs, chatCourier: chatCourier, cfg: cfg}
 }
 
 func (s *srv) Send(ctx context.Context, target entity.NotifyTarget, page entity.AlertPage) entity.NotifyResult {
@@ -36,9 +49,44 @@ func (s *srv) Send(ctx context.Context, target entity.NotifyTarget, page entity.
 		return s.sendNtfy(ctx, target, page)
 	case entity.ChannelTypeWebhook:
 		return s.sendWebhook(ctx, target, page)
+	case entity.ChannelTypeSlack, entity.ChannelTypeDiscord:
+		return s.sendChat(ctx, target, page)
 	default:
 		return entity.NotifyResult{Detail: "channel not connected yet"}
 	}
+}
+
+func (s *srv) sendChat(ctx context.Context, target entity.NotifyTarget, page entity.AlertPage) entity.NotifyResult {
+	provider := entity.ChatProvider(target.Channel)
+	if target.WorkspaceID == "" {
+		return entity.NotifyResult{Detail: "no workspace for chat delivery"}
+	}
+	conn, err := s.chatConns.Get(ctx, target.WorkspaceID, provider)
+	if err != nil {
+		return entity.NotifyResult{Detail: string(provider) + " is not connected for this workspace"}
+	}
+	token, err := s.chatConns.BotToken(ctx, target.WorkspaceID, provider)
+	if err != nil || token == "" {
+		return entity.NotifyResult{Detail: string(provider) + " bot token is unavailable"}
+	}
+	ident, err := s.chatIDs.GetForUser(ctx, conn.ID, target.UserID)
+	if err != nil {
+		return entity.NotifyResult{Detail: "no " + string(provider) + " identity for this user"}
+	}
+	if !ident.Verified {
+		return entity.NotifyResult{Detail: string(provider) + " channel is not verified"}
+	}
+	result, err := s.chatCourier.Send(ctx, entity.ChatDelivery{
+		Provider: provider, BotToken: token, ProviderUserID: ident.ProviderUserID, DMChannelID: ident.DMChannelID,
+		Page: page, AckToken: target.AckToken, ResolveToken: target.ResolveToken, BaseURL: s.cfg.BaseURL,
+	})
+	if err != nil {
+		return entity.NotifyResult{Detail: err.Error()}
+	}
+	if result.DMChannelID != "" && result.DMChannelID != ident.DMChannelID {
+		_ = s.chatIDs.SetDMChannel(ctx, ident.ID, result.DMChannelID)
+	}
+	return result.Result
 }
 
 func (s *srv) sendNtfy(ctx context.Context, target entity.NotifyTarget, page entity.AlertPage) entity.NotifyResult {

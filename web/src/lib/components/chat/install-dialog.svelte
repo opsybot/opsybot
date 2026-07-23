@@ -1,176 +1,145 @@
 <script lang="ts">
-	import { tick, untrack } from 'svelte';
+	import { untrack } from 'svelte';
 	import ArrowUpRightIcon from '@lucide/svelte/icons/arrow-up-right';
-	import CheckIcon from '@lucide/svelte/icons/check';
-	import CircleCheckIcon from '@lucide/svelte/icons/circle-check';
-	import SendIcon from '@lucide/svelte/icons/send';
+	import CircleAlertIcon from '@lucide/svelte/icons/circle-alert';
+	import PlugIcon from '@lucide/svelte/icons/plug';
 	import { toast } from 'svelte-sonner';
 	import { enhance } from '$app/forms';
 	import * as Alert from '$lib/components/ui/alert';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import * as Field from '$lib/components/ui/field';
+	import { Input } from '$lib/components/ui/input';
 	import { CHAT_ICONS } from '$lib/components/chat/icons';
 	import ScopeList from '$lib/components/chat/scope-list.svelte';
-	import type { InstallStep, Platform } from '$lib/chat';
+	import type { Platform } from '$lib/chat';
 
 	let { platform, onclose }: { platform: Platform | null; onclose: () => void } = $props();
 
 	let current = $state<Platform | null>(null);
-	let step = $state<InstallStep>('consent');
+	let externalId = $state('');
+	let error = $state('');
+	let pending = $state(false);
 	const open = $derived(!!platform);
-
-	let waitTimer: ReturnType<typeof setTimeout> | undefined;
-	let testTimer: ReturnType<typeof setTimeout> | undefined;
-	let connectForm: HTMLFormElement;
-	let doneButton = $state<HTMLElement | null>(null);
-
-	function clearTimers() {
-		clearTimeout(waitTimer);
-		clearTimeout(testTimer);
-	}
 
 	$effect(() => {
 		const next = platform;
 		untrack(() => {
-			clearTimers();
 			if (next) {
 				current = next;
-				step = 'consent';
+				externalId = '';
+				error = '';
+				pending = false;
 			}
 		});
 	});
 
 	const Icon = $derived(current ? CHAT_ICONS[current.icon] : null);
-	const title = $derived(
-		!current
-			? ''
-			: step === 'consent'
-				? `Connect ${current.label}`
-				: step === 'waiting'
-					? `Waiting for ${current.label}`
-					: `${current.label} connected`
-	);
-
-	function authorize() {
-		step = 'waiting';
-		clearTimeout(waitTimer);
-		waitTimer = setTimeout(() => (step = 'done'), 1800);
-	}
-
-	async function runTest() {
-		step = 'tested';
-		clearTimeout(testTimer);
-		testTimer = setTimeout(
-			() => toast.success('/opsy test posted in #opsybot-sandbox: round trip 0.6 s.'),
-			900
-		);
-		await tick();
-		doneButton?.focus();
-	}
+	const oauth = $derived(current?.authKind === 'oauth');
+	const field = $derived(!oauth ? (current?.externalIdField ?? null) : null);
 </script>
 
 <Dialog.Root {open} onOpenChange={(value) => (value ? undefined : onclose())}>
 	<Dialog.Content class="sm:max-w-[500px]">
 		{#if current}
-			<div class="flex flex-col gap-4 p-6">
-				<div class="flex items-start gap-3">
-					<span
-						class="bg-brand-wash text-brand-foreground flex size-[38px] shrink-0 items-center justify-center rounded-lg"
-					>
-						{#if Icon}<Icon class="size-5" />{/if}
-					</span>
-					<div class="flex flex-1 flex-col justify-center">
-						<Dialog.Title class="tracking-heading text-xl font-semibold">{title}</Dialog.Title>
-					</div>
-				</div>
-
-				<div class="flex flex-col gap-3.5" role="status" aria-live="polite">
-					{#if step === 'consent'}
-						<Dialog.Description class="text-muted-foreground text-[13px] leading-[1.6]">
-							Opsybot asks {current.label} for exactly these permissions, nothing broader:
-						</Dialog.Description>
-						<ScopeList scopes={current.scopes} />
-						<p class="text-subtle-foreground text-[12px] leading-[1.55]">
-							You can disconnect any time. Incident history already captured stays in Opsybot.
-						</p>
-					{:else if step === 'waiting'}
-						<div class="text-muted-foreground flex items-center gap-2.5">
-							<span
-								class="border-border border-t-primary size-4 shrink-0 animate-spin rounded-full border-2 [animation-duration:0.8s] motion-reduce:animate-none"
-								aria-hidden="true"
-							></span>
-							<Dialog.Description class="text-muted-foreground text-[13px]">
-								Complete the authorization in the {current.label} window.
-							</Dialog.Description>
+			<form
+				method="POST"
+				action={oauth ? '?/oauthStart' : '?/connect'}
+				use:enhance={() => {
+					pending = true;
+					error = '';
+					return async ({ result, update }) => {
+						pending = false;
+						await update({ reset: false });
+						if (result.type === 'success') {
+							if (oauth && result.data?.oauthUrl) {
+								window.location.href = String(result.data.oauthUrl);
+								return;
+							}
+							const label = current?.label;
+							onclose();
+							if (label) toast.success(`${label} is connected.`);
+							return;
+						}
+						if (result.type === 'failure') {
+							error = String(result.data?.error ?? 'Could not connect that provider.');
+						}
+					};
+				}}
+			>
+				<input type="hidden" name="platform" value={current.id} />
+				<div class="flex flex-col gap-4 p-6">
+					<div class="flex items-start gap-3">
+						<span
+							class="bg-brand-wash text-brand-foreground flex size-[38px] shrink-0 items-center justify-center rounded-lg"
+						>
+							{#if Icon}<Icon class="size-5" />{/if}
+						</span>
+						<div class="flex flex-1 flex-col justify-center">
+							<Dialog.Title class="tracking-heading text-xl font-semibold">
+								Connect {current.label}
+							</Dialog.Title>
 						</div>
-					{:else}
-						<Alert.Root tone="success">
-							<CircleCheckIcon />
+					</div>
+
+					<Dialog.Description class="text-muted-foreground text-[13px] leading-[1.6]">
+						{#if oauth}
+							Opsybot will send you to {current.label} to approve the install for this workspace, then
+							bring you back here. It asks for exactly these permissions, nothing broader:
+						{:else}
+							Opsybot connects with the workspace app your admin registered — no token to paste here. It
+							uses exactly these permissions, nothing broader:
+						{/if}
+					</Dialog.Description>
+					<ScopeList scopes={current.scopes} />
+
+					{#if field}
+						<Field.Field class="gap-1.5 space-y-0">
+							<Field.FieldLabel for="external-id" class="text-muted-foreground text-[13px] font-medium">
+								{field.label}
+							</Field.FieldLabel>
+							<Input
+								id="external-id"
+								name="externalId"
+								class="font-mono text-[12.5px]"
+								placeholder={field.placeholder}
+								bind:value={externalId}
+								autocomplete="off"
+							/>
+							<Field.FieldDescription class="text-subtle-foreground text-xs">
+								{field.hint}
+							</Field.FieldDescription>
+						</Field.Field>
+					{/if}
+
+					{#if error}
+						<Alert.Root tone="critical">
+							<CircleAlertIcon />
 							<Alert.Content>
-								<Alert.Title>Workspace linked</Alert.Title>
-								<Dialog.Description class="text-muted-foreground text-sm">
-									Connected to <strong class="text-foreground font-semibold">Acme Corp</strong>. The bot
-									joined #opsybot-sandbox for testing.
-								</Dialog.Description>
+								<Alert.Title>Could not connect</Alert.Title>
+								<Alert.Description class="text-sm">{error}</Alert.Description>
 							</Alert.Content>
 						</Alert.Root>
-						<div>
-							<div class="text-subtle-foreground mb-2.5 text-[11px] tracking-[0.08em] uppercase">
-								One last check. Run a test command
-							</div>
-							<div class="flex items-center gap-2">
-								<code
-									class="bg-inset text-foreground flex-1 rounded-md border px-[11px] py-[9px] font-mono text-[12.5px]"
-									>/opsy test</code
-								>
-								<Button size="sm" variant="secondary" disabled={step === 'tested'} onclick={runTest}>
-									<SendIcon data-icon="inline-start" />
-									{step === 'tested' ? 'Sent' : 'Run it for me'}
-								</Button>
-							</div>
-							{#if step === 'tested'}
-								<div class="mt-2 flex items-center gap-[7px]">
-									<CheckIcon class="text-primary size-[13px]" />
-									<span class="text-muted-foreground text-[12.5px]"
-										>Bot replied in #opsybot-sandbox. You're set.</span
-									>
-								</div>
-							{/if}
-						</div>
 					{/if}
-				</div>
-			</div>
 
-			<div class="flex justify-end gap-2 border-t bg-black/20 px-6 py-4">
-				{#if step === 'consent'}
-					<Button variant="ghost" onclick={onclose}>Cancel</Button>
-					<Button onclick={authorize}>
-						<ArrowUpRightIcon data-icon="inline-start" />
-						Continue to {current.label}
+					<p class="text-subtle-foreground text-[12px] leading-[1.55]">
+						You can disconnect any time. Incident history already captured stays in Opsybot.
+					</p>
+				</div>
+
+				<div class="flex justify-end gap-2 border-t bg-black/20 px-6 py-4">
+					<Button type="button" variant="ghost" onclick={onclose}>Cancel</Button>
+					<Button type="submit" disabled={pending}>
+						{#if oauth}
+							<ArrowUpRightIcon data-icon="inline-start" />
+							{pending ? 'Redirecting…' : `Continue to ${current.label}`}
+						{:else}
+							<PlugIcon data-icon="inline-start" />
+							{pending ? 'Connecting…' : `Connect ${current.label}`}
+						{/if}
 					</Button>
-				{:else if step === 'waiting'}
-					<Button variant="ghost" onclick={onclose}>Cancel</Button>
-				{:else}
-					<Button bind:ref={doneButton} onclick={() => connectForm.requestSubmit()}>Done</Button>
-				{/if}
-			</div>
+				</div>
+			</form>
 		{/if}
 	</Dialog.Content>
 </Dialog.Root>
-
-<form
-	bind:this={connectForm}
-	method="POST"
-	action="?/connect"
-	class="hidden"
-	use:enhance={() =>
-		async ({ result, update }) => {
-			await update({ reset: false });
-			if (result.type !== 'success') return;
-			const label = current?.label;
-			onclose();
-			if (label) toast.success(`${label} is connected.`);
-		}}
->
-	<input type="hidden" name="platform" value={current?.id ?? ''} />
-</form>

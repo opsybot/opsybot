@@ -4,6 +4,7 @@ import (
 	"github.com/goforj/wire"
 
 	"github.com/opsybot/opsybot/internal/cron"
+	"github.com/opsybot/opsybot/internal/repository/action_token"
 	"github.com/opsybot/opsybot/internal/repository/alert"
 	"github.com/opsybot/opsybot/internal/repository/alert_monitor"
 	"github.com/opsybot/opsybot/internal/repository/alert_route"
@@ -12,6 +13,10 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/audit"
 	"github.com/opsybot/opsybot/internal/repository/channel"
 	"github.com/opsybot/opsybot/internal/repository/channel_verification"
+	"github.com/opsybot/opsybot/internal/repository/chat_connection"
+	"github.com/opsybot/opsybot/internal/repository/chat_courier"
+	"github.com/opsybot/opsybot/internal/repository/chat_identity"
+	"github.com/opsybot/opsybot/internal/repository/chat_oauth_state"
 	"github.com/opsybot/opsybot/internal/repository/escalation_policy"
 	"github.com/opsybot/opsybot/internal/repository/escalation_run"
 	"github.com/opsybot/opsybot/internal/repository/ingest_event"
@@ -39,6 +44,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/user_identity"
 	"github.com/opsybot/opsybot/internal/repository/workspace"
 	"github.com/opsybot/opsybot/internal/service"
+	"github.com/opsybot/opsybot/internal/service/actions"
 	"github.com/opsybot/opsybot/internal/service/alert_monitors"
 	"github.com/opsybot/opsybot/internal/service/alert_routes"
 	"github.com/opsybot/opsybot/internal/service/alert_sources"
@@ -47,8 +53,10 @@ import (
 	"github.com/opsybot/opsybot/internal/service/audits"
 	"github.com/opsybot/opsybot/internal/service/auth"
 	"github.com/opsybot/opsybot/internal/service/channels"
+	"github.com/opsybot/opsybot/internal/service/chats"
 	"github.com/opsybot/opsybot/internal/service/escalations"
 	"github.com/opsybot/opsybot/internal/service/ingest"
+	"github.com/opsybot/opsybot/internal/service/interactions"
 	"github.com/opsybot/opsybot/internal/service/members"
 	"github.com/opsybot/opsybot/internal/service/notification_rules"
 	"github.com/opsybot/opsybot/internal/service/notifications"
@@ -96,6 +104,11 @@ var repositoryProviders = wire.NewSet(
 	notification_rule.New,
 	notification_run.New,
 	channel_verification.New,
+	chat_connection.New,
+	chat_identity.New,
+	chat_courier.New,
+	chat_oauth_state.New,
+	action_token.New,
 	pager.New,
 	ntfy.New,
 )
@@ -123,6 +136,9 @@ var serviceProviders = wire.NewSet(
 	notifier.New,
 	notification_rules.New,
 	notifications.New,
+	actions.New,
+	interactions.New,
+	chats.New,
 	escalations.New,
 )
 

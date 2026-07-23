@@ -4,9 +4,8 @@
 	import { enhance } from '$app/forms';
 	import * as Field from '$lib/components/ui/field';
 	import { Input } from '$lib/components/ui/input';
-	import * as Select from '$lib/components/ui/select';
 	import { Switch } from '$lib/components/ui/switch';
-	import { ANNOUNCE_CHANNELS, DEFAULT_DEFAULTS, previewChannelName, type Platform } from '$lib/chat';
+	import { DEFAULT_DEFAULTS, previewChannelName, type Platform } from '$lib/chat';
 
 	let { platform }: { platform: Platform } = $props();
 
@@ -17,107 +16,75 @@
 
 	const preview = $derived(previewChannelName(naming));
 
-	let namingForm: HTMLFormElement;
-	let announceForm: HTMLFormElement;
-	let archiveForm: HTMLFormElement;
+	let form: HTMLFormElement;
 
-	async function changeAnnounce(value: string) {
-		announce = value;
+	async function save() {
 		await tick();
-		announceForm.requestSubmit();
+		form.requestSubmit();
 	}
 </script>
 
-<div class="flex flex-col gap-3.5 border-t px-4 py-[14px]">
+<form
+	method="POST"
+	action="?/saveDefaults"
+	bind:this={form}
+	class="flex flex-col gap-3.5 border-t px-4 py-[14px]"
+	use:enhance={() =>
+		async ({ result, update }) => {
+			await update({ reset: false });
+			if (result.type === 'failure') toast.error(String(result.data?.error ?? 'Could not save those defaults.'));
+		}}
+>
+	<input type="hidden" name="platform" value={platform.id} />
+	<input type="hidden" name="announceChannel" value={announce} />
+	<input type="hidden" name="archiveOnResolve" value={String(archive)} />
+
 	<div class="text-subtle-foreground -mb-1 text-[11px] tracking-[0.08em] uppercase">
 		Defaults for this workspace
 	</div>
 
 	<div class="flex flex-wrap items-start gap-3">
-		<form
-			method="POST"
-			action="?/saveNaming"
-			bind:this={namingForm}
-			class="w-[230px]"
-			use:enhance={() => async ({ update }) => update({ reset: false })}
-		>
-			<input type="hidden" name="platform" value={platform.id} />
-			<Field.Field class="gap-1.5 space-y-0">
-				<Field.FieldLabel for="chan-{platform.id}" class="text-muted-foreground text-[13px] font-medium">
-					Incident channel naming
-				</Field.FieldLabel>
-				<Input
-					id="chan-{platform.id}"
-					name="pattern"
-					class="font-mono text-[12.5px]"
-					bind:value={naming}
-					onchange={() => namingForm.requestSubmit()}
-				/>
-				<Field.FieldDescription class="text-subtle-foreground text-xs">
-					Preview: {preview}
-				</Field.FieldDescription>
-			</Field.Field>
-		</form>
+		<Field.Field class="w-[230px] gap-1.5 space-y-0">
+			<Field.FieldLabel for="chan-{platform.id}" class="text-muted-foreground text-[13px] font-medium">
+				Incident channel naming
+			</Field.FieldLabel>
+			<Input
+				id="chan-{platform.id}"
+				name="namingPattern"
+				class="font-mono text-[12.5px]"
+				bind:value={naming}
+				onchange={save}
+			/>
+			<Field.FieldDescription class="text-subtle-foreground text-xs">
+				Preview: {preview}
+			</Field.FieldDescription>
+		</Field.Field>
 
-		<form
-			method="POST"
-			action="?/setAnnounce"
-			bind:this={announceForm}
-			class="w-[230px]"
-			use:enhance={() => async ({ update }) => update({ reset: false })}
-		>
-			<input type="hidden" name="platform" value={platform.id} />
-			<input type="hidden" name="channel" value={announce} />
-			<Field.Field class="gap-1.5 space-y-0">
-				<Field.FieldLabel class="text-muted-foreground text-[13px] font-medium">
-					Default announcement channel
-				</Field.FieldLabel>
-				<Select.Root type="single" value={announce} onValueChange={changeAnnounce}>
-					<Select.Trigger class="w-full" aria-label="Default announcement channel">{announce}</Select.Trigger>
-					<Select.Content>
-						<Select.Group>
-							{#each ANNOUNCE_CHANNELS as channel (channel)}
-								<Select.Item value={channel} label={channel}>{channel}</Select.Item>
-							{/each}
-						</Select.Group>
-					</Select.Content>
-				</Select.Root>
-			</Field.Field>
-		</form>
+		<Field.Field class="w-[230px] gap-1.5 space-y-0">
+			<Field.FieldLabel for="announce-{platform.id}" class="text-muted-foreground text-[13px] font-medium">
+				Default announcement channel
+			</Field.FieldLabel>
+			<Input
+				id="announce-{platform.id}"
+				class="font-mono text-[12.5px]"
+				placeholder="#incidents"
+				bind:value={announce}
+				onchange={save}
+			/>
+			<Field.FieldDescription class="text-subtle-foreground text-xs">
+				Where new incidents are announced in {platform.label}.
+			</Field.FieldDescription>
+		</Field.Field>
 	</div>
 
-	<form
-		method="POST"
-		action="?/setArchive"
-		bind:this={archiveForm}
-		use:enhance={() =>
-			async ({ result, update }) => {
-				await update({ reset: false });
-				if (result.type !== 'success') {
-					archive = !archive;
-					return;
-				}
-				toast(
-					archive
-						? 'Incident channels will be archived on resolve.'
-						: 'Incident channels stay open after resolve.'
-				);
-			}}
-	>
-		<input type="hidden" name="platform" value={platform.id} />
-		<input type="hidden" name="archive" value={String(archive)} />
-		<div class="flex items-center gap-2.5">
-			<Switch
-				bind:checked={archive}
-				aria-label="Archive the incident channel when the incident resolves"
-				onCheckedChange={async () => {
-					await tick();
-					archiveForm.requestSubmit();
-				}}
-			/>
-			<span class="text-muted-foreground text-[13px]">
-				Archive the incident channel when the incident resolves
-			</span>
-		</div>
-	</form>
-</div>
+	<div class="flex items-center gap-2.5">
+		<Switch
+			bind:checked={archive}
+			aria-label="Archive the incident channel when the incident resolves"
+			onCheckedChange={save}
+		/>
+		<span class="text-muted-foreground text-[13px]">
+			Archive the incident channel when the incident resolves
+		</span>
+	</div>
+</form>

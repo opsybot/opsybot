@@ -49,6 +49,9 @@ const (
 
 	ActionNotificationRulesSaved = "notification_rules.saved"
 
+	ActionChatConnected    = "chat.connected"
+	ActionChatDisconnected = "chat.disconnected"
+
 	ActionScheduleCreated     = "schedule.created"
 	ActionScheduleUpdated     = "schedule.updated"
 	ActionScheduleDuplicated  = "schedule.duplicated"

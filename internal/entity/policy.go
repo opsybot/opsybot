@@ -15,6 +15,7 @@ const (
 	PolicyObjectAlerts       PolicyObject = "alerts"
 	PolicyObjectAlertSources PolicyObject = "alert_sources"
 	PolicyObjectPolicies     PolicyObject = "policies"
+	PolicyObjectChat         PolicyObject = "chat"
 )
 
 const PolicyRefMaxLength = 40
@@ -48,6 +49,7 @@ func RolePolicies(role Role) []PolicyRule {
 			{PolicyObjectAlertSources, PolicyActionRead},
 			{PolicyObjectPolicies, PolicyActionRead}, {PolicyObjectAlertSources, PolicyActionWrite},
 			{PolicyObjectPolicies, PolicyActionRead}, {PolicyObjectPolicies, PolicyActionWrite},
+			{PolicyObjectChat, PolicyActionRead}, {PolicyObjectChat, PolicyActionWrite},
 		}
 	case RoleMember:
 		return []PolicyRule{
@@ -60,6 +62,7 @@ func RolePolicies(role Role) []PolicyRule {
 			{PolicyObjectAlerts, PolicyActionRead}, {PolicyObjectAlerts, PolicyActionWrite},
 			{PolicyObjectAlertSources, PolicyActionRead},
 			{PolicyObjectPolicies, PolicyActionRead},
+			{PolicyObjectChat, PolicyActionRead},
 		}
 	default:
 		return nil

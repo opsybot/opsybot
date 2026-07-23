@@ -2457,6 +2457,121 @@ paths:
         "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
         "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
         "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/chat/connections:
+    get:
+      operationId: listChatConnections
+      summary: List chat connections for a workspace
+      tags: [chat]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Connections, content: { application/json: { schema: { $ref: "#/components/schemas/ChatConnectionList" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    post:
+      operationId: connectChat
+      summary: Connect a chat provider with a validated bot token
+      tags: [chat]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ConnectChatRequest" }
+      responses:
+        "201": { description: Connected, content: { application/json: { schema: { $ref: "#/components/schemas/ChatConnection" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/chat/connections/{provider}:
+    delete:
+      operationId: deleteChatConnection
+      summary: Disconnect a chat provider
+      tags: [chat]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: provider, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Disconnected }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/chat/connections/{provider}/defaults:
+    put:
+      operationId: putChatDefaults
+      summary: Update incident defaults for a chat connection
+      tags: [chat]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: provider, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChatDefaultsRequest" }
+      responses:
+        "204": { description: Updated }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/chat/connections/{provider}/link:
+    post:
+      operationId: linkChatIdentity
+      summary: Link the current user's chat identity by their email
+      tags: [chat]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: provider, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Linked, content: { application/json: { schema: { $ref: "#/components/schemas/ChatIdentity" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/chat/connections/{provider}/test:
+    post:
+      operationId: testChatConnection
+      summary: Send a test message through a chat connection to the current user
+      tags: [chat]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: provider, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Test result, content: { application/json: { schema: { $ref: "#/components/schemas/ChatTestResult" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/chat/connections/{provider}/identity/start:
+    post:
+      operationId: startChatIdentityOAuth
+      summary: Begin the Sign-in-with-provider flow to link the current user's chat identity
+      tags: [chat]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: provider, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Authorize URL, content: { application/json: { schema: { $ref: "#/components/schemas/ChatOAuthStart" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/chat/connections/{provider}/oauth/start:
+    post:
+      operationId: startChatOAuth
+      summary: Begin the OAuth install flow for a chat provider
+      tags: [chat]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: provider, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Authorize URL, content: { application/json: { schema: { $ref: "#/components/schemas/ChatOAuthStart" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
   /workspaces/{workspaceId}/escalation-policies:
     get:
       operationId: listEscalationPolicies
@@ -2775,6 +2890,65 @@ components:
       properties:
         rules: { $ref: "#/components/schemas/NotificationRules" }
         channels: { type: array, items: { $ref: "#/components/schemas/Channel" } }
+    ChatConnection:
+      type: object
+      required: [provider, externalName, health, healthNote, enabled, namingPattern, announceChannel, archiveOnResolve, linked]
+      properties:
+        provider: { type: string, enum: [slack, teams, discord, telegram] }
+        externalName: { type: string }
+        health: { type: string, enum: [healthy, failing] }
+        healthNote: { type: string }
+        healthCheckedAt: { type: string, format: date-time }
+        enabled: { type: boolean }
+        namingPattern: { type: string }
+        announceChannel: { type: string }
+        archiveOnResolve: { type: boolean }
+        linked: { type: boolean }
+        linkedHandle: { type: string }
+    ChatConnectionList:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/ChatConnection" } }
+    ConnectChatRequest:
+      type: object
+      required: [provider]
+      properties:
+        provider: { type: string, enum: [slack, teams, discord, telegram] }
+        botToken:
+          type: string
+          description: >-
+            Optional app-level bot token override. Normally omitted — the
+            instance-wide token from the OPSYBOT_*_BOT_TOKEN environment is used.
+        externalId:
+          type: string
+          description: >-
+            Per-workspace install target. For Discord this is the guild (server)
+            ID; for Slack it is resolved from the token when omitted.
+    ChatDefaultsRequest:
+      type: object
+      required: [namingPattern, announceChannel, archiveOnResolve]
+      properties:
+        namingPattern: { type: string }
+        announceChannel: { type: string }
+        archiveOnResolve: { type: boolean }
+    ChatIdentity:
+      type: object
+      required: [providerHandle, verified]
+      properties:
+        providerHandle: { type: string }
+        verified: { type: boolean }
+    ChatOAuthStart:
+      type: object
+      required: [authorizeUrl]
+      properties:
+        authorizeUrl: { type: string }
+    ChatTestResult:
+      type: object
+      required: [delivered, detail]
+      properties:
+        delivered: { type: boolean }
+        detail: { type: string }
     EscalationPolicyDetail:
       type: object
       required: [policy, routes, recent, routed, isDefault]

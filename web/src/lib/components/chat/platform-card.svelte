@@ -1,6 +1,8 @@
 <script lang="ts">
+	import CircleCheckIcon from '@lucide/svelte/icons/circle-check';
+	import LinkIcon from '@lucide/svelte/icons/link';
 	import PlusIcon from '@lucide/svelte/icons/plus';
-	import RotateCwIcon from '@lucide/svelte/icons/rotate-cw';
+	import SendIcon from '@lucide/svelte/icons/send';
 	import UnplugIcon from '@lucide/svelte/icons/unplug';
 	import { toast } from 'svelte-sonner';
 	import { enhance } from '$app/forms';
@@ -20,6 +22,10 @@
 	const connection = $derived(platform.connection);
 	const badge = $derived(connectionBadge(platform));
 	const Icon = $derived(CHAT_ICONS[platform.icon]);
+	const linked = $derived(connection?.linked ?? false);
+	const linkLabel = $derived(
+		linked ? (connection?.linkedHandle ? connection.linkedHandle : 'Linked') : 'Link my account'
+	);
 </script>
 
 <section
@@ -50,19 +56,88 @@
 			<div class="flex shrink-0 gap-2">
 				<form
 					method="POST"
-					action="?/reconnect"
+					action="?/test"
 					use:enhance={() =>
 						async ({ result, update }) => {
 							await update({ reset: false });
-							if (result.type === 'success') toast.success(`${platform.label} reconnected: scopes refreshed.`);
+							if (result.type === 'success') {
+								const detail = String(result.data?.detail ?? '');
+								if (result.data?.delivered) {
+									toast.success(detail || `Sent a test message on ${platform.label}.`);
+								} else {
+									toast.error(detail || `Could not send a test message on ${platform.label}.`);
+								}
+							} else if (result.type === 'failure') {
+								toast.error(String(result.data?.error ?? 'Could not send a test message.'));
+							}
 						}}
 				>
 					<input type="hidden" name="platform" value={platform.id} />
 					<Button type="submit" size="sm" variant="ghost">
-						<RotateCwIcon data-icon="inline-start" />
-						Reconnect
+						<SendIcon data-icon="inline-start" />
+						Send test
 					</Button>
 				</form>
+				{#if platform.authKind === 'oauth'}
+					<form
+						method="POST"
+						action="?/linkOAuth"
+						use:enhance={() =>
+							async ({ result, update }) => {
+								await update({ reset: false });
+								if (result.type === 'success' && result.data?.oauthUrl) {
+									window.location.href = String(result.data.oauthUrl);
+								} else if (result.type === 'failure') {
+									toast.error(String(result.data?.error ?? 'Could not start sign-in.'));
+								}
+							}}
+					>
+						<input type="hidden" name="platform" value={platform.id} />
+						<Button
+							type="submit"
+							size="sm"
+							variant="ghost"
+							title={linked ? 'Re-link your account' : undefined}
+						>
+							{#if linked}<CircleCheckIcon data-icon="inline-start" class="text-success-ink" />{:else}<LinkIcon
+									data-icon="inline-start"
+								/>{/if}
+							{linkLabel}
+						</Button>
+					</form>
+				{:else}
+					<form
+						method="POST"
+						action="?/link"
+						use:enhance={() =>
+							async ({ result, update }) => {
+								await update({ reset: false });
+								if (result.type === 'success') {
+									const handle = result.data?.handle;
+									toast.success(
+										handle
+											? `Linked your ${platform.label} account: ${handle}.`
+											: `Linked your ${platform.label} account.`
+									);
+								} else if (result.type === 'failure') {
+									toast.error(String(result.data?.error ?? 'Could not link your account.'));
+								}
+							}}
+					>
+						<input type="hidden" name="platform" value={platform.id} />
+						<Button
+							type="submit"
+							size="sm"
+							variant="ghost"
+							title={linked ? 'Re-link your account' : undefined}
+						>
+							{#if linked}<CircleCheckIcon data-icon="inline-start" class="text-success-ink" />{:else}<LinkIcon
+									data-icon="inline-start"
+								/>{/if}
+							{linkLabel}
+						</Button>
+					</form>
+				{/if}
 				<Button size="sm" variant="ghost" onclick={ondisconnect}>
 					<UnplugIcon data-icon="inline-start" />
 					Disconnect

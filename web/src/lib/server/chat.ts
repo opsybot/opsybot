@@ -1,44 +1,24 @@
-import type { Platform } from '$lib/chat';
-import { ANNOUNCE_CHANNELS, DEFAULT_DEFAULTS, PLATFORMS } from '$lib/chat';
-import { scenario } from './fixtures';
+import type { Cookies } from '@sveltejs/kit';
+import type { components } from '$lib/api/schema';
+import type { ChannelDefaults, Connection, Health, Platform, PlatformId } from '$lib/chat';
+import { DEFAULT_DEFAULTS, PLATFORMS } from '$lib/chat';
+import { apiClient } from './api';
 
-function seed(): Platform[] {
-	return PLATFORMS.map(
-		(platform): Platform => ({
-			...platform,
-			connection:
-				platform.id === 'slack'
-					? {
-							workspace: 'Acme Corp',
-							health: 'healthy',
-							healthNote: 'bot responded in 0.4 s · checked 2 m ago',
-							defaults: { ...DEFAULT_DEFAULTS }
-						}
-					: null
-		})
-	);
-}
+type Schemas = components['schemas'];
 
-const store = { platforms: seed() };
-
-const state = scenario();
-if (state === 'empty') {
-	for (const platform of store.platforms) platform.connection = null;
-}
-if (state === 'degraded') {
-	const slack = store.platforms.find((platform) => platform.id === 'slack');
-	if (slack?.connection) {
-		slack.connection.health = 'failing';
-		slack.connection.healthNote = 'no response · last checked 6 m ago';
-	}
-}
-
-export function listPlatforms(): Platform[] {
-	return store.platforms;
-}
-
-function get(id: string): Platform | undefined {
-	return store.platforms.find((platform) => platform.id === id);
+function connectionFromApi(dto: Schemas['ChatConnection']): Connection {
+	return {
+		workspace: dto.externalName,
+		health: dto.health as Health,
+		healthNote: dto.healthNote,
+		defaults: {
+			namingPattern: dto.namingPattern || DEFAULT_DEFAULTS.namingPattern,
+			announceChannel: dto.announceChannel || DEFAULT_DEFAULTS.announceChannel,
+			archiveOnResolve: dto.archiveOnResolve
+		},
+		linked: dto.linked ?? false,
+		linkedHandle: dto.linkedHandle ?? ''
+	};
 }
 
 export function sanitizeNamingPattern(input: string): string {
@@ -46,52 +26,111 @@ export function sanitizeNamingPattern(input: string): string {
 	return cleaned || DEFAULT_DEFAULTS.namingPattern;
 }
 
-export function connect(id: string): boolean {
-	const platform = get(id);
-	if (!platform) return false;
-	if (!platform.connection) {
-		platform.connection = {
-			workspace: 'Acme Corp',
-			health: 'healthy',
-			healthNote: 'bot responded in 0.5 s · checked just now',
-			defaults: { ...DEFAULT_DEFAULTS }
-		};
-	}
-	return true;
+export async function listPlatforms(cookies: Cookies, workspace: string): Promise<Platform[]> {
+	const { data } = await apiClient(cookies).GET('/workspaces/{workspaceId}/chat/connections', {
+		params: { path: { workspaceId: workspace } }
+	});
+	const byProvider = new Map<string, Schemas['ChatConnection']>();
+	for (const item of data?.items ?? []) byProvider.set(item.provider, item);
+	return PLATFORMS.map((platform) => {
+		const dto = byProvider.get(platform.id);
+		return { ...platform, connection: dto ? connectionFromApi(dto) : null };
+	});
 }
 
-export function disconnect(id: string): boolean {
-	const platform = get(id);
-	if (!platform?.connection) return false;
-	platform.connection = null;
-	return true;
+export async function connect(
+	cookies: Cookies,
+	workspace: string,
+	provider: PlatformId,
+	externalId?: string
+): Promise<{ error?: string }> {
+	const { error } = await apiClient(cookies).POST('/workspaces/{workspaceId}/chat/connections', {
+		params: { path: { workspaceId: workspace } },
+		body: { provider, externalId: externalId || undefined }
+	});
+	return error ? { error: error.detail ?? 'Could not connect that provider.' } : {};
 }
 
-export function reconnect(id: string): boolean {
-	const platform = get(id);
-	if (!platform?.connection) return false;
-	platform.connection.health = 'healthy';
-	platform.connection.healthNote = 'scopes refreshed · checked just now';
-	return true;
+export async function disconnect(
+	cookies: Cookies,
+	workspace: string,
+	provider: PlatformId
+): Promise<{ error?: string }> {
+	const { error } = await apiClient(cookies).DELETE(
+		'/workspaces/{workspaceId}/chat/connections/{provider}',
+		{ params: { path: { workspaceId: workspace, provider } } }
+	);
+	return error ? { error: error.detail ?? 'Could not disconnect that provider.' } : {};
 }
 
-export function setNamingPattern(id: string, pattern: string): boolean {
-	const platform = get(id);
-	if (!platform?.connection) return false;
-	platform.connection.defaults.namingPattern = sanitizeNamingPattern(pattern);
-	return true;
+export async function setDefaults(
+	cookies: Cookies,
+	workspace: string,
+	provider: PlatformId,
+	defaults: ChannelDefaults
+): Promise<{ error?: string }> {
+	const { error } = await apiClient(cookies).PUT(
+		'/workspaces/{workspaceId}/chat/connections/{provider}/defaults',
+		{
+			params: { path: { workspaceId: workspace, provider } },
+			body: {
+				namingPattern: sanitizeNamingPattern(defaults.namingPattern),
+				announceChannel: defaults.announceChannel,
+				archiveOnResolve: defaults.archiveOnResolve
+			}
+		}
+	);
+	return error ? { error: error.detail ?? 'Could not save those defaults.' } : {};
 }
 
-export function setAnnounceChannel(id: string, channel: string): boolean {
-	const platform = get(id);
-	if (!platform?.connection || !ANNOUNCE_CHANNELS.includes(channel)) return false;
-	platform.connection.defaults.announceChannel = channel;
-	return true;
+export async function startIdentityOAuth(
+	cookies: Cookies,
+	workspace: string,
+	provider: PlatformId
+): Promise<{ url?: string; error?: string }> {
+	const { data, error } = await apiClient(cookies).POST(
+		'/workspaces/{workspaceId}/chat/connections/{provider}/identity/start',
+		{ params: { path: { workspaceId: workspace, provider } } }
+	);
+	if (error) return { error: error.detail ?? 'Could not start Slack sign-in.' };
+	return { url: data?.authorizeUrl };
 }
 
-export function setArchiveOnResolve(id: string, archive: boolean): boolean {
-	const platform = get(id);
-	if (!platform?.connection) return false;
-	platform.connection.defaults.archiveOnResolve = archive;
-	return true;
+export async function testConnection(
+	cookies: Cookies,
+	workspace: string,
+	provider: PlatformId
+): Promise<{ delivered?: boolean; detail?: string; error?: string }> {
+	const { data, error } = await apiClient(cookies).POST(
+		'/workspaces/{workspaceId}/chat/connections/{provider}/test',
+		{ params: { path: { workspaceId: workspace, provider } } }
+	);
+	if (error) return { error: error.detail ?? 'Could not send a test message.' };
+	return { delivered: data?.delivered, detail: data?.detail };
+}
+
+export async function startOAuth(
+	cookies: Cookies,
+	workspace: string,
+	provider: PlatformId
+): Promise<{ url?: string; error?: string }> {
+	const { data, error } = await apiClient(cookies).POST(
+		'/workspaces/{workspaceId}/chat/connections/{provider}/oauth/start',
+		{ params: { path: { workspaceId: workspace, provider } } }
+	);
+	if (error) return { error: error.detail ?? 'Could not start the connection.' };
+	return { url: data?.authorizeUrl };
+}
+
+export async function linkIdentity(
+	cookies: Cookies,
+	workspace: string,
+	provider: PlatformId
+): Promise<{ handle?: string; verified?: boolean; error?: string }> {
+	const { data, error } = await apiClient(cookies).POST(
+		'/workspaces/{workspaceId}/chat/connections/{provider}/link',
+		{ params: { path: { workspaceId: workspace, provider } } }
+	);
+	if (error) return { error: error.detail ?? 'Could not find your account in that workspace.' };
+	return { handle: data?.providerHandle, verified: data?.verified };
 }

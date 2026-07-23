@@ -9,6 +9,7 @@ import (
 
 	"github.com/opsybot/opsybot/internal/config"
 	"github.com/opsybot/opsybot/internal/entity"
+	"github.com/opsybot/opsybot/internal/repository/action_token"
 	"github.com/opsybot/opsybot/internal/repository/alert"
 	"github.com/opsybot/opsybot/internal/repository/channel"
 	"github.com/opsybot/opsybot/internal/repository/lock"
@@ -50,7 +51,8 @@ func newHarness(t *testing.T) *harness {
 	}
 	h.srv = &srv{
 		tx: fakeTx{}, lock: h.lock, runs: h.runs, rules: h.rules, channels: h.channels,
-		alerts: h.alerts, workspaces: h.ws, notifier: h.notify, limiter: h.limiter,
+		alerts: h.alerts, workspaces: h.ws, actions: action_token.NewMockActionToken(ctrl),
+		notifier: h.notify, limiter: h.limiter,
 		cfg: config.Auth{BaseURL: "http://localhost:8080"},
 	}
 	return h

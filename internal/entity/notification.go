@@ -139,12 +139,15 @@ type NotifyRequest struct {
 }
 
 type NotifyTarget struct {
-	UserID    string
-	Name      string
-	Channel   ChannelType
-	ChannelID string
-	Detail    string
-	Secret    string
+	WorkspaceID  string
+	UserID       string
+	Name         string
+	Channel      ChannelType
+	ChannelID    string
+	Detail       string
+	Secret       string
+	AckToken     string
+	ResolveToken string
 }
 
 type NtfyMessage struct {

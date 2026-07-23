@@ -109,10 +109,12 @@ var UserChannelWhere = struct {
 // UserChannelRels is where relationship names are stored.
 var UserChannelRels = struct {
 	User                        string
+	ChannelAlertActionTokens    string
 	ChannelChannelVerifications string
 	ChannelNotificationAttempts string
 }{
 	User:                        "User",
+	ChannelAlertActionTokens:    "ChannelAlertActionTokens",
 	ChannelChannelVerifications: "ChannelChannelVerifications",
 	ChannelNotificationAttempts: "ChannelNotificationAttempts",
 }
@@ -120,6 +122,7 @@ var UserChannelRels = struct {
 // userChannelR is where relationships are stored.
 type userChannelR struct {
 	User                        *User                    `boil:"User" json:"User" toml:"User" yaml:"User"`
+	ChannelAlertActionTokens    AlertActionTokenSlice    `boil:"ChannelAlertActionTokens" json:"ChannelAlertActionTokens" toml:"ChannelAlertActionTokens" yaml:"ChannelAlertActionTokens"`
 	ChannelChannelVerifications ChannelVerificationSlice `boil:"ChannelChannelVerifications" json:"ChannelChannelVerifications" toml:"ChannelChannelVerifications" yaml:"ChannelChannelVerifications"`
 	ChannelNotificationAttempts NotificationAttemptSlice `boil:"ChannelNotificationAttempts" json:"ChannelNotificationAttempts" toml:"ChannelNotificationAttempts" yaml:"ChannelNotificationAttempts"`
 }
@@ -143,6 +146,22 @@ func (r *userChannelR) GetUser() *User {
 	}
 
 	return r.User
+}
+
+func (o *UserChannel) GetChannelAlertActionTokens() AlertActionTokenSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetChannelAlertActionTokens()
+}
+
+func (r *userChannelR) GetChannelAlertActionTokens() AlertActionTokenSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.ChannelAlertActionTokens
 }
 
 func (o *UserChannel) GetChannelChannelVerifications() ChannelVerificationSlice {
@@ -504,6 +523,20 @@ func (o *UserChannel) User(mods ...qm.QueryMod) userQuery {
 	return Users(queryMods...)
 }
 
+// ChannelAlertActionTokens retrieves all the alert_action_token's AlertActionTokens with an executor via channel_id column.
+func (o *UserChannel) ChannelAlertActionTokens(mods ...qm.QueryMod) alertActionTokenQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"alert_action_tokens\".\"channel_id\"=?", o.ID),
+	)
+
+	return AlertActionTokens(queryMods...)
+}
+
 // ChannelChannelVerifications retrieves all the channel_verification's ChannelVerifications with an executor via channel_id column.
 func (o *UserChannel) ChannelChannelVerifications(mods ...qm.QueryMod) channelVerificationQuery {
 	var queryMods []qm.QueryMod
@@ -644,6 +677,119 @@ func (userChannelL) LoadUser(ctx context.Context, e boil.ContextExecutor, singul
 					foreign.R = &userR{}
 				}
 				foreign.R.UserChannels = append(foreign.R.UserChannels, local)
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadChannelAlertActionTokens allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (userChannelL) LoadChannelAlertActionTokens(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUserChannel any, mods queries.Applicator) error {
+	var slice []*UserChannel
+	var object *UserChannel
+
+	if singular {
+		var ok bool
+		object, ok = maybeUserChannel.(*UserChannel)
+		if !ok {
+			object = new(UserChannel)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeUserChannel)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeUserChannel))
+			}
+		}
+	} else {
+		s, ok := maybeUserChannel.(*[]*UserChannel)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeUserChannel)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeUserChannel))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &userChannelR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userChannelR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`alert_action_tokens`),
+		qm.WhereIn(`alert_action_tokens.channel_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load alert_action_tokens")
+	}
+
+	var resultSlice []*AlertActionToken
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice alert_action_tokens")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on alert_action_tokens")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for alert_action_tokens")
+	}
+
+	if len(alertActionTokenAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.ChannelAlertActionTokens = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &alertActionTokenR{}
+			}
+			foreign.R.Channel = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if queries.Equal(local.ID, foreign.ChannelID) {
+				local.R.ChannelAlertActionTokens = append(local.R.ChannelAlertActionTokens, foreign)
+				if foreign.R == nil {
+					foreign.R = &alertActionTokenR{}
+				}
+				foreign.R.Channel = local
 				break
 			}
 		}
@@ -920,6 +1066,133 @@ func (o *UserChannel) SetUser(ctx context.Context, exec boil.ContextExecutor, in
 		}
 	} else {
 		related.R.UserChannels = append(related.R.UserChannels, o)
+	}
+
+	return nil
+}
+
+// AddChannelAlertActionTokens adds the given related objects to the existing relationships
+// of the user_channel, optionally inserting them as new records.
+// Appends related to o.R.ChannelAlertActionTokens.
+// Sets related.R.Channel appropriately.
+func (o *UserChannel) AddChannelAlertActionTokens(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*AlertActionToken) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			queries.Assign(&rel.ChannelID, o.ID)
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"alert_action_tokens\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"channel_id"}),
+				strmangle.WhereClause("\"", "\"", 2, alertActionTokenPrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			queries.Assign(&rel.ChannelID, o.ID)
+		}
+	}
+
+	if o.R == nil {
+		o.R = &userChannelR{
+			ChannelAlertActionTokens: related,
+		}
+	} else {
+		o.R.ChannelAlertActionTokens = append(o.R.ChannelAlertActionTokens, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &alertActionTokenR{
+				Channel: o,
+			}
+		} else {
+			rel.R.Channel = o
+		}
+	}
+	return nil
+}
+
+// SetChannelAlertActionTokens removes all previously related items of the
+// user_channel replacing them completely with the passed
+// in related items, optionally inserting them as new records.
+// Sets o.R.Channel's ChannelAlertActionTokens accordingly.
+// Replaces o.R.ChannelAlertActionTokens with related.
+// Sets related.R.Channel's ChannelAlertActionTokens accordingly.
+func (o *UserChannel) SetChannelAlertActionTokens(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*AlertActionToken) error {
+	query := "update \"alert_action_tokens\" set \"channel_id\" = null where \"channel_id\" = $1"
+	values := []any{o.ID}
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, query)
+		fmt.Fprintln(writer, values)
+	}
+	_, err := exec.ExecContext(ctx, query, values...)
+	if err != nil {
+		return errors.Wrap(err, "failed to remove relationships before set")
+	}
+
+	if o.R != nil {
+		for _, rel := range o.R.ChannelAlertActionTokens {
+			queries.SetScanner(&rel.ChannelID, nil)
+			if rel.R == nil {
+				continue
+			}
+
+			rel.R.Channel = nil
+		}
+		o.R.ChannelAlertActionTokens = nil
+	}
+
+	return o.AddChannelAlertActionTokens(ctx, exec, insert, related...)
+}
+
+// RemoveChannelAlertActionTokens relationships from objects passed in.
+// Removes related items from R.ChannelAlertActionTokens (uses pointer comparison, removal does not keep order)
+// Sets related.R.Channel.
+func (o *UserChannel) RemoveChannelAlertActionTokens(ctx context.Context, exec boil.ContextExecutor, related ...*AlertActionToken) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	for _, rel := range related {
+		queries.SetScanner(&rel.ChannelID, nil)
+		if rel.R != nil {
+			rel.R.Channel = nil
+		}
+		if _, err = rel.Update(ctx, exec, boil.Whitelist("channel_id")); err != nil {
+			return err
+		}
+	}
+	if o.R == nil {
+		return nil
+	}
+
+	for _, rel := range related {
+		for i, ri := range o.R.ChannelAlertActionTokens {
+			if rel != ri {
+				continue
+			}
+
+			ln := len(o.R.ChannelAlertActionTokens)
+			if ln > 1 && i < ln-1 {
+				o.R.ChannelAlertActionTokens[i] = o.R.ChannelAlertActionTokens[ln-1]
+			}
+			o.R.ChannelAlertActionTokens = o.R.ChannelAlertActionTokens[:ln-1]
+			break
+		}
 	}
 
 	return nil

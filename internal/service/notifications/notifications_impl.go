@@ -22,9 +22,11 @@ type srv struct {
 	channels   repository.Channel
 	alerts     repository.Alert
 	workspaces repository.Workspace
+	actions    repository.ActionToken
 	notifier   service.Notifier
 	limiter    service.RateLimiter
 	cfg        config.Auth
+	chat       config.Chat
 }
 
 func New(
@@ -35,11 +37,13 @@ func New(
 	channels repository.Channel,
 	alerts repository.Alert,
 	workspaces repository.Workspace,
+	actions repository.ActionToken,
 	notifier service.Notifier,
 	limiter service.RateLimiter,
 	cfg config.Auth,
+	chat config.Chat,
 ) service.Notifications {
-	return &srv{tx: tx, lock: lock, runs: runs, rules: rules, channels: channels, alerts: alerts, workspaces: workspaces, notifier: notifier, limiter: limiter, cfg: cfg}
+	return &srv{tx: tx, lock: lock, runs: runs, rules: rules, channels: channels, alerts: alerts, workspaces: workspaces, actions: actions, notifier: notifier, limiter: limiter, cfg: cfg, chat: chat}
 }
 
 func (s *srv) Page(ctx context.Context, req entity.NotifyRequest) (entity.NotificationRun, error) {
@@ -182,14 +186,23 @@ func (s *srv) executeStep(ctx context.Context, runID string, now time.Time) (*pe
 			if ws, err := s.workspaces.GetByID(ctx, run.WorkspaceID); err == nil {
 				slug = ws.Slug
 			}
+			target := entity.NotifyTarget{
+				WorkspaceID: run.WorkspaceID, UserID: run.UserID, Name: run.Label, Channel: tick.Step.Channel,
+				ChannelID: tick.Step.ChannelID, Detail: tick.Step.Detail,
+			}
+			if tick.Step.Channel.EventKind() == entity.AlertEventChat {
+				ack, resolve, err := s.mintActions(ctx, run, tick.Step.ChannelID, now)
+				if err != nil {
+					return err
+				}
+				target.AckToken = ack
+				target.ResolveToken = resolve
+			}
 			pending = &pendingSend{
-				run:  run,
-				tick: tick,
-				target: entity.NotifyTarget{
-					UserID: run.UserID, Name: run.Label, Channel: tick.Step.Channel,
-					ChannelID: tick.Step.ChannelID, Detail: tick.Step.Detail,
-				},
-				page: entity.BuildAlertPage(alert, slug, run.PolicySlug, s.cfg.BaseURL, run.Level),
+				run:    run,
+				tick:   tick,
+				target: target,
+				page:   entity.BuildAlertPage(alert, slug, run.PolicySlug, s.cfg.BaseURL, run.Level),
 			}
 			return nil
 		}
@@ -296,6 +309,29 @@ func deliveryLabel(channel entity.ChannelType, name string) string {
 
 func needsSecret(channel entity.ChannelType) bool {
 	return channel == entity.ChannelTypeWebhook || channel == entity.ChannelTypeNtfy
+}
+
+func (s *srv) mintActions(ctx context.Context, run entity.NotificationRun, channelID string, now time.Time) (string, string, error) {
+	ttl := s.chat.ActionTokenTTL
+	if ttl <= 0 {
+		ttl = 24 * time.Hour
+	}
+	expiresAt := now.Add(ttl)
+	tokens := map[entity.ActionKind]string{}
+	for _, kind := range []entity.ActionKind{entity.ActionKindAck, entity.ActionKindResolve} {
+		raw, err := entity.GenerateToken(entity.ActionTokenLength)
+		if err != nil {
+			return "", "", err
+		}
+		if err := s.actions.Mint(ctx, entity.AlertActionRecord{
+			WorkspaceID: run.WorkspaceID, AlertID: run.AlertID, UserID: run.UserID, ChannelID: channelID,
+			Action: kind, TokenHash: entity.HashToken(raw), ExpiresAt: expiresAt,
+		}); err != nil {
+			return "", "", err
+		}
+		tokens[kind] = raw
+	}
+	return tokens[entity.ActionKindAck], tokens[entity.ActionKindResolve], nil
 }
 
 func deliveredAny(ctx context.Context, runs repository.NotificationRun, run entity.NotificationRun) bool {

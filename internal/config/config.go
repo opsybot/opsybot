@@ -43,6 +43,7 @@ type Slack struct {
 	ClientID      string        `mapstructure:"client_id"`
 	ClientSecret  string        `mapstructure:"client_secret"`
 	SigningSecret string        `mapstructure:"signing_secret"`
+	BotToken      string        `mapstructure:"bot_token"`
 	BaseURL       string        `mapstructure:"base_url"`
 	Timeout       time.Duration `mapstructure:"timeout"`
 	UserAgent     string        `mapstructure:"user_agent"`
@@ -207,6 +208,18 @@ func NewNtfy(cfg Config) Ntfy {
 	return cfg.Ntfy
 }
 
+func NewSlack(cfg Config) Slack {
+	return cfg.Slack
+}
+
+func NewDiscord(cfg Config) Discord {
+	return cfg.Discord
+}
+
+func NewChat(cfg Config) Chat {
+	return cfg.Chat
+}
+
 func NewMailer(cfg Config) Mailer {
 	return cfg.Mailer
 }
@@ -300,6 +313,23 @@ func New(cfgFile string) (Config, error) {
 	v.SetDefault("ntfy.default_server", "https://ntfy.sh")
 	v.SetDefault("ntfy.timeout", "10s")
 	v.SetDefault("ntfy.user_agent", "opsybot")
+	v.SetDefault("slack.client_id", "")
+	v.SetDefault("slack.client_secret", "")
+	v.SetDefault("slack.signing_secret", "")
+	v.SetDefault("slack.bot_token", "")
+	v.SetDefault("slack.base_url", "https://slack.com/api")
+	v.SetDefault("slack.timeout", "10s")
+	v.SetDefault("slack.user_agent", "opsybot")
+	v.SetDefault("discord.application_id", "")
+	v.SetDefault("discord.client_id", "")
+	v.SetDefault("discord.client_secret", "")
+	v.SetDefault("discord.public_key", "")
+	v.SetDefault("discord.bot_token", "")
+	v.SetDefault("discord.base_url", "https://discord.com/api/v10")
+	v.SetDefault("discord.timeout", "10s")
+	v.SetDefault("discord.user_agent", "opsybot")
+	v.SetDefault("chat.interaction_skew", "5m")
+	v.SetDefault("chat.action_token_ttl", "24h")
 	v.SetDefault("mailer.host", "")
 	v.SetDefault("mailer.port", 587)
 	v.SetDefault("mailer.username", "")
