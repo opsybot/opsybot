@@ -22,7 +22,6 @@ type srv struct {
 	oauthStates repository.ChatOAuthState
 	audit       repository.Audit
 	cfg         config.Auth
-	slack       config.Slack
 	discord     config.Discord
 	telegram    config.Telegram
 }
@@ -38,11 +37,10 @@ func New(
 	oauthStates repository.ChatOAuthState,
 	audit repository.Audit,
 	cfg config.Auth,
-	slack config.Slack,
 	discord config.Discord,
 	telegram config.Telegram,
 ) service.Chats {
-	return &srv{tx: tx, workspaces: workspaces, members: members, policy: policy, connections: connections, identities: identities, courier: courier, oauthStates: oauthStates, audit: audit, cfg: cfg, slack: slack, discord: discord, telegram: telegram}
+	return &srv{tx: tx, workspaces: workspaces, members: members, policy: policy, connections: connections, identities: identities, courier: courier, oauthStates: oauthStates, audit: audit, cfg: cfg, discord: discord, telegram: telegram}
 }
 
 func (s *srv) redirectURI(provider entity.ChatProvider) string {
@@ -51,8 +49,6 @@ func (s *srv) redirectURI(provider entity.ChatProvider) string {
 
 func (s *srv) envToken(provider entity.ChatProvider) string {
 	switch provider {
-	case entity.ChatProviderSlack:
-		return s.slack.BotToken
 	case entity.ChatProviderDiscord:
 		return s.discord.BotToken
 	case entity.ChatProviderTelegram:
@@ -134,7 +130,7 @@ func (s *srv) Connect(ctx context.Context, workspaceSlug string, in entity.ChatC
 		token = s.envToken(in.Provider)
 		storedToken = ""
 	}
-	if token == "" {
+	if token == "" && in.Provider != entity.ChatProviderTeams {
 		return entity.ChatConnection{}, entity.ErrChatProviderNotConfigured
 	}
 	valid, err := s.courier.Validate(ctx, in.Provider, token, in.ExternalID)
@@ -160,23 +156,23 @@ func (s *srv) Connect(ctx context.Context, workspaceSlug string, in entity.ChatC
 		WorkspaceID: ws.ID, ActorType: entity.AuditActorUser, ActorUserID: actor.UserID,
 		ActorLabel: actor.Label, Action: entity.ActionChatConnected, Target: string(in.Provider),
 	})
-	if in.Provider == entity.ChatProviderSlack {
-		s.sweepSlackIdentities(ctx, conn, token)
+	if in.Provider == entity.ChatProviderSlack || in.Provider == entity.ChatProviderTeams {
+		s.sweepIdentities(ctx, conn, token, in.Provider)
 	}
 	return conn, nil
 }
 
-func (s *srv) sweepSlackIdentities(ctx context.Context, conn entity.ChatConnection, token string) {
+func (s *srv) sweepIdentities(ctx context.Context, conn entity.ChatConnection, token string, provider entity.ChatProvider) {
 	members, err := s.members.ListByWorkspace(ctx, conn.WorkspaceID)
 	if err != nil {
-		logger.From(ctx).WarnContext(ctx, "slack identity sweep skipped", "error", err, "workspace_id", conn.WorkspaceID)
+		logger.From(ctx).WarnContext(ctx, "chat identity sweep skipped", "error", err, "provider", string(provider), "workspace_id", conn.WorkspaceID)
 		return
 	}
 	for _, m := range members {
 		if m.Status != entity.MemberStatusActive || m.Email == "" {
 			continue
 		}
-		user, err := s.courier.LookupUser(ctx, entity.ChatProviderSlack, token, conn.ExternalID, m.Email)
+		user, err := s.courier.LookupUser(ctx, provider, token, conn.ExternalID, m.Email)
 		if err != nil || user.ProviderUserID == "" {
 			continue
 		}
@@ -184,7 +180,7 @@ func (s *srv) sweepSlackIdentities(ctx context.Context, conn entity.ChatConnecti
 			ConnectionID: conn.ID, UserID: m.UserID, ProviderUserID: user.ProviderUserID,
 			ProviderHandle: user.Handle, ResolvedBy: "email", Verified: true,
 		}); err != nil {
-			logger.From(ctx).WarnContext(ctx, "slack identity upsert failed", "error", err, "user_id", m.UserID)
+			logger.From(ctx).WarnContext(ctx, "chat identity upsert failed", "error", err, "provider", string(provider), "user_id", m.UserID)
 		}
 	}
 }
@@ -381,7 +377,7 @@ func (s *srv) CompleteOAuth(ctx context.Context, provider entity.ChatProvider, c
 		Action: entity.ActionChatConnected, Target: string(provider),
 	})
 	if provider == entity.ChatProviderSlack {
-		s.sweepSlackIdentities(ctx, savedConn, in.BotToken)
+		s.sweepIdentities(ctx, savedConn, in.BotToken, provider)
 	}
 	return st.WorkspaceSlug, nil
 }

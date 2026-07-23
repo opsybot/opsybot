@@ -9,6 +9,7 @@ import (
 	"github.com/opsybot/opsybot/internal/entity"
 	"github.com/opsybot/opsybot/internal/pkg/discord"
 	"github.com/opsybot/opsybot/internal/pkg/slack"
+	"github.com/opsybot/opsybot/internal/pkg/teams"
 	"github.com/opsybot/opsybot/internal/pkg/telegram"
 	"github.com/opsybot/opsybot/internal/repository"
 )
@@ -17,10 +18,11 @@ type repo struct {
 	slack    slack.Client
 	discord  discord.Client
 	telegram telegram.Client
+	teams    teams.Client
 }
 
-func New(slackClient slack.Client, discordClient discord.Client, telegramClient telegram.Client) repository.ChatCourier {
-	return &repo{slack: slackClient, discord: discordClient, telegram: telegramClient}
+func New(slackClient slack.Client, discordClient discord.Client, telegramClient telegram.Client, teamsClient teams.Client) repository.ChatCourier {
+	return &repo{slack: slackClient, discord: discordClient, telegram: telegramClient, teams: teamsClient}
 }
 
 func (r *repo) Send(ctx context.Context, in entity.ChatDelivery) (entity.ChatSendResult, error) {
@@ -31,8 +33,51 @@ func (r *repo) Send(ctx context.Context, in entity.ChatDelivery) (entity.ChatSen
 		return r.sendDiscord(ctx, in)
 	case entity.ChatProviderTelegram:
 		return r.sendTelegram(ctx, in)
+	case entity.ChatProviderTeams:
+		return r.sendTeams(ctx, in)
 	default:
 		return entity.ChatSendResult{Result: entity.NotifyResult{Detail: "chat provider not supported yet"}}, nil
+	}
+}
+
+func (r *repo) sendTeams(ctx context.Context, in entity.ChatDelivery) (entity.ChatSendResult, error) {
+	msg, err := r.teams.SendDirect(ctx, in.ProviderUserID, in.DMChannelID, teamsActivity(in))
+	if err != nil {
+		return entity.ChatSendResult{DMChannelID: in.DMChannelID, Result: entity.NotifyResult{Detail: err.Error()}}, nil
+	}
+	return entity.ChatSendResult{DMChannelID: msg.ConversationID, Result: entity.NotifyResult{Delivered: true, Detail: "delivered to Microsoft Teams", MessageID: msg.MessageID}}, nil
+}
+
+func teamsActivity(in entity.ChatDelivery) map[string]any {
+	body := []map[string]any{
+		{"type": "TextBlock", "text": in.Page.Subject(), "weight": "Bolder", "wrap": true},
+		{"type": "TextBlock", "text": strings.Join(in.Page.BodyLines(), "  ·  "), "wrap": true, "isSubtle": true},
+	}
+	actions := []map[string]any{}
+	base := strings.TrimRight(in.BaseURL, "/")
+	if in.AckToken != "" && base != "" {
+		actions = append(actions, map[string]any{"type": "Action.OpenUrl", "title": "Acknowledge", "url": base + "/v1/act/" + in.AckToken})
+	}
+	if in.ResolveToken != "" && base != "" {
+		actions = append(actions, map[string]any{"type": "Action.OpenUrl", "title": "Resolve", "url": base + "/v1/act/" + in.ResolveToken})
+	}
+	if in.Page.AlertURL != "" {
+		actions = append(actions, map[string]any{"type": "Action.OpenUrl", "title": "Open alert", "url": in.Page.AlertURL})
+	}
+	card := map[string]any{
+		"$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+		"type":    "AdaptiveCard",
+		"version": "1.4",
+		"body":    body,
+	}
+	if len(actions) > 0 {
+		card["actions"] = actions
+	}
+	return map[string]any{
+		"type": "message",
+		"attachments": []map[string]any{
+			{"contentType": "application/vnd.microsoft.card.adaptive", "content": card},
+		},
 	}
 }
 
@@ -155,6 +200,14 @@ func (r *repo) Validate(ctx context.Context, provider entity.ChatProvider, token
 		}
 		id := strconv.FormatInt(bot.ID, 10)
 		return entity.ChatValidation{ExternalID: id, ExternalName: bot.Username, BotUserID: id}, nil
+	case entity.ChatProviderTeams:
+		if !r.teams.Configured() {
+			return entity.ChatValidation{}, entity.ErrChatProviderNotConfigured
+		}
+		if err := r.teams.Validate(ctx); err != nil {
+			return entity.ChatValidation{}, entity.ErrChatConnectionInvalid
+		}
+		return entity.ChatValidation{ExternalID: externalID, ExternalName: "Microsoft Teams"}, nil
 	default:
 		return entity.ChatValidation{}, entity.ErrChatConnectionInvalid
 	}
@@ -201,6 +254,12 @@ func (r *repo) LookupUser(ctx context.Context, provider entity.ChatProvider, tok
 			handle = u.Username
 		}
 		return entity.ChatUser{ProviderUserID: u.ID, Handle: handle}, nil
+	case entity.ChatProviderTeams:
+		user, err := r.teams.LookupByEmail(ctx, email)
+		if err != nil {
+			return entity.ChatUser{}, entity.ErrChatConnectionInvalid
+		}
+		return entity.ChatUser{ProviderUserID: user.ID, Handle: user.DisplayName}, nil
 	default:
 		return entity.ChatUser{}, entity.ErrChatConnectionInvalid
 	}

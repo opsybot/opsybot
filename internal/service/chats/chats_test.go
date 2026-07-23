@@ -36,7 +36,7 @@ type harness struct {
 	audit       *audit.MockAudit
 }
 
-func newHarness(t *testing.T, slack config.Slack, discord config.Discord) *harness {
+func newHarness(t *testing.T, discord config.Discord) *harness {
 	t.Helper()
 	ctrl := gomock.NewController(t)
 	h := &harness{
@@ -53,7 +53,7 @@ func newHarness(t *testing.T, slack config.Slack, discord config.Discord) *harne
 		tx: fakeTx{}, workspaces: h.ws, members: h.members, policy: h.pol,
 		connections: h.connections, identities: h.identities, courier: h.courier,
 		oauthStates: h.oauthStates, audit: h.audit,
-		cfg: config.Auth{BaseURL: "https://opsy.test"}, slack: slack, discord: discord,
+		cfg: config.Auth{BaseURL: "https://opsy.test"}, discord: discord,
 	}
 	return h
 }
@@ -74,68 +74,64 @@ func (h *harness) allowRead() {
 	h.pol.EXPECT().Allowed(gomock.Any(), gomock.Any(), "ws-1", entity.PolicyObjectChat, entity.PolicyActionRead).Return(true, nil)
 }
 
-func TestConnectUsesEnvTokenAndStoresNoSecret(t *testing.T) {
-	h := newHarness(t, config.Slack{BotToken: "xoxb-env-token"}, config.Discord{})
-	h.allowWrite()
-
+func TestCompleteOAuthSweepsSlackIdentitiesByEmail(t *testing.T) {
+	h := newHarness(t, config.Discord{})
+	h.oauthStates.EXPECT().Consume(gomock.Any(), "state-xyz").Return(entity.ChatOAuthState{
+		Provider: entity.ChatProviderSlack, WorkspaceID: "ws-1", WorkspaceSlug: "acme", UserID: "u1",
+	}, nil)
+	h.members.EXPECT().IsActive(gomock.Any(), "ws-1", "u1").Return(true, nil)
+	h.pol.EXPECT().Allowed(gomock.Any(), gomock.Any(), "ws-1", entity.PolicyObjectChat, entity.PolicyActionWrite).Return(true, nil)
 	h.courier.EXPECT().
-		Validate(gomock.Any(), entity.ChatProviderSlack, "xoxb-env-token", "").
-		Return(entity.ChatValidation{ExternalID: "T1", ExternalName: "Acme", BotUserID: "U0"}, nil)
-
-	var saved entity.ChatConnectionInput
-	h.connections.EXPECT().
-		Save(gomock.Any(), "ws-1", gomock.Any()).
-		DoAndReturn(func(_ context.Context, _ string, in entity.ChatConnectionInput) (entity.ChatConnection, error) {
-			saved = in
-			return entity.ChatConnection{Provider: in.Provider, ExternalName: in.ExternalName}, nil
-		})
-	h.audit.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
-	h.members.EXPECT().ListByWorkspace(gomock.Any(), gomock.Any()).Return(nil, nil)
-
-	conn, err := h.srv.Connect(sessionCtx(), "acme", entity.ChatConnectInput{Provider: entity.ChatProviderSlack})
-	if err != nil {
-		t.Fatalf("Connect: %v", err)
-	}
-	if conn.ExternalName != "Acme" {
-		t.Errorf("ExternalName = %q, want Acme", conn.ExternalName)
-	}
-	if saved.BotToken != "" {
-		t.Errorf("BotToken persisted = %q, want empty: an app-level env token must never be written to the DB", saved.BotToken)
-	}
-	if saved.ExternalID != "T1" || saved.BotUserID != "U0" {
-		t.Errorf("validated identity not carried into Save: %+v", saved)
-	}
-}
-
-func TestConnectSweepsSlackIdentitiesByEmail(t *testing.T) {
-	h := newHarness(t, config.Slack{BotToken: "xoxb-env-token"}, config.Discord{})
-	h.allowWrite()
-	h.courier.EXPECT().
-		Validate(gomock.Any(), entity.ChatProviderSlack, "xoxb-env-token", "").
-		Return(entity.ChatValidation{ExternalID: "T1", ExternalName: "Acme", BotUserID: "U0"}, nil)
+		ExchangeOAuth(gomock.Any(), entity.ChatProviderSlack, "code-abc", gomock.Any()).
+		Return(entity.ChatOAuthResult{ExternalID: "T9", ExternalName: "Acme", BotUserID: "U0", BotToken: "xoxb-real"}, nil)
 	h.connections.EXPECT().Save(gomock.Any(), "ws-1", gomock.Any()).
-		Return(entity.ChatConnection{ID: "conn-1", WorkspaceID: "ws-1", Provider: entity.ChatProviderSlack, ExternalID: "T1"}, nil)
+		Return(entity.ChatConnection{ID: "conn-1", WorkspaceID: "ws-1", Provider: entity.ChatProviderSlack, ExternalID: "T9"}, nil)
 	h.audit.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
 	h.members.EXPECT().ListByWorkspace(gomock.Any(), "ws-1").Return([]entity.Member{
-		{UserID: "u1", Email: "vlad@acme.test", Status: entity.MemberStatusActive},
-		{UserID: "u2", Email: "", Status: entity.MemberStatusActive},
-		{UserID: "u3", Email: "old@acme.test", Status: entity.MemberStatusInvited},
+		{UserID: "u2", Email: "priya@acme.test", Status: entity.MemberStatusActive},
+		{UserID: "u3", Email: "", Status: entity.MemberStatusActive},
+		{UserID: "u4", Email: "old@acme.test", Status: entity.MemberStatusInvited},
 	}, nil)
 	h.courier.EXPECT().
-		LookupUser(gomock.Any(), entity.ChatProviderSlack, "xoxb-env-token", "T1", "vlad@acme.test").
-		Return(entity.ChatUser{ProviderUserID: "U100", Handle: "vlad"}, nil)
+		LookupUser(gomock.Any(), entity.ChatProviderSlack, "xoxb-real", "T9", "priya@acme.test").
+		Return(entity.ChatUser{ProviderUserID: "U100", Handle: "priya"}, nil)
 	h.identities.EXPECT().Upsert(gomock.Any(), gomock.Cond(func(in entity.ChatIdentity) bool {
-		return in.ConnectionID == "conn-1" && in.UserID == "u1" && in.ProviderUserID == "U100" &&
+		return in.ConnectionID == "conn-1" && in.UserID == "u2" && in.ProviderUserID == "U100" &&
 			in.ResolvedBy == "email" && in.Verified
 	})).Return(entity.ChatIdentity{}, nil)
 
-	if _, err := h.srv.Connect(sessionCtx(), "acme", entity.ChatConnectInput{Provider: entity.ChatProviderSlack}); err != nil {
-		t.Fatalf("Connect: %v", err)
+	if _, err := h.srv.CompleteOAuth(sessionCtx(), entity.ChatProviderSlack, "code-abc", "", "state-xyz"); err != nil {
+		t.Fatalf("CompleteOAuth: %v", err)
+	}
+}
+
+func TestConnectTeamsValidatesWithoutTokenAndSweepsByEmail(t *testing.T) {
+	h := newHarness(t, config.Discord{})
+	h.allowWrite()
+	h.courier.EXPECT().
+		Validate(gomock.Any(), entity.ChatProviderTeams, "", "").
+		Return(entity.ChatValidation{ExternalID: "tenant-1", ExternalName: "Microsoft Teams"}, nil)
+	h.connections.EXPECT().Save(gomock.Any(), "ws-1", gomock.Any()).
+		Return(entity.ChatConnection{ID: "conn-t", WorkspaceID: "ws-1", Provider: entity.ChatProviderTeams, ExternalID: "tenant-1"}, nil)
+	h.audit.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+	h.members.EXPECT().ListByWorkspace(gomock.Any(), "ws-1").Return([]entity.Member{
+		{UserID: "u1", Email: "vlad@acme.test", Status: entity.MemberStatusActive},
+	}, nil)
+	h.courier.EXPECT().
+		LookupUser(gomock.Any(), entity.ChatProviderTeams, "", "tenant-1", "vlad@acme.test").
+		Return(entity.ChatUser{ProviderUserID: "aad-1", Handle: "Vlad"}, nil)
+	h.identities.EXPECT().Upsert(gomock.Any(), gomock.Cond(func(in entity.ChatIdentity) bool {
+		return in.ConnectionID == "conn-t" && in.UserID == "u1" && in.ProviderUserID == "aad-1" &&
+			in.ResolvedBy == "email" && in.Verified
+	})).Return(entity.ChatIdentity{}, nil)
+
+	if _, err := h.srv.Connect(sessionCtx(), "acme", entity.ChatConnectInput{Provider: entity.ChatProviderTeams}); err != nil {
+		t.Fatalf("Connect(teams): %v", err)
 	}
 }
 
 func TestConnectRejectsWhenNoTokenAvailable(t *testing.T) {
-	h := newHarness(t, config.Slack{}, config.Discord{})
+	h := newHarness(t, config.Discord{})
 	h.allowWrite()
 
 	_, err := h.srv.Connect(sessionCtx(), "acme", entity.ChatConnectInput{Provider: entity.ChatProviderSlack})
@@ -145,7 +141,7 @@ func TestConnectRejectsWhenNoTokenAvailable(t *testing.T) {
 }
 
 func TestStartOAuthStoresStateAndReturnsURL(t *testing.T) {
-	h := newHarness(t, config.Slack{}, config.Discord{})
+	h := newHarness(t, config.Discord{})
 	h.allowWrite()
 	h.connections.EXPECT().SecretsEnabled(gomock.Any()).Return(true)
 
@@ -179,7 +175,7 @@ func TestStartOAuthStoresStateAndReturnsURL(t *testing.T) {
 }
 
 func TestStartOAuthRejectsNonOAuthProvider(t *testing.T) {
-	h := newHarness(t, config.Slack{}, config.Discord{})
+	h := newHarness(t, config.Discord{})
 	h.allowWrite()
 
 	_, err := h.srv.StartOAuth(sessionCtx(), "acme", entity.ChatProviderTeams)
@@ -189,7 +185,7 @@ func TestStartOAuthRejectsNonOAuthProvider(t *testing.T) {
 }
 
 func TestStartOAuthDiscordUsesBotInviteNoSecretCheck(t *testing.T) {
-	h := newHarness(t, config.Slack{}, config.Discord{})
+	h := newHarness(t, config.Discord{})
 	h.allowWrite()
 	// Discord stores no secret, so it must NOT gate on secret storage.
 	redirect := "https://opsy.test/v1/chat/discord/oauth/callback"
@@ -204,7 +200,7 @@ func TestStartOAuthDiscordUsesBotInviteNoSecretCheck(t *testing.T) {
 }
 
 func TestCompleteOAuthDiscordStoresGuildNoToken(t *testing.T) {
-	h := newHarness(t, config.Slack{}, config.Discord{BotToken: "disc-env"})
+	h := newHarness(t, config.Discord{BotToken: "disc-env"})
 	h.oauthStates.EXPECT().Consume(gomock.Any(), "st").Return(entity.ChatOAuthState{
 		Provider: entity.ChatProviderDiscord, Purpose: entity.ChatOAuthInstall,
 		WorkspaceID: "ws-1", WorkspaceSlug: "acme", UserID: "u1",
@@ -235,7 +231,7 @@ func TestCompleteOAuthDiscordStoresGuildNoToken(t *testing.T) {
 }
 
 func TestCompleteOAuthDiscordRequiresGuild(t *testing.T) {
-	h := newHarness(t, config.Slack{}, config.Discord{BotToken: "disc-env"})
+	h := newHarness(t, config.Discord{BotToken: "disc-env"})
 	h.oauthStates.EXPECT().Consume(gomock.Any(), "st").Return(entity.ChatOAuthState{
 		Provider: entity.ChatProviderDiscord, Purpose: entity.ChatOAuthInstall,
 		WorkspaceID: "ws-1", WorkspaceSlug: "acme", UserID: "u1",
@@ -250,7 +246,7 @@ func TestCompleteOAuthDiscordRequiresGuild(t *testing.T) {
 }
 
 func TestStartOAuthRejectsWhenSecretStorageDisabled(t *testing.T) {
-	h := newHarness(t, config.Slack{}, config.Discord{})
+	h := newHarness(t, config.Discord{})
 	h.allowWrite()
 	h.connections.EXPECT().SecretsEnabled(gomock.Any()).Return(false)
 
@@ -261,7 +257,7 @@ func TestStartOAuthRejectsWhenSecretStorageDisabled(t *testing.T) {
 }
 
 func TestCompleteOAuthExchangesAndSaves(t *testing.T) {
-	h := newHarness(t, config.Slack{}, config.Discord{})
+	h := newHarness(t, config.Discord{})
 
 	h.oauthStates.EXPECT().Consume(gomock.Any(), "state-xyz").Return(entity.ChatOAuthState{
 		Provider: entity.ChatProviderSlack, WorkspaceID: "ws-1", WorkspaceSlug: "acme", UserID: "u1",
@@ -295,7 +291,7 @@ func TestCompleteOAuthExchangesAndSaves(t *testing.T) {
 }
 
 func TestCompleteOAuthRejectsInvalidState(t *testing.T) {
-	h := newHarness(t, config.Slack{}, config.Discord{})
+	h := newHarness(t, config.Discord{})
 
 	h.oauthStates.EXPECT().Consume(gomock.Any(), "bad").Return(entity.ChatOAuthState{}, entity.ErrChatOAuthStateInvalid)
 
@@ -309,7 +305,7 @@ func TestCompleteOAuthRejectsInvalidState(t *testing.T) {
 }
 
 func TestCompleteOAuthRejectsSessionMismatch(t *testing.T) {
-	h := newHarness(t, config.Slack{}, config.Discord{})
+	h := newHarness(t, config.Discord{})
 
 	h.oauthStates.EXPECT().Consume(gomock.Any(), "state-xyz").Return(entity.ChatOAuthState{
 		Provider: entity.ChatProviderSlack, WorkspaceID: "ws-1", WorkspaceSlug: "acme", UserID: "u1",
@@ -333,7 +329,7 @@ func identityState() entity.ChatOAuthState {
 }
 
 func TestStartIdentityOAuthStoresIdentityState(t *testing.T) {
-	h := newHarness(t, config.Slack{}, config.Discord{})
+	h := newHarness(t, config.Discord{})
 	h.allowRead()
 	h.connections.EXPECT().Get(gomock.Any(), "ws-1", entity.ChatProviderSlack).
 		Return(entity.ChatConnection{ID: "conn-1", ExternalID: "T9"}, nil)
@@ -359,7 +355,7 @@ func TestStartIdentityOAuthStoresIdentityState(t *testing.T) {
 }
 
 func TestCompleteIdentityOAuthStoresVerifiedIdentity(t *testing.T) {
-	h := newHarness(t, config.Slack{}, config.Discord{})
+	h := newHarness(t, config.Discord{})
 	h.oauthStates.EXPECT().Consume(gomock.Any(), "st").Return(identityState(), nil)
 	h.members.EXPECT().IsActive(gomock.Any(), "ws-1", "u1").Return(true, nil)
 	h.courier.EXPECT().
@@ -385,7 +381,7 @@ func TestCompleteIdentityOAuthStoresVerifiedIdentity(t *testing.T) {
 }
 
 func TestCompleteIdentityOAuthRejectsSessionMismatch(t *testing.T) {
-	h := newHarness(t, config.Slack{}, config.Discord{})
+	h := newHarness(t, config.Discord{})
 	h.oauthStates.EXPECT().Consume(gomock.Any(), "st").Return(identityState(), nil)
 
 	ctx := entity.WithIdentity(context.Background(), entity.Identity{Kind: entity.IdentityKindSession, UserID: "attacker"})
@@ -399,7 +395,7 @@ func TestCompleteIdentityOAuthRejectsSessionMismatch(t *testing.T) {
 }
 
 func TestCompleteIdentityOAuthRejectsTeamMismatch(t *testing.T) {
-	h := newHarness(t, config.Slack{}, config.Discord{})
+	h := newHarness(t, config.Discord{})
 	h.oauthStates.EXPECT().Consume(gomock.Any(), "st").Return(identityState(), nil)
 	h.members.EXPECT().IsActive(gomock.Any(), "ws-1", "u1").Return(true, nil)
 	h.courier.EXPECT().
@@ -413,7 +409,7 @@ func TestCompleteIdentityOAuthRejectsTeamMismatch(t *testing.T) {
 }
 
 func TestCompleteOAuthRejectsIdentityState(t *testing.T) {
-	h := newHarness(t, config.Slack{}, config.Discord{})
+	h := newHarness(t, config.Discord{})
 	h.oauthStates.EXPECT().Consume(gomock.Any(), "st").Return(identityState(), nil)
 
 	_, err := h.srv.CompleteOAuth(sessionCtx(), entity.ChatProviderSlack, "code", "", "st")
@@ -423,7 +419,7 @@ func TestCompleteOAuthRejectsIdentityState(t *testing.T) {
 }
 
 func TestListEnrichesWithLinkedIdentity(t *testing.T) {
-	h := newHarness(t, config.Slack{}, config.Discord{})
+	h := newHarness(t, config.Discord{})
 	h.allowRead()
 	h.connections.EXPECT().List(gomock.Any(), "ws-1").
 		Return([]entity.ChatConnection{{ID: "conn-1", Provider: entity.ChatProviderSlack}}, nil)
@@ -440,7 +436,7 @@ func TestListEnrichesWithLinkedIdentity(t *testing.T) {
 }
 
 func TestTestConnectionPostsToAnnounceChannel(t *testing.T) {
-	h := newHarness(t, config.Slack{}, config.Discord{})
+	h := newHarness(t, config.Discord{})
 	h.allowRead()
 	h.connections.EXPECT().Get(gomock.Any(), "ws-1", entity.ChatProviderSlack).
 		Return(entity.ChatConnection{ID: "conn-1", ExternalID: "T9", AnnounceChannel: "#ops"}, nil)
@@ -462,7 +458,7 @@ func TestTestConnectionPostsToAnnounceChannel(t *testing.T) {
 }
 
 func TestTestConnectionFallsBackToDefaultChannel(t *testing.T) {
-	h := newHarness(t, config.Slack{}, config.Discord{})
+	h := newHarness(t, config.Discord{})
 	h.allowRead()
 	// No announce channel configured -> uses the default.
 	h.connections.EXPECT().Get(gomock.Any(), "ws-1", entity.ChatProviderDiscord).
@@ -478,7 +474,7 @@ func TestTestConnectionFallsBackToDefaultChannel(t *testing.T) {
 }
 
 func TestStartTelegramLinkReturnsDeepLink(t *testing.T) {
-	h := newHarness(t, config.Slack{}, config.Discord{})
+	h := newHarness(t, config.Discord{})
 	h.allowRead()
 	h.connections.EXPECT().Get(gomock.Any(), "ws-1", entity.ChatProviderTelegram).
 		Return(entity.ChatConnection{ID: "conn-1", ExternalName: "opsy_bot"}, nil)
@@ -503,7 +499,7 @@ func TestStartTelegramLinkReturnsDeepLink(t *testing.T) {
 }
 
 func TestCompleteTelegramLinkStoresIdentity(t *testing.T) {
-	h := newHarness(t, config.Slack{}, config.Discord{})
+	h := newHarness(t, config.Discord{})
 	h.srv.telegram = config.Telegram{BotToken: "tg-token"}
 	h.oauthStates.EXPECT().Consume(gomock.Any(), "linktok").Return(entity.ChatOAuthState{
 		Provider: entity.ChatProviderTelegram, Purpose: entity.ChatOAuthLink,
@@ -528,7 +524,7 @@ func TestCompleteTelegramLinkStoresIdentity(t *testing.T) {
 }
 
 func TestConnectTelegramSetsWebhook(t *testing.T) {
-	h := newHarness(t, config.Slack{}, config.Discord{})
+	h := newHarness(t, config.Discord{})
 	h.srv.telegram = config.Telegram{BotToken: "tg-token"}
 	h.allowWrite()
 	h.courier.EXPECT().Validate(gomock.Any(), entity.ChatProviderTelegram, "tg-token", "").
@@ -551,7 +547,7 @@ func TestConnectTelegramSetsWebhook(t *testing.T) {
 }
 
 func TestTestConnectionTelegramDMsTheUser(t *testing.T) {
-	h := newHarness(t, config.Slack{}, config.Discord{})
+	h := newHarness(t, config.Discord{})
 	h.allowRead()
 	h.connections.EXPECT().Get(gomock.Any(), "ws-1", entity.ChatProviderTelegram).
 		Return(entity.ChatConnection{ID: "conn-1", ExternalName: "opsy_bot"}, nil)
@@ -572,7 +568,7 @@ func TestTestConnectionTelegramDMsTheUser(t *testing.T) {
 }
 
 func TestTestConnectionTelegramNeedsLinkFirst(t *testing.T) {
-	h := newHarness(t, config.Slack{}, config.Discord{})
+	h := newHarness(t, config.Discord{})
 	h.allowRead()
 	h.connections.EXPECT().Get(gomock.Any(), "ws-1", entity.ChatProviderTelegram).
 		Return(entity.ChatConnection{ID: "conn-1"}, nil)
@@ -590,7 +586,7 @@ func TestTestConnectionTelegramNeedsLinkFirst(t *testing.T) {
 }
 
 func TestAnswerTelegramCallbackDelegates(t *testing.T) {
-	h := newHarness(t, config.Slack{}, config.Discord{})
+	h := newHarness(t, config.Discord{})
 	h.srv.telegram = config.Telegram{BotToken: "tg"}
 	h.courier.EXPECT().
 		AnswerCallback(gomock.Any(), entity.ChatProviderTelegram, "tg", "cbid", "Acknowledged: DB down").

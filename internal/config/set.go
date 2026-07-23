@@ -20,5 +20,6 @@ var Set = wire.NewSet(
 	NewSlack,
 	NewDiscord,
 	NewTelegram,
+	NewTeams,
 	NewChat,
 )

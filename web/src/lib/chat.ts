@@ -63,12 +63,11 @@ export const PLATFORMS: Omit<Platform, 'connection'>[] = [
 		id: 'teams',
 		label: 'Microsoft Teams',
 		icon: 'message-square',
-		tagline: 'Incidents run in chat. Declare, coordinate, resolve without leaving Microsoft Teams.',
-		authKind: 'oauth',
+		tagline: 'Get paged in Microsoft Teams and acknowledge without leaving the chat.',
+		authKind: 'bot-token',
 		scopes: [
-			{ what: 'Create channels in a team you pick', why: 'incident rooms live in one team' },
-			{ what: 'Post and read in incident channels', why: 'the timeline scribe works from channel messages' },
-			{ what: 'Send chats', why: 'pages and personal notifications' }
+			{ what: 'Message you directly', why: 'your pages and notifications arrive as a Teams chat' },
+			{ what: 'Show Acknowledge / Resolve buttons', why: 'act on a page from the message' }
 		]
 	},
 	{

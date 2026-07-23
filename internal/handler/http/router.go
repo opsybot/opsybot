@@ -63,6 +63,9 @@ func NewRouter(log *slog.Logger, cfg config.Auth, cfgIngest config.Ingest, cfgTe
 	telegramRoutes := &telegramWebhookRoutes{chats: chats, actions: actions, cfg: cfgTelegram}
 	r.Post("/v1/chat/telegram/hook/{secret}", telegramRoutes.handle)
 
+	teamsRoutes := &teamsWebhookRoutes{}
+	r.Post("/v1/chat/teams/messages", teamsRoutes.handle)
+
 	actionRoutes := &actionLinkRoutes{actions: actions}
 	r.Get("/v1/act/{token}", actionRoutes.prompt)
 	r.Post("/v1/act/{token}", actionRoutes.act)

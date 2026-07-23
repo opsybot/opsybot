@@ -9,12 +9,12 @@ import (
 func TestEnvTokenPerProvider(t *testing.T) {
 	// The env-token fallback must cover Telegram — otherwise BotToken(telegram)
 	// returns "" and every delivery/test path reports "not connected".
-	r := &repo{slackToken: "xoxb", discToken: "disc", telegramToken: "tg"}
+	r := &repo{discToken: "disc", telegramToken: "tg", teamsAppID: "app-teams"}
 	cases := map[entity.ChatProvider]string{
-		entity.ChatProviderSlack:    "xoxb",
+		entity.ChatProviderSlack:    "",
 		entity.ChatProviderDiscord:  "disc",
 		entity.ChatProviderTelegram: "tg",
-		entity.ChatProviderTeams:    "",
+		entity.ChatProviderTeams:    "app-teams",
 	}
 	for provider, want := range cases {
 		if got := r.envToken(provider); got != want {

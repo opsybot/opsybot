@@ -13,6 +13,7 @@ import (
 	"github.com/opsybot/opsybot/internal/pkg/postgres"
 	"github.com/opsybot/opsybot/internal/pkg/secretbox"
 	"github.com/opsybot/opsybot/internal/pkg/slack"
+	pkgteams "github.com/opsybot/opsybot/internal/pkg/teams"
 	"github.com/opsybot/opsybot/internal/pkg/telegram"
 	"github.com/opsybot/opsybot/internal/pkg/valkey"
 	"github.com/opsybot/opsybot/internal/pkg/webhook"
@@ -32,4 +33,5 @@ var Set = wire.NewSet(
 	slack.New,
 	discord.New,
 	telegram.New,
+	pkgteams.New,
 )

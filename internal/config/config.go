@@ -26,6 +26,7 @@ type Config struct {
 	Slack           Slack         `mapstructure:"slack"`
 	Discord         Discord       `mapstructure:"discord"`
 	Telegram        Telegram      `mapstructure:"telegram"`
+	Teams           Teams         `mapstructure:"teams"`
 	Chat            Chat          `mapstructure:"chat"`
 }
 
@@ -44,7 +45,6 @@ type Slack struct {
 	ClientID      string        `mapstructure:"client_id"`
 	ClientSecret  string        `mapstructure:"client_secret"`
 	SigningSecret string        `mapstructure:"signing_secret"`
-	BotToken      string        `mapstructure:"bot_token"`
 	BaseURL       string        `mapstructure:"base_url"`
 	Timeout       time.Duration `mapstructure:"timeout"`
 	UserAgent     string        `mapstructure:"user_agent"`
@@ -67,6 +67,18 @@ type Telegram struct {
 	BaseURL   string        `mapstructure:"base_url"`
 	Timeout   time.Duration `mapstructure:"timeout"`
 	UserAgent string        `mapstructure:"user_agent"`
+}
+
+type Teams struct {
+	AppID        string        `mapstructure:"app_id"`
+	AppSecret    string        `mapstructure:"app_secret"`
+	TenantID     string        `mapstructure:"tenant_id"`
+	CatalogAppID string        `mapstructure:"catalog_app_id"`
+	GraphBaseURL string        `mapstructure:"graph_base_url"`
+	BotBaseURL   string        `mapstructure:"bot_base_url"`
+	LoginBaseURL string        `mapstructure:"login_base_url"`
+	Timeout      time.Duration `mapstructure:"timeout"`
+	UserAgent    string        `mapstructure:"user_agent"`
 }
 
 type Chat struct {
@@ -227,6 +239,10 @@ func NewDiscord(cfg Config) Discord {
 
 func NewTelegram(cfg Config) Telegram {
 	return cfg.Telegram
+}
+
+func NewTeams(cfg Config) Teams {
+	return cfg.Teams
 }
 
 func NewChat(cfg Config) Chat {

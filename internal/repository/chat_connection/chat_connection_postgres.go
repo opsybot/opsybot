@@ -28,23 +28,23 @@ const columns = `id, workspace_id, provider, external_id, external_name, bot_use
 type repo struct {
 	db            postgres.Client
 	box           secretbox.Client
-	slackToken    string
 	discToken     string
 	telegramToken string
+	teamsAppID    string
 }
 
-func New(db postgres.Client, box secretbox.Client, slack config.Slack, discord config.Discord, telegram config.Telegram) repository.ChatConnection {
-	return &repo{db: db, box: box, slackToken: slack.BotToken, discToken: discord.BotToken, telegramToken: telegram.BotToken}
+func New(db postgres.Client, box secretbox.Client, discord config.Discord, telegram config.Telegram, teams config.Teams) repository.ChatConnection {
+	return &repo{db: db, box: box, discToken: discord.BotToken, telegramToken: telegram.BotToken, teamsAppID: teams.AppID}
 }
 
 func (r *repo) envToken(provider entity.ChatProvider) string {
 	switch provider {
-	case entity.ChatProviderSlack:
-		return r.slackToken
 	case entity.ChatProviderDiscord:
 		return r.discToken
 	case entity.ChatProviderTelegram:
 		return r.telegramToken
+	case entity.ChatProviderTeams:
+		return r.teamsAppID
 	default:
 		return ""
 	}

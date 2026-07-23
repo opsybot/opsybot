@@ -24,6 +24,7 @@ import (
 	"github.com/opsybot/opsybot/internal/pkg/postgres"
 	"github.com/opsybot/opsybot/internal/pkg/secretbox"
 	"github.com/opsybot/opsybot/internal/pkg/slack"
+	"github.com/opsybot/opsybot/internal/pkg/teams"
 	"github.com/opsybot/opsybot/internal/pkg/telegram"
 	"github.com/opsybot/opsybot/internal/pkg/valkey"
 	"github.com/opsybot/opsybot/internal/pkg/webhook"
@@ -88,7 +89,7 @@ import (
 	"github.com/opsybot/opsybot/internal/service/schedules"
 	"github.com/opsybot/opsybot/internal/service/silences"
 	"github.com/opsybot/opsybot/internal/service/sso"
-	"github.com/opsybot/opsybot/internal/service/teams"
+	teams2 "github.com/opsybot/opsybot/internal/service/teams"
 	"github.com/opsybot/opsybot/internal/service/users"
 	"github.com/opsybot/opsybot/internal/service/workspaces"
 )
@@ -187,14 +188,16 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	configNtfy := config.NewNtfy(configConfig)
 	ntfyClient := ntfy.New(configNtfy)
 	repositoryNtfy := ntfy2.New(ntfyClient)
-	configSlack := config.NewSlack(configConfig)
 	configDiscord := config.NewDiscord(configConfig)
-	chatConnection := chat_connection.New(postgresClient, secretboxClient, configSlack, configDiscord, configTelegram)
+	configTeams := config.NewTeams(configConfig)
+	chatConnection := chat_connection.New(postgresClient, secretboxClient, configDiscord, configTelegram, configTeams)
 	chatIdentity := chat_identity.New(postgresClient)
+	configSlack := config.NewSlack(configConfig)
 	slackClient := slack.New(configSlack)
 	discordClient := discord.New(configDiscord)
 	telegramClient := telegram.New(configTelegram)
-	chatCourier := chat_courier.New(slackClient, discordClient, telegramClient)
+	teamsClient := teams.New(configTeams)
+	chatCourier := chat_courier.New(slackClient, discordClient, telegramClient, teamsClient)
 	serviceNotifier := notifier.New(repositoryMailer, repositoryPager, repositoryNtfy, chatConnection, chatIdentity, chatCourier, configAuth)
 	notificationRun := notification_run.New(postgresClient)
 	notificationRule := notification_rule.New(postgresClient)
@@ -211,13 +214,13 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	serviceActions := actions.New(actionToken, repositoryWorkspace, repositoryMember, repositoryAlert, serviceAlerts)
 	serviceInteractions := interactions.New(serviceActions, configSlack, configDiscord, chat)
 	chatOAuthState := chat_oauth_state.New(valkeyClient)
-	serviceChats := chats.New(repositoryTransactor, repositoryWorkspace, repositoryMember, repositoryPolicy, chatConnection, chatIdentity, chatCourier, chatOAuthState, repositoryAudit, configAuth, configSlack, configDiscord, configTelegram)
+	serviceChats := chats.New(repositoryTransactor, repositoryWorkspace, repositoryMember, repositoryPolicy, chatConnection, chatIdentity, chatCourier, chatOAuthState, repositoryAudit, configAuth, configDiscord, configTelegram)
 	serviceWorkspaces := workspaces.New(repositoryWorkspace, repositoryMember, repositoryPolicy)
 	v := scheduleReferenceSources(serviceSchedules, serviceEscalations)
 	serviceReferences := references.New(v)
 	serviceMembers := members.New(configAuth, repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryUser, repositoryInvite, repositorySession, repositoryPolicy, repositoryAudit, repositoryMailer, serviceReferences)
 	serviceUsers := users.New(repositoryTransactor, repositoryUser, recoveryCode, repositorySession)
-	serviceTeams := teams.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, escalationPolicy, repositoryPolicy, repositoryAudit)
+	serviceTeams := teams2.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, escalationPolicy, repositoryPolicy, repositoryAudit)
 	serviceAudits := audits.New(repositoryWorkspace, repositoryMember, repositoryPolicy, repositoryAudit)
 	alertSources := alert_sources.New(repositoryTransactor, repositoryWorkspace, repositoryMember, alertSource, ingestEvent, repositoryAlert, repositoryPolicy, repositoryAudit)
 	alertRoutes := alert_routes.New(repositoryWorkspace, repositoryMember, alertRoute, escalationPolicy, repositoryPolicy)
@@ -350,15 +353,17 @@ func InitWorker(cfgFile string) (*Worker, func(), error) {
 	configNtfy := config.NewNtfy(configConfig)
 	ntfyClient := ntfy.New(configNtfy)
 	repositoryNtfy := ntfy2.New(ntfyClient)
-	configSlack := config.NewSlack(configConfig)
 	configDiscord := config.NewDiscord(configConfig)
 	configTelegram := config.NewTelegram(configConfig)
-	chatConnection := chat_connection.New(postgresClient, secretboxClient, configSlack, configDiscord, configTelegram)
+	configTeams := config.NewTeams(configConfig)
+	chatConnection := chat_connection.New(postgresClient, secretboxClient, configDiscord, configTelegram, configTeams)
 	chatIdentity := chat_identity.New(postgresClient)
+	configSlack := config.NewSlack(configConfig)
 	slackClient := slack.New(configSlack)
 	discordClient := discord.New(configDiscord)
 	telegramClient := telegram.New(configTelegram)
-	chatCourier := chat_courier.New(slackClient, discordClient, telegramClient)
+	teamsClient := teams.New(configTeams)
+	chatCourier := chat_courier.New(slackClient, discordClient, telegramClient, teamsClient)
 	serviceNotifier := notifier.New(repositoryMailer, repositoryPager, repositoryNtfy, chatConnection, chatIdentity, chatCourier, configAuth)
 	notificationRun := notification_run.New(postgresClient)
 	notificationRule := notification_rule.New(postgresClient)
