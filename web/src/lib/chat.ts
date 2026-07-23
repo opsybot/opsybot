@@ -60,17 +60,6 @@ export const PLATFORMS: Omit<Platform, 'connection'>[] = [
 		]
 	},
 	{
-		id: 'teams',
-		label: 'Microsoft Teams',
-		icon: 'message-square',
-		tagline: 'Get paged in Microsoft Teams and acknowledge without leaving the chat.',
-		authKind: 'bot-token',
-		scopes: [
-			{ what: 'Message you directly', why: 'your pages and notifications arrive as a Teams chat' },
-			{ what: 'Show Acknowledge / Resolve buttons', why: 'act on a page from the message' }
-		]
-	},
-	{
 		id: 'discord',
 		label: 'Discord',
 		icon: 'message-square',
