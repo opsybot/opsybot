@@ -32,7 +32,7 @@ func (h *chatOAuthRoutes) callback(provider entity.ChatProvider) http.HandlerFun
 			h.redirect(w, r, "", "invalid_state")
 			return
 		}
-		slug, err := h.chats.CompleteOAuth(ctx, provider, code, state)
+		slug, err := h.chats.CompleteOAuth(ctx, provider, code, q.Get("guild_id"), state)
 		if err != nil {
 			logger.From(ctx).WarnContext(ctx, "chat oauth failed", "error", err, "provider", string(provider))
 			h.redirect(w, r, slug, chatOAuthErrorCode(err))

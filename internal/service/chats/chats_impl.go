@@ -257,17 +257,23 @@ func (s *srv) StartOAuth(ctx context.Context, workspaceSlug string, provider ent
 	if err != nil {
 		return "", err
 	}
-	if provider != entity.ChatProviderSlack {
+	var scopes []string
+	switch provider {
+	case entity.ChatProviderSlack:
+		scopes = entity.SlackOAuthScopes
+	case entity.ChatProviderDiscord:
+		scopes = entity.DiscordBotScopes
+	default:
 		return "", entity.ErrChatOAuthUnsupported
 	}
-	if !s.connections.SecretsEnabled(ctx) {
+	if provider == entity.ChatProviderSlack && !s.connections.SecretsEnabled(ctx) {
 		return "", entity.ErrChatSecretUnavailable
 	}
 	state, err := entity.GenerateToken(entity.ChatOAuthStateLength)
 	if err != nil {
 		return "", err
 	}
-	url, err := s.courier.AuthorizeURL(ctx, provider, entity.SlackOAuthScopes, s.redirectURI(provider), state)
+	url, err := s.courier.AuthorizeURL(ctx, provider, scopes, s.redirectURI(provider), state)
 	if err != nil {
 		return "", err
 	}
@@ -279,7 +285,7 @@ func (s *srv) StartOAuth(ctx context.Context, workspaceSlug string, provider ent
 	return url, nil
 }
 
-func (s *srv) CompleteOAuth(ctx context.Context, provider entity.ChatProvider, code, state string) (string, error) {
+func (s *srv) CompleteOAuth(ctx context.Context, provider entity.ChatProvider, code, guildID, state string) (string, error) {
 	st, err := s.oauthStates.Consume(ctx, state)
 	if err != nil {
 		return "", err
@@ -305,15 +311,32 @@ func (s *srv) CompleteOAuth(ctx context.Context, provider entity.ChatProvider, c
 	if !allowed {
 		return st.WorkspaceSlug, entity.ErrForbidden
 	}
-	result, err := s.courier.ExchangeOAuth(ctx, provider, code, s.redirectURI(provider))
-	if err != nil {
-		return st.WorkspaceSlug, err
+	in := entity.ChatConnectionInput{Provider: provider, ConnectedBy: st.UserID, ArchiveOnResolve: true}
+	switch provider {
+	case entity.ChatProviderSlack:
+		result, xErr := s.courier.ExchangeOAuth(ctx, provider, code, s.redirectURI(provider))
+		if xErr != nil {
+			return st.WorkspaceSlug, xErr
+		}
+		in.ExternalID, in.ExternalName = result.ExternalID, result.ExternalName
+		in.BotUserID, in.BotToken, in.Scopes = result.BotUserID, result.BotToken, result.Scopes
+	case entity.ChatProviderDiscord:
+		if guildID == "" {
+			return st.WorkspaceSlug, entity.ErrChatOAuthExchange
+		}
+		token := s.envToken(entity.ChatProviderDiscord)
+		if token == "" {
+			return st.WorkspaceSlug, entity.ErrChatProviderNotConfigured
+		}
+		valid, vErr := s.courier.Validate(ctx, provider, token, guildID)
+		if vErr != nil {
+			return st.WorkspaceSlug, vErr
+		}
+		in.ExternalID, in.ExternalName, in.BotUserID = valid.ExternalID, valid.ExternalName, valid.BotUserID
+	default:
+		return st.WorkspaceSlug, entity.ErrChatOAuthUnsupported
 	}
-	if _, err := s.connections.Save(ctx, st.WorkspaceID, entity.ChatConnectionInput{
-		Provider: provider, ExternalID: result.ExternalID, ExternalName: result.ExternalName,
-		BotUserID: result.BotUserID, BotToken: result.BotToken, Scopes: result.Scopes,
-		ConnectedBy: st.UserID, ArchiveOnResolve: true,
-	}); err != nil {
+	if _, err := s.connections.Save(ctx, st.WorkspaceID, in); err != nil {
 		return st.WorkspaceSlug, err
 	}
 	_ = s.audit.Create(ctx, entity.AuditEvent{
@@ -335,7 +358,13 @@ func (s *srv) StartIdentityOAuth(ctx context.Context, workspaceSlug string, prov
 	if actor.Kind != entity.IdentityKindSession {
 		return "", entity.ErrUnauthenticated
 	}
-	if provider != entity.ChatProviderSlack {
+	var scopes []string
+	switch provider {
+	case entity.ChatProviderSlack:
+		scopes = entity.SlackOIDCScopes
+	case entity.ChatProviderDiscord:
+		scopes = entity.DiscordIdentityScopes
+	default:
 		return "", entity.ErrChatOAuthUnsupported
 	}
 	conn, err := s.connections.Get(ctx, ws.ID, provider)
@@ -346,7 +375,7 @@ func (s *srv) StartIdentityOAuth(ctx context.Context, workspaceSlug string, prov
 	if err != nil {
 		return "", err
 	}
-	url, err := s.courier.IdentityAuthorizeURL(ctx, provider, entity.SlackOIDCScopes, s.identityRedirectURI(provider), state, conn.ExternalID)
+	url, err := s.courier.IdentityAuthorizeURL(ctx, provider, scopes, s.identityRedirectURI(provider), state, conn.ExternalID)
 	if err != nil {
 		return "", err
 	}

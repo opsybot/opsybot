@@ -154,9 +154,70 @@ func TestStartOAuthRejectsNonOAuthProvider(t *testing.T) {
 	h := newHarness(t, config.Slack{}, config.Discord{})
 	h.allowWrite()
 
-	_, err := h.srv.StartOAuth(sessionCtx(), "acme", entity.ChatProviderDiscord)
+	_, err := h.srv.StartOAuth(sessionCtx(), "acme", entity.ChatProviderTeams)
 	if err != entity.ErrChatOAuthUnsupported {
-		t.Fatalf("err = %v, want ErrChatOAuthUnsupported for Discord", err)
+		t.Fatalf("err = %v, want ErrChatOAuthUnsupported for Teams", err)
+	}
+}
+
+func TestStartOAuthDiscordUsesBotInviteNoSecretCheck(t *testing.T) {
+	h := newHarness(t, config.Slack{}, config.Discord{})
+	h.allowWrite()
+	// Discord stores no secret, so it must NOT gate on secret storage.
+	redirect := "https://opsy.test/v1/chat/discord/oauth/callback"
+	h.courier.EXPECT().
+		AuthorizeURL(gomock.Any(), entity.ChatProviderDiscord, entity.DiscordBotScopes, redirect, gomock.Any()).
+		Return("https://discord.com/oauth2/authorize?scope=bot", nil)
+	h.oauthStates.EXPECT().Store(gomock.Any(), gomock.Any(), gomock.Any(), entity.ChatOAuthStateTTL).Return(nil)
+
+	if _, err := h.srv.StartOAuth(sessionCtx(), "acme", entity.ChatProviderDiscord); err != nil {
+		t.Fatalf("StartOAuth(discord): %v", err)
+	}
+}
+
+func TestCompleteOAuthDiscordStoresGuildNoToken(t *testing.T) {
+	h := newHarness(t, config.Slack{}, config.Discord{BotToken: "disc-env"})
+	h.oauthStates.EXPECT().Consume(gomock.Any(), "st").Return(entity.ChatOAuthState{
+		Provider: entity.ChatProviderDiscord, Purpose: entity.ChatOAuthInstall,
+		WorkspaceID: "ws-1", WorkspaceSlug: "acme", UserID: "u1",
+	}, nil)
+	h.members.EXPECT().IsActive(gomock.Any(), "ws-1", "u1").Return(true, nil)
+	h.pol.EXPECT().Allowed(gomock.Any(), gomock.Any(), "ws-1", entity.PolicyObjectChat, entity.PolicyActionWrite).Return(true, nil)
+	h.courier.EXPECT().
+		Validate(gomock.Any(), entity.ChatProviderDiscord, "disc-env", "G42").
+		Return(entity.ChatValidation{ExternalID: "G42", ExternalName: "Vlad's Server", BotUserID: "Bot0"}, nil)
+	var saved entity.ChatConnectionInput
+	h.connections.EXPECT().Save(gomock.Any(), "ws-1", gomock.Any()).
+		DoAndReturn(func(_ context.Context, _ string, in entity.ChatConnectionInput) (entity.ChatConnection, error) {
+			saved = in
+			return entity.ChatConnection{Provider: in.Provider}, nil
+		})
+	h.audit.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+
+	slug, err := h.srv.CompleteOAuth(sessionCtx(), entity.ChatProviderDiscord, "code", "G42", "st")
+	if err != nil {
+		t.Fatalf("CompleteOAuth(discord): %v", err)
+	}
+	if slug != "acme" {
+		t.Errorf("slug = %q, want acme", slug)
+	}
+	if saved.ExternalID != "G42" || saved.ExternalName != "Vlad's Server" || saved.BotToken != "" {
+		t.Errorf("discord install saved wrong (guild id from callback, no token stored): %+v", saved)
+	}
+}
+
+func TestCompleteOAuthDiscordRequiresGuild(t *testing.T) {
+	h := newHarness(t, config.Slack{}, config.Discord{BotToken: "disc-env"})
+	h.oauthStates.EXPECT().Consume(gomock.Any(), "st").Return(entity.ChatOAuthState{
+		Provider: entity.ChatProviderDiscord, Purpose: entity.ChatOAuthInstall,
+		WorkspaceID: "ws-1", WorkspaceSlug: "acme", UserID: "u1",
+	}, nil)
+	h.members.EXPECT().IsActive(gomock.Any(), "ws-1", "u1").Return(true, nil)
+	h.pol.EXPECT().Allowed(gomock.Any(), gomock.Any(), "ws-1", entity.PolicyObjectChat, entity.PolicyActionWrite).Return(true, nil)
+
+	_, err := h.srv.CompleteOAuth(sessionCtx(), entity.ChatProviderDiscord, "code", "", "st")
+	if err != entity.ErrChatOAuthExchange {
+		t.Fatalf("err = %v, want ErrChatOAuthExchange when Discord returns no guild_id", err)
 	}
 }
 
@@ -192,7 +253,7 @@ func TestCompleteOAuthExchangesAndSaves(t *testing.T) {
 		})
 	h.audit.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
 
-	slug, err := h.srv.CompleteOAuth(sessionCtx(), entity.ChatProviderSlack, "code-abc", "state-xyz")
+	slug, err := h.srv.CompleteOAuth(sessionCtx(), entity.ChatProviderSlack, "code-abc", "", "state-xyz")
 	if err != nil {
 		t.Fatalf("CompleteOAuth: %v", err)
 	}
@@ -209,7 +270,7 @@ func TestCompleteOAuthRejectsInvalidState(t *testing.T) {
 
 	h.oauthStates.EXPECT().Consume(gomock.Any(), "bad").Return(entity.ChatOAuthState{}, entity.ErrChatOAuthStateInvalid)
 
-	slug, err := h.srv.CompleteOAuth(sessionCtx(), entity.ChatProviderSlack, "code", "bad")
+	slug, err := h.srv.CompleteOAuth(sessionCtx(), entity.ChatProviderSlack, "code", "", "bad")
 	if err != entity.ErrChatOAuthStateInvalid {
 		t.Fatalf("err = %v, want ErrChatOAuthStateInvalid", err)
 	}
@@ -226,7 +287,7 @@ func TestCompleteOAuthRejectsSessionMismatch(t *testing.T) {
 	}, nil)
 
 	ctx := entity.WithIdentity(context.Background(), entity.Identity{Kind: entity.IdentityKindSession, UserID: "attacker"})
-	slug, err := h.srv.CompleteOAuth(ctx, entity.ChatProviderSlack, "code-abc", "state-xyz")
+	slug, err := h.srv.CompleteOAuth(ctx, entity.ChatProviderSlack, "code-abc", "", "state-xyz")
 	if err != entity.ErrChatOAuthStateInvalid {
 		t.Fatalf("err = %v, want ErrChatOAuthStateInvalid when the completing session is not the initiator", err)
 	}
@@ -326,7 +387,7 @@ func TestCompleteOAuthRejectsIdentityState(t *testing.T) {
 	h := newHarness(t, config.Slack{}, config.Discord{})
 	h.oauthStates.EXPECT().Consume(gomock.Any(), "st").Return(identityState(), nil)
 
-	_, err := h.srv.CompleteOAuth(sessionCtx(), entity.ChatProviderSlack, "code", "st")
+	_, err := h.srv.CompleteOAuth(sessionCtx(), entity.ChatProviderSlack, "code", "", "st")
 	if err != entity.ErrChatOAuthStateInvalid {
 		t.Fatalf("err = %v, want ErrChatOAuthStateInvalid: an identity-purpose state must not install a bot", err)
 	}

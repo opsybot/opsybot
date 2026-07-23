@@ -72,17 +72,12 @@ export const PLATFORMS: Omit<Platform, 'connection'>[] = [
 		label: 'Discord',
 		icon: 'message-square',
 		tagline: 'Incidents run in chat. Declare, coordinate, resolve without leaving Discord.',
-		authKind: 'bot-token',
+		authKind: 'oauth',
 		scopes: [
 			{ what: 'Manage channels in one category', why: 'incident rooms are created under it' },
 			{ what: 'Post and read in incident channels', why: 'the timeline scribe works from channel messages' },
 			{ what: 'Send DMs', why: 'pages and personal notifications' }
-		],
-		externalIdField: {
-			label: 'Server (guild) ID (optional)',
-			placeholder: '000000000000000000',
-			hint: 'Needed to look people up and open incident rooms. In Discord, enable Developer Mode, then right-click your server and choose Copy Server ID. You can add it later.'
-		}
+		]
 	}
 ];
 

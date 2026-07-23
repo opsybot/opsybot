@@ -189,6 +189,11 @@ func (r *repo) AuthorizeURL(ctx context.Context, provider entity.ChatProvider, s
 			return "", entity.ErrChatProviderNotConfigured
 		}
 		return r.slack.AuthorizeURL(scopes, redirectURI, state), nil
+	case entity.ChatProviderDiscord:
+		if !r.discord.OAuthConfigured() {
+			return "", entity.ErrChatProviderNotConfigured
+		}
+		return r.discord.AuthorizeURL(scopes, entity.DiscordBotPermissions, redirectURI, state), nil
 	default:
 		return "", entity.ErrChatOAuthUnsupported
 	}
@@ -201,6 +206,11 @@ func (r *repo) IdentityAuthorizeURL(ctx context.Context, provider entity.ChatPro
 			return "", entity.ErrChatProviderNotConfigured
 		}
 		return r.slack.OIDCAuthorizeURL(scopes, redirectURI, state, teamID), nil
+	case entity.ChatProviderDiscord:
+		if !r.discord.OAuthConfigured() {
+			return "", entity.ErrChatProviderNotConfigured
+		}
+		return r.discord.AuthorizeURL(scopes, "", redirectURI, state), nil
 	default:
 		return "", entity.ErrChatOAuthUnsupported
 	}
@@ -216,6 +226,20 @@ func (r *repo) ExchangeIdentity(ctx context.Context, provider entity.ChatProvide
 		return entity.ChatIdentityResult{
 			ProviderUserID: res.UserID, TeamID: res.TeamID, Handle: res.Name, Email: res.Email,
 		}, nil
+	case entity.ChatProviderDiscord:
+		accessToken, err := r.discord.OAuthToken(ctx, code, redirectURI)
+		if err != nil {
+			return entity.ChatIdentityResult{}, fmt.Errorf("%w: %v", entity.ErrChatOAuthExchange, err)
+		}
+		user, err := r.discord.CurrentUser(ctx, accessToken)
+		if err != nil {
+			return entity.ChatIdentityResult{}, fmt.Errorf("%w: %v", entity.ErrChatOAuthExchange, err)
+		}
+		handle := user.GlobalName
+		if handle == "" {
+			handle = user.Username
+		}
+		return entity.ChatIdentityResult{ProviderUserID: user.ID, Handle: handle}, nil
 	default:
 		return entity.ChatIdentityResult{}, entity.ErrChatOAuthUnsupported
 	}

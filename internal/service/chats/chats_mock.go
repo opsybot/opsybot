@@ -57,18 +57,18 @@ func (mr *MockChatsMockRecorder) CompleteIdentityOAuth(ctx, provider, code, stat
 }
 
 // CompleteOAuth mocks base method.
-func (m *MockChats) CompleteOAuth(ctx context.Context, provider entity.ChatProvider, code, state string) (string, error) {
+func (m *MockChats) CompleteOAuth(ctx context.Context, provider entity.ChatProvider, code, guildID, state string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CompleteOAuth", ctx, provider, code, state)
+	ret := m.ctrl.Call(m, "CompleteOAuth", ctx, provider, code, guildID, state)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CompleteOAuth indicates an expected call of CompleteOAuth.
-func (mr *MockChatsMockRecorder) CompleteOAuth(ctx, provider, code, state any) *gomock.Call {
+func (mr *MockChatsMockRecorder) CompleteOAuth(ctx, provider, code, guildID, state any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompleteOAuth", reflect.TypeOf((*MockChats)(nil).CompleteOAuth), ctx, provider, code, state)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompleteOAuth", reflect.TypeOf((*MockChats)(nil).CompleteOAuth), ctx, provider, code, guildID, state)
 }
 
 // Connect mocks base method.

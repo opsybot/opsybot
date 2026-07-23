@@ -57,6 +57,8 @@ func NewRouter(log *slog.Logger, cfg config.Auth, cfgIngest config.Ingest, auth 
 	chatOAuthRoutes := &chatOAuthRoutes{chats: chats, auth: auth, cfg: cfg}
 	r.Get("/v1/chat/slack/oauth/callback", chatOAuthRoutes.callback(entity.ChatProviderSlack))
 	r.Get("/v1/chat/slack/identity/callback", chatOAuthRoutes.identityCallback(entity.ChatProviderSlack))
+	r.Get("/v1/chat/discord/oauth/callback", chatOAuthRoutes.callback(entity.ChatProviderDiscord))
+	r.Get("/v1/chat/discord/identity/callback", chatOAuthRoutes.identityCallback(entity.ChatProviderDiscord))
 
 	actionRoutes := &actionLinkRoutes{actions: actions}
 	r.Get("/v1/act/{token}", actionRoutes.prompt)

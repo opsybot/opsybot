@@ -16,7 +16,7 @@ type Chats interface {
 	LinkIdentity(ctx context.Context, workspaceSlug string, provider entity.ChatProvider) (entity.ChatIdentity, error)
 	TestConnection(ctx context.Context, workspaceSlug string, provider entity.ChatProvider) (entity.ChatSendResult, error)
 	StartOAuth(ctx context.Context, workspaceSlug string, provider entity.ChatProvider) (string, error)
-	CompleteOAuth(ctx context.Context, provider entity.ChatProvider, code, state string) (string, error)
+	CompleteOAuth(ctx context.Context, provider entity.ChatProvider, code, guildID, state string) (string, error)
 	StartIdentityOAuth(ctx context.Context, workspaceSlug string, provider entity.ChatProvider) (string, error)
 	CompleteIdentityOAuth(ctx context.Context, provider entity.ChatProvider, code, state string) (string, error)
 }

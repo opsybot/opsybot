@@ -169,6 +169,12 @@ var SlackOAuthScopes = []string{"chat:write", "im:write", "users:read", "users:r
 
 var SlackOIDCScopes = []string{"openid", "profile", "email"}
 
+var DiscordBotScopes = []string{"bot"}
+
+var DiscordIdentityScopes = []string{"identify"}
+
+const DiscordBotPermissions = "68624"
+
 type AlertAction struct {
 	Token  string
 	Action ActionKind

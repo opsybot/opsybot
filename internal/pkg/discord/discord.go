@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -14,15 +15,18 @@ import (
 )
 
 const (
-	defaultTimeout  = 10 * time.Second
-	defaultBase     = "https://discord.com/api/v10"
-	maxResponseRead = 1 << 20
+	defaultTimeout    = 10 * time.Second
+	defaultBase       = "https://discord.com/api/v10"
+	authorizeEndpoint = "https://discord.com/oauth2/authorize"
+	maxResponseRead   = 1 << 20
 )
 
 type Client struct {
-	http      *http.Client
-	base      string
-	userAgent string
+	http         *http.Client
+	base         string
+	userAgent    string
+	clientID     string
+	clientSecret string
 }
 
 func New(cfg config.Discord) Client {
@@ -38,7 +42,90 @@ func New(cfg config.Discord) Client {
 	if agent == "" {
 		agent = "opsybot"
 	}
-	return Client{http: &http.Client{Timeout: timeout}, base: strings.TrimRight(base, "/"), userAgent: agent}
+	return Client{
+		http:         &http.Client{Timeout: timeout},
+		base:         strings.TrimRight(base, "/"),
+		userAgent:    agent,
+		clientID:     cfg.ClientID,
+		clientSecret: cfg.ClientSecret,
+	}
+}
+
+func (c Client) OAuthConfigured() bool {
+	return c.clientID != "" && c.clientSecret != ""
+}
+
+func (c Client) AuthorizeURL(scopes []string, permissions, redirectURI, state string) string {
+	q := url.Values{
+		"response_type": {"code"},
+		"client_id":     {c.clientID},
+		"scope":         {strings.Join(scopes, " ")},
+		"redirect_uri":  {redirectURI},
+		"state":         {state},
+	}
+	if permissions != "" {
+		q.Set("permissions", permissions)
+	}
+	return authorizeEndpoint + "?" + q.Encode()
+}
+
+func (c Client) OAuthToken(ctx context.Context, code, redirectURI string) (string, error) {
+	form := url.Values{"grant_type": {"authorization_code"}, "code": {code}, "redirect_uri": {redirectURI}}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.base+"/oauth2/token", strings.NewReader(form.Encode()))
+	if err != nil {
+		return "", fmt.Errorf("build discord oauth2/token: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("User-Agent", c.userAgent)
+	req.SetBasicAuth(c.clientID, c.clientSecret)
+	res, err := c.http.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("call discord oauth2/token: %w", err)
+	}
+	defer func() { _ = res.Body.Close() }()
+	raw, _ := io.ReadAll(io.LimitReader(res.Body, maxResponseRead))
+	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusMultipleChoices {
+		return "", fmt.Errorf("discord oauth2/token responded %d: %s", res.StatusCode, strings.TrimSpace(string(raw)))
+	}
+	var out struct {
+		AccessToken string `json:"access_token"`
+	}
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return "", fmt.Errorf("decode discord oauth2/token: %w", err)
+	}
+	if out.AccessToken == "" {
+		return "", fmt.Errorf("discord oauth2/token returned no access token")
+	}
+	return out.AccessToken, nil
+}
+
+type User struct {
+	ID         string `json:"id"`
+	Username   string `json:"username"`
+	GlobalName string `json:"global_name"`
+}
+
+func (c Client) CurrentUser(ctx context.Context, accessToken string) (User, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.base+"/users/@me", nil)
+	if err != nil {
+		return User{}, fmt.Errorf("build discord users/@me: %w", err)
+	}
+	req.Header.Set("User-Agent", c.userAgent)
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := c.http.Do(req)
+	if err != nil {
+		return User{}, fmt.Errorf("call discord users/@me: %w", err)
+	}
+	defer func() { _ = res.Body.Close() }()
+	raw, _ := io.ReadAll(io.LimitReader(res.Body, maxResponseRead))
+	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusMultipleChoices {
+		return User{}, fmt.Errorf("discord users/@me responded %d: %s", res.StatusCode, strings.TrimSpace(string(raw)))
+	}
+	var u User
+	if err := json.Unmarshal(raw, &u); err != nil {
+		return User{}, fmt.Errorf("decode discord users/@me: %w", err)
+	}
+	return u, nil
 }
 
 func (c Client) do(ctx context.Context, token, method, path string, body any, out any) (int, error) {
