@@ -14,7 +14,6 @@ export type ChannelMeta = {
 
 export const CHANNEL_TYPES: ChannelMeta[] = [
 	{ id: 'slack', label: 'Slack DM', icon: 'message-square', desc: 'DM from the Opsybot app', connect: 'oauth' },
-	{ id: 'teams', label: 'Microsoft Teams', icon: 'message-square', desc: 'Chat from the Opsybot bot', connect: 'oauth' },
 	{ id: 'discord', label: 'Discord', icon: 'message-square', desc: 'DM from the Opsybot bot', connect: 'oauth' },
 	{ id: 'telegram', label: 'Telegram', icon: 'send', desc: 'Message from @opsybot_bot', connect: 'telegram' },
 	{ id: 'ntfy', label: 'ntfy', icon: 'bell', desc: 'Push to an ntfy topic', connect: 'ntfy' },

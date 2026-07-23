@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
 	import SendIcon from '@lucide/svelte/icons/send';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import { toast } from 'svelte-sonner';
@@ -16,15 +15,6 @@
 	const badge = $derived(verifyBadge(channel));
 
 	let testing = $state(false);
-	let timer: ReturnType<typeof setTimeout>;
-	function sendTest() {
-		testing = true;
-		timer = setTimeout(() => {
-			testing = false;
-			toast.success(`Test page sent to ${meta.label}: delivered in 0.8 s.`);
-		}, 1200);
-	}
-	onDestroy(() => clearTimeout(timer));
 </script>
 
 <div
@@ -45,10 +35,32 @@
 		<div class="text-subtle-foreground mt-0.5 truncate font-mono text-[11.5px]">{channel.detail}</div>
 	</div>
 	{#if channel.verified}
-		<Button size="sm" variant="secondary" disabled={testing} onclick={sendTest}>
-			<SendIcon data-icon="inline-start" />
-			{testing ? 'Sending…' : 'Send test'}
-		</Button>
+		<form
+			method="POST"
+			action="?/test"
+			use:enhance={() => {
+				testing = true;
+				return async ({ result }) => {
+					testing = false;
+					if (result.type === 'failure') {
+						toast.error(String(result.data?.error ?? 'Could not send a test.'));
+						return;
+					}
+					if (result.type === 'success') {
+						const delivered = result.data?.delivered;
+						const detail = String(result.data?.detail ?? '');
+						if (delivered) toast.success(`Test sent to ${meta.label}: ${detail}`);
+						else toast.error(`Test to ${meta.label} did not deliver: ${detail}`);
+					}
+				};
+			}}
+		>
+			<input type="hidden" name="id" value={channel.id} />
+			<Button type="submit" size="sm" variant="secondary" disabled={testing}>
+				<SendIcon data-icon="inline-start" />
+				{testing ? 'Sending…' : 'Send test'}
+			</Button>
+		</form>
 	{:else}
 		<Button size="sm" variant="secondary" onclick={onverify}>Verify</Button>
 	{/if}

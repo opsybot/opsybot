@@ -16,13 +16,19 @@ import (
 	"github.com/opsybot/opsybot/internal/pkg"
 	"github.com/opsybot/opsybot/internal/pkg/casbin"
 	"github.com/opsybot/opsybot/internal/pkg/cron"
+	"github.com/opsybot/opsybot/internal/pkg/discord"
 	"github.com/opsybot/opsybot/internal/pkg/logger"
 	"github.com/opsybot/opsybot/internal/pkg/mailer"
+	"github.com/opsybot/opsybot/internal/pkg/ntfy"
 	"github.com/opsybot/opsybot/internal/pkg/otel"
 	"github.com/opsybot/opsybot/internal/pkg/postgres"
 	"github.com/opsybot/opsybot/internal/pkg/secretbox"
+	"github.com/opsybot/opsybot/internal/pkg/slack"
+	"github.com/opsybot/opsybot/internal/pkg/teams"
+	"github.com/opsybot/opsybot/internal/pkg/telegram"
 	"github.com/opsybot/opsybot/internal/pkg/valkey"
 	"github.com/opsybot/opsybot/internal/pkg/webhook"
+	"github.com/opsybot/opsybot/internal/repository/action_token"
 	"github.com/opsybot/opsybot/internal/repository/alert"
 	"github.com/opsybot/opsybot/internal/repository/alert_monitor"
 	"github.com/opsybot/opsybot/internal/repository/alert_route"
@@ -30,6 +36,11 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/api_key"
 	"github.com/opsybot/opsybot/internal/repository/audit"
 	"github.com/opsybot/opsybot/internal/repository/channel"
+	"github.com/opsybot/opsybot/internal/repository/channel_verification"
+	"github.com/opsybot/opsybot/internal/repository/chat_connection"
+	"github.com/opsybot/opsybot/internal/repository/chat_courier"
+	"github.com/opsybot/opsybot/internal/repository/chat_identity"
+	"github.com/opsybot/opsybot/internal/repository/chat_oauth_state"
 	"github.com/opsybot/opsybot/internal/repository/escalation_policy"
 	"github.com/opsybot/opsybot/internal/repository/escalation_run"
 	"github.com/opsybot/opsybot/internal/repository/ingest_event"
@@ -37,6 +48,9 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/lock"
 	mailer2 "github.com/opsybot/opsybot/internal/repository/mailer"
 	"github.com/opsybot/opsybot/internal/repository/member"
+	"github.com/opsybot/opsybot/internal/repository/notification_rule"
+	"github.com/opsybot/opsybot/internal/repository/notification_run"
+	ntfy2 "github.com/opsybot/opsybot/internal/repository/ntfy"
 	"github.com/opsybot/opsybot/internal/repository/pager"
 	"github.com/opsybot/opsybot/internal/repository/password_reset"
 	"github.com/opsybot/opsybot/internal/repository/pending"
@@ -53,6 +67,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/user"
 	"github.com/opsybot/opsybot/internal/repository/user_identity"
 	"github.com/opsybot/opsybot/internal/repository/workspace"
+	"github.com/opsybot/opsybot/internal/service/actions"
 	"github.com/opsybot/opsybot/internal/service/alert_monitors"
 	"github.com/opsybot/opsybot/internal/service/alert_routes"
 	"github.com/opsybot/opsybot/internal/service/alert_sources"
@@ -61,16 +76,20 @@ import (
 	"github.com/opsybot/opsybot/internal/service/audits"
 	"github.com/opsybot/opsybot/internal/service/auth"
 	"github.com/opsybot/opsybot/internal/service/channels"
+	"github.com/opsybot/opsybot/internal/service/chats"
 	"github.com/opsybot/opsybot/internal/service/escalations"
 	"github.com/opsybot/opsybot/internal/service/ingest"
+	"github.com/opsybot/opsybot/internal/service/interactions"
 	"github.com/opsybot/opsybot/internal/service/members"
+	"github.com/opsybot/opsybot/internal/service/notification_rules"
+	"github.com/opsybot/opsybot/internal/service/notifications"
 	"github.com/opsybot/opsybot/internal/service/notifier"
 	"github.com/opsybot/opsybot/internal/service/ratelimiter"
 	"github.com/opsybot/opsybot/internal/service/references"
 	"github.com/opsybot/opsybot/internal/service/schedules"
 	"github.com/opsybot/opsybot/internal/service/silences"
 	"github.com/opsybot/opsybot/internal/service/sso"
-	"github.com/opsybot/opsybot/internal/service/teams"
+	teams2 "github.com/opsybot/opsybot/internal/service/teams"
 	"github.com/opsybot/opsybot/internal/service/users"
 	"github.com/opsybot/opsybot/internal/service/workspaces"
 )
@@ -113,6 +132,7 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	}
 	configAuth := config.NewAuth(configConfig)
 	configIngest := config.NewIngest(configConfig)
+	configTelegram := config.NewTelegram(configConfig)
 	repositoryTransactor := transactor.New(postgresClient)
 	repositoryLock := lock.New(postgresClient)
 	secretboxClient, err := secretbox.New(configAuth)
@@ -165,26 +185,50 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	configWebhook := config.NewWebhook(configConfig)
 	webhookClient := webhook.New(configWebhook)
 	repositoryPager := pager.New(webhookClient)
-	serviceNotifier := notifier.New(repositoryMailer, repositoryPager)
-	serviceEscalations := escalations.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, repositorySchedule, escalationPolicy, escalationRun, repositoryAlert, alertRoute, repositoryPolicy, repositoryAudit, serviceNotifier, configAuth)
-	serviceIngest := ingest.New(repositoryTransactor, alertSource, repositoryAlert, ingestEvent, alertRoute, repositorySilence, alertMonitor, rateLimiter, repositoryLock, escalationPolicy, serviceEscalations, configIngest)
+	configNtfy := config.NewNtfy(configConfig)
+	ntfyClient := ntfy.New(configNtfy)
+	repositoryNtfy := ntfy2.New(ntfyClient)
+	configDiscord := config.NewDiscord(configConfig)
+	configTeams := config.NewTeams(configConfig)
+	chatConnection := chat_connection.New(postgresClient, secretboxClient, configDiscord, configTelegram, configTeams)
+	chatIdentity := chat_identity.New(postgresClient)
+	configSlack := config.NewSlack(configConfig)
+	slackClient := slack.New(configSlack)
+	discordClient := discord.New(configDiscord)
+	telegramClient := telegram.New(configTelegram)
+	teamsClient := teams.New(configTeams)
+	chatCourier := chat_courier.New(slackClient, discordClient, telegramClient, teamsClient)
+	serviceNotifier := notifier.New(repositoryMailer, repositoryPager, repositoryNtfy, chatConnection, chatIdentity, chatCourier, configAuth)
+	notificationRun := notification_run.New(postgresClient)
+	notificationRule := notification_rule.New(postgresClient)
+	repositoryChannel := channel.New(postgresClient, secretboxClient)
+	actionToken := action_token.New(postgresClient)
 	serviceRateLimiter := ratelimiter.New(configAuth, rateLimiter)
-	serviceWorkspaces := workspaces.New(repositoryWorkspace, repositoryMember)
+	chat := config.NewChat(configConfig)
+	serviceNotifications := notifications.New(repositoryTransactor, repositoryLock, notificationRun, notificationRule, repositoryChannel, chatIdentity, repositoryAlert, repositoryWorkspace, actionToken, serviceNotifier, serviceRateLimiter, configAuth, chat)
+	serviceEscalations := escalations.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, repositorySchedule, escalationPolicy, escalationRun, repositoryAlert, alertRoute, repositoryPolicy, repositoryAudit, serviceNotifier, serviceNotifications, configAuth)
+	serviceIngest := ingest.New(repositoryTransactor, alertSource, repositoryAlert, ingestEvent, alertRoute, repositorySilence, alertMonitor, rateLimiter, repositoryLock, escalationPolicy, serviceEscalations, configIngest)
+	channelVerification := channel_verification.New(postgresClient)
+	serviceChannels := channels.New(repositoryChannel, channelVerification, repositoryMailer, repositoryNtfy, repositoryPager, serviceNotifier, serviceRateLimiter, repositoryAudit, configAuth)
+	serviceAlerts := alerts.New(repositoryTransactor, repositoryWorkspace, repositoryMember, repositoryAlert, alertSource, ingestEvent, escalationPolicy, repositoryPolicy, repositoryAudit, serviceEscalations)
+	serviceActions := actions.New(actionToken, repositoryWorkspace, repositoryMember, repositoryAlert, serviceAlerts)
+	serviceInteractions := interactions.New(serviceActions, configSlack, configDiscord, chat)
+	chatOAuthState := chat_oauth_state.New(valkeyClient)
+	serviceChats := chats.New(repositoryTransactor, repositoryWorkspace, repositoryMember, repositoryPolicy, chatConnection, chatIdentity, chatCourier, chatOAuthState, repositoryAudit, configAuth, configDiscord, configTelegram)
+	serviceWorkspaces := workspaces.New(repositoryWorkspace, repositoryMember, repositoryPolicy)
 	v := scheduleReferenceSources(serviceSchedules, serviceEscalations)
 	serviceReferences := references.New(v)
 	serviceMembers := members.New(configAuth, repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryUser, repositoryInvite, repositorySession, repositoryPolicy, repositoryAudit, repositoryMailer, serviceReferences)
 	serviceUsers := users.New(repositoryTransactor, repositoryUser, recoveryCode, repositorySession)
-	repositoryChannel := channel.New(postgresClient)
-	serviceChannels := channels.New(repositoryChannel, repositoryAudit)
-	serviceTeams := teams.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, escalationPolicy, repositoryPolicy, repositoryAudit)
+	serviceTeams := teams2.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, escalationPolicy, repositoryPolicy, repositoryAudit)
 	serviceAudits := audits.New(repositoryWorkspace, repositoryMember, repositoryPolicy, repositoryAudit)
-	serviceAlerts := alerts.New(repositoryTransactor, repositoryWorkspace, repositoryMember, repositoryAlert, alertSource, ingestEvent, escalationPolicy, repositoryPolicy, repositoryAudit, serviceEscalations)
 	alertSources := alert_sources.New(repositoryTransactor, repositoryWorkspace, repositoryMember, alertSource, ingestEvent, repositoryAlert, repositoryPolicy, repositoryAudit)
 	alertRoutes := alert_routes.New(repositoryWorkspace, repositoryMember, alertRoute, escalationPolicy, repositoryPolicy)
 	serviceSilences := silences.New(repositoryWorkspace, repositoryMember, repositorySilence, repositoryPolicy)
 	alertMonitors := alert_monitors.New(repositoryTransactor, repositoryWorkspace, repositoryMember, alertMonitor, alertSource, alertRoute, escalationPolicy, repositoryPolicy, repositoryAudit)
-	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers, serviceUsers, serviceChannels, serviceTeams, serviceSchedules, apiKeys, serviceAudits, serviceSSO, serviceAlerts, alertSources, alertRoutes, serviceSilences, alertMonitors, serviceEscalations, configIngest)
-	handler := http.NewRouter(slogLogger, configAuth, configIngest, serviceAuth, apiKeys, serviceSSO, serviceSchedules, serviceIngest, serviceRateLimiter, strictServerInterface)
+	notificationRules := notification_rules.New(repositoryTransactor, repositoryWorkspace, repositoryMember, repositoryUser, notificationRule, repositoryChannel, chatIdentity, repositoryPolicy, repositoryAudit)
+	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers, serviceUsers, serviceChannels, serviceTeams, serviceSchedules, apiKeys, serviceAudits, serviceSSO, serviceAlerts, alertSources, alertRoutes, serviceSilences, alertMonitors, serviceEscalations, notificationRules, serviceChats, configIngest)
+	handler := http.NewRouter(slogLogger, configAuth, configIngest, configTelegram, serviceAuth, apiKeys, serviceSSO, serviceSchedules, serviceIngest, serviceRateLimiter, serviceChannels, serviceInteractions, serviceActions, serviceChats, strictServerInterface)
 	app := &App{
 		OTel:     client,
 		Cfg:      configConfig,
@@ -306,25 +350,48 @@ func InitWorker(cfgFile string) (*Worker, func(), error) {
 	configWebhook := config.NewWebhook(configConfig)
 	webhookClient := webhook.New(configWebhook)
 	repositoryPager := pager.New(webhookClient)
-	serviceNotifier := notifier.New(repositoryMailer, repositoryPager)
-	serviceEscalations := escalations.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, repositorySchedule, escalationPolicy, escalationRun, repositoryAlert, alertRoute, repositoryPolicy, repositoryAudit, serviceNotifier, configAuth)
+	configNtfy := config.NewNtfy(configConfig)
+	ntfyClient := ntfy.New(configNtfy)
+	repositoryNtfy := ntfy2.New(ntfyClient)
+	configDiscord := config.NewDiscord(configConfig)
+	configTelegram := config.NewTelegram(configConfig)
+	configTeams := config.NewTeams(configConfig)
+	chatConnection := chat_connection.New(postgresClient, secretboxClient, configDiscord, configTelegram, configTeams)
+	chatIdentity := chat_identity.New(postgresClient)
+	configSlack := config.NewSlack(configConfig)
+	slackClient := slack.New(configSlack)
+	discordClient := discord.New(configDiscord)
+	telegramClient := telegram.New(configTelegram)
+	teamsClient := teams.New(configTeams)
+	chatCourier := chat_courier.New(slackClient, discordClient, telegramClient, teamsClient)
+	serviceNotifier := notifier.New(repositoryMailer, repositoryPager, repositoryNtfy, chatConnection, chatIdentity, chatCourier, configAuth)
+	notificationRun := notification_run.New(postgresClient)
+	notificationRule := notification_rule.New(postgresClient)
+	repositoryChannel := channel.New(postgresClient, secretboxClient)
+	actionToken := action_token.New(postgresClient)
+	serviceRateLimiter := ratelimiter.New(configAuth, rateLimiter)
+	chat := config.NewChat(configConfig)
+	serviceNotifications := notifications.New(repositoryTransactor, repositoryLock, notificationRun, notificationRule, repositoryChannel, chatIdentity, repositoryAlert, repositoryWorkspace, actionToken, serviceNotifier, serviceRateLimiter, configAuth, chat)
+	serviceEscalations := escalations.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, repositorySchedule, escalationPolicy, escalationRun, repositoryAlert, alertRoute, repositoryPolicy, repositoryAudit, serviceNotifier, serviceNotifications, configAuth)
 	configIngest := config.NewIngest(configConfig)
 	serviceIngest := ingest.New(repositoryTransactor, alertSource, repositoryAlert, ingestEvent, alertRoute, repositorySilence, alertMonitor, rateLimiter, repositoryLock, escalationPolicy, serviceEscalations, configIngest)
 	heartbeatSweep := cron2.NewHeartbeatSweep(serviceIngest)
 	alertAutoResolve := cron2.NewAlertAutoResolve(serviceIngest)
 	ingestRetention := cron2.NewIngestRetention(serviceIngest)
 	escalationSweep := cron2.NewEscalationSweep(serviceEscalations)
+	notificationSweep := cron2.NewNotificationSweep(serviceNotifications)
 	worker := &Worker{
-		OTel:        client,
-		Cfg:         configConfig,
-		Log:         slogLogger,
-		PG:          postgresClient,
-		Enforcer:    casbinClient,
-		Scheduler:   cronClient,
-		Heartbeats:  heartbeatSweep,
-		AutoResolve: alertAutoResolve,
-		Retention:   ingestRetention,
-		Escalations: escalationSweep,
+		OTel:          client,
+		Cfg:           configConfig,
+		Log:           slogLogger,
+		PG:            postgresClient,
+		Enforcer:      casbinClient,
+		Scheduler:     cronClient,
+		Heartbeats:    heartbeatSweep,
+		AutoResolve:   alertAutoResolve,
+		Retention:     ingestRetention,
+		Escalations:   escalationSweep,
+		Notifications: notificationSweep,
 	}
 	return worker, func() {
 		cleanup5()

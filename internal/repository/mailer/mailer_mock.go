@@ -41,6 +41,20 @@ func (m *MockMailer) EXPECT() *MockMailerMockRecorder {
 	return m.recorder
 }
 
+// Enabled mocks base method.
+func (m *MockMailer) Enabled(ctx context.Context) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Enabled", ctx)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Enabled indicates an expected call of Enabled.
+func (mr *MockMailerMockRecorder) Enabled(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enabled", reflect.TypeOf((*MockMailer)(nil).Enabled), ctx)
+}
+
 // SendInvite mocks base method.
 func (m *MockMailer) SendInvite(ctx context.Context, to, inviterName, workspaceName, acceptURL string) error {
 	m.ctrl.T.Helper()
@@ -81,4 +95,18 @@ func (m *MockMailer) SendPasswordReset(ctx context.Context, to, resetURL string)
 func (mr *MockMailerMockRecorder) SendPasswordReset(ctx, to, resetURL any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendPasswordReset", reflect.TypeOf((*MockMailer)(nil).SendPasswordReset), ctx, to, resetURL)
+}
+
+// SendText mocks base method.
+func (m *MockMailer) SendText(ctx context.Context, to, subject, body string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SendText", ctx, to, subject, body)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendText indicates an expected call of SendText.
+func (mr *MockMailerMockRecorder) SendText(ctx, to, subject, body any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendText", reflect.TypeOf((*MockMailer)(nil).SendText), ctx, to, subject, body)
 }

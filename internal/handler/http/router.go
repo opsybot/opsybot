@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/opsybot/opsybot/internal/config"
+	"github.com/opsybot/opsybot/internal/entity"
 	"github.com/opsybot/opsybot/internal/handler/http/middleware"
 	"github.com/opsybot/opsybot/internal/service"
 	dashboardapi "github.com/opsybot/opsybot/pkg/http/v1/dashboard"
@@ -21,7 +22,7 @@ const (
 	tracerName       = "opsybot/http"
 )
 
-func NewRouter(log *slog.Logger, cfg config.Auth, cfgIngest config.Ingest, auth service.Auth, keys service.APIKeys, sso service.SSO, schedules service.Schedules, ingest service.Ingest, limiter service.RateLimiter, dashboard dashboardapi.StrictServerInterface) http.Handler {
+func NewRouter(log *slog.Logger, cfg config.Auth, cfgIngest config.Ingest, cfgTelegram config.Telegram, auth service.Auth, keys service.APIKeys, sso service.SSO, schedules service.Schedules, ingest service.Ingest, limiter service.RateLimiter, channels service.Channels, interactions service.Interactions, actions service.Actions, chats service.Chats, dashboard dashboardapi.StrictServerInterface) http.Handler {
 	r := chi.NewRouter()
 	r.Use(chimiddleware.RequestID)
 	r.Use(otelMiddleware)
@@ -44,6 +45,30 @@ func NewRouter(log *slog.Logger, cfg config.Auth, cfgIngest config.Ingest, auth 
 	r.Post("/v1/ingest/e/{token}", ingestRoutes.webhook)
 	r.Get("/v1/ingest/hb/{token}", ingestRoutes.checkIn)
 	r.Post("/v1/ingest/hb/{token}", ingestRoutes.checkIn)
+
+	verifyRoutes := &channelVerifyRoutes{channels: channels}
+	r.Get("/v1/channels/verify/{token}", verifyRoutes.confirm)
+	r.Post("/v1/channels/verify/{token}", verifyRoutes.confirm)
+
+	chatRoutes := &chatCallbackRoutes{interactions: interactions}
+	r.Post("/v1/chat/slack/interactions", chatRoutes.slack)
+	r.Post("/v1/chat/discord/interactions", chatRoutes.discord)
+
+	chatOAuthRoutes := &chatOAuthRoutes{chats: chats, auth: auth, cfg: cfg}
+	r.Get("/v1/chat/slack/oauth/callback", chatOAuthRoutes.callback(entity.ChatProviderSlack))
+	r.Get("/v1/chat/slack/identity/callback", chatOAuthRoutes.identityCallback(entity.ChatProviderSlack))
+	r.Get("/v1/chat/discord/oauth/callback", chatOAuthRoutes.callback(entity.ChatProviderDiscord))
+	r.Get("/v1/chat/discord/identity/callback", chatOAuthRoutes.identityCallback(entity.ChatProviderDiscord))
+
+	telegramRoutes := &telegramWebhookRoutes{chats: chats, actions: actions, cfg: cfgTelegram}
+	r.Post("/v1/chat/telegram/hook/{secret}", telegramRoutes.handle)
+
+	teamsRoutes := &teamsWebhookRoutes{}
+	r.Post("/v1/chat/teams/messages", teamsRoutes.handle)
+
+	actionRoutes := &actionLinkRoutes{actions: actions}
+	r.Get("/v1/act/{token}", actionRoutes.prompt)
+	r.Post("/v1/act/{token}", actionRoutes.act)
 
 	dashboardapi.HandlerWithOptions(
 		dashboardapi.NewStrictHandler(dashboard, nil),

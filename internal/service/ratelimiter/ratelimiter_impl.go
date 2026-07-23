@@ -39,6 +39,10 @@ func (s *srv) limitFor(scope entity.RateScope) entity.RateLimit {
 		return entity.RateLimit{Rate: s.cfg.RateResetPerHour, Period: time.Hour, Burst: s.cfg.RateResetPerHour}
 	case entity.RateScopeSSO:
 		return entity.RateLimit{Rate: s.cfg.RateSSOPerMin, Period: time.Minute, Burst: s.cfg.RateSSOPerMin}
+	case entity.RateScopeNotify:
+		return entity.RateLimit{Rate: s.cfg.RateNotifyPerMin, Period: time.Minute, Burst: s.cfg.RateNotifyPerMin}
+	case entity.RateScopeChannelTest:
+		return entity.RateLimit{Rate: s.cfg.RateChannelTestPerHour, Period: time.Hour, Burst: s.cfg.RateChannelTestPerHour}
 	default:
 		return entity.RateLimit{}
 	}

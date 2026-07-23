@@ -48,7 +48,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
 		title: 'Connect chat',
 		description: 'Incidents run in Slack, Microsoft Teams, or Discord.',
 		action: 'Connect chat',
-		href: '/chat'
+		href: '/integrations'
 	},
 	{
 		id: 'service',

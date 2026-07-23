@@ -11,10 +11,11 @@ import (
 type srv struct {
 	workspaces repository.Workspace
 	members    repository.Member
+	policy     repository.Policy
 }
 
-func New(workspaces repository.Workspace, members repository.Member) service.Workspaces {
-	return &srv{workspaces: workspaces, members: members}
+func New(workspaces repository.Workspace, members repository.Member, policy repository.Policy) service.Workspaces {
+	return &srv{workspaces: workspaces, members: members, policy: policy}
 }
 
 func (s *srv) List(ctx context.Context) ([]entity.Workspace, error) {
@@ -32,7 +33,18 @@ func (s *srv) List(ctx context.Context) ([]entity.Workspace, error) {
 		}
 		return []entity.Workspace{ws}, nil
 	}
-	return s.workspaces.ListActiveByUser(ctx, id.UserID)
+	list, err := s.workspaces.ListActiveByUser(ctx, id.UserID)
+	if err != nil {
+		return nil, err
+	}
+	for i := range list {
+		role, _, err := s.policy.RoleOf(ctx, id.UserID, list[i].ID)
+		if err != nil {
+			return nil, err
+		}
+		list[i].Role = role
+	}
+	return list, nil
 }
 
 func (s *srv) Get(ctx context.Context, slug string) (entity.Workspace, error) {
@@ -57,5 +69,10 @@ func (s *srv) Get(ctx context.Context, slug string) (entity.Workspace, error) {
 	if !active {
 		return entity.Workspace{}, entity.ErrNotMember
 	}
+	role, _, err := s.policy.RoleOf(ctx, id.UserID, ws.ID)
+	if err != nil {
+		return entity.Workspace{}, err
+	}
+	ws.Role = role
 	return ws, nil
 }

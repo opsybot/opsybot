@@ -14,6 +14,8 @@ const (
 	RateScopePasswordReset RateScope = "password_reset"
 	RateScopeSSO           RateScope = "sso"
 	RateScopeIngest        RateScope = "ingest"
+	RateScopeNotify        RateScope = "notify"
+	RateScopeChannelTest   RateScope = "channel_test"
 )
 
 const RateLimitFailClosedRetry = 5 * time.Second

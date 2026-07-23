@@ -44,6 +44,13 @@ const (
 	ActionSSOUpdated      = "sso.updated"
 	ActionChannelAdded    = "channel.added"
 	ActionChannelRemoved  = "channel.removed"
+	ActionChannelVerified = "channel.verified"
+	ActionChannelTested   = "channel.tested"
+
+	ActionNotificationRulesSaved = "notification_rules.saved"
+
+	ActionChatConnected    = "chat.connected"
+	ActionChatDisconnected = "chat.disconnected"
 
 	ActionScheduleCreated     = "schedule.created"
 	ActionScheduleUpdated     = "schedule.updated"

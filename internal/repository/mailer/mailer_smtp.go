@@ -16,6 +16,15 @@ func New(client pkgmailer.Client) repository.Mailer {
 	return &repo{client: client}
 }
 
+func (r *repo) Enabled(ctx context.Context) bool {
+	_ = ctx
+	return r.client.Enabled()
+}
+
+func (r *repo) SendText(ctx context.Context, to, subject, body string) error {
+	return r.client.SendText(ctx, to, subject, body)
+}
+
 func (r *repo) SendInvite(ctx context.Context, to, inviterName, workspaceName, acceptURL string) error {
 	return r.client.SendInvite(ctx, to, pkgmailer.InviteData{
 		InviterName:   inviterName,
@@ -37,5 +46,7 @@ func (r *repo) SendPage(ctx context.Context, to string, page entity.AlertPage) e
 		PolicySlug: page.PolicySlug,
 		Level:      page.Level,
 		AlertURL:   page.AlertURL,
+		AckURL:     page.AckURL,
+		ResolveURL: page.ResolveURL,
 	})
 }

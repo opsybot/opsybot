@@ -111,6 +111,11 @@ var (
 	errEscalationGone     = validation.NewError("escalation_target_unknown", "A target no longer exists. Remove it and pick another.")
 	errEscalationDark     = validation.NewError("escalation_level_unreachable", "A level only pages people who can't be paged. Fix its targets.")
 	errEscalationNoReach  = validation.NewError("escalation_no_reach", "This policy can never notify anyone. Add at least one reachable target.")
+
+	errNotificationSteps      = validation.NewError("notification_steps_invalid", "A rule takes up to 12 steps, each delayed by 0 to 60 minutes.")
+	errNotificationFirstStep  = validation.NewError("notification_first_step", "The first step always fires immediately.")
+	errNotificationChannel    = validation.NewError("notification_channel_invalid", "Pick a channel you've connected.")
+	errNotificationQuietHours = validation.NewError("notification_quiet_hours_invalid", "Quiet hours need at least one day, a start and end that differ, and a real timezone.")
 )
 
 func nameField(value any) error {
@@ -668,6 +673,36 @@ func escalationHoursField(h HoursWindow) error {
 	}
 	if _, err := time.LoadLocation(h.Timezone); err != nil || h.Timezone == "" {
 		return errEscalationHours
+	}
+	return nil
+}
+
+func notificationStepsField(value any) error {
+	steps, _ := value.([]NotificationStep)
+	if len(steps) > NotificationMaxSteps {
+		return errNotificationSteps
+	}
+	for i, s := range steps {
+		if !s.Channel.Valid() {
+			return errNotificationChannel
+		}
+		if s.Delay < 0 || s.Delay > NotificationStepDelayMax {
+			return errNotificationSteps
+		}
+		if i == 0 && s.Delay != 0 {
+			return errNotificationFirstStep
+		}
+	}
+	return nil
+}
+
+func notificationQuietHoursField(value any) error {
+	q, _ := value.(QuietHours)
+	if !q.Enabled {
+		return nil
+	}
+	if err := escalationHoursField(q.Window); err != nil {
+		return errNotificationQuietHours
 	}
 	return nil
 }

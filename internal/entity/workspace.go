@@ -34,6 +34,7 @@ type Workspace struct {
 	Environment string
 	CreatedBy   string
 	CreatedAt   time.Time
+	Role        Role
 }
 
 type NewWorkspace struct {

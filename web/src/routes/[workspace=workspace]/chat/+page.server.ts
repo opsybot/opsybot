@@ -1,53 +1,43 @@
 import { fail } from '@sveltejs/kit';
+import { isPlatformId } from '$lib/chat';
 import {
-	connect,
-	disconnect,
+	linkIdentity,
 	listPlatforms,
-	reconnect,
-	setAnnounceChannel,
-	setArchiveOnResolve,
-	setNamingPattern
+	startIdentityOAuth,
+	startTelegramLink,
+	testConnection
 } from '$lib/server/chat';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = () => ({ platforms: listPlatforms() });
+export const load: PageServerLoad = async ({ cookies, params }) => ({
+	platforms: await listPlatforms(cookies, params.workspace)
+});
 
 export const actions: Actions = {
-	connect: async ({ request }) => {
-		const id = String((await request.formData()).get('platform') ?? '');
-		if (!connect(id)) return fail(400, { error: 'That platform is not available.' });
-		return { connected: true };
+	link: async ({ request, cookies, params }) => {
+		const provider = String((await request.formData()).get('platform') ?? '');
+		if (!isPlatformId(provider)) return fail(400, { error: 'That platform is not available.' });
+		const { handle, verified, error } = await linkIdentity(cookies, params.workspace, provider);
+		if (error) return fail(400, { error });
+		return { linked: true, handle, verified };
 	},
-	disconnect: async ({ request }) => {
-		const id = String((await request.formData()).get('platform') ?? '');
-		if (!disconnect(id)) return fail(404, { error: 'That platform is not connected.' });
-		return { disconnected: true };
+	linkOAuth: async ({ request, cookies, params }) => {
+		const provider = String((await request.formData()).get('platform') ?? '');
+		if (!isPlatformId(provider)) return fail(400, { error: 'That platform is not available.' });
+		const { url, error } = await startIdentityOAuth(cookies, params.workspace, provider);
+		if (error || !url) return fail(400, { error: error ?? 'Could not start sign-in.' });
+		return { oauthUrl: url };
 	},
-	reconnect: async ({ request }) => {
-		const id = String((await request.formData()).get('platform') ?? '');
-		if (!reconnect(id)) return fail(404, { error: 'That platform is not connected.' });
-		return { reconnected: true };
+	linkTelegram: async ({ cookies, params }) => {
+		const { url, error } = await startTelegramLink(cookies, params.workspace);
+		if (error || !url) return fail(400, { error: error ?? 'Could not start Telegram linking.' });
+		return { telegramUrl: url };
 	},
-	saveNaming: async ({ request }) => {
-		const form = await request.formData();
-		const id = String(form.get('platform') ?? '');
-		if (!setNamingPattern(id, String(form.get('pattern') ?? '')))
-			return fail(404, { error: 'That platform is not connected.' });
-		return { saved: true };
-	},
-	setAnnounce: async ({ request }) => {
-		const form = await request.formData();
-		const id = String(form.get('platform') ?? '');
-		const channel = String(form.get('channel') ?? '');
-		if (!setAnnounceChannel(id, channel))
-			return fail(400, { error: 'Pick an announcement channel from the list.' });
-		return { saved: true };
-	},
-	setArchive: async ({ request }) => {
-		const form = await request.formData();
-		const id = String(form.get('platform') ?? '');
-		if (!setArchiveOnResolve(id, form.get('archive') === 'true'))
-			return fail(404, { error: 'That platform is not connected.' });
-		return { saved: true };
+	test: async ({ request, cookies, params }) => {
+		const provider = String((await request.formData()).get('platform') ?? '');
+		if (!isPlatformId(provider)) return fail(400, { error: 'That platform is not available.' });
+		const { delivered, detail, error } = await testConnection(cookies, params.workspace, provider);
+		if (error) return fail(400, { error });
+		return { tested: true, delivered, detail };
 	}
 };

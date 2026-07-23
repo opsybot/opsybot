@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -304,6 +305,120 @@ func (e ChannelType) Valid() bool {
 	}
 }
 
+// Defines values for ChannelVerificationMethod.
+const (
+	ChannelVerificationMethodChat     ChannelVerificationMethod = "chat"
+	ChannelVerificationMethodEmail    ChannelVerificationMethod = "email"
+	ChannelVerificationMethodNtfy     ChannelVerificationMethod = "ntfy"
+	ChannelVerificationMethodTelegram ChannelVerificationMethod = "telegram"
+	ChannelVerificationMethodWebhook  ChannelVerificationMethod = "webhook"
+)
+
+// Valid indicates whether the value is a known member of the ChannelVerificationMethod enum.
+func (e ChannelVerificationMethod) Valid() bool {
+	switch e {
+	case ChannelVerificationMethodChat:
+		return true
+	case ChannelVerificationMethodEmail:
+		return true
+	case ChannelVerificationMethodNtfy:
+		return true
+	case ChannelVerificationMethodTelegram:
+		return true
+	case ChannelVerificationMethodWebhook:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ChatConnectionHealth.
+const (
+	Failing ChatConnectionHealth = "failing"
+	Healthy ChatConnectionHealth = "healthy"
+)
+
+// Valid indicates whether the value is a known member of the ChatConnectionHealth enum.
+func (e ChatConnectionHealth) Valid() bool {
+	switch e {
+	case Failing:
+		return true
+	case Healthy:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ChatConnectionLinkMethod.
+const (
+	ChatConnectionLinkMethodEmail    ChatConnectionLinkMethod = "email"
+	ChatConnectionLinkMethodOauth    ChatConnectionLinkMethod = "oauth"
+	ChatConnectionLinkMethodTelegram ChatConnectionLinkMethod = "telegram"
+)
+
+// Valid indicates whether the value is a known member of the ChatConnectionLinkMethod enum.
+func (e ChatConnectionLinkMethod) Valid() bool {
+	switch e {
+	case ChatConnectionLinkMethodEmail:
+		return true
+	case ChatConnectionLinkMethodOauth:
+		return true
+	case ChatConnectionLinkMethodTelegram:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ChatConnectionProvider.
+const (
+	ChatConnectionProviderDiscord  ChatConnectionProvider = "discord"
+	ChatConnectionProviderSlack    ChatConnectionProvider = "slack"
+	ChatConnectionProviderTeams    ChatConnectionProvider = "teams"
+	ChatConnectionProviderTelegram ChatConnectionProvider = "telegram"
+)
+
+// Valid indicates whether the value is a known member of the ChatConnectionProvider enum.
+func (e ChatConnectionProvider) Valid() bool {
+	switch e {
+	case ChatConnectionProviderDiscord:
+		return true
+	case ChatConnectionProviderSlack:
+		return true
+	case ChatConnectionProviderTeams:
+		return true
+	case ChatConnectionProviderTelegram:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConnectChatRequestProvider.
+const (
+	ConnectChatRequestProviderDiscord  ConnectChatRequestProvider = "discord"
+	ConnectChatRequestProviderSlack    ConnectChatRequestProvider = "slack"
+	ConnectChatRequestProviderTeams    ConnectChatRequestProvider = "teams"
+	ConnectChatRequestProviderTelegram ConnectChatRequestProvider = "telegram"
+)
+
+// Valid indicates whether the value is a known member of the ConnectChatRequestProvider enum.
+func (e ConnectChatRequestProvider) Valid() bool {
+	switch e {
+	case ConnectChatRequestProviderDiscord:
+		return true
+	case ConnectChatRequestProviderSlack:
+		return true
+	case ConnectChatRequestProviderTeams:
+		return true
+	case ConnectChatRequestProviderTelegram:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreateAlertMonitorRequestSeverity.
 const (
 	CreateAlertMonitorRequestSeverityCritical CreateAlertMonitorRequestSeverity = "critical"
@@ -589,6 +704,39 @@ func (e MemberStatus) Valid() bool {
 	case MemberStatusDeactivated:
 		return true
 	case MemberStatusInvited:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NotificationStepChannelType.
+const (
+	NotificationStepChannelTypeDiscord  NotificationStepChannelType = "discord"
+	NotificationStepChannelTypeEmail    NotificationStepChannelType = "email"
+	NotificationStepChannelTypeNtfy     NotificationStepChannelType = "ntfy"
+	NotificationStepChannelTypeSlack    NotificationStepChannelType = "slack"
+	NotificationStepChannelTypeTeams    NotificationStepChannelType = "teams"
+	NotificationStepChannelTypeTelegram NotificationStepChannelType = "telegram"
+	NotificationStepChannelTypeWebhook  NotificationStepChannelType = "webhook"
+)
+
+// Valid indicates whether the value is a known member of the NotificationStepChannelType enum.
+func (e NotificationStepChannelType) Valid() bool {
+	switch e {
+	case NotificationStepChannelTypeDiscord:
+		return true
+	case NotificationStepChannelTypeEmail:
+		return true
+	case NotificationStepChannelTypeNtfy:
+		return true
+	case NotificationStepChannelTypeSlack:
+		return true
+	case NotificationStepChannelTypeTeams:
+		return true
+	case NotificationStepChannelTypeTelegram:
+		return true
+	case NotificationStepChannelTypeWebhook:
 		return true
 	default:
 		return false
@@ -1149,10 +1297,100 @@ type Channel struct {
 // ChannelType defines model for Channel.Type.
 type ChannelType string
 
+// ChannelDeliveryResult defines model for ChannelDeliveryResult.
+type ChannelDeliveryResult struct {
+	Delivered bool   `json:"delivered"`
+	Detail    string `json:"detail"`
+}
+
 // ChannelList defines model for ChannelList.
 type ChannelList struct {
 	Items []Channel `json:"items"`
 }
+
+// ChannelVerification defines model for ChannelVerification.
+type ChannelVerification struct {
+	DeepLink  *string                   `json:"deepLink,omitempty"`
+	Detail    *string                   `json:"detail,omitempty"`
+	ExpiresAt time.Time                 `json:"expiresAt"`
+	Method    ChannelVerificationMethod `json:"method"`
+}
+
+// ChannelVerificationMethod defines model for ChannelVerification.Method.
+type ChannelVerificationMethod string
+
+// ChatConnection defines model for ChatConnection.
+type ChatConnection struct {
+	AnnounceChannel  string                    `json:"announceChannel"`
+	ArchiveOnResolve bool                      `json:"archiveOnResolve"`
+	Enabled          bool                      `json:"enabled"`
+	ExternalName     string                    `json:"externalName"`
+	Health           ChatConnectionHealth      `json:"health"`
+	HealthCheckedAt  *time.Time                `json:"healthCheckedAt,omitempty"`
+	HealthNote       string                    `json:"healthNote"`
+	LinkMethod       *ChatConnectionLinkMethod `json:"linkMethod,omitempty"`
+	Linked           bool                      `json:"linked"`
+	LinkedHandle     *string                   `json:"linkedHandle,omitempty"`
+	LinkedVerified   *bool                     `json:"linkedVerified,omitempty"`
+	NamingPattern    string                    `json:"namingPattern"`
+	Provider         ChatConnectionProvider    `json:"provider"`
+}
+
+// ChatConnectionHealth defines model for ChatConnection.Health.
+type ChatConnectionHealth string
+
+// ChatConnectionLinkMethod defines model for ChatConnection.LinkMethod.
+type ChatConnectionLinkMethod string
+
+// ChatConnectionProvider defines model for ChatConnection.Provider.
+type ChatConnectionProvider string
+
+// ChatConnectionList defines model for ChatConnectionList.
+type ChatConnectionList struct {
+	Items []ChatConnection `json:"items"`
+}
+
+// ChatDefaultsRequest defines model for ChatDefaultsRequest.
+type ChatDefaultsRequest struct {
+	AnnounceChannel  string `json:"announceChannel"`
+	ArchiveOnResolve bool   `json:"archiveOnResolve"`
+	NamingPattern    string `json:"namingPattern"`
+}
+
+// ChatIdentity defines model for ChatIdentity.
+type ChatIdentity struct {
+	ProviderHandle string `json:"providerHandle"`
+	Verified       bool   `json:"verified"`
+}
+
+// ChatOAuthStart defines model for ChatOAuthStart.
+type ChatOAuthStart struct {
+	AuthorizeUrl string `json:"authorizeUrl"`
+}
+
+// ChatTestResult defines model for ChatTestResult.
+type ChatTestResult struct {
+	Delivered bool   `json:"delivered"`
+	Detail    string `json:"detail"`
+}
+
+// ConfirmVerificationRequest defines model for ConfirmVerificationRequest.
+type ConfirmVerificationRequest struct {
+	Code *string `json:"code,omitempty"`
+}
+
+// ConnectChatRequest defines model for ConnectChatRequest.
+type ConnectChatRequest struct {
+	// BotToken Optional app-level bot token override. Normally omitted — the instance-wide token from the OPSYBOT_*_BOT_TOKEN environment is used.
+	BotToken *string `json:"botToken,omitempty"`
+
+	// ExternalId Per-workspace install target. For Discord this is the guild (server) ID; for Slack it is resolved from the token when omitted.
+	ExternalId *string                    `json:"externalId,omitempty"`
+	Provider   ConnectChatRequestProvider `json:"provider"`
+}
+
+// ConnectChatRequestProvider defines model for ConnectChatRequest.Provider.
+type ConnectChatRequestProvider string
 
 // CreateAlertMonitorRequest defines model for CreateAlertMonitorRequest.
 type CreateAlertMonitorRequest struct {
@@ -1195,6 +1433,8 @@ type CreateApiKeyRequestKind string
 // CreateChannelRequest defines model for CreateChannelRequest.
 type CreateChannelRequest struct {
 	Detail string                   `json:"detail"`
+	Label  *string                  `json:"label,omitempty"`
+	Secret *string                  `json:"secret,omitempty"`
 	Type   CreateChannelRequestType `json:"type"`
 }
 
@@ -1488,6 +1728,37 @@ type MemberReference struct {
 	Kind   string  `json:"kind"`
 	Label  string  `json:"label"`
 }
+
+// NotificationQuietHours defines model for NotificationQuietHours.
+type NotificationQuietHours struct {
+	Days        []int  `json:"days"`
+	Enabled     bool   `json:"enabled"`
+	EndMinute   int    `json:"endMinute"`
+	StartMinute int    `json:"startMinute"`
+	Timezone    string `json:"timezone"`
+}
+
+// NotificationRules defines model for NotificationRules.
+type NotificationRules struct {
+	High       []NotificationStep     `json:"high"`
+	Low        []NotificationStep     `json:"low"`
+	QuietHours NotificationQuietHours `json:"quietHours"`
+}
+
+// NotificationSettings defines model for NotificationSettings.
+type NotificationSettings struct {
+	Channels []Channel         `json:"channels"`
+	Rules    NotificationRules `json:"rules"`
+}
+
+// NotificationStep defines model for NotificationStep.
+type NotificationStep struct {
+	ChannelType  NotificationStepChannelType `json:"channelType"`
+	DelayMinutes int                         `json:"delayMinutes"`
+}
+
+// NotificationStepChannelType defines model for NotificationStep.ChannelType.
+type NotificationStepChannelType string
 
 // OnCallShift defines model for OnCallShift.
 type OnCallShift struct {
@@ -1891,6 +2162,7 @@ type Workspace struct {
 	Environment *string `json:"environment,omitempty"`
 	Id          string  `json:"id"`
 	Name        string  `json:"name"`
+	Role        *Role   `json:"role,omitempty"`
 	Timezone    string  `json:"timezone"`
 }
 
@@ -1996,6 +2268,9 @@ type UpdateMeJSONRequestBody = UpdateProfileRequest
 // CreateChannelJSONRequestBody defines body for CreateChannel for application/json ContentType.
 type CreateChannelJSONRequestBody = CreateChannelRequest
 
+// VerifyChannelJSONRequestBody defines body for VerifyChannel for application/json ContentType.
+type VerifyChannelJSONRequestBody = ConfirmVerificationRequest
+
 // ChangePasswordJSONRequestBody defines body for ChangePassword for application/json ContentType.
 type ChangePasswordJSONRequestBody = ChangePasswordRequest
 
@@ -2044,6 +2319,12 @@ type UpdateAlertSourceMappingJSONRequestBody = UpdateAlertSourceMappingRequest
 // UpdateAlertStatusJSONRequestBody defines body for UpdateAlertStatus for application/json ContentType.
 type UpdateAlertStatusJSONRequestBody = AlertStatusRequest
 
+// ConnectChatJSONRequestBody defines body for ConnectChat for application/json ContentType.
+type ConnectChatJSONRequestBody = ConnectChatRequest
+
+// PutChatDefaultsJSONRequestBody defines body for PutChatDefaults for application/json ContentType.
+type PutChatDefaultsJSONRequestBody = ChatDefaultsRequest
+
 // CreateEscalationPolicyJSONRequestBody defines body for CreateEscalationPolicy for application/json ContentType.
 type CreateEscalationPolicyJSONRequestBody = SaveEscalationPolicyRequest
 
@@ -2067,6 +2348,9 @@ type DeactivateMemberJSONRequestBody = DeactivateMemberRequest
 
 // ChangeMemberRoleJSONRequestBody defines body for ChangeMemberRole for application/json ContentType.
 type ChangeMemberRoleJSONRequestBody = ChangeRoleRequest
+
+// PutNotificationRulesJSONRequestBody defines body for PutNotificationRules for application/json ContentType.
+type PutNotificationRulesJSONRequestBody = NotificationRules
 
 // CreateScheduleJSONRequestBody defines body for CreateSchedule for application/json ContentType.
 type CreateScheduleJSONRequestBody = CreateScheduleRequest
@@ -2145,9 +2429,15 @@ type ServerInterface interface {
 	// Remove a notification channel
 	// (DELETE /me/channels/{channelId})
 	DeleteChannel(w http.ResponseWriter, r *http.Request, channelId string)
-	// Mark a channel verified
+	// Send a test notification to a verified channel
+	// (POST /me/channels/{channelId}/test)
+	TestChannel(w http.ResponseWriter, r *http.Request, channelId string)
+	// Confirm a channel with the code from its challenge
 	// (POST /me/channels/{channelId}/verify)
 	VerifyChannel(w http.ResponseWriter, r *http.Request, channelId string)
+	// Start verifying a channel by sending it a challenge
+	// (POST /me/channels/{channelId}/verify/start)
+	StartChannelVerification(w http.ResponseWriter, r *http.Request, channelId string)
 	// Change the signed-in user's password
 	// (PUT /me/password)
 	ChangePassword(w http.ResponseWriter, r *http.Request)
@@ -2274,6 +2564,33 @@ type ServerInterface interface {
 	// Read the workspace audit trail
 	// (GET /workspaces/{workspaceId}/audit)
 	ListAudit(w http.ResponseWriter, r *http.Request, workspaceId string, params ListAuditParams)
+	// List chat connections for a workspace
+	// (GET /workspaces/{workspaceId}/chat/connections)
+	ListChatConnections(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Connect a chat provider with a validated bot token
+	// (POST /workspaces/{workspaceId}/chat/connections)
+	ConnectChat(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Begin the Telegram account link, returning a deep link to open in Telegram
+	// (POST /workspaces/{workspaceId}/chat/connections/telegram/link/start)
+	StartTelegramLink(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Disconnect a chat provider
+	// (DELETE /workspaces/{workspaceId}/chat/connections/{provider})
+	DeleteChatConnection(w http.ResponseWriter, r *http.Request, workspaceId string, provider string)
+	// Update incident defaults for a chat connection
+	// (PUT /workspaces/{workspaceId}/chat/connections/{provider}/defaults)
+	PutChatDefaults(w http.ResponseWriter, r *http.Request, workspaceId string, provider string)
+	// Begin the Sign-in-with-provider flow to link the current user's chat identity
+	// (POST /workspaces/{workspaceId}/chat/connections/{provider}/identity/start)
+	StartChatIdentityOAuth(w http.ResponseWriter, r *http.Request, workspaceId string, provider string)
+	// Link the current user's chat identity by their email
+	// (POST /workspaces/{workspaceId}/chat/connections/{provider}/link)
+	LinkChatIdentity(w http.ResponseWriter, r *http.Request, workspaceId string, provider string)
+	// Begin the OAuth install flow for a chat provider
+	// (POST /workspaces/{workspaceId}/chat/connections/{provider}/oauth/start)
+	StartChatOAuth(w http.ResponseWriter, r *http.Request, workspaceId string, provider string)
+	// Send a test message through a chat connection to the current user
+	// (POST /workspaces/{workspaceId}/chat/connections/{provider}/test)
+	TestChatConnection(w http.ResponseWriter, r *http.Request, workspaceId string, provider string)
 	// People, schedules, teams, and webhooks available as escalation targets
 	// (GET /workspaces/{workspaceId}/escalation-directory)
 	GetEscalationDirectory(w http.ResponseWriter, r *http.Request, workspaceId string)
@@ -2340,6 +2657,12 @@ type ServerInterface interface {
 	// Change a member's role
 	// (PUT /workspaces/{workspaceId}/members/{userId}/role)
 	ChangeMemberRole(w http.ResponseWriter, r *http.Request, workspaceId string, userId string)
+	// Get the current user's notification rules and channels for a workspace
+	// (GET /workspaces/{workspaceId}/notification-rules)
+	GetNotificationRules(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Replace the current user's notification rules for a workspace
+	// (PUT /workspaces/{workspaceId}/notification-rules)
+	PutNotificationRules(w http.ResponseWriter, r *http.Request, workspaceId string)
 	// Your upcoming shifts across all schedules
 	// (GET /workspaces/{workspaceId}/on-call)
 	MyOnCall(w http.ResponseWriter, r *http.Request, workspaceId string, params MyOnCallParams)
@@ -2523,9 +2846,21 @@ func (_ Unimplemented) DeleteChannel(w http.ResponseWriter, r *http.Request, cha
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Mark a channel verified
+// Send a test notification to a verified channel
+// (POST /me/channels/{channelId}/test)
+func (_ Unimplemented) TestChannel(w http.ResponseWriter, r *http.Request, channelId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Confirm a channel with the code from its challenge
 // (POST /me/channels/{channelId}/verify)
 func (_ Unimplemented) VerifyChannel(w http.ResponseWriter, r *http.Request, channelId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Start verifying a channel by sending it a challenge
+// (POST /me/channels/{channelId}/verify/start)
+func (_ Unimplemented) StartChannelVerification(w http.ResponseWriter, r *http.Request, channelId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2781,6 +3116,60 @@ func (_ Unimplemented) ListAudit(w http.ResponseWriter, r *http.Request, workspa
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// List chat connections for a workspace
+// (GET /workspaces/{workspaceId}/chat/connections)
+func (_ Unimplemented) ListChatConnections(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Connect a chat provider with a validated bot token
+// (POST /workspaces/{workspaceId}/chat/connections)
+func (_ Unimplemented) ConnectChat(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Begin the Telegram account link, returning a deep link to open in Telegram
+// (POST /workspaces/{workspaceId}/chat/connections/telegram/link/start)
+func (_ Unimplemented) StartTelegramLink(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Disconnect a chat provider
+// (DELETE /workspaces/{workspaceId}/chat/connections/{provider})
+func (_ Unimplemented) DeleteChatConnection(w http.ResponseWriter, r *http.Request, workspaceId string, provider string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update incident defaults for a chat connection
+// (PUT /workspaces/{workspaceId}/chat/connections/{provider}/defaults)
+func (_ Unimplemented) PutChatDefaults(w http.ResponseWriter, r *http.Request, workspaceId string, provider string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Begin the Sign-in-with-provider flow to link the current user's chat identity
+// (POST /workspaces/{workspaceId}/chat/connections/{provider}/identity/start)
+func (_ Unimplemented) StartChatIdentityOAuth(w http.ResponseWriter, r *http.Request, workspaceId string, provider string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Link the current user's chat identity by their email
+// (POST /workspaces/{workspaceId}/chat/connections/{provider}/link)
+func (_ Unimplemented) LinkChatIdentity(w http.ResponseWriter, r *http.Request, workspaceId string, provider string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Begin the OAuth install flow for a chat provider
+// (POST /workspaces/{workspaceId}/chat/connections/{provider}/oauth/start)
+func (_ Unimplemented) StartChatOAuth(w http.ResponseWriter, r *http.Request, workspaceId string, provider string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Send a test message through a chat connection to the current user
+// (POST /workspaces/{workspaceId}/chat/connections/{provider}/test)
+func (_ Unimplemented) TestChatConnection(w http.ResponseWriter, r *http.Request, workspaceId string, provider string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // People, schedules, teams, and webhooks available as escalation targets
 // (GET /workspaces/{workspaceId}/escalation-directory)
 func (_ Unimplemented) GetEscalationDirectory(w http.ResponseWriter, r *http.Request, workspaceId string) {
@@ -2910,6 +3299,18 @@ func (_ Unimplemented) ReactivateMember(w http.ResponseWriter, r *http.Request, 
 // Change a member's role
 // (PUT /workspaces/{workspaceId}/members/{userId}/role)
 func (_ Unimplemented) ChangeMemberRole(w http.ResponseWriter, r *http.Request, workspaceId string, userId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get the current user's notification rules and channels for a workspace
+// (GET /workspaces/{workspaceId}/notification-rules)
+func (_ Unimplemented) GetNotificationRules(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Replace the current user's notification rules for a workspace
+// (PUT /workspaces/{workspaceId}/notification-rules)
+func (_ Unimplemented) PutNotificationRules(w http.ResponseWriter, r *http.Request, workspaceId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -3343,6 +3744,32 @@ func (siw *ServerInterfaceWrapper) DeleteChannel(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// TestChannel operation middleware
+func (siw *ServerInterfaceWrapper) TestChannel(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "channelId" -------------
+	var channelId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "channelId", chi.URLParam(r, "channelId"), &channelId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "channelId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.TestChannel(w, r, channelId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // VerifyChannel operation middleware
 func (siw *ServerInterfaceWrapper) VerifyChannel(w http.ResponseWriter, r *http.Request) {
 
@@ -3360,6 +3787,32 @@ func (siw *ServerInterfaceWrapper) VerifyChannel(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.VerifyChannel(w, r, channelId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// StartChannelVerification operation middleware
+func (siw *ServerInterfaceWrapper) StartChannelVerification(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "channelId" -------------
+	var channelId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "channelId", chi.URLParam(r, "channelId"), &channelId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "channelId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StartChannelVerification(w, r, channelId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4732,6 +5185,294 @@ func (siw *ServerInterfaceWrapper) ListAudit(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r)
 }
 
+// ListChatConnections operation middleware
+func (siw *ServerInterfaceWrapper) ListChatConnections(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListChatConnections(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ConnectChat operation middleware
+func (siw *ServerInterfaceWrapper) ConnectChat(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ConnectChat(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// StartTelegramLink operation middleware
+func (siw *ServerInterfaceWrapper) StartTelegramLink(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StartTelegramLink(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteChatConnection operation middleware
+func (siw *ServerInterfaceWrapper) DeleteChatConnection(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "provider" -------------
+	var provider string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "provider", chi.URLParam(r, "provider"), &provider, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "provider", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteChatConnection(w, r, workspaceId, provider)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutChatDefaults operation middleware
+func (siw *ServerInterfaceWrapper) PutChatDefaults(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "provider" -------------
+	var provider string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "provider", chi.URLParam(r, "provider"), &provider, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "provider", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutChatDefaults(w, r, workspaceId, provider)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// StartChatIdentityOAuth operation middleware
+func (siw *ServerInterfaceWrapper) StartChatIdentityOAuth(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "provider" -------------
+	var provider string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "provider", chi.URLParam(r, "provider"), &provider, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "provider", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StartChatIdentityOAuth(w, r, workspaceId, provider)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// LinkChatIdentity operation middleware
+func (siw *ServerInterfaceWrapper) LinkChatIdentity(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "provider" -------------
+	var provider string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "provider", chi.URLParam(r, "provider"), &provider, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "provider", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.LinkChatIdentity(w, r, workspaceId, provider)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// StartChatOAuth operation middleware
+func (siw *ServerInterfaceWrapper) StartChatOAuth(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "provider" -------------
+	var provider string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "provider", chi.URLParam(r, "provider"), &provider, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "provider", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StartChatOAuth(w, r, workspaceId, provider)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// TestChatConnection operation middleware
+func (siw *ServerInterfaceWrapper) TestChatConnection(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "provider" -------------
+	var provider string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "provider", chi.URLParam(r, "provider"), &provider, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "provider", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.TestChatConnection(w, r, workspaceId, provider)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetEscalationDirectory operation middleware
 func (siw *ServerInterfaceWrapper) GetEscalationDirectory(w http.ResponseWriter, r *http.Request) {
 
@@ -5403,6 +6144,58 @@ func (siw *ServerInterfaceWrapper) ChangeMemberRole(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ChangeMemberRole(w, r, workspaceId, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetNotificationRules operation middleware
+func (siw *ServerInterfaceWrapper) GetNotificationRules(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetNotificationRules(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutNotificationRules operation middleware
+func (siw *ServerInterfaceWrapper) PutNotificationRules(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutNotificationRules(w, r, workspaceId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6419,7 +7212,13 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Delete(options.BaseURL+"/me/channels/{channelId}", wrapper.DeleteChannel)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/me/channels/{channelId}/test", wrapper.TestChannel)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/me/channels/{channelId}/verify", wrapper.VerifyChannel)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/me/channels/{channelId}/verify/start", wrapper.StartChannelVerification)
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/me/password", wrapper.ChangePassword)
@@ -6548,6 +7347,33 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/workspaces/{workspaceId}/audit", wrapper.ListAudit)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/chat/connections", wrapper.ListChatConnections)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/chat/connections", wrapper.ConnectChat)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/chat/connections/telegram/link/start", wrapper.StartTelegramLink)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/workspaces/{workspaceId}/chat/connections/{provider}", wrapper.DeleteChatConnection)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/workspaces/{workspaceId}/chat/connections/{provider}/defaults", wrapper.PutChatDefaults)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/chat/connections/{provider}/identity/start", wrapper.StartChatIdentityOAuth)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/chat/connections/{provider}/link", wrapper.LinkChatIdentity)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/chat/connections/{provider}/oauth/start", wrapper.StartChatOAuth)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/chat/connections/{provider}/test", wrapper.TestChatConnection)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/workspaces/{workspaceId}/escalation-directory", wrapper.GetEscalationDirectory)
 	})
 	r.Group(func(r chi.Router) {
@@ -6612,6 +7438,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/workspaces/{workspaceId}/members/{userId}/role", wrapper.ChangeMemberRole)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/notification-rules", wrapper.GetNotificationRules)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/workspaces/{workspaceId}/notification-rules", wrapper.PutNotificationRules)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/workspaces/{workspaceId}/on-call", wrapper.MyOnCall)
@@ -7639,8 +8471,87 @@ func (response DeleteChannel404ApplicationProblemPlusJSONResponse) VisitDeleteCh
 	return err
 }
 
+type TestChannelRequestObject struct {
+	ChannelId string `json:"channelId"`
+}
+
+type TestChannelResponseObject interface {
+	VisitTestChannelResponse(w http.ResponseWriter) error
+}
+
+type TestChannel200JSONResponse ChannelDeliveryResult
+
+func (response TestChannel200JSONResponse) VisitTestChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TestChannel401ApplicationProblemPlusJSONResponse Problem
+
+func (response TestChannel401ApplicationProblemPlusJSONResponse) VisitTestChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TestChannel404ApplicationProblemPlusJSONResponse Problem
+
+func (response TestChannel404ApplicationProblemPlusJSONResponse) VisitTestChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TestChannel409ApplicationProblemPlusJSONResponse Problem
+
+func (response TestChannel409ApplicationProblemPlusJSONResponse) VisitTestChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TestChannel429ApplicationProblemPlusJSONResponse Problem
+
+func (response TestChannel429ApplicationProblemPlusJSONResponse) VisitTestChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type VerifyChannelRequestObject struct {
 	ChannelId string `json:"channelId"`
+	Body      *VerifyChannelJSONRequestBody
 }
 
 type VerifyChannelResponseObject interface {
@@ -7653,6 +8564,20 @@ type VerifyChannel204Response struct {
 func (response VerifyChannel204Response) VisitVerifyChannelResponse(w http.ResponseWriter) error {
 	w.WriteHeader(204)
 	return nil
+}
+
+type VerifyChannel400ApplicationProblemPlusJSONResponse Problem
+
+func (response VerifyChannel400ApplicationProblemPlusJSONResponse) VisitVerifyChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
 }
 
 type VerifyChannel401ApplicationProblemPlusJSONResponse Problem
@@ -7672,6 +8597,56 @@ func (response VerifyChannel401ApplicationProblemPlusJSONResponse) VisitVerifyCh
 type VerifyChannel404ApplicationProblemPlusJSONResponse Problem
 
 func (response VerifyChannel404ApplicationProblemPlusJSONResponse) VisitVerifyChannelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartChannelVerificationRequestObject struct {
+	ChannelId string `json:"channelId"`
+}
+
+type StartChannelVerificationResponseObject interface {
+	VisitStartChannelVerificationResponse(w http.ResponseWriter) error
+}
+
+type StartChannelVerification200JSONResponse ChannelVerification
+
+func (response StartChannelVerification200JSONResponse) VisitStartChannelVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartChannelVerification401ApplicationProblemPlusJSONResponse Problem
+
+func (response StartChannelVerification401ApplicationProblemPlusJSONResponse) VisitStartChannelVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartChannelVerification404ApplicationProblemPlusJSONResponse Problem
+
+func (response StartChannelVerification404ApplicationProblemPlusJSONResponse) VisitStartChannelVerificationResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -10453,6 +11428,648 @@ func (response ListAudit404ApplicationProblemPlusJSONResponse) VisitListAuditRes
 	return err
 }
 
+type ListChatConnectionsRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+}
+
+type ListChatConnectionsResponseObject interface {
+	VisitListChatConnectionsResponse(w http.ResponseWriter) error
+}
+
+type ListChatConnections200JSONResponse ChatConnectionList
+
+func (response ListChatConnections200JSONResponse) VisitListChatConnectionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListChatConnections401ApplicationProblemPlusJSONResponse Problem
+
+func (response ListChatConnections401ApplicationProblemPlusJSONResponse) VisitListChatConnectionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListChatConnections403ApplicationProblemPlusJSONResponse Problem
+
+func (response ListChatConnections403ApplicationProblemPlusJSONResponse) VisitListChatConnectionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListChatConnections404ApplicationProblemPlusJSONResponse Problem
+
+func (response ListChatConnections404ApplicationProblemPlusJSONResponse) VisitListChatConnectionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConnectChatRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	Body        *ConnectChatJSONRequestBody
+}
+
+type ConnectChatResponseObject interface {
+	VisitConnectChatResponse(w http.ResponseWriter) error
+}
+
+type ConnectChat201JSONResponse ChatConnection
+
+func (response ConnectChat201JSONResponse) VisitConnectChatResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConnectChat400ApplicationProblemPlusJSONResponse Problem
+
+func (response ConnectChat400ApplicationProblemPlusJSONResponse) VisitConnectChatResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConnectChat401ApplicationProblemPlusJSONResponse Problem
+
+func (response ConnectChat401ApplicationProblemPlusJSONResponse) VisitConnectChatResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConnectChat403ApplicationProblemPlusJSONResponse Problem
+
+func (response ConnectChat403ApplicationProblemPlusJSONResponse) VisitConnectChatResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConnectChat404ApplicationProblemPlusJSONResponse Problem
+
+func (response ConnectChat404ApplicationProblemPlusJSONResponse) VisitConnectChatResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartTelegramLinkRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+}
+
+type StartTelegramLinkResponseObject interface {
+	VisitStartTelegramLinkResponse(w http.ResponseWriter) error
+}
+
+type StartTelegramLink200JSONResponse ChatOAuthStart
+
+func (response StartTelegramLink200JSONResponse) VisitStartTelegramLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartTelegramLink400ApplicationProblemPlusJSONResponse Problem
+
+func (response StartTelegramLink400ApplicationProblemPlusJSONResponse) VisitStartTelegramLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartTelegramLink401ApplicationProblemPlusJSONResponse Problem
+
+func (response StartTelegramLink401ApplicationProblemPlusJSONResponse) VisitStartTelegramLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartTelegramLink403ApplicationProblemPlusJSONResponse Problem
+
+func (response StartTelegramLink403ApplicationProblemPlusJSONResponse) VisitStartTelegramLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartTelegramLink404ApplicationProblemPlusJSONResponse Problem
+
+func (response StartTelegramLink404ApplicationProblemPlusJSONResponse) VisitStartTelegramLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteChatConnectionRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	Provider    string `json:"provider"`
+}
+
+type DeleteChatConnectionResponseObject interface {
+	VisitDeleteChatConnectionResponse(w http.ResponseWriter) error
+}
+
+type DeleteChatConnection204Response struct {
+}
+
+func (response DeleteChatConnection204Response) VisitDeleteChatConnectionResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteChatConnection401ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteChatConnection401ApplicationProblemPlusJSONResponse) VisitDeleteChatConnectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteChatConnection403ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteChatConnection403ApplicationProblemPlusJSONResponse) VisitDeleteChatConnectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteChatConnection404ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteChatConnection404ApplicationProblemPlusJSONResponse) VisitDeleteChatConnectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutChatDefaultsRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	Provider    string `json:"provider"`
+	Body        *PutChatDefaultsJSONRequestBody
+}
+
+type PutChatDefaultsResponseObject interface {
+	VisitPutChatDefaultsResponse(w http.ResponseWriter) error
+}
+
+type PutChatDefaults204Response struct {
+}
+
+func (response PutChatDefaults204Response) VisitPutChatDefaultsResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type PutChatDefaults401ApplicationProblemPlusJSONResponse Problem
+
+func (response PutChatDefaults401ApplicationProblemPlusJSONResponse) VisitPutChatDefaultsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutChatDefaults403ApplicationProblemPlusJSONResponse Problem
+
+func (response PutChatDefaults403ApplicationProblemPlusJSONResponse) VisitPutChatDefaultsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutChatDefaults404ApplicationProblemPlusJSONResponse Problem
+
+func (response PutChatDefaults404ApplicationProblemPlusJSONResponse) VisitPutChatDefaultsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartChatIdentityOAuthRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	Provider    string `json:"provider"`
+}
+
+type StartChatIdentityOAuthResponseObject interface {
+	VisitStartChatIdentityOAuthResponse(w http.ResponseWriter) error
+}
+
+type StartChatIdentityOAuth200JSONResponse ChatOAuthStart
+
+func (response StartChatIdentityOAuth200JSONResponse) VisitStartChatIdentityOAuthResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartChatIdentityOAuth400ApplicationProblemPlusJSONResponse Problem
+
+func (response StartChatIdentityOAuth400ApplicationProblemPlusJSONResponse) VisitStartChatIdentityOAuthResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartChatIdentityOAuth401ApplicationProblemPlusJSONResponse Problem
+
+func (response StartChatIdentityOAuth401ApplicationProblemPlusJSONResponse) VisitStartChatIdentityOAuthResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartChatIdentityOAuth403ApplicationProblemPlusJSONResponse Problem
+
+func (response StartChatIdentityOAuth403ApplicationProblemPlusJSONResponse) VisitStartChatIdentityOAuthResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartChatIdentityOAuth404ApplicationProblemPlusJSONResponse Problem
+
+func (response StartChatIdentityOAuth404ApplicationProblemPlusJSONResponse) VisitStartChatIdentityOAuthResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LinkChatIdentityRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	Provider    string `json:"provider"`
+}
+
+type LinkChatIdentityResponseObject interface {
+	VisitLinkChatIdentityResponse(w http.ResponseWriter) error
+}
+
+type LinkChatIdentity200JSONResponse ChatIdentity
+
+func (response LinkChatIdentity200JSONResponse) VisitLinkChatIdentityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LinkChatIdentity400ApplicationProblemPlusJSONResponse Problem
+
+func (response LinkChatIdentity400ApplicationProblemPlusJSONResponse) VisitLinkChatIdentityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LinkChatIdentity401ApplicationProblemPlusJSONResponse Problem
+
+func (response LinkChatIdentity401ApplicationProblemPlusJSONResponse) VisitLinkChatIdentityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LinkChatIdentity403ApplicationProblemPlusJSONResponse Problem
+
+func (response LinkChatIdentity403ApplicationProblemPlusJSONResponse) VisitLinkChatIdentityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LinkChatIdentity404ApplicationProblemPlusJSONResponse Problem
+
+func (response LinkChatIdentity404ApplicationProblemPlusJSONResponse) VisitLinkChatIdentityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartChatOAuthRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	Provider    string `json:"provider"`
+}
+
+type StartChatOAuthResponseObject interface {
+	VisitStartChatOAuthResponse(w http.ResponseWriter) error
+}
+
+type StartChatOAuth200JSONResponse ChatOAuthStart
+
+func (response StartChatOAuth200JSONResponse) VisitStartChatOAuthResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartChatOAuth400ApplicationProblemPlusJSONResponse Problem
+
+func (response StartChatOAuth400ApplicationProblemPlusJSONResponse) VisitStartChatOAuthResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartChatOAuth401ApplicationProblemPlusJSONResponse Problem
+
+func (response StartChatOAuth401ApplicationProblemPlusJSONResponse) VisitStartChatOAuthResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartChatOAuth403ApplicationProblemPlusJSONResponse Problem
+
+func (response StartChatOAuth403ApplicationProblemPlusJSONResponse) VisitStartChatOAuthResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartChatOAuth404ApplicationProblemPlusJSONResponse Problem
+
+func (response StartChatOAuth404ApplicationProblemPlusJSONResponse) VisitStartChatOAuthResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TestChatConnectionRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	Provider    string `json:"provider"`
+}
+
+type TestChatConnectionResponseObject interface {
+	VisitTestChatConnectionResponse(w http.ResponseWriter) error
+}
+
+type TestChatConnection200JSONResponse ChatTestResult
+
+func (response TestChatConnection200JSONResponse) VisitTestChatConnectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TestChatConnection401ApplicationProblemPlusJSONResponse Problem
+
+func (response TestChatConnection401ApplicationProblemPlusJSONResponse) VisitTestChatConnectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TestChatConnection403ApplicationProblemPlusJSONResponse Problem
+
+func (response TestChatConnection403ApplicationProblemPlusJSONResponse) VisitTestChatConnectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TestChatConnection404ApplicationProblemPlusJSONResponse Problem
+
+func (response TestChatConnection404ApplicationProblemPlusJSONResponse) VisitTestChatConnectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetEscalationDirectoryRequestObject struct {
 	WorkspaceId string `json:"workspaceId"`
 }
@@ -12091,6 +13708,149 @@ func (response ChangeMemberRole409ApplicationProblemPlusJSONResponse) VisitChang
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNotificationRulesRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+}
+
+type GetNotificationRulesResponseObject interface {
+	VisitGetNotificationRulesResponse(w http.ResponseWriter) error
+}
+
+type GetNotificationRules200JSONResponse NotificationSettings
+
+func (response GetNotificationRules200JSONResponse) VisitGetNotificationRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNotificationRules401ApplicationProblemPlusJSONResponse Problem
+
+func (response GetNotificationRules401ApplicationProblemPlusJSONResponse) VisitGetNotificationRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNotificationRules403ApplicationProblemPlusJSONResponse Problem
+
+func (response GetNotificationRules403ApplicationProblemPlusJSONResponse) VisitGetNotificationRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNotificationRules404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetNotificationRules404ApplicationProblemPlusJSONResponse) VisitGetNotificationRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutNotificationRulesRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	Body        *PutNotificationRulesJSONRequestBody
+}
+
+type PutNotificationRulesResponseObject interface {
+	VisitPutNotificationRulesResponse(w http.ResponseWriter) error
+}
+
+type PutNotificationRules200JSONResponse NotificationRules
+
+func (response PutNotificationRules200JSONResponse) VisitPutNotificationRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutNotificationRules400ApplicationProblemPlusJSONResponse Problem
+
+func (response PutNotificationRules400ApplicationProblemPlusJSONResponse) VisitPutNotificationRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutNotificationRules401ApplicationProblemPlusJSONResponse Problem
+
+func (response PutNotificationRules401ApplicationProblemPlusJSONResponse) VisitPutNotificationRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutNotificationRules403ApplicationProblemPlusJSONResponse Problem
+
+func (response PutNotificationRules403ApplicationProblemPlusJSONResponse) VisitPutNotificationRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutNotificationRules404ApplicationProblemPlusJSONResponse Problem
+
+func (response PutNotificationRules404ApplicationProblemPlusJSONResponse) VisitPutNotificationRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -13952,9 +15712,15 @@ type StrictServerInterface interface {
 	// Remove a notification channel
 	// (DELETE /me/channels/{channelId})
 	DeleteChannel(ctx context.Context, request DeleteChannelRequestObject) (DeleteChannelResponseObject, error)
-	// Mark a channel verified
+	// Send a test notification to a verified channel
+	// (POST /me/channels/{channelId}/test)
+	TestChannel(ctx context.Context, request TestChannelRequestObject) (TestChannelResponseObject, error)
+	// Confirm a channel with the code from its challenge
 	// (POST /me/channels/{channelId}/verify)
 	VerifyChannel(ctx context.Context, request VerifyChannelRequestObject) (VerifyChannelResponseObject, error)
+	// Start verifying a channel by sending it a challenge
+	// (POST /me/channels/{channelId}/verify/start)
+	StartChannelVerification(ctx context.Context, request StartChannelVerificationRequestObject) (StartChannelVerificationResponseObject, error)
 	// Change the signed-in user's password
 	// (PUT /me/password)
 	ChangePassword(ctx context.Context, request ChangePasswordRequestObject) (ChangePasswordResponseObject, error)
@@ -14081,6 +15847,33 @@ type StrictServerInterface interface {
 	// Read the workspace audit trail
 	// (GET /workspaces/{workspaceId}/audit)
 	ListAudit(ctx context.Context, request ListAuditRequestObject) (ListAuditResponseObject, error)
+	// List chat connections for a workspace
+	// (GET /workspaces/{workspaceId}/chat/connections)
+	ListChatConnections(ctx context.Context, request ListChatConnectionsRequestObject) (ListChatConnectionsResponseObject, error)
+	// Connect a chat provider with a validated bot token
+	// (POST /workspaces/{workspaceId}/chat/connections)
+	ConnectChat(ctx context.Context, request ConnectChatRequestObject) (ConnectChatResponseObject, error)
+	// Begin the Telegram account link, returning a deep link to open in Telegram
+	// (POST /workspaces/{workspaceId}/chat/connections/telegram/link/start)
+	StartTelegramLink(ctx context.Context, request StartTelegramLinkRequestObject) (StartTelegramLinkResponseObject, error)
+	// Disconnect a chat provider
+	// (DELETE /workspaces/{workspaceId}/chat/connections/{provider})
+	DeleteChatConnection(ctx context.Context, request DeleteChatConnectionRequestObject) (DeleteChatConnectionResponseObject, error)
+	// Update incident defaults for a chat connection
+	// (PUT /workspaces/{workspaceId}/chat/connections/{provider}/defaults)
+	PutChatDefaults(ctx context.Context, request PutChatDefaultsRequestObject) (PutChatDefaultsResponseObject, error)
+	// Begin the Sign-in-with-provider flow to link the current user's chat identity
+	// (POST /workspaces/{workspaceId}/chat/connections/{provider}/identity/start)
+	StartChatIdentityOAuth(ctx context.Context, request StartChatIdentityOAuthRequestObject) (StartChatIdentityOAuthResponseObject, error)
+	// Link the current user's chat identity by their email
+	// (POST /workspaces/{workspaceId}/chat/connections/{provider}/link)
+	LinkChatIdentity(ctx context.Context, request LinkChatIdentityRequestObject) (LinkChatIdentityResponseObject, error)
+	// Begin the OAuth install flow for a chat provider
+	// (POST /workspaces/{workspaceId}/chat/connections/{provider}/oauth/start)
+	StartChatOAuth(ctx context.Context, request StartChatOAuthRequestObject) (StartChatOAuthResponseObject, error)
+	// Send a test message through a chat connection to the current user
+	// (POST /workspaces/{workspaceId}/chat/connections/{provider}/test)
+	TestChatConnection(ctx context.Context, request TestChatConnectionRequestObject) (TestChatConnectionResponseObject, error)
 	// People, schedules, teams, and webhooks available as escalation targets
 	// (GET /workspaces/{workspaceId}/escalation-directory)
 	GetEscalationDirectory(ctx context.Context, request GetEscalationDirectoryRequestObject) (GetEscalationDirectoryResponseObject, error)
@@ -14147,6 +15940,12 @@ type StrictServerInterface interface {
 	// Change a member's role
 	// (PUT /workspaces/{workspaceId}/members/{userId}/role)
 	ChangeMemberRole(ctx context.Context, request ChangeMemberRoleRequestObject) (ChangeMemberRoleResponseObject, error)
+	// Get the current user's notification rules and channels for a workspace
+	// (GET /workspaces/{workspaceId}/notification-rules)
+	GetNotificationRules(ctx context.Context, request GetNotificationRulesRequestObject) (GetNotificationRulesResponseObject, error)
+	// Replace the current user's notification rules for a workspace
+	// (PUT /workspaces/{workspaceId}/notification-rules)
+	PutNotificationRules(ctx context.Context, request PutNotificationRulesRequestObject) (PutNotificationRulesResponseObject, error)
 	// Your upcoming shifts across all schedules
 	// (GET /workspaces/{workspaceId}/on-call)
 	MyOnCall(ctx context.Context, request MyOnCallRequestObject) (MyOnCallResponseObject, error)
@@ -14760,11 +16559,47 @@ func (sh *strictHandler) DeleteChannel(w http.ResponseWriter, r *http.Request, c
 	}
 }
 
+// TestChannel operation middleware
+func (sh *strictHandler) TestChannel(w http.ResponseWriter, r *http.Request, channelId string) {
+	var request TestChannelRequestObject
+
+	request.ChannelId = channelId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.TestChannel(ctx, request.(TestChannelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "TestChannel")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(TestChannelResponseObject); ok {
+		if err := validResponse.VisitTestChannelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // VerifyChannel operation middleware
 func (sh *strictHandler) VerifyChannel(w http.ResponseWriter, r *http.Request, channelId string) {
 	var request VerifyChannelRequestObject
 
 	request.ChannelId = channelId
+
+	var body VerifyChannelJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.VerifyChannel(ctx, request.(VerifyChannelRequestObject))
@@ -14779,6 +16614,32 @@ func (sh *strictHandler) VerifyChannel(w http.ResponseWriter, r *http.Request, c
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(VerifyChannelResponseObject); ok {
 		if err := validResponse.VisitVerifyChannelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// StartChannelVerification operation middleware
+func (sh *strictHandler) StartChannelVerification(w http.ResponseWriter, r *http.Request, channelId string) {
+	var request StartChannelVerificationRequestObject
+
+	request.ChannelId = channelId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.StartChannelVerification(ctx, request.(StartChannelVerificationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StartChannelVerification")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(StartChannelVerificationResponseObject); ok {
+		if err := validResponse.VisitStartChannelVerificationResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -15995,6 +17856,260 @@ func (sh *strictHandler) ListAudit(w http.ResponseWriter, r *http.Request, works
 	}
 }
 
+// ListChatConnections operation middleware
+func (sh *strictHandler) ListChatConnections(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request ListChatConnectionsRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListChatConnections(ctx, request.(ListChatConnectionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListChatConnections")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListChatConnectionsResponseObject); ok {
+		if err := validResponse.VisitListChatConnectionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ConnectChat operation middleware
+func (sh *strictHandler) ConnectChat(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request ConnectChatRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	var body ConnectChatJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ConnectChat(ctx, request.(ConnectChatRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ConnectChat")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ConnectChatResponseObject); ok {
+		if err := validResponse.VisitConnectChatResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// StartTelegramLink operation middleware
+func (sh *strictHandler) StartTelegramLink(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request StartTelegramLinkRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.StartTelegramLink(ctx, request.(StartTelegramLinkRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StartTelegramLink")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(StartTelegramLinkResponseObject); ok {
+		if err := validResponse.VisitStartTelegramLinkResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteChatConnection operation middleware
+func (sh *strictHandler) DeleteChatConnection(w http.ResponseWriter, r *http.Request, workspaceId string, provider string) {
+	var request DeleteChatConnectionRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.Provider = provider
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteChatConnection(ctx, request.(DeleteChatConnectionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteChatConnection")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteChatConnectionResponseObject); ok {
+		if err := validResponse.VisitDeleteChatConnectionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutChatDefaults operation middleware
+func (sh *strictHandler) PutChatDefaults(w http.ResponseWriter, r *http.Request, workspaceId string, provider string) {
+	var request PutChatDefaultsRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.Provider = provider
+
+	var body PutChatDefaultsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutChatDefaults(ctx, request.(PutChatDefaultsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutChatDefaults")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutChatDefaultsResponseObject); ok {
+		if err := validResponse.VisitPutChatDefaultsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// StartChatIdentityOAuth operation middleware
+func (sh *strictHandler) StartChatIdentityOAuth(w http.ResponseWriter, r *http.Request, workspaceId string, provider string) {
+	var request StartChatIdentityOAuthRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.Provider = provider
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.StartChatIdentityOAuth(ctx, request.(StartChatIdentityOAuthRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StartChatIdentityOAuth")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(StartChatIdentityOAuthResponseObject); ok {
+		if err := validResponse.VisitStartChatIdentityOAuthResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// LinkChatIdentity operation middleware
+func (sh *strictHandler) LinkChatIdentity(w http.ResponseWriter, r *http.Request, workspaceId string, provider string) {
+	var request LinkChatIdentityRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.Provider = provider
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.LinkChatIdentity(ctx, request.(LinkChatIdentityRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "LinkChatIdentity")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(LinkChatIdentityResponseObject); ok {
+		if err := validResponse.VisitLinkChatIdentityResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// StartChatOAuth operation middleware
+func (sh *strictHandler) StartChatOAuth(w http.ResponseWriter, r *http.Request, workspaceId string, provider string) {
+	var request StartChatOAuthRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.Provider = provider
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.StartChatOAuth(ctx, request.(StartChatOAuthRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StartChatOAuth")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(StartChatOAuthResponseObject); ok {
+		if err := validResponse.VisitStartChatOAuthResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// TestChatConnection operation middleware
+func (sh *strictHandler) TestChatConnection(w http.ResponseWriter, r *http.Request, workspaceId string, provider string) {
+	var request TestChatConnectionRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.Provider = provider
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.TestChatConnection(ctx, request.(TestChatConnectionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "TestChatConnection")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(TestChatConnectionResponseObject); ok {
+		if err := validResponse.VisitTestChatConnectionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetEscalationDirectory operation middleware
 func (sh *strictHandler) GetEscalationDirectory(w http.ResponseWriter, r *http.Request, workspaceId string) {
 	var request GetEscalationDirectoryRequestObject
@@ -16628,6 +18743,65 @@ func (sh *strictHandler) ChangeMemberRole(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ChangeMemberRoleResponseObject); ok {
 		if err := validResponse.VisitChangeMemberRoleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetNotificationRules operation middleware
+func (sh *strictHandler) GetNotificationRules(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request GetNotificationRulesRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetNotificationRules(ctx, request.(GetNotificationRulesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetNotificationRules")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetNotificationRulesResponseObject); ok {
+		if err := validResponse.VisitGetNotificationRulesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutNotificationRules operation middleware
+func (sh *strictHandler) PutNotificationRules(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request PutNotificationRulesRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	var body PutNotificationRulesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutNotificationRules(ctx, request.(PutNotificationRulesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutNotificationRules")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutNotificationRulesResponseObject); ok {
+		if err := validResponse.VisitPutNotificationRulesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

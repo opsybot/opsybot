@@ -36,5 +36,10 @@ func (h *handler) GetWorkspace(ctx context.Context, request api.GetWorkspaceRequ
 }
 
 func workspaceDTO(w entity.Workspace) api.Workspace {
-	return api.Workspace{Id: w.Slug, Name: w.Name, Timezone: w.Timezone, Environment: ptr(w.Environment)}
+	dto := api.Workspace{Id: w.Slug, Name: w.Name, Timezone: w.Timezone, Environment: ptr(w.Environment)}
+	if w.Role != "" {
+		role := api.Role(w.Role)
+		dto.Role = &role
+	}
+	return dto
 }

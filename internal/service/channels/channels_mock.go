@@ -56,6 +56,34 @@ func (mr *MockChannelsMockRecorder) Add(ctx, in any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockChannels)(nil).Add), ctx, in)
 }
 
+// CompleteByToken mocks base method.
+func (m *MockChannels) CompleteByToken(ctx context.Context, token string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CompleteByToken", ctx, token)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CompleteByToken indicates an expected call of CompleteByToken.
+func (mr *MockChannelsMockRecorder) CompleteByToken(ctx, token any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompleteByToken", reflect.TypeOf((*MockChannels)(nil).CompleteByToken), ctx, token)
+}
+
+// CompleteVerification mocks base method.
+func (m *MockChannels) CompleteVerification(ctx context.Context, channelID, code string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CompleteVerification", ctx, channelID, code)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CompleteVerification indicates an expected call of CompleteVerification.
+func (mr *MockChannelsMockRecorder) CompleteVerification(ctx, channelID, code any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompleteVerification", reflect.TypeOf((*MockChannels)(nil).CompleteVerification), ctx, channelID, code)
+}
+
 // List mocks base method.
 func (m *MockChannels) List(ctx context.Context) ([]entity.Channel, error) {
 	m.ctrl.T.Helper()
@@ -85,16 +113,32 @@ func (mr *MockChannelsMockRecorder) Remove(ctx, channelID any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remove", reflect.TypeOf((*MockChannels)(nil).Remove), ctx, channelID)
 }
 
-// Verify mocks base method.
-func (m *MockChannels) Verify(ctx context.Context, channelID string) error {
+// SendTest mocks base method.
+func (m *MockChannels) SendTest(ctx context.Context, channelID string) (entity.NotifyResult, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Verify", ctx, channelID)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "SendTest", ctx, channelID)
+	ret0, _ := ret[0].(entity.NotifyResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// Verify indicates an expected call of Verify.
-func (mr *MockChannelsMockRecorder) Verify(ctx, channelID any) *gomock.Call {
+// SendTest indicates an expected call of SendTest.
+func (mr *MockChannelsMockRecorder) SendTest(ctx, channelID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Verify", reflect.TypeOf((*MockChannels)(nil).Verify), ctx, channelID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendTest", reflect.TypeOf((*MockChannels)(nil).SendTest), ctx, channelID)
+}
+
+// StartVerification mocks base method.
+func (m *MockChannels) StartVerification(ctx context.Context, channelID string) (entity.ChannelVerification, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StartVerification", ctx, channelID)
+	ret0, _ := ret[0].(entity.ChannelVerification)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StartVerification indicates an expected call of StartVerification.
+func (mr *MockChannelsMockRecorder) StartVerification(ctx, channelID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartVerification", reflect.TypeOf((*MockChannels)(nil).StartVerification), ctx, channelID)
 }

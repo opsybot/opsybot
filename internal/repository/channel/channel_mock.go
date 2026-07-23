@@ -100,6 +100,21 @@ func (mr *MockChannelMockRecorder) ListByUser(ctx, userID any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByUser", reflect.TypeOf((*MockChannel)(nil).ListByUser), ctx, userID)
 }
 
+// ListByUsers mocks base method.
+func (m *MockChannel) ListByUsers(ctx context.Context, userIDs []string) (map[string][]entity.Channel, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListByUsers", ctx, userIDs)
+	ret0, _ := ret[0].(map[string][]entity.Channel)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListByUsers indicates an expected call of ListByUsers.
+func (mr *MockChannelMockRecorder) ListByUsers(ctx, userIDs any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByUsers", reflect.TypeOf((*MockChannel)(nil).ListByUsers), ctx, userIDs)
+}
+
 // MarkVerified mocks base method.
 func (m *MockChannel) MarkVerified(ctx context.Context, id, userID string) error {
 	m.ctrl.T.Helper()
@@ -112,4 +127,19 @@ func (m *MockChannel) MarkVerified(ctx context.Context, id, userID string) error
 func (mr *MockChannelMockRecorder) MarkVerified(ctx, id, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkVerified", reflect.TypeOf((*MockChannel)(nil).MarkVerified), ctx, id, userID)
+}
+
+// Secret mocks base method.
+func (m *MockChannel) Secret(ctx context.Context, id, userID string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Secret", ctx, id, userID)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Secret indicates an expected call of Secret.
+func (mr *MockChannelMockRecorder) Secret(ctx, id, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Secret", reflect.TypeOf((*MockChannel)(nil).Secret), ctx, id, userID)
 }

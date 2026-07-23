@@ -14,16 +14,17 @@ import (
 )
 
 type Worker struct {
-	OTel        otel.Client
-	Cfg         config.Config
-	Log         *slog.Logger
-	PG          postgres.Client
-	Enforcer    casbin.Client
-	Scheduler   pkgcron.Client
-	Heartbeats  *cron.HeartbeatSweep
-	AutoResolve *cron.AlertAutoResolve
-	Retention   *cron.IngestRetention
-	Escalations *cron.EscalationSweep
+	OTel          otel.Client
+	Cfg           config.Config
+	Log           *slog.Logger
+	PG            postgres.Client
+	Enforcer      casbin.Client
+	Scheduler     pkgcron.Client
+	Heartbeats    *cron.HeartbeatSweep
+	AutoResolve   *cron.AlertAutoResolve
+	Retention     *cron.IngestRetention
+	Escalations   *cron.EscalationSweep
+	Notifications *cron.NotificationSweep
 }
 
 func (w *Worker) Run(ctx context.Context) error {
@@ -55,6 +56,13 @@ func (w *Worker) Run(ctx context.Context) error {
 			Timeout: w.Cfg.Cron.JobTimeout,
 			AtStart: true,
 			Run:     w.Escalations.Run,
+		},
+		{
+			Name:    "notification_sweep",
+			Every:   w.Cfg.Cron.NotificationSweep,
+			Timeout: w.Cfg.Cron.JobTimeout,
+			AtStart: true,
+			Run:     w.Notifications.Run,
 		},
 	}
 

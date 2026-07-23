@@ -110,37 +110,6 @@ var AlertEscalationTableColumns = struct {
 
 // Generated where
 
-type whereHelperstring struct{ field string }
-
-func (w whereHelperstring) EQ(x string) qm.QueryMod      { return qmhelper.Where(w.field, qmhelper.EQ, x) }
-func (w whereHelperstring) NEQ(x string) qm.QueryMod     { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
-func (w whereHelperstring) LT(x string) qm.QueryMod      { return qmhelper.Where(w.field, qmhelper.LT, x) }
-func (w whereHelperstring) LTE(x string) qm.QueryMod     { return qmhelper.Where(w.field, qmhelper.LTE, x) }
-func (w whereHelperstring) GT(x string) qm.QueryMod      { return qmhelper.Where(w.field, qmhelper.GT, x) }
-func (w whereHelperstring) GTE(x string) qm.QueryMod     { return qmhelper.Where(w.field, qmhelper.GTE, x) }
-func (w whereHelperstring) LIKE(x string) qm.QueryMod    { return qm.Where(w.field+" LIKE ?", x) }
-func (w whereHelperstring) NLIKE(x string) qm.QueryMod   { return qm.Where(w.field+" NOT LIKE ?", x) }
-func (w whereHelperstring) ILIKE(x string) qm.QueryMod   { return qm.Where(w.field+" ILIKE ?", x) }
-func (w whereHelperstring) NILIKE(x string) qm.QueryMod  { return qm.Where(w.field+" NOT ILIKE ?", x) }
-func (w whereHelperstring) SIMILAR(x string) qm.QueryMod { return qm.Where(w.field+" SIMILAR TO ?", x) }
-func (w whereHelperstring) NSIMILAR(x string) qm.QueryMod {
-	return qm.Where(w.field+" NOT SIMILAR TO ?", x)
-}
-func (w whereHelperstring) IN(slice []string) qm.QueryMod {
-	values := make([]any, 0, len(slice))
-	for _, value := range slice {
-		values = append(values, value)
-	}
-	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
-}
-func (w whereHelperstring) NIN(slice []string) qm.QueryMod {
-	values := make([]any, 0, len(slice))
-	for _, value := range slice {
-		values = append(values, value)
-	}
-	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
-}
-
 type whereHelperint struct{ field string }
 
 func (w whereHelperint) EQ(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.EQ, x) }
@@ -185,51 +154,6 @@ func (w whereHelpertypes_JSON) GTE(x types.JSON) qm.QueryMod {
 	return qmhelper.Where(w.field, qmhelper.GTE, x)
 }
 
-type whereHelpernull_Time struct{ field string }
-
-func (w whereHelpernull_Time) EQ(x null.Time) qm.QueryMod {
-	return qmhelper.WhereNullEQ(w.field, false, x)
-}
-func (w whereHelpernull_Time) NEQ(x null.Time) qm.QueryMod {
-	return qmhelper.WhereNullEQ(w.field, true, x)
-}
-func (w whereHelpernull_Time) LT(x null.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LT, x)
-}
-func (w whereHelpernull_Time) LTE(x null.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LTE, x)
-}
-func (w whereHelpernull_Time) GT(x null.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GT, x)
-}
-func (w whereHelpernull_Time) GTE(x null.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GTE, x)
-}
-
-func (w whereHelpernull_Time) IsNull() qm.QueryMod    { return qmhelper.WhereIsNull(w.field) }
-func (w whereHelpernull_Time) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
-
-type whereHelpertime_Time struct{ field string }
-
-func (w whereHelpertime_Time) EQ(x time.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.EQ, x)
-}
-func (w whereHelpertime_Time) NEQ(x time.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.NEQ, x)
-}
-func (w whereHelpertime_Time) LT(x time.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LT, x)
-}
-func (w whereHelpertime_Time) LTE(x time.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LTE, x)
-}
-func (w whereHelpertime_Time) GT(x time.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GT, x)
-}
-func (w whereHelpertime_Time) GTE(x time.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GTE, x)
-}
-
 var AlertEscalationWhere = struct {
 	ID           whereHelperstring
 	WorkspaceID  whereHelperstring
@@ -264,20 +188,23 @@ var AlertEscalationWhere = struct {
 
 // AlertEscalationRels is where relationship names are stored.
 var AlertEscalationRels = struct {
-	Alert     string
-	Policy    string
-	Workspace string
+	Alert                      string
+	Policy                     string
+	Workspace                  string
+	EscalationNotificationRuns string
 }{
-	Alert:     "Alert",
-	Policy:    "Policy",
-	Workspace: "Workspace",
+	Alert:                      "Alert",
+	Policy:                     "Policy",
+	Workspace:                  "Workspace",
+	EscalationNotificationRuns: "EscalationNotificationRuns",
 }
 
 // alertEscalationR is where relationships are stored.
 type alertEscalationR struct {
-	Alert     *Alert            `boil:"Alert" json:"Alert" toml:"Alert" yaml:"Alert"`
-	Policy    *EscalationPolicy `boil:"Policy" json:"Policy" toml:"Policy" yaml:"Policy"`
-	Workspace *Workspace        `boil:"Workspace" json:"Workspace" toml:"Workspace" yaml:"Workspace"`
+	Alert                      *Alert               `boil:"Alert" json:"Alert" toml:"Alert" yaml:"Alert"`
+	Policy                     *EscalationPolicy    `boil:"Policy" json:"Policy" toml:"Policy" yaml:"Policy"`
+	Workspace                  *Workspace           `boil:"Workspace" json:"Workspace" toml:"Workspace" yaml:"Workspace"`
+	EscalationNotificationRuns NotificationRunSlice `boil:"EscalationNotificationRuns" json:"EscalationNotificationRuns" toml:"EscalationNotificationRuns" yaml:"EscalationNotificationRuns"`
 }
 
 // NewStruct creates a new relationship struct
@@ -331,6 +258,22 @@ func (r *alertEscalationR) GetWorkspace() *Workspace {
 	}
 
 	return r.Workspace
+}
+
+func (o *AlertEscalation) GetEscalationNotificationRuns() NotificationRunSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetEscalationNotificationRuns()
+}
+
+func (r *alertEscalationR) GetEscalationNotificationRuns() NotificationRunSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.EscalationNotificationRuns
 }
 
 // alertEscalationL is where Load methods for each relationship are stored.
@@ -680,6 +623,20 @@ func (o *AlertEscalation) Workspace(mods ...qm.QueryMod) workspaceQuery {
 	queryMods = append(queryMods, mods...)
 
 	return Workspaces(queryMods...)
+}
+
+// EscalationNotificationRuns retrieves all the notification_run's NotificationRuns with an executor via escalation_id column.
+func (o *AlertEscalation) EscalationNotificationRuns(mods ...qm.QueryMod) notificationRunQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"notification_runs\".\"escalation_id\"=?", o.ID),
+	)
+
+	return NotificationRuns(queryMods...)
 }
 
 // LoadAlert allows an eager lookup of values, cached into the
@@ -1042,6 +999,119 @@ func (alertEscalationL) LoadWorkspace(ctx context.Context, e boil.ContextExecuto
 	return nil
 }
 
+// LoadEscalationNotificationRuns allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (alertEscalationL) LoadEscalationNotificationRuns(ctx context.Context, e boil.ContextExecutor, singular bool, maybeAlertEscalation any, mods queries.Applicator) error {
+	var slice []*AlertEscalation
+	var object *AlertEscalation
+
+	if singular {
+		var ok bool
+		object, ok = maybeAlertEscalation.(*AlertEscalation)
+		if !ok {
+			object = new(AlertEscalation)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeAlertEscalation)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeAlertEscalation))
+			}
+		}
+	} else {
+		s, ok := maybeAlertEscalation.(*[]*AlertEscalation)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeAlertEscalation)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeAlertEscalation))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &alertEscalationR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &alertEscalationR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`notification_runs`),
+		qm.WhereIn(`notification_runs.escalation_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load notification_runs")
+	}
+
+	var resultSlice []*NotificationRun
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice notification_runs")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on notification_runs")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for notification_runs")
+	}
+
+	if len(notificationRunAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.EscalationNotificationRuns = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &notificationRunR{}
+			}
+			foreign.R.Escalation = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if queries.Equal(local.ID, foreign.EscalationID) {
+				local.R.EscalationNotificationRuns = append(local.R.EscalationNotificationRuns, foreign)
+				if foreign.R == nil {
+					foreign.R = &notificationRunR{}
+				}
+				foreign.R.Escalation = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
 // SetAlert of the alertEscalation to the related item.
 // Sets o.R.Alert to related.
 // Adds o to related.R.AlertEscalation.
@@ -1178,6 +1248,133 @@ func (o *AlertEscalation) SetWorkspace(ctx context.Context, exec boil.ContextExe
 		}
 	} else {
 		related.R.AlertEscalations = append(related.R.AlertEscalations, o)
+	}
+
+	return nil
+}
+
+// AddEscalationNotificationRuns adds the given related objects to the existing relationships
+// of the alert_escalation, optionally inserting them as new records.
+// Appends related to o.R.EscalationNotificationRuns.
+// Sets related.R.Escalation appropriately.
+func (o *AlertEscalation) AddEscalationNotificationRuns(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*NotificationRun) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			queries.Assign(&rel.EscalationID, o.ID)
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"notification_runs\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"escalation_id"}),
+				strmangle.WhereClause("\"", "\"", 2, notificationRunPrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			queries.Assign(&rel.EscalationID, o.ID)
+		}
+	}
+
+	if o.R == nil {
+		o.R = &alertEscalationR{
+			EscalationNotificationRuns: related,
+		}
+	} else {
+		o.R.EscalationNotificationRuns = append(o.R.EscalationNotificationRuns, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &notificationRunR{
+				Escalation: o,
+			}
+		} else {
+			rel.R.Escalation = o
+		}
+	}
+	return nil
+}
+
+// SetEscalationNotificationRuns removes all previously related items of the
+// alert_escalation replacing them completely with the passed
+// in related items, optionally inserting them as new records.
+// Sets o.R.Escalation's EscalationNotificationRuns accordingly.
+// Replaces o.R.EscalationNotificationRuns with related.
+// Sets related.R.Escalation's EscalationNotificationRuns accordingly.
+func (o *AlertEscalation) SetEscalationNotificationRuns(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*NotificationRun) error {
+	query := "update \"notification_runs\" set \"escalation_id\" = null where \"escalation_id\" = $1"
+	values := []any{o.ID}
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, query)
+		fmt.Fprintln(writer, values)
+	}
+	_, err := exec.ExecContext(ctx, query, values...)
+	if err != nil {
+		return errors.Wrap(err, "failed to remove relationships before set")
+	}
+
+	if o.R != nil {
+		for _, rel := range o.R.EscalationNotificationRuns {
+			queries.SetScanner(&rel.EscalationID, nil)
+			if rel.R == nil {
+				continue
+			}
+
+			rel.R.Escalation = nil
+		}
+		o.R.EscalationNotificationRuns = nil
+	}
+
+	return o.AddEscalationNotificationRuns(ctx, exec, insert, related...)
+}
+
+// RemoveEscalationNotificationRuns relationships from objects passed in.
+// Removes related items from R.EscalationNotificationRuns (uses pointer comparison, removal does not keep order)
+// Sets related.R.Escalation.
+func (o *AlertEscalation) RemoveEscalationNotificationRuns(ctx context.Context, exec boil.ContextExecutor, related ...*NotificationRun) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	for _, rel := range related {
+		queries.SetScanner(&rel.EscalationID, nil)
+		if rel.R != nil {
+			rel.R.Escalation = nil
+		}
+		if _, err = rel.Update(ctx, exec, boil.Whitelist("escalation_id")); err != nil {
+			return err
+		}
+	}
+	if o.R == nil {
+		return nil
+	}
+
+	for _, rel := range related {
+		for i, ri := range o.R.EscalationNotificationRuns {
+			if rel != ri {
+				continue
+			}
+
+			ln := len(o.R.EscalationNotificationRuns)
+			if ln > 1 && i < ln-1 {
+				o.R.EscalationNotificationRuns[i] = o.R.EscalationNotificationRuns[ln-1]
+			}
+			o.R.EscalationNotificationRuns = o.R.EscalationNotificationRuns[:ln-1]
+			break
+		}
 	}
 
 	return nil

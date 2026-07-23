@@ -4,6 +4,7 @@
 package dbpostgres
 
 var TableNames = struct {
+	AlertActionTokens         string
 	AlertEscalations          string
 	AlertEvents               string
 	AlertGroupRules           string
@@ -21,11 +22,16 @@ var TableNames = struct {
 	Alerts                    string
 	APIKeys                   string
 	AuditEvents               string
+	ChannelVerifications      string
+	ChatConnections           string
+	ChatIdentities            string
 	EscalationPolicies        string
 	EscalationPolicyTargets   string
 	EscalationRRState         string
 	EscalationWebhooks        string
 	Invites                   string
+	NotificationAttempts      string
+	NotificationRuns          string
 	PasswordResetTokens       string
 	ScheduleLayerParticipants string
 	ScheduleLayerRestrictions string
@@ -38,11 +44,14 @@ var TableNames = struct {
 	Teams                     string
 	UserChannels              string
 	UserIdentities            string
+	UserNotificationRuleSteps string
+	UserNotificationRules     string
 	UserRecoveryCodes         string
 	Users                     string
 	WorkspaceMembers          string
 	Workspaces                string
 }{
+	AlertActionTokens:         "alert_action_tokens",
 	AlertEscalations:          "alert_escalations",
 	AlertEvents:               "alert_events",
 	AlertGroupRules:           "alert_group_rules",
@@ -60,11 +69,16 @@ var TableNames = struct {
 	Alerts:                    "alerts",
 	APIKeys:                   "api_keys",
 	AuditEvents:               "audit_events",
+	ChannelVerifications:      "channel_verifications",
+	ChatConnections:           "chat_connections",
+	ChatIdentities:            "chat_identities",
 	EscalationPolicies:        "escalation_policies",
 	EscalationPolicyTargets:   "escalation_policy_targets",
 	EscalationRRState:         "escalation_rr_state",
 	EscalationWebhooks:        "escalation_webhooks",
 	Invites:                   "invites",
+	NotificationAttempts:      "notification_attempts",
+	NotificationRuns:          "notification_runs",
 	PasswordResetTokens:       "password_reset_tokens",
 	ScheduleLayerParticipants: "schedule_layer_participants",
 	ScheduleLayerRestrictions: "schedule_layer_restrictions",
@@ -77,6 +91,8 @@ var TableNames = struct {
 	Teams:                     "teams",
 	UserChannels:              "user_channels",
 	UserIdentities:            "user_identities",
+	UserNotificationRuleSteps: "user_notification_rule_steps",
+	UserNotificationRules:     "user_notification_rules",
 	UserRecoveryCodes:         "user_recovery_codes",
 	Users:                     "users",
 	WorkspaceMembers:          "workspace_members",

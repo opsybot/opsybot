@@ -9,6 +9,6 @@ import (
 )
 
 type Notifier interface {
-	PageUser(ctx context.Context, member entity.Member, page entity.AlertPage) entity.NotifyResult
+	Send(ctx context.Context, target entity.NotifyTarget, page entity.AlertPage) entity.NotifyResult
 	CallWebhook(ctx context.Context, hook entity.EscalationWebhook, alert entity.Alert, page entity.AlertPage) entity.NotifyResult
 }

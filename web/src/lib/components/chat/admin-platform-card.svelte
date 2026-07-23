@@ -1,9 +1,6 @@
 <script lang="ts">
 	import PlusIcon from '@lucide/svelte/icons/plus';
-	import RotateCwIcon from '@lucide/svelte/icons/rotate-cw';
 	import UnplugIcon from '@lucide/svelte/icons/unplug';
-	import { toast } from 'svelte-sonner';
-	import { enhance } from '$app/forms';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { CHAT_ICONS } from '$lib/components/chat/icons';
@@ -47,27 +44,10 @@
 			{/if}
 		</div>
 		{#if connection}
-			<div class="flex shrink-0 gap-2">
-				<form
-					method="POST"
-					action="?/reconnect"
-					use:enhance={() =>
-						async ({ result, update }) => {
-							await update({ reset: false });
-							if (result.type === 'success') toast.success(`${platform.label} reconnected: scopes refreshed.`);
-						}}
-				>
-					<input type="hidden" name="platform" value={platform.id} />
-					<Button type="submit" size="sm" variant="ghost">
-						<RotateCwIcon data-icon="inline-start" />
-						Reconnect
-					</Button>
-				</form>
-				<Button size="sm" variant="ghost" onclick={ondisconnect}>
-					<UnplugIcon data-icon="inline-start" />
-					Disconnect
-				</Button>
-			</div>
+			<Button size="sm" variant="ghost" class="shrink-0" onclick={ondisconnect}>
+				<UnplugIcon data-icon="inline-start" />
+				Disconnect
+			</Button>
 		{:else}
 			<Button size="sm" class="shrink-0" onclick={oninstall}>
 				<PlusIcon data-icon="inline-start" />
@@ -83,6 +63,8 @@
 			</div>
 			<ScopeList scopes={platform.scopes} />
 		</div>
-		<WorkspaceDefaults {platform} />
+		{#if platform.authKind !== 'telegram'}
+			<WorkspaceDefaults {platform} />
+		{/if}
 	{/if}
 </section>

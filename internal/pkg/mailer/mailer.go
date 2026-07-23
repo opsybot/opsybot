@@ -3,6 +3,7 @@ package mailer
 import (
 	"context"
 	"embed"
+	"errors"
 	"fmt"
 	"strings"
 	"text/template"
@@ -14,6 +15,8 @@ import (
 
 //go:embed templates/*.txt.tmpl
 var templateFS embed.FS
+
+var ErrDisabled = errors.New("mailer disabled: no mailer.host configured")
 
 type Client struct {
 	client   *mail.Client
@@ -41,6 +44,8 @@ type PageData struct {
 	PolicySlug string
 	Level      int
 	AlertURL   string
+	AckURL     string
+	ResolveURL string
 }
 
 func New(cfg config.Mailer) (Client, error) {
@@ -94,9 +99,28 @@ func (c Client) SendPage(ctx context.Context, to string, data PageData) error {
 	return c.send(ctx, to, subject, "page.txt.tmpl", data)
 }
 
+func (c Client) SendText(ctx context.Context, to, subject, body string) error {
+	if !c.enabled {
+		return ErrDisabled
+	}
+	msg := mail.NewMsg()
+	if err := msg.FromFormat(c.fromName, c.from); err != nil {
+		return fmt.Errorf("mail from: %w", err)
+	}
+	if err := msg.To(to); err != nil {
+		return fmt.Errorf("mail to: %w", err)
+	}
+	msg.Subject(subject)
+	msg.SetBodyString(mail.TypeTextPlain, body)
+	if err := c.client.DialAndSendWithContext(ctx, msg); err != nil {
+		return fmt.Errorf("send mail: %w", err)
+	}
+	return nil
+}
+
 func (c Client) send(ctx context.Context, to, subject, tmpl string, data any) error {
 	if !c.enabled {
-		return nil
+		return ErrDisabled
 	}
 	var body strings.Builder
 	if err := c.tmpl.ExecuteTemplate(&body, tmpl, data); err != nil {

@@ -87,7 +87,7 @@
 						<div class="acct-mono" style="font-size: 11px; margin-top: 2px">{ch.detail}</div>
 					</div>
 					{#if !ch.verified}
-						<form method="POST" action="?/verify" use:formEnhance={rowAction('Channel verified.')}>
+						<form method="POST" action="?/verify" use:formEnhance={rowAction('Verification sent. Confirm it from My notifications.')}>
 							<input type="hidden" name="id" value={ch.id} />
 							<Button size="sm" variant="secondary" type="submit">Verify</Button>
 						</form>

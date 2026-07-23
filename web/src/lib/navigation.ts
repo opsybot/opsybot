@@ -5,6 +5,7 @@ import BellIcon from '@lucide/svelte/icons/bell';
 import BellRingIcon from '@lucide/svelte/icons/bell-ring';
 import BoxesIcon from '@lucide/svelte/icons/boxes';
 import Building2Icon from '@lucide/svelte/icons/building-2';
+import CableIcon from '@lucide/svelte/icons/cable';
 import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
 import ChartLineIcon from '@lucide/svelte/icons/chart-line';
 import CreditCardIcon from '@lucide/svelte/icons/credit-card';
@@ -25,6 +26,7 @@ export type NavItem = {
 	title: string;
 	href: string;
 	icon: Component<LucideProps>;
+	adminOnly?: boolean;
 };
 
 export type NavSection = {
@@ -59,6 +61,7 @@ export const navigation: NavSection[] = [
 			{ title: 'Chat connections', href: '/chat', icon: MessageSquareIcon },
 			{ title: 'My notifications', href: '/notifications', icon: BellRingIcon },
 			{ title: 'AI settings', href: '/ai', icon: SparklesIcon },
+			{ title: 'Integrations', href: '/integrations', icon: CableIcon, adminOnly: true },
 			{ title: 'Workspace admin', href: '/workspace', icon: SettingsIcon },
 			{ title: 'Billing and plans', href: '/billing', icon: CreditCardIcon },
 			{ title: 'Instance operations', href: '/operations', icon: ServerIcon },

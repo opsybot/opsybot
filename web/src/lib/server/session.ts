@@ -9,7 +9,8 @@ async function listWorkspaces(cookies: Cookies): Promise<Workspace[]> {
 		id: workspace.id,
 		name: workspace.name,
 		environment: workspace.environment || 'production',
-		health: 'operational'
+		health: 'operational',
+		role: workspace.role ?? 'member'
 	}));
 }
 
