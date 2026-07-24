@@ -96,15 +96,21 @@ var TeamWhere = struct {
 var TeamRels = struct {
 	Workspace          string
 	EscalationPolicies string
+	Incidents          string
+	Services           string
 }{
 	Workspace:          "Workspace",
 	EscalationPolicies: "EscalationPolicies",
+	Incidents:          "Incidents",
+	Services:           "Services",
 }
 
 // teamR is where relationships are stored.
 type teamR struct {
 	Workspace          *Workspace            `boil:"Workspace" json:"Workspace" toml:"Workspace" yaml:"Workspace"`
 	EscalationPolicies EscalationPolicySlice `boil:"EscalationPolicies" json:"EscalationPolicies" toml:"EscalationPolicies" yaml:"EscalationPolicies"`
+	Incidents          IncidentSlice         `boil:"Incidents" json:"Incidents" toml:"Incidents" yaml:"Incidents"`
+	Services           ServiceSlice          `boil:"Services" json:"Services" toml:"Services" yaml:"Services"`
 }
 
 // NewStruct creates a new relationship struct
@@ -142,6 +148,38 @@ func (r *teamR) GetEscalationPolicies() EscalationPolicySlice {
 	}
 
 	return r.EscalationPolicies
+}
+
+func (o *Team) GetIncidents() IncidentSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetIncidents()
+}
+
+func (r *teamR) GetIncidents() IncidentSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.Incidents
+}
+
+func (o *Team) GetServices() ServiceSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetServices()
+}
+
+func (r *teamR) GetServices() ServiceSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.Services
 }
 
 // teamL is where Load methods for each relationship are stored.
@@ -485,6 +523,34 @@ func (o *Team) EscalationPolicies(mods ...qm.QueryMod) escalationPolicyQuery {
 	return EscalationPolicies(queryMods...)
 }
 
+// Incidents retrieves all the incident's Incidents with an executor.
+func (o *Team) Incidents(mods ...qm.QueryMod) incidentQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"incidents\".\"team_id\"=?", o.ID),
+	)
+
+	return Incidents(queryMods...)
+}
+
+// Services retrieves all the service's Services with an executor.
+func (o *Team) Services(mods ...qm.QueryMod) serviceQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"services\".\"team_id\"=?", o.ID),
+	)
+
+	return Services(queryMods...)
+}
+
 // LoadWorkspace allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for an N-1 relationship.
 func (teamL) LoadWorkspace(ctx context.Context, e boil.ContextExecutor, singular bool, maybeTeam any, mods queries.Applicator) error {
@@ -718,6 +784,232 @@ func (teamL) LoadEscalationPolicies(ctx context.Context, e boil.ContextExecutor,
 	return nil
 }
 
+// LoadIncidents allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (teamL) LoadIncidents(ctx context.Context, e boil.ContextExecutor, singular bool, maybeTeam any, mods queries.Applicator) error {
+	var slice []*Team
+	var object *Team
+
+	if singular {
+		var ok bool
+		object, ok = maybeTeam.(*Team)
+		if !ok {
+			object = new(Team)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeTeam)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeTeam))
+			}
+		}
+	} else {
+		s, ok := maybeTeam.(*[]*Team)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeTeam)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeTeam))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &teamR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &teamR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`incidents`),
+		qm.WhereIn(`incidents.team_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load incidents")
+	}
+
+	var resultSlice []*Incident
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice incidents")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on incidents")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for incidents")
+	}
+
+	if len(incidentAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.Incidents = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &incidentR{}
+			}
+			foreign.R.Team = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if queries.Equal(local.ID, foreign.TeamID) {
+				local.R.Incidents = append(local.R.Incidents, foreign)
+				if foreign.R == nil {
+					foreign.R = &incidentR{}
+				}
+				foreign.R.Team = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadServices allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (teamL) LoadServices(ctx context.Context, e boil.ContextExecutor, singular bool, maybeTeam any, mods queries.Applicator) error {
+	var slice []*Team
+	var object *Team
+
+	if singular {
+		var ok bool
+		object, ok = maybeTeam.(*Team)
+		if !ok {
+			object = new(Team)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeTeam)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeTeam))
+			}
+		}
+	} else {
+		s, ok := maybeTeam.(*[]*Team)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeTeam)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeTeam))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &teamR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &teamR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`services`),
+		qm.WhereIn(`services.team_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load services")
+	}
+
+	var resultSlice []*Service
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice services")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on services")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for services")
+	}
+
+	if len(serviceAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.Services = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &serviceR{}
+			}
+			foreign.R.Team = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if queries.Equal(local.ID, foreign.TeamID) {
+				local.R.Services = append(local.R.Services, foreign)
+				if foreign.R == nil {
+					foreign.R = &serviceR{}
+				}
+				foreign.R.Team = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
 // SetWorkspace of the team to the related item.
 // Sets o.R.Workspace to related.
 // Adds o to related.R.Teams.
@@ -885,6 +1177,260 @@ func (o *Team) RemoveEscalationPolicies(ctx context.Context, exec boil.ContextEx
 				o.R.EscalationPolicies[i] = o.R.EscalationPolicies[ln-1]
 			}
 			o.R.EscalationPolicies = o.R.EscalationPolicies[:ln-1]
+			break
+		}
+	}
+
+	return nil
+}
+
+// AddIncidents adds the given related objects to the existing relationships
+// of the team, optionally inserting them as new records.
+// Appends related to o.R.Incidents.
+// Sets related.R.Team appropriately.
+func (o *Team) AddIncidents(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Incident) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			queries.Assign(&rel.TeamID, o.ID)
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"incidents\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"team_id"}),
+				strmangle.WhereClause("\"", "\"", 2, incidentPrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			queries.Assign(&rel.TeamID, o.ID)
+		}
+	}
+
+	if o.R == nil {
+		o.R = &teamR{
+			Incidents: related,
+		}
+	} else {
+		o.R.Incidents = append(o.R.Incidents, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &incidentR{
+				Team: o,
+			}
+		} else {
+			rel.R.Team = o
+		}
+	}
+	return nil
+}
+
+// SetIncidents removes all previously related items of the
+// team replacing them completely with the passed
+// in related items, optionally inserting them as new records.
+// Sets o.R.Team's Incidents accordingly.
+// Replaces o.R.Incidents with related.
+// Sets related.R.Team's Incidents accordingly.
+func (o *Team) SetIncidents(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Incident) error {
+	query := "update \"incidents\" set \"team_id\" = null where \"team_id\" = $1"
+	values := []any{o.ID}
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, query)
+		fmt.Fprintln(writer, values)
+	}
+	_, err := exec.ExecContext(ctx, query, values...)
+	if err != nil {
+		return errors.Wrap(err, "failed to remove relationships before set")
+	}
+
+	if o.R != nil {
+		for _, rel := range o.R.Incidents {
+			queries.SetScanner(&rel.TeamID, nil)
+			if rel.R == nil {
+				continue
+			}
+
+			rel.R.Team = nil
+		}
+		o.R.Incidents = nil
+	}
+
+	return o.AddIncidents(ctx, exec, insert, related...)
+}
+
+// RemoveIncidents relationships from objects passed in.
+// Removes related items from R.Incidents (uses pointer comparison, removal does not keep order)
+// Sets related.R.Team.
+func (o *Team) RemoveIncidents(ctx context.Context, exec boil.ContextExecutor, related ...*Incident) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	for _, rel := range related {
+		queries.SetScanner(&rel.TeamID, nil)
+		if rel.R != nil {
+			rel.R.Team = nil
+		}
+		if _, err = rel.Update(ctx, exec, boil.Whitelist("team_id")); err != nil {
+			return err
+		}
+	}
+	if o.R == nil {
+		return nil
+	}
+
+	for _, rel := range related {
+		for i, ri := range o.R.Incidents {
+			if rel != ri {
+				continue
+			}
+
+			ln := len(o.R.Incidents)
+			if ln > 1 && i < ln-1 {
+				o.R.Incidents[i] = o.R.Incidents[ln-1]
+			}
+			o.R.Incidents = o.R.Incidents[:ln-1]
+			break
+		}
+	}
+
+	return nil
+}
+
+// AddServices adds the given related objects to the existing relationships
+// of the team, optionally inserting them as new records.
+// Appends related to o.R.Services.
+// Sets related.R.Team appropriately.
+func (o *Team) AddServices(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Service) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			queries.Assign(&rel.TeamID, o.ID)
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"services\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"team_id"}),
+				strmangle.WhereClause("\"", "\"", 2, servicePrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			queries.Assign(&rel.TeamID, o.ID)
+		}
+	}
+
+	if o.R == nil {
+		o.R = &teamR{
+			Services: related,
+		}
+	} else {
+		o.R.Services = append(o.R.Services, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &serviceR{
+				Team: o,
+			}
+		} else {
+			rel.R.Team = o
+		}
+	}
+	return nil
+}
+
+// SetServices removes all previously related items of the
+// team replacing them completely with the passed
+// in related items, optionally inserting them as new records.
+// Sets o.R.Team's Services accordingly.
+// Replaces o.R.Services with related.
+// Sets related.R.Team's Services accordingly.
+func (o *Team) SetServices(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Service) error {
+	query := "update \"services\" set \"team_id\" = null where \"team_id\" = $1"
+	values := []any{o.ID}
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, query)
+		fmt.Fprintln(writer, values)
+	}
+	_, err := exec.ExecContext(ctx, query, values...)
+	if err != nil {
+		return errors.Wrap(err, "failed to remove relationships before set")
+	}
+
+	if o.R != nil {
+		for _, rel := range o.R.Services {
+			queries.SetScanner(&rel.TeamID, nil)
+			if rel.R == nil {
+				continue
+			}
+
+			rel.R.Team = nil
+		}
+		o.R.Services = nil
+	}
+
+	return o.AddServices(ctx, exec, insert, related...)
+}
+
+// RemoveServices relationships from objects passed in.
+// Removes related items from R.Services (uses pointer comparison, removal does not keep order)
+// Sets related.R.Team.
+func (o *Team) RemoveServices(ctx context.Context, exec boil.ContextExecutor, related ...*Service) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	for _, rel := range related {
+		queries.SetScanner(&rel.TeamID, nil)
+		if rel.R != nil {
+			rel.R.Team = nil
+		}
+		if _, err = rel.Update(ctx, exec, boil.Whitelist("team_id")); err != nil {
+			return err
+		}
+	}
+	if o.R == nil {
+		return nil
+	}
+
+	for _, rel := range related {
+		for i, ri := range o.R.Services {
+			if rel != ri {
+				continue
+			}
+
+			ln := len(o.R.Services)
+			if ln > 1 && i < ln-1 {
+				o.R.Services[i] = o.R.Services[ln-1]
+			}
+			o.R.Services = o.R.Services[:ln-1]
 			break
 		}
 	}

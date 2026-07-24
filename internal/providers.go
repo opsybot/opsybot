@@ -19,6 +19,9 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/chat_oauth_state"
 	"github.com/opsybot/opsybot/internal/repository/escalation_policy"
 	"github.com/opsybot/opsybot/internal/repository/escalation_run"
+	"github.com/opsybot/opsybot/internal/repository/incident"
+	"github.com/opsybot/opsybot/internal/repository/incident_field_def"
+	"github.com/opsybot/opsybot/internal/repository/incident_severity"
 	"github.com/opsybot/opsybot/internal/repository/ingest_event"
 	"github.com/opsybot/opsybot/internal/repository/invite"
 	"github.com/opsybot/opsybot/internal/repository/lock"
@@ -34,6 +37,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/ratelimit"
 	"github.com/opsybot/opsybot/internal/repository/recovery_code"
 	"github.com/opsybot/opsybot/internal/repository/schedule"
+	servicerepo "github.com/opsybot/opsybot/internal/repository/service"
 	"github.com/opsybot/opsybot/internal/repository/session"
 	"github.com/opsybot/opsybot/internal/repository/silence"
 	"github.com/opsybot/opsybot/internal/repository/sso_connection"
@@ -55,6 +59,7 @@ import (
 	"github.com/opsybot/opsybot/internal/service/channels"
 	"github.com/opsybot/opsybot/internal/service/chats"
 	"github.com/opsybot/opsybot/internal/service/escalations"
+	"github.com/opsybot/opsybot/internal/service/incidents"
 	"github.com/opsybot/opsybot/internal/service/ingest"
 	"github.com/opsybot/opsybot/internal/service/interactions"
 	"github.com/opsybot/opsybot/internal/service/members"
@@ -64,6 +69,7 @@ import (
 	"github.com/opsybot/opsybot/internal/service/ratelimiter"
 	"github.com/opsybot/opsybot/internal/service/references"
 	"github.com/opsybot/opsybot/internal/service/schedules"
+	serviceservices "github.com/opsybot/opsybot/internal/service/services"
 	"github.com/opsybot/opsybot/internal/service/silences"
 	"github.com/opsybot/opsybot/internal/service/sso"
 	"github.com/opsybot/opsybot/internal/service/teams"
@@ -111,6 +117,10 @@ var repositoryProviders = wire.NewSet(
 	action_token.New,
 	pager.New,
 	ntfy.New,
+	servicerepo.New,
+	incident.New,
+	incident_severity.New,
+	incident_field_def.New,
 )
 
 var serviceProviders = wire.NewSet(
@@ -140,6 +150,8 @@ var serviceProviders = wire.NewSet(
 	interactions.New,
 	chats.New,
 	escalations.New,
+	serviceservices.New,
+	incidents.New,
 )
 
 var cronProviders = wire.NewSet(

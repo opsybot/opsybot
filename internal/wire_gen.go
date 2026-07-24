@@ -43,6 +43,9 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/chat_oauth_state"
 	"github.com/opsybot/opsybot/internal/repository/escalation_policy"
 	"github.com/opsybot/opsybot/internal/repository/escalation_run"
+	"github.com/opsybot/opsybot/internal/repository/incident"
+	"github.com/opsybot/opsybot/internal/repository/incident_field_def"
+	"github.com/opsybot/opsybot/internal/repository/incident_severity"
 	"github.com/opsybot/opsybot/internal/repository/ingest_event"
 	"github.com/opsybot/opsybot/internal/repository/invite"
 	"github.com/opsybot/opsybot/internal/repository/lock"
@@ -58,6 +61,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/ratelimit"
 	"github.com/opsybot/opsybot/internal/repository/recovery_code"
 	"github.com/opsybot/opsybot/internal/repository/schedule"
+	"github.com/opsybot/opsybot/internal/repository/service"
 	"github.com/opsybot/opsybot/internal/repository/session"
 	"github.com/opsybot/opsybot/internal/repository/silence"
 	"github.com/opsybot/opsybot/internal/repository/sso_connection"
@@ -78,6 +82,7 @@ import (
 	"github.com/opsybot/opsybot/internal/service/channels"
 	"github.com/opsybot/opsybot/internal/service/chats"
 	"github.com/opsybot/opsybot/internal/service/escalations"
+	"github.com/opsybot/opsybot/internal/service/incidents"
 	"github.com/opsybot/opsybot/internal/service/ingest"
 	"github.com/opsybot/opsybot/internal/service/interactions"
 	"github.com/opsybot/opsybot/internal/service/members"
@@ -87,6 +92,7 @@ import (
 	"github.com/opsybot/opsybot/internal/service/ratelimiter"
 	"github.com/opsybot/opsybot/internal/service/references"
 	"github.com/opsybot/opsybot/internal/service/schedules"
+	"github.com/opsybot/opsybot/internal/service/services"
 	"github.com/opsybot/opsybot/internal/service/silences"
 	"github.com/opsybot/opsybot/internal/service/sso"
 	teams2 "github.com/opsybot/opsybot/internal/service/teams"
@@ -148,6 +154,7 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	repositoryMember := member.New(postgresClient)
 	repositorySession := session.New(postgresClient)
 	repositoryPolicy := policy.New(casbinClient, postgresClient)
+	incidentSeverity := incident_severity.New(postgresClient)
 	repositoryInvite := invite.New(postgresClient)
 	repositoryAudit := audit.New(postgresClient)
 	repositoryPending := pending.New(valkeyClient)
@@ -163,7 +170,7 @@ func InitApp(cfgFile string) (*App, func(), error) {
 		return nil, nil, err
 	}
 	repositoryMailer := mailer2.New(mailerClient)
-	serviceAuth := auth.New(configAuth, repositoryTransactor, repositoryLock, repositoryUser, repositoryWorkspace, repositoryMember, repositorySession, repositoryPolicy, repositoryInvite, repositoryAudit, repositoryPending, passwordReset, recoveryCode, repositoryMailer)
+	serviceAuth := auth.New(configAuth, repositoryTransactor, repositoryLock, repositoryUser, repositoryWorkspace, repositoryMember, repositorySession, repositoryPolicy, incidentSeverity, repositoryInvite, repositoryAudit, repositoryPending, passwordReset, recoveryCode, repositoryMailer)
 	apiKey := api_key.New(postgresClient)
 	apiKeys := apikeys.New(repositoryTransactor, repositoryWorkspace, repositoryMember, apiKey, repositoryPolicy, repositoryAudit)
 	ssoConnection := sso_connection.New(postgresClient, secretboxClient)
@@ -227,7 +234,12 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	serviceSilences := silences.New(repositoryWorkspace, repositoryMember, repositorySilence, repositoryPolicy)
 	alertMonitors := alert_monitors.New(repositoryTransactor, repositoryWorkspace, repositoryMember, alertMonitor, alertSource, alertRoute, escalationPolicy, repositoryPolicy, repositoryAudit)
 	notificationRules := notification_rules.New(repositoryTransactor, repositoryWorkspace, repositoryMember, repositoryUser, notificationRule, repositoryChannel, chatIdentity, repositoryPolicy, repositoryAudit)
-	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers, serviceUsers, serviceChannels, serviceTeams, serviceSchedules, apiKeys, serviceAudits, serviceSSO, serviceAlerts, alertSources, alertRoutes, serviceSilences, alertMonitors, serviceEscalations, notificationRules, serviceChats, configIngest)
+	repositoryIncident := incident.New(postgresClient)
+	repositoryService := service.New(postgresClient)
+	incidentFieldDef := incident_field_def.New(postgresClient)
+	serviceIncidents := incidents.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, repositoryIncident, repositoryService, incidentSeverity, incidentFieldDef, repositoryAlert, repositoryPolicy, repositoryAudit, serviceEscalations)
+	serviceServices := services.New(repositoryTransactor, repositoryWorkspace, repositoryMember, repositoryTeam, repositoryService, repositoryPolicy, repositoryAudit)
+	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers, serviceUsers, serviceChannels, serviceTeams, serviceSchedules, apiKeys, serviceAudits, serviceSSO, serviceAlerts, alertSources, alertRoutes, serviceSilences, alertMonitors, serviceEscalations, notificationRules, serviceChats, serviceIncidents, serviceServices, configIngest)
 	handler := http.NewRouter(slogLogger, configAuth, configIngest, configTelegram, serviceAuth, apiKeys, serviceSSO, serviceSchedules, serviceIngest, serviceRateLimiter, serviceChannels, serviceInteractions, serviceActions, serviceChats, strictServerInterface)
 	app := &App{
 		OTel:     client,

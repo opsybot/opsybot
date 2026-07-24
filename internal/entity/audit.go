@@ -83,6 +83,19 @@ const (
 	ActionEscalationWebhookCreated = "escalation_webhook.created"
 	ActionEscalationWebhookUpdated = "escalation_webhook.updated"
 	ActionEscalationWebhookDeleted = "escalation_webhook.deleted"
+
+	ActionServiceCreated = "service.created"
+	ActionServiceUpdated = "service.updated"
+	ActionServiceDeleted = "service.deleted"
+
+	ActionIncidentDeclared        = "incident.declared"
+	ActionIncidentUpdated         = "incident.updated"
+	ActionIncidentStatusChanged   = "incident.status_changed"
+	ActionIncidentSeverityChanged = "incident.severity_changed"
+	ActionIncidentResolved        = "incident.resolved"
+	ActionIncidentReopened        = "incident.reopened"
+	ActionIncidentSeveritiesSaved = "incident.severities_saved"
+	ActionIncidentFieldsSaved     = "incident.fields_saved"
 )
 
 const (

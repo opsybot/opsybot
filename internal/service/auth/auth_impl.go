@@ -41,6 +41,7 @@ type srv struct {
 	members    repository.Member
 	sessions   repository.Session
 	policy     repository.Policy
+	severities repository.IncidentSeverity
 	invites    repository.Invite
 	audit      repository.Audit
 	pending    repository.Pending
@@ -58,6 +59,7 @@ func New(
 	members repository.Member,
 	sessions repository.Session,
 	policy repository.Policy,
+	severities repository.IncidentSeverity,
 	invites repository.Invite,
 	audit repository.Audit,
 	pending repository.Pending,
@@ -66,7 +68,7 @@ func New(
 	mailer repository.Mailer,
 ) service.Auth {
 	return &srv{cfg: cfg, tx: tx, lock: lock, users: users, workspaces: workspaces, members: members,
-		sessions: sessions, policy: policy, invites: invites, audit: audit,
+		sessions: sessions, policy: policy, severities: severities, invites: invites, audit: audit,
 		pending: pending, resets: resets, recovery: recovery, mailer: mailer}
 }
 
@@ -116,6 +118,9 @@ func (s *srv) Setup(ctx context.Context, in entity.Setup, ip, userAgent string) 
 			return err
 		}
 		if err := s.policy.SeedWorkspace(ctx, ws.ID); err != nil {
+			return err
+		}
+		if err := s.severities.SeedDefaults(ctx, ws.ID); err != nil {
 			return err
 		}
 		if err := s.policy.AssignAgentRole(ctx, ws.ID, entity.RoleAdmin); err != nil {
@@ -177,6 +182,9 @@ func (s *srv) Signup(ctx context.Context, in entity.Signup, ip, userAgent string
 			return err
 		}
 		if err := s.policy.SeedWorkspace(ctx, ws.ID); err != nil {
+			return err
+		}
+		if err := s.severities.SeedDefaults(ctx, ws.ID); err != nil {
 			return err
 		}
 		if err := s.policy.AssignAgentRole(ctx, ws.ID, entity.RoleAdmin); err != nil {
