@@ -25,9 +25,8 @@
 
 	let { data }: PageProps = $props();
 
-	const PENDING_INCIDENTS = 'Available once incidents ship.';
-
 	const alert = $derived(data.alert);
+	let attachTo = $state('');
 	const LINK_ICON = { runbook: BookOpenIcon, dashboard: ChartLineIcon, source: PlugIcon };
 
 </script>
@@ -144,10 +143,30 @@
 						</Button>
 					</form>
 
-					<Button size="sm" variant="ghost" disabled title={PENDING_INCIDENTS}>
-						<LinkIcon data-icon="inline-start" />
-						Attach to incident
-					</Button>
+					{#if data.incidents.length}
+						<form method="POST" action="?/attach" use:enhance class="flex items-center gap-1.5">
+							<select
+								name="incident"
+								bind:value={attachTo}
+								class="border-input bg-inset h-8 rounded-md border px-2 text-[12.5px]"
+								aria-label="Attach to incident"
+							>
+								<option value="">Attach to incident…</option>
+								{#each data.incidents as inc (inc.id)}
+									<option value={inc.id}>{inc.name}</option>
+								{/each}
+							</select>
+							<Button size="sm" variant="ghost" type="submit" disabled={!attachTo}>
+								<LinkIcon data-icon="inline-start" />
+								Attach
+							</Button>
+						</form>
+					{:else}
+						<Button size="sm" variant="ghost" disabled title="No active incidents to attach to.">
+							<LinkIcon data-icon="inline-start" />
+							Attach to incident
+						</Button>
+					{/if}
 				</div>
 			</div>
 

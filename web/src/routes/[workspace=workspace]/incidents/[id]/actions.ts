@@ -7,7 +7,10 @@ import {
 	relateIncident,
 	reopenIncident,
 	resolveIncident,
+	setCustomFields,
 	toggleFollowUp,
+	unlinkAlert,
+	unrelateIncident,
 	updateIncident
 } from '$lib/server/incidents-api';
 
@@ -97,6 +100,41 @@ export const incidentActions = {
 			params.id!,
 			String(form.get('id') ?? ''),
 			String(form.get('done')) === 'true'
+		);
+		if (result.error) return fail(400, { error: result.error });
+	},
+
+	'custom-fields': async ({ request, params, cookies }) => {
+		const form = await request.formData();
+		const fields: Record<string, string> = {};
+		for (const [key, value] of form.entries()) {
+			if (!key.startsWith('cf:')) continue;
+			const id = key.slice(3);
+			const next = String(value).trim();
+			fields[id] = fields[id] ? `${fields[id]}, ${next}` : next;
+		}
+		const result = await setCustomFields(cookies, params.workspace, params.id!, fields);
+		if (result.error) return fail(400, { error: result.error });
+	},
+
+	'unlink-alert': async ({ request, params, cookies }) => {
+		const form = await request.formData();
+		const result = await unlinkAlert(
+			cookies,
+			params.workspace,
+			params.id!,
+			String(form.get('alert') ?? '')
+		);
+		if (result.error) return fail(400, { error: result.error });
+	},
+
+	unrelate: async ({ request, params, cookies }) => {
+		const form = await request.formData();
+		const result = await unrelateIncident(
+			cookies,
+			params.workspace,
+			params.id!,
+			String(form.get('relation') ?? '')
 		);
 		if (result.error) return fail(400, { error: result.error });
 	},

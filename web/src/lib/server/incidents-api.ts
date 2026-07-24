@@ -95,10 +95,12 @@ function toIncident(
 			!!currentUserId && (dto.leadUserId === currentUserId || dto.declaredBy === currentUserId),
 		summary: dto.summary ?? '',
 		customFields: toCustomFields(dto.customFields, defs),
+		customFieldsRaw: dto.customFields ?? {},
 		related: (dto.relations ?? []).map((r) => ({
 			relation: RELATION_TO_FRONT[r.kind] ?? 'related to',
 			id: `INC-${r.relatedNumber}`,
-			name: r.relatedName
+			name: r.relatedName,
+			relationId: r.id
 		})),
 		alerts: (dto.alerts ?? []).map((a) => {
 			const s = alertSeverity(a.severity);
@@ -381,6 +383,32 @@ export async function linkAlert(
 		{ params: { path: { workspaceId: workspace, incidentId: id } }, body: { alertId } }
 	);
 	return error ? { error: error.detail ?? 'Could not link the alert.' } : {};
+}
+
+export async function unlinkAlert(
+	cookies: Cookies,
+	workspace: string,
+	id: string,
+	alertId: string
+): Promise<{ error?: string }> {
+	const { error } = await apiClient(cookies).DELETE(
+		'/workspaces/{workspaceId}/incidents/{incidentId}/alerts/{alertId}',
+		{ params: { path: { workspaceId: workspace, incidentId: id, alertId } } }
+	);
+	return error ? { error: error.detail ?? 'Could not unlink the alert.' } : {};
+}
+
+export async function unrelateIncident(
+	cookies: Cookies,
+	workspace: string,
+	id: string,
+	relationId: string
+): Promise<{ error?: string }> {
+	const { error } = await apiClient(cookies).DELETE(
+		'/workspaces/{workspaceId}/incidents/{incidentId}/relations/{relationId}',
+		{ params: { path: { workspaceId: workspace, incidentId: id, relationId } } }
+	);
+	return error ? { error: error.detail ?? 'Could not remove the relation.' } : {};
 }
 
 export async function relateIncident(

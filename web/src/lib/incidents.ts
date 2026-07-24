@@ -91,6 +91,7 @@ export type RelatedIncident = {
 	relation: RelationKind;
 	id: string;
 	name: string;
+	relationId?: string;
 };
 
 export type StatusPageUpdate = {
@@ -118,6 +119,7 @@ export type Incident = {
 	mine: boolean;
 	summary: string;
 	customFields: { label: string; value: string; mono?: boolean }[];
+	customFieldsRaw?: Record<string, string>;
 	related: RelatedIncident[];
 	alerts: LinkedAlert[];
 	timeline: TimelineEntry[];
