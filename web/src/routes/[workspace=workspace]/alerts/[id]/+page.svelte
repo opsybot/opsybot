@@ -137,10 +137,12 @@
 						</form>
 					{/if}
 
-					<Button size="sm" variant="destructive" disabled title={PENDING_INCIDENTS}>
-						<SirenIcon data-icon="inline-start" />
-						Promote to incident
-					</Button>
+					<form method="POST" action="?/declare" use:enhance>
+						<Button size="sm" variant="destructive" type="submit">
+							<SirenIcon data-icon="inline-start" />
+							Promote to incident
+						</Button>
+					</form>
 
 					<Button size="sm" variant="ghost" disabled title={PENDING_INCIDENTS}>
 						<LinkIcon data-icon="inline-start" />

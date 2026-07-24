@@ -583,6 +583,27 @@ func (h *handler) ToggleIncidentFollowup(ctx context.Context, request api.Toggle
 	return api.ToggleIncidentFollowup200JSONResponse(h.incidentDTO(inc)), nil
 }
 
+func (h *handler) ListIncidentFollowups(ctx context.Context, request api.ListIncidentFollowupsRequestObject) (api.ListIncidentFollowupsResponseObject, error) {
+	list, err := h.incidents.ListOpenFollowups(ctx, request.WorkspaceId)
+	if err != nil {
+		status, p := incidentProblem(err)
+		switch status {
+		case http.StatusUnauthorized:
+			return api.ListIncidentFollowups401ApplicationProblemPlusJSONResponse(p), nil
+		case http.StatusForbidden:
+			return api.ListIncidentFollowups403ApplicationProblemPlusJSONResponse(p), nil
+		case http.StatusNotFound:
+			return api.ListIncidentFollowups404ApplicationProblemPlusJSONResponse(p), nil
+		}
+		return nil, err
+	}
+	items := make([]api.IncidentFollowup, 0, len(list))
+	for _, f := range list {
+		items = append(items, followupDTO(f))
+	}
+	return api.ListIncidentFollowups200JSONResponse{Items: items}, nil
+}
+
 func (h *handler) ListIncidentSeverities(ctx context.Context, request api.ListIncidentSeveritiesRequestObject) (api.ListIncidentSeveritiesResponseObject, error) {
 	list, err := h.incidents.ListSeverities(ctx, request.WorkspaceId)
 	if err != nil {

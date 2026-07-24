@@ -1,6 +1,7 @@
-import { error, fail } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
 import { getAlert, setStatus } from '$lib/server/alerts';
 import { escalateAlert } from '$lib/server/escalation';
+import { declareFromAlert } from '$lib/server/incidents-api';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, cookies }) => {
@@ -22,5 +23,13 @@ export const actions: Actions = {
 	escalate: async ({ params, cookies }) => {
 		const outcome = await escalateAlert(cookies, params.workspace, params.id);
 		if (outcome.error) return fail(400, { error: outcome.error });
+	},
+	declare: async ({ params, cookies }) => {
+		const outcome = await declareFromAlert(cookies, params.workspace, { alertId: params.id });
+		if (outcome.error || !outcome.id) {
+			return fail(400, { error: outcome.error ?? 'Could not declare an incident.' });
+		}
+		redirect(303, `/${params.workspace}/incidents/${outcome.id}`);
 	}
 };
+

@@ -103,10 +103,12 @@ export type PostmortemState = 'not-started' | 'draft' | 'in-review' | 'published
 
 export type Incident = {
 	id: string;
+	ref?: string;
 	name: string;
 	severity: Severity;
 	status: IncidentStage;
 	lead: string;
+	leadUserId?: string;
 	comms: string;
 	team: string;
 	services: string[];

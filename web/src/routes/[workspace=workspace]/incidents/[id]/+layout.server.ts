@@ -1,14 +1,18 @@
 import { error } from '@sveltejs/kit';
-import { getIncident, listFollowUps } from '$lib/server/incidents';
+import { getIncidentDetail, listMembers } from '$lib/server/incidents-api';
 import type { LayoutServerLoad } from './$types';
 
-export const load: LayoutServerLoad = ({ params }) => {
-	const incident = getIncident(params.id);
-	if (!incident) error(404, `No incident with id ${params.id}.`);
+export const load: LayoutServerLoad = async ({ params, cookies }) => {
+	const [detail, people] = await Promise.all([
+		getIncidentDetail(cookies, params.workspace, params.id),
+		listMembers(cookies, params.workspace)
+	]);
+	if (!detail) error(404, `No incident with id ${params.id}.`);
 
 	return {
 		now: Date.now(),
-		incident,
-		followUps: listFollowUps().filter((followUp) => followUp.incidentId === incident.id)
+		incident: detail.incident,
+		followUps: detail.followUps,
+		people
 	};
 };

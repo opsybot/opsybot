@@ -3089,6 +3089,18 @@ paths:
         "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
         "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
         "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incident-followups:
+    get:
+      operationId: listIncidentFollowups
+      summary: List open follow-up items across the workspace
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Follow-ups, content: { application/json: { schema: { $ref: "#/components/schemas/IncidentFollowupList" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
   /workspaces/{workspaceId}/services:
     get:
       operationId: listServices
@@ -4239,6 +4251,11 @@ components:
       required: [items]
       properties:
         items: { type: array, items: { $ref: "#/components/schemas/IncidentField" } }
+    IncidentFollowupList:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/IncidentFollowup" } }
     DeclareIncidentRequest:
       type: object
       required: [name]

@@ -11,7 +11,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import * as Select from '$lib/components/ui/select';
-	import { PEOPLE } from '$lib/incidents';
 	import { ws } from '$lib/navigation';
 	import { formatUtcDate } from '$lib/time';
 	import type { PageProps } from './$types';
@@ -51,7 +50,7 @@
 				<Select.Trigger size="sm" class="w-[140px]">{owner || 'Owner'}</Select.Trigger>
 				<Select.Content>
 					<Select.Group>
-						{#each PEOPLE as person (person)}
+						{#each data.people as person (person)}
 							<Select.Item value={person} label={person}>{person}</Select.Item>
 						{/each}
 					</Select.Group>
@@ -101,7 +100,7 @@
 			<Panel>
 				<header class="flex items-center gap-2 border-b px-4 py-3">
 					<a href={ws(`/incidents/${group}`)} class="text-foreground font-mono text-[12.5px] font-semibold">
-						{group}
+						{incident?.ref ?? group}
 					</a>
 					<span class="text-subtle-foreground text-[12.5px]">{incident?.name}</span>
 				</header>
@@ -110,6 +109,8 @@
 					<div class="flex items-center gap-2.5 border-t px-3.5 py-[11px]">
 						<form method="POST" action="?/toggle" use:enhance bind:this={toggleForms[followUp.id]}>
 							<input type="hidden" name="id" value={followUp.id} />
+							<input type="hidden" name="incident" value={followUp.incidentId} />
+							<input type="hidden" name="done" value={!followUp.done} />
 							<Checkbox
 								checked={followUp.done}
 								onCheckedChange={() => toggleForms[followUp.id]?.requestSubmit()}

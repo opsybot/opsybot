@@ -161,6 +161,21 @@ func (mr *MockIncidentsMockRecorder) ListFieldDefs(ctx, workspaceSlug any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListFieldDefs", reflect.TypeOf((*MockIncidents)(nil).ListFieldDefs), ctx, workspaceSlug)
 }
 
+// ListOpenFollowups mocks base method.
+func (m *MockIncidents) ListOpenFollowups(ctx context.Context, workspaceSlug string) ([]entity.IncidentFollowup, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListOpenFollowups", ctx, workspaceSlug)
+	ret0, _ := ret[0].([]entity.IncidentFollowup)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListOpenFollowups indicates an expected call of ListOpenFollowups.
+func (mr *MockIncidentsMockRecorder) ListOpenFollowups(ctx, workspaceSlug any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListOpenFollowups", reflect.TypeOf((*MockIncidents)(nil).ListOpenFollowups), ctx, workspaceSlug)
+}
+
 // ListSeverities mocks base method.
 func (m *MockIncidents) ListSeverities(ctx context.Context, workspaceSlug string) ([]entity.IncidentSeverity, error) {
 	m.ctrl.T.Helper()

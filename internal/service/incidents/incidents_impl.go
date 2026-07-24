@@ -798,6 +798,27 @@ func (s *srv) ToggleFollowup(ctx context.Context, workspaceSlug, id, followupID 
 	return s.hydrate(ctx, ws.ID, id)
 }
 
+func (s *srv) ListOpenFollowups(ctx context.Context, workspaceSlug string) ([]entity.IncidentFollowup, error) {
+	_, ws, err := s.authorize(ctx, workspaceSlug, entity.PolicyActionRead, entity.PolicyObjectIncidents)
+	if err != nil {
+		return nil, err
+	}
+	followups, err := s.incidents.ListOpenFollowups(ctx, ws.ID)
+	if err != nil {
+		return nil, err
+	}
+	names, err := s.memberNames(ctx, ws.ID)
+	if err != nil {
+		return nil, err
+	}
+	for i := range followups {
+		if followups[i].OwnerUserID != "" {
+			followups[i].OwnerLabel = names[followups[i].OwnerUserID]
+		}
+	}
+	return followups, nil
+}
+
 func (s *srv) ListSeverities(ctx context.Context, workspaceSlug string) ([]entity.IncidentSeverity, error) {
 	_, ws, err := s.authorize(ctx, workspaceSlug, entity.PolicyActionRead, entity.PolicyObjectIncidents)
 	if err != nil {

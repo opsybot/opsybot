@@ -18,7 +18,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import * as Select from '$lib/components/ui/select';
 	import { SEVERITY_TONE } from '$lib/dashboard';
-	import { PEOPLE, SEVERITIES } from '$lib/incidents';
+	import { SEVERITIES } from '$lib/incidents';
 	import { ws } from '$lib/navigation';
 	import type { LayoutProps } from './$types';
 
@@ -91,7 +91,7 @@
 				</h2>
 			{/if}
 
-			<span class="text-subtle-foreground font-mono text-xs">{incident.id}</span>
+			<span class="text-subtle-foreground font-mono text-xs">{incident.ref ?? incident.id}</span>
 			<div class="flex-1"></div>
 
 			<form method="POST" action="{base}?/severity" use:enhance bind:this={form}>
@@ -117,7 +117,7 @@
 				class="text-muted-foreground hover:text-brand-foreground hover:border-brand-edge border-input inline-flex items-center gap-1.5 rounded-full border px-[11px] py-[5px] font-mono text-xs"
 			>
 				<MessageSquareIcon class="size-3.5" />
-				#inc-{incident.id.split('-')[1].toLowerCase()}
+				#inc-{incident.ref ? incident.ref.replace('INC-', '') : incident.id.slice(0, 6)}
 			</a>
 		</div>
 
@@ -129,31 +129,33 @@
 
 		<div class="bg-card grid gap-6 rounded-xl border px-3.5 py-3 min-[900px]:grid-cols-[auto_1fr_auto]">
 			<div class="flex flex-col gap-2">
-				{#each [['lead', 'Lead', incident.lead], ['comms', 'Comms', incident.comms]] as [role, label, person] (role)}
-					<div class="flex items-center gap-2">
-						<span class="text-subtle-foreground w-13 font-mono text-[10.5px] tracking-[0.06em] uppercase">
-							{label}
-						</span>
-						<form method="POST" action="{base}?/role" use:enhance bind:this={roleForms[role]}>
-							<input type="hidden" name="role" value={role} />
-							<Select.Root
-								type="single"
-								name="person"
-								value={person}
-								onValueChange={() => roleForms[role]?.requestSubmit()}
-							>
-								<Select.Trigger size="sm" class="w-[150px]">{person}</Select.Trigger>
-								<Select.Content>
-									<Select.Group>
-										{#each PEOPLE as candidate (candidate)}
-											<Select.Item value={candidate} label={candidate}>{candidate}</Select.Item>
-										{/each}
-									</Select.Group>
-								</Select.Content>
-							</Select.Root>
-						</form>
-					</div>
-				{/each}
+				<div class="flex items-center gap-2">
+					<span class="text-subtle-foreground w-13 font-mono text-[10.5px] tracking-[0.06em] uppercase">
+						Lead
+					</span>
+					<form method="POST" action="{base}?/role" use:enhance bind:this={roleForms['lead']}>
+						<input type="hidden" name="role" value="lead" />
+						<Select.Root
+							type="single"
+							name="person"
+							value={incident.leadUserId ?? ''}
+							onValueChange={() => roleForms['lead']?.requestSubmit()}
+						>
+							<Select.Trigger size="sm" class="w-[150px]">
+								{incident.lead || 'Unassigned'}
+							</Select.Trigger>
+							<Select.Content>
+								<Select.Group>
+									{#each data.people as candidate (candidate.id)}
+										<Select.Item value={candidate.id} label={candidate.name}>
+											{candidate.name}
+										</Select.Item>
+									{/each}
+								</Select.Group>
+							</Select.Content>
+						</Select.Root>
+					</form>
+				</div>
 			</div>
 
 			<div class="flex flex-col gap-2">
@@ -209,6 +211,6 @@
 
 <ResolveDialog
 	bind:open={resolving}
-	incidentId={incident.id}
+	incidentId={incident.ref ?? incident.id}
 	linkedAlerts={incident.alerts.filter((alert) => alert.status !== 'resolved').length}
 />

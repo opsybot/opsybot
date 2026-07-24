@@ -8,8 +8,8 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/opsybot/opsybot/internal/entity"
-	"github.com/opsybot/opsybot/internal/repository/audit"
 	"github.com/opsybot/opsybot/internal/repository/alert"
+	"github.com/opsybot/opsybot/internal/repository/audit"
 	"github.com/opsybot/opsybot/internal/repository/incident"
 	"github.com/opsybot/opsybot/internal/repository/incident_field_def"
 	"github.com/opsybot/opsybot/internal/repository/incident_severity"

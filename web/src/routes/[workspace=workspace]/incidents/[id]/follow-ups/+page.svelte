@@ -8,15 +8,16 @@
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { Input } from '$lib/components/ui/input';
 	import * as Select from '$lib/components/ui/select';
-	import { PEOPLE } from '$lib/incidents';
 	import { formatUtcDate } from '$lib/time';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
 	let title = $state('');
-	let owner = $state(PEOPLE[0]);
+	let owner = $state('');
 	let due = $state(new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10));
+
+	const ownerName = $derived(data.people.find((person) => person.id === owner)?.name ?? 'Unassigned');
 
 	let toggleForms: Record<string, HTMLFormElement | undefined> = $state({});
 
@@ -40,6 +41,7 @@
 						bind:this={toggleForms[followUp.id]}
 					>
 						<input type="hidden" name="id" value={followUp.id} />
+						<input type="hidden" name="done" value={!followUp.done} />
 						<Checkbox
 							checked={followUp.done}
 							onCheckedChange={() => toggleForms[followUp.id]?.requestSubmit()}
@@ -85,11 +87,11 @@
 			/>
 
 			<Select.Root type="single" name="owner" bind:value={owner}>
-				<Select.Trigger size="sm" class="w-[140px]">{owner}</Select.Trigger>
+				<Select.Trigger size="sm" class="w-[140px]">{ownerName}</Select.Trigger>
 				<Select.Content>
 					<Select.Group>
-						{#each PEOPLE as person (person)}
-							<Select.Item value={person} label={person}>{person}</Select.Item>
+						{#each data.people as person (person.id)}
+							<Select.Item value={person.id} label={person.name}>{person.name}</Select.Item>
 						{/each}
 					</Select.Group>
 				</Select.Content>

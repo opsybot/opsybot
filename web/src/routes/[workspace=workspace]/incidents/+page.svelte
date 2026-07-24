@@ -41,11 +41,15 @@
 			</Button>
 		</div>
 	{:else}
-		<FilterBar />
+		<FilterBar
+			services={data.filterOptions.services}
+			teams={data.filterOptions.teams}
+			people={data.filterOptions.leads}
+		/>
 		<div class="bg-card overflow-hidden rounded-xl border">
 			<IncidentsTable incidents={data.incidents} filters={data.filters} now={data.now} />
 		</div>
 	{/if}
 </Page>
 
-<DeclareDialog bind:open={declaring} openAlerts={data.openAlerts} />
+<DeclareDialog bind:open={declaring} services={data.services} members={data.members} />

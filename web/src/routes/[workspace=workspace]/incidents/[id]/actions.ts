@@ -1,100 +1,107 @@
 import { fail, type Actions } from '@sveltejs/kit';
-import type { Severity } from '$lib/dashboard';
-import type { EntryType, IncidentStage, RelationKind } from '$lib/incidents';
+import type { IncidentStage, RelationKind } from '$lib/incidents';
 import {
-	addEntry,
 	addFollowUp,
-	assignRole,
 	changeSeverity,
-	linkIncident,
 	moveStatus,
-	postUpdate,
-	rename,
+	relateIncident,
 	reopenIncident,
 	resolveIncident,
-	toggleFollowUp
-} from '$lib/server/incidents';
-import { advance } from '$lib/server/postmortems';
+	toggleFollowUp,
+	updateIncident
+} from '$lib/server/incidents-api';
 
 export const incidentActions = {
-	rename: async ({ request, params }) => {
+	rename: async ({ request, params, cookies }) => {
 		const form = await request.formData();
-		rename(params.id!, String(form.get('name') ?? ''));
+		const result = await updateIncident(cookies, params.workspace, params.id!, {
+			name: String(form.get('name') ?? '')
+		});
+		if (result.error) return fail(400, { error: result.error });
 	},
 
-	severity: async ({ request, params }) => {
+	severity: async ({ request, params, cookies }) => {
 		const form = await request.formData();
-		changeSeverity(params.id!, String(form.get('severity')) as Severity);
+		const result = await changeSeverity(
+			cookies,
+			params.workspace,
+			params.id!,
+			String(form.get('severity') ?? '')
+		);
+		if (result.error) return fail(400, { error: result.error });
 	},
 
-	role: async ({ request, params }) => {
+	role: async ({ request, params, cookies }) => {
 		const form = await request.formData();
 		const role = String(form.get('role'));
 		if (role !== 'lead' && role !== 'comms') return fail(400);
-		assignRole(params.id!, role, String(form.get('person')));
+		if (role !== 'lead') return;
+		const result = await updateIncident(cookies, params.workspace, params.id!, {
+			leadUserId: String(form.get('person') ?? '')
+		});
+		if (result.error) return fail(400, { error: result.error });
 	},
 
-	status: async ({ request, params }) => {
+	status: async ({ request, params, cookies }) => {
 		const form = await request.formData();
-		moveStatus(params.id!, String(form.get('status')) as IncidentStage);
+		const result = await moveStatus(
+			cookies,
+			params.workspace,
+			params.id!,
+			String(form.get('status')) as IncidentStage
+		);
+		if (result.error) return fail(409, { error: result.error });
 	},
 
-	'post-update': async ({ params }) => {
-		postUpdate(params.id!);
-	},
-
-	resolve: async ({ request, params }) => {
+	resolve: async ({ request, params, cookies }) => {
 		const form = await request.formData();
 		const summary = String(form.get('summary') ?? '').trim();
 		if (!summary) return fail(400, { error: 'A resolution summary is required.' });
-
-		resolveIncident(params.id!, summary, form.get('alerts') === 'on', form.get('postmortem') === 'on');
+		const result = await resolveIncident(cookies, params.workspace, params.id!, summary);
+		if (result.error) return fail(400, { error: result.error });
 	},
 
-	reopen: async ({ params }) => {
-		reopenIncident(params.id!);
+	reopen: async ({ params, cookies }) => {
+		const result = await reopenIncident(cookies, params.workspace, params.id!);
+		if (result.error) return fail(409, { error: result.error });
 	},
 
-	link: async ({ request, params }) => {
+	link: async ({ request, params, cookies }) => {
 		const form = await request.formData();
-		linkIncident(
+		const result = await relateIncident(
+			cookies,
+			params.workspace,
 			params.id!,
 			String(form.get('relation')) as RelationKind,
-			String(form.get('incident'))
+			String(form.get('incident') ?? '')
 		);
+		if (result.error) return fail(400, { error: result.error });
 	},
 
-	entry: async ({ request, params }) => {
+	'add-follow-up': async ({ request, params, cookies }) => {
 		const form = await request.formData();
-		const retroTime = String(form.get('at') ?? '').trim();
-
-		const at = retroTime
-			? new Date(`${new Date().toISOString().slice(0, 10)}T${retroTime}:00Z`).toISOString()
-			: undefined;
-
-		addEntry(params.id!, String(form.get('type')) as EntryType, String(form.get('text') ?? ''), {
-			at,
-			retro: Boolean(retroTime)
+		const due = String(form.get('due') ?? '').trim();
+		const result = await addFollowUp(cookies, params.workspace, params.id!, {
+			title: String(form.get('title') ?? ''),
+			ownerUserId: String(form.get('owner') ?? ''),
+			dueAt: due ? new Date(due).toISOString() : undefined
 		});
+		if (result.error) return fail(400, { error: result.error });
 	},
 
-	'add-follow-up': async ({ request, params }) => {
+	'toggle-follow-up': async ({ request, params, cookies }) => {
 		const form = await request.formData();
-		addFollowUp(
+		const result = await toggleFollowUp(
+			cookies,
+			params.workspace,
 			params.id!,
-			String(form.get('title') ?? ''),
-			String(form.get('owner') ?? 'Maya Chen'),
-			new Date(String(form.get('due'))).toISOString()
+			String(form.get('id') ?? ''),
+			String(form.get('done')) === 'true'
 		);
+		if (result.error) return fail(400, { error: result.error });
 	},
 
-	'toggle-follow-up': async ({ request }) => {
-		const form = await request.formData();
-		toggleFollowUp(String(form.get('id')));
-	},
-
-	postmortem: async ({ request, params }) => {
-		const form = await request.formData();
-		advance(params.id!, String(form.get('state')) as 'draft' | 'in-review' | 'published');
-	}
+	'post-update': async () => {},
+	entry: async () => {},
+	postmortem: async () => {}
 } satisfies Actions;

@@ -1856,6 +1856,11 @@ type IncidentFollowup struct {
 	Title       string     `json:"title"`
 }
 
+// IncidentFollowupList defines model for IncidentFollowupList.
+type IncidentFollowupList struct {
+	Items []IncidentFollowup `json:"items"`
+}
+
 // IncidentList defines model for IncidentList.
 type IncidentList struct {
 	Items      []Incident `json:"items"`
@@ -3022,6 +3027,9 @@ type ServerInterface interface {
 	// Replace the workspace incident custom fields
 	// (PUT /workspaces/{workspaceId}/incident-fields)
 	SaveIncidentFields(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// List open follow-up items across the workspace
+	// (GET /workspaces/{workspaceId}/incident-followups)
+	ListIncidentFollowups(w http.ResponseWriter, r *http.Request, workspaceId string)
 	// List the workspace severity levels
 	// (GET /workspaces/{workspaceId}/incident-severities)
 	ListIncidentSeverities(w http.ResponseWriter, r *http.Request, workspaceId string)
@@ -3706,6 +3714,12 @@ func (_ Unimplemented) ListIncidentFields(w http.ResponseWriter, r *http.Request
 // Replace the workspace incident custom fields
 // (PUT /workspaces/{workspaceId}/incident-fields)
 func (_ Unimplemented) SaveIncidentFields(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List open follow-up items across the workspace
+// (GET /workspaces/{workspaceId}/incident-followups)
+func (_ Unimplemented) ListIncidentFollowups(w http.ResponseWriter, r *http.Request, workspaceId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -6441,6 +6455,32 @@ func (siw *ServerInterfaceWrapper) SaveIncidentFields(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// ListIncidentFollowups operation middleware
+func (siw *ServerInterfaceWrapper) ListIncidentFollowups(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListIncidentFollowups(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListIncidentSeverities operation middleware
 func (siw *ServerInterfaceWrapper) ListIncidentSeverities(w http.ResponseWriter, r *http.Request) {
 
@@ -8925,6 +8965,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/workspaces/{workspaceId}/incident-fields", wrapper.SaveIncidentFields)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/incident-followups", wrapper.ListIncidentFollowups)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/workspaces/{workspaceId}/incident-severities", wrapper.ListIncidentSeverities)
@@ -14551,6 +14594,70 @@ func (response SaveIncidentFields404ApplicationProblemPlusJSONResponse) VisitSav
 	return err
 }
 
+type ListIncidentFollowupsRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+}
+
+type ListIncidentFollowupsResponseObject interface {
+	VisitListIncidentFollowupsResponse(w http.ResponseWriter) error
+}
+
+type ListIncidentFollowups200JSONResponse IncidentFollowupList
+
+func (response ListIncidentFollowups200JSONResponse) VisitListIncidentFollowupsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentFollowups401ApplicationProblemPlusJSONResponse Problem
+
+func (response ListIncidentFollowups401ApplicationProblemPlusJSONResponse) VisitListIncidentFollowupsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentFollowups403ApplicationProblemPlusJSONResponse Problem
+
+func (response ListIncidentFollowups403ApplicationProblemPlusJSONResponse) VisitListIncidentFollowupsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentFollowups404ApplicationProblemPlusJSONResponse Problem
+
+func (response ListIncidentFollowups404ApplicationProblemPlusJSONResponse) VisitListIncidentFollowupsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListIncidentSeveritiesRequestObject struct {
 	WorkspaceId string `json:"workspaceId"`
 }
@@ -19315,6 +19422,9 @@ type StrictServerInterface interface {
 	// Replace the workspace incident custom fields
 	// (PUT /workspaces/{workspaceId}/incident-fields)
 	SaveIncidentFields(ctx context.Context, request SaveIncidentFieldsRequestObject) (SaveIncidentFieldsResponseObject, error)
+	// List open follow-up items across the workspace
+	// (GET /workspaces/{workspaceId}/incident-followups)
+	ListIncidentFollowups(ctx context.Context, request ListIncidentFollowupsRequestObject) (ListIncidentFollowupsResponseObject, error)
 	// List the workspace severity levels
 	// (GET /workspaces/{workspaceId}/incident-severities)
 	ListIncidentSeverities(ctx context.Context, request ListIncidentSeveritiesRequestObject) (ListIncidentSeveritiesResponseObject, error)
@@ -21932,6 +22042,32 @@ func (sh *strictHandler) SaveIncidentFields(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SaveIncidentFieldsResponseObject); ok {
 		if err := validResponse.VisitSaveIncidentFieldsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListIncidentFollowups operation middleware
+func (sh *strictHandler) ListIncidentFollowups(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request ListIncidentFollowupsRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListIncidentFollowups(ctx, request.(ListIncidentFollowupsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListIncidentFollowups")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListIncidentFollowupsResponseObject); ok {
+		if err := validResponse.VisitListIncidentFollowupsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

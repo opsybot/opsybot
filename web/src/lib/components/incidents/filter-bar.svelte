@@ -5,19 +5,25 @@
 	import Tag from '$lib/components/tag.svelte';
 	import * as InputGroup from '$lib/components/ui/input-group';
 	import * as Select from '$lib/components/ui/select';
-	import { PEOPLE, SERVICES, SEVERITIES, STAGES, TEAMS } from '$lib/incidents';
+	import { SEVERITIES, STAGES } from '$lib/incidents';
+
+	let {
+		services = [],
+		teams = [],
+		people = []
+	}: { services?: string[]; teams?: string[]; people?: string[] } = $props();
 
 	const params = $derived(page.url.searchParams);
 	const preset = $derived(params.get('preset') ?? 'active');
 	const range = $derived(params.get('range') ?? '30d');
 
-	const FILTERS = [
+	const FILTERS = $derived([
 		{ key: 'severity', placeholder: 'Severity', width: 'w-[110px]', options: SEVERITIES.map((s) => s.id) },
 		{ key: 'status', placeholder: 'Status', width: 'w-[130px]', options: STAGES as unknown as string[] },
-		{ key: 'service', placeholder: 'Service', width: 'w-[140px]', options: SERVICES },
-		{ key: 'team', placeholder: 'Team', width: 'w-[120px]', options: TEAMS },
-		{ key: 'lead', placeholder: 'Lead', width: 'w-[130px]', options: PEOPLE }
-	];
+		{ key: 'service', placeholder: 'Service', width: 'w-[140px]', options: services },
+		{ key: 'team', placeholder: 'Team', width: 'w-[120px]', options: teams },
+		{ key: 'lead', placeholder: 'Lead', width: 'w-[130px]', options: people }
+	]);
 
 	const RANGES = [
 		{ value: '7d', label: 'Last 7 days' },

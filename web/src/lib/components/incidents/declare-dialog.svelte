@@ -1,38 +1,39 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 	import SirenIcon from '@lucide/svelte/icons/siren';
 	import { enhance } from '$app/forms';
 	import Tag from '$lib/components/tag.svelte';
 	import * as Alert from '$lib/components/ui/alert';
 	import { Button } from '$lib/components/ui/button';
-	import { Checkbox } from '$lib/components/ui/checkbox';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Field from '$lib/components/ui/field';
 	import { Input } from '$lib/components/ui/input';
 	import * as RadioGroup from '$lib/components/ui/radio-group';
 	import * as Select from '$lib/components/ui/select';
 	import type { Severity } from '$lib/dashboard';
-	import { PEOPLE, SERVICES, SEVERITIES, type LinkedAlert } from '$lib/incidents';
+	import { SEVERITIES } from '$lib/incidents';
 	import { ws } from '$lib/navigation';
 
 	let {
 		open = $bindable(false),
-		openAlerts
+		services = [],
+		members = []
 	}: {
 		open?: boolean;
-		openAlerts: LinkedAlert[];
+		services?: { id: string; name: string }[];
+		members?: { id: string; name: string }[];
 	} = $props();
 
 	let name = $state('');
 	let severity = $state<Severity>('SEV2');
-	let lead = $state(PEOPLE[0]);
-	let services = $state(new Set<string>());
-	let linked = $state(new Set<string>(untrack(() => openAlerts).map((alert) => alert.id)));
+	let lead = $state('');
+	let selected = $state(new Set<string>());
 
-	function toggle(set: Set<string>, value: string) {
-		if (set.has(value)) set.delete(value);
-		else set.add(value);
+	const leadName = $derived(members.find((member) => member.id === lead)?.name ?? 'Unassigned');
+
+	function toggle(value: string) {
+		if (selected.has(value)) selected.delete(value);
+		else selected.add(value);
 	}
 </script>
 
@@ -99,71 +100,42 @@
 						</RadioGroup.Root>
 					</div>
 
-					<div>
-						<div class="text-subtle-foreground tracking-label mb-2 text-[11px] uppercase">
-							Affected services
-						</div>
-						<div class="flex flex-wrap gap-1.5">
-							{#each SERVICES as service (service)}
-								<Tag selected={services.has(service)} onclick={() => toggle(services, service)}>
-									{service}
-								</Tag>
+					{#if services.length}
+						<div>
+							<div class="text-subtle-foreground tracking-label mb-2 text-[11px] uppercase">
+								Affected services
+							</div>
+							<div class="flex flex-wrap gap-1.5">
+								{#each services as service (service.id)}
+									<Tag selected={selected.has(service.id)} onclick={() => toggle(service.id)}>
+										{service.name}
+									</Tag>
+								{/each}
+							</div>
+							{#each selected as serviceId (serviceId)}
+								<input type="hidden" name="services" value={serviceId} />
 							{/each}
 						</div>
-						{#each services as service (service)}
-							<input type="hidden" name="services" value={service} />
-						{/each}
-					</div>
+					{/if}
 
 					<Field.Field class="max-w-[260px] gap-1.5 space-y-0">
 						<Field.FieldLabel class="text-muted-foreground text-[13px] font-medium">
 							Incident lead
 						</Field.FieldLabel>
 						<Select.Root type="single" bind:value={lead} name="lead">
-							<Select.Trigger>{lead}</Select.Trigger>
+							<Select.Trigger>{leadName}</Select.Trigger>
 							<Select.Content>
 								<Select.Group>
-									{#each PEOPLE as person (person)}
-										<Select.Item value={person} label={person}>{person}</Select.Item>
+									{#each members as member (member.id)}
+										<Select.Item value={member.id} label={member.name}>{member.name}</Select.Item>
 									{/each}
 								</Select.Group>
 							</Select.Content>
 						</Select.Root>
 						<Field.FieldDescription class="text-subtle-foreground text-xs">
-							Defaults to you. Hand over any time.
+							Optional. Hand over any time.
 						</Field.FieldDescription>
 					</Field.Field>
-
-					{#if openAlerts.length}
-						<div>
-							<div class="text-subtle-foreground tracking-label mb-2 text-[11px] uppercase">
-								Link open alerts (optional)
-							</div>
-							<div class="flex flex-col gap-2">
-								{#each openAlerts as alert (alert.id)}
-									<Field.Field orientation="horizontal" class="items-start gap-2.5 space-y-0">
-										<Checkbox
-											id={alert.id}
-											checked={linked.has(alert.id)}
-											onCheckedChange={() => toggle(linked, alert.id)}
-											class="mt-0.5"
-										/>
-										<Field.FieldContent class="gap-0.5">
-											<Field.FieldLabel for={alert.id} class="text-foreground text-sm font-normal">
-												{alert.title}
-											</Field.FieldLabel>
-											<Field.FieldDescription class="text-subtle-foreground text-[13px]">
-												{alert.severity} · {alert.status}
-											</Field.FieldDescription>
-										</Field.FieldContent>
-									</Field.Field>
-								{/each}
-							</div>
-							{#each linked as alertId (alertId)}
-								<input type="hidden" name="alerts" value={alertId} />
-							{/each}
-						</div>
-					{/if}
 
 					<Alert.Root tone="info">
 						<EyeOffIcon />

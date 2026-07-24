@@ -62,6 +62,7 @@
 
 	let newFieldName = $state('');
 	let newFieldType = $state('text');
+	let newFieldOptions = $state('');
 	let addForm: HTMLFormElement;
 
 	const settingsJson = $derived(
@@ -181,6 +182,7 @@
 				await update({ reset: false });
 				if (result.type === 'success') {
 					newFieldName = '';
+					newFieldOptions = '';
 					toast.success('Field added to every new incident.');
 				}
 			}}
@@ -204,6 +206,19 @@
 					</Select.Content>
 				</Select.Root>
 			</div>
+			{#if newFieldType === 'select' || newFieldType === 'multi-select'}
+				<Field.Field class="min-w-[200px] flex-1 gap-1.5 space-y-0">
+					<Field.FieldLabel for="new-field-options" class="text-muted-foreground text-[13px] font-medium">
+						Options
+					</Field.FieldLabel>
+					<Input
+						id="new-field-options"
+						name="options"
+						bind:value={newFieldOptions}
+						placeholder="EU, US, APAC"
+					/>
+				</Field.Field>
+			{/if}
 			<Button type="submit" size="sm" variant="secondary" disabled={!newFieldName.trim()}>
 				<PlusIcon data-icon="inline-start" />
 				Add
