@@ -507,6 +507,44 @@ func (r *repo) ListEvents(ctx context.Context, alertID string, limit int) ([]ent
 	return out, nil
 }
 
+func (r *repo) ListEventsForAlerts(ctx context.Context, alertIDs []string, kinds []entity.AlertEventKind, after entity.TimelineCursor, limit int) ([]entity.AlertEvent, error) {
+	if len(alertIDs) == 0 {
+		return nil, nil
+	}
+	if limit <= 0 || limit > entity.AlertTimelineLimit {
+		limit = entity.AlertTimelineLimit
+	}
+	mods := []qm.QueryMod{qm.WhereIn("alert_id IN ?", anySlice(alertIDs)...)}
+	if len(kinds) > 0 {
+		raw := make([]string, len(kinds))
+		for i, k := range kinds {
+			raw[i] = string(k)
+		}
+		mods = append(mods, qm.WhereIn("kind IN ?", anySlice(raw)...))
+	}
+	if !after.Zero() {
+		mods = append(mods, qm.Where("(at, id) > (?, ?)", after.At, after.ID))
+	}
+	mods = append(mods, qm.OrderBy("at, id"), qm.Limit(limit))
+
+	rows, err := dbpostgres.AlertEvents(mods...).All(ctx, r.db.Querier(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("list alert events for alerts: %w", err)
+	}
+	out := make([]entity.AlertEvent, 0, len(rows))
+	for _, m := range rows {
+		out = append(out, entity.AlertEvent{
+			ID:      m.ID,
+			AlertID: m.AlertID,
+			At:      m.At,
+			Kind:    entity.AlertEventKind(m.Kind),
+			Text:    m.Text,
+			Result:  m.Result,
+		})
+	}
+	return out, nil
+}
+
 func (r *repo) ListLinks(ctx context.Context, alertID string) ([]entity.AlertLink, error) {
 	rows, err := dbpostgres.AlertLinks(
 		qm.Where("alert_id = ?", alertID),

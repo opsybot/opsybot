@@ -22,6 +22,7 @@ type srv struct {
 	severities  repository.IncidentSeverity
 	fieldDefs   repository.IncidentFieldDef
 	alerts      repository.Alert
+	blobs       repository.Blob
 	policy      repository.Policy
 	audit       repository.Audit
 	escalations service.Escalations
@@ -38,6 +39,7 @@ func New(
 	severities repository.IncidentSeverity,
 	fieldDefs repository.IncidentFieldDef,
 	alerts repository.Alert,
+	blobs repository.Blob,
 	policy repository.Policy,
 	audit repository.Audit,
 	escalations service.Escalations,
@@ -45,7 +47,7 @@ func New(
 	return &srv{
 		tx: tx, lock: lock, workspaces: workspaces, members: members, teams: teams,
 		incidents: incidents, services: services, severities: severities, fieldDefs: fieldDefs,
-		alerts: alerts, policy: policy, audit: audit, escalations: escalations,
+		alerts: alerts, blobs: blobs, policy: policy, audit: audit, escalations: escalations,
 	}
 }
 
@@ -95,8 +97,68 @@ func (s *srv) event(actor entity.Identity, workspaceID, action, target string) e
 	}
 }
 
-func timelineEvent(incidentID, kind, text, actor string, at time.Time) entity.IncidentEvent {
-	return entity.IncidentEvent{IncidentID: incidentID, At: at, Kind: kind, Text: text, Actor: actor}
+func (s *srv) appendTimeline(ctx context.Context, ws entity.Workspace, incidentID string, kind entity.IncidentEventKind, text string, actor entity.Identity, at time.Time) error {
+	_, err := s.incidents.AppendEvent(ctx, entity.IncidentEvent{
+		IncidentID:  incidentID,
+		WorkspaceID: ws.ID,
+		At:          at,
+		Kind:        kind,
+		Category:    entity.CategoryForKind(kind),
+		Source:      entity.IncidentSourceSystem,
+		Text:        text,
+		Actor:       actor.Label,
+		ActorUserID: actor.UserID,
+	})
+	return err
+}
+
+type detailChange struct {
+	kind entity.IncidentEventKind
+	text string
+}
+
+func detailChanges(before entity.Incident, in entity.IncidentUpdate, teamID string, serviceIDs []string, names map[string]string) []detailChange {
+	var out []detailChange
+	if before.Name != in.Name {
+		out = append(out, detailChange{entity.IncidentEventRenamed, fmt.Sprintf("Renamed to %q", in.Name)})
+	}
+	if before.Summary != in.Summary {
+		out = append(out, detailChange{entity.IncidentEventSummaryChanged, "Summary updated"})
+	}
+	if before.LeadUserID != in.LeadUserID {
+		text := "Incident lead cleared"
+		if in.LeadUserID != "" {
+			text = fmt.Sprintf("Incident lead set to %s", names[in.LeadUserID])
+		}
+		out = append(out, detailChange{entity.IncidentEventLeadChanged, text})
+	}
+	if before.TeamID != teamID {
+		text := "Owning team cleared"
+		if in.TeamSlug != "" {
+			text = fmt.Sprintf("Owning team set to %s", in.TeamSlug)
+		}
+		out = append(out, detailChange{entity.IncidentEventUpdated, text})
+	}
+	if !sameServices(before.Services, serviceIDs) {
+		out = append(out, detailChange{entity.IncidentEventUpdated, "Affected services updated"})
+	}
+	return out
+}
+
+func sameServices(before []entity.Service, serviceIDs []string) bool {
+	if len(before) != len(serviceIDs) {
+		return false
+	}
+	existing := make(map[string]bool, len(before))
+	for _, svc := range before {
+		existing[svc.ID] = true
+	}
+	for _, id := range serviceIDs {
+		if !existing[id] {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *srv) memberNames(ctx context.Context, workspaceID string) (map[string]string, error) {
@@ -185,6 +247,11 @@ func (s *srv) hydrate(ctx context.Context, workspaceID, id string) (entity.Incid
 		return entity.Incident{}, err
 	}
 	s.enrich(&inc, names, teamSlugs)
+	page, err := s.timeline(ctx, inc, entity.TimelineFilter{})
+	if err != nil {
+		return entity.Incident{}, err
+	}
+	inc.Timeline = page.Entries
 	return inc, nil
 }
 
@@ -319,14 +386,14 @@ func (s *srv) Declare(ctx context.Context, workspaceSlug string, in entity.Incid
 				return err
 			}
 		}
-		if err := s.incidents.AppendEvent(ctx, timelineEvent(created.ID, "declared", fmt.Sprintf("Declared at %s", sev), actor.Label, now)); err != nil {
+		if err := s.appendTimeline(ctx, ws, created.ID, entity.IncidentEventDeclared, fmt.Sprintf("Declared at %s", sev), actor, now); err != nil {
 			return err
 		}
 		if linkAlertID != "" {
 			if err := s.incidents.LinkAlert(ctx, ws.ID, created.ID, linkAlertID); err != nil {
 				return err
 			}
-			if err := s.incidents.AppendEvent(ctx, timelineEvent(created.ID, "alert_linked", fmt.Sprintf("Linked alert %q", linkAlertTitle), actor.Label, now)); err != nil {
+			if err := s.appendTimeline(ctx, ws, created.ID, entity.IncidentEventAlertLinked, fmt.Sprintf("Linked alert %q", linkAlertTitle), actor, now); err != nil {
 				return err
 			}
 		}
@@ -359,8 +426,16 @@ func (s *srv) Update(ctx context.Context, workspaceSlug, id string, in entity.In
 	if err := s.validateServices(ctx, ws.ID, serviceIDs); err != nil {
 		return entity.Incident{}, err
 	}
+	names, err := s.memberNames(ctx, ws.ID)
+	if err != nil {
+		return entity.Incident{}, err
+	}
 	now := time.Now().UTC()
 	err = s.tx.WithTx(ctx, func(ctx context.Context) error {
+		before, err := s.incidents.GetByID(ctx, ws.ID, id)
+		if err != nil {
+			return err
+		}
 		lead := in.LeadUserID
 		team := teamID
 		ok, err := s.incidents.Patch(ctx, ws.ID, id, entity.IncidentPatch{
@@ -378,8 +453,10 @@ func (s *srv) Update(ctx context.Context, workspaceSlug, id string, in entity.In
 		if err := s.incidents.ReplaceServices(ctx, ws.ID, id, serviceIDs); err != nil {
 			return err
 		}
-		if err := s.incidents.AppendEvent(ctx, timelineEvent(id, "updated", "Details updated", actor.Label, now)); err != nil {
-			return err
+		for _, change := range detailChanges(before, in, teamID, serviceIDs, names) {
+			if err := s.appendTimeline(ctx, ws, id, change.kind, change.text, actor, now); err != nil {
+				return err
+			}
 		}
 		return s.audit.Create(ctx, s.event(actor, ws.ID, entity.ActionIncidentUpdated, id))
 	})
@@ -416,7 +493,7 @@ func (s *srv) ChangeStatus(ctx context.Context, workspaceSlug, id string, to ent
 		if !ok {
 			return entity.ErrIncidentInvalidTransition
 		}
-		if err := s.incidents.AppendEvent(ctx, timelineEvent(id, "status_changed", fmt.Sprintf("Status moved to %s", to), actor.Label, now)); err != nil {
+		if err := s.appendTimeline(ctx, ws, id, entity.IncidentEventStatusChanged, fmt.Sprintf("Status moved to %s", to), actor, now); err != nil {
 			return err
 		}
 		return s.audit.Create(ctx, s.event(actor, ws.ID, entity.ActionIncidentStatusChanged, fmt.Sprintf("%s → %s", current.Status, to)))
@@ -449,7 +526,7 @@ func (s *srv) ChangeSeverity(ctx context.Context, workspaceSlug, id, level strin
 		if !ok {
 			return entity.ErrIncidentNotFound
 		}
-		if err := s.incidents.AppendEvent(ctx, timelineEvent(id, "severity_changed", fmt.Sprintf("Severity set to %s", level), actor.Label, now)); err != nil {
+		if err := s.appendTimeline(ctx, ws, id, entity.IncidentEventSeverityChanged, fmt.Sprintf("Severity set to %s", level), actor, now); err != nil {
 			return err
 		}
 		return s.audit.Create(ctx, s.event(actor, ws.ID, entity.ActionIncidentSeverityChanged, level))
@@ -505,7 +582,7 @@ func (s *srv) Resolve(ctx context.Context, workspaceSlug, id, summary string) (e
 		if err := s.escalations.OnResolved(ctx, ws.ID, resolved, now); err != nil {
 			return err
 		}
-		if err := s.incidents.AppendEvent(ctx, timelineEvent(id, "resolved", "Marked resolved", actor.Label, now)); err != nil {
+		if err := s.appendTimeline(ctx, ws, id, entity.IncidentEventResolved, "Marked resolved", actor, now); err != nil {
 			return err
 		}
 		return s.audit.Create(ctx, s.event(actor, ws.ID, entity.ActionIncidentResolved, fmt.Sprintf("INC-%d", current.Number)))
@@ -530,7 +607,7 @@ func (s *srv) Reopen(ctx context.Context, workspaceSlug, id string) (entity.Inci
 		if !ok {
 			return entity.ErrIncidentInvalidTransition
 		}
-		if err := s.incidents.AppendEvent(ctx, timelineEvent(id, "reopened", "Reopened for investigation", actor.Label, now)); err != nil {
+		if err := s.appendTimeline(ctx, ws, id, entity.IncidentEventReopened, "Reopened for investigation", actor, now); err != nil {
 			return err
 		}
 		return s.audit.Create(ctx, s.event(actor, ws.ID, entity.ActionIncidentReopened, id))
@@ -563,7 +640,7 @@ func (s *srv) SetCustomFields(ctx context.Context, workspaceSlug, id string, fie
 		if !ok {
 			return entity.ErrIncidentNotFound
 		}
-		if err := s.incidents.AppendEvent(ctx, timelineEvent(id, "fields_changed", "Custom fields updated", actor.Label, now)); err != nil {
+		if err := s.appendTimeline(ctx, ws, id, entity.IncidentEventFieldsChanged, "Custom fields updated", actor, now); err != nil {
 			return err
 		}
 		return s.audit.Create(ctx, s.event(actor, ws.ID, entity.ActionIncidentUpdated, id))
@@ -651,7 +728,7 @@ func (s *srv) LinkAlert(ctx context.Context, workspaceSlug, id, alertID string) 
 		if err := s.incidents.LinkAlert(ctx, ws.ID, id, alert.ID); err != nil {
 			return err
 		}
-		if err := s.incidents.AppendEvent(ctx, timelineEvent(id, "alert_linked", fmt.Sprintf("Linked alert %q", alert.Title), actor.Label, now)); err != nil {
+		if err := s.appendTimeline(ctx, ws, id, entity.IncidentEventAlertLinked, fmt.Sprintf("Linked alert %q", alert.Title), actor, now); err != nil {
 			return err
 		}
 		return s.audit.Create(ctx, s.event(actor, ws.ID, entity.ActionIncidentUpdated, id))
@@ -672,7 +749,7 @@ func (s *srv) UnlinkAlert(ctx context.Context, workspaceSlug, id, alertID string
 		if err := s.incidents.UnlinkAlert(ctx, ws.ID, id, alertID); err != nil {
 			return err
 		}
-		if err := s.incidents.AppendEvent(ctx, timelineEvent(id, "alert_unlinked", "Unlinked an alert", actor.Label, now)); err != nil {
+		if err := s.appendTimeline(ctx, ws, id, entity.IncidentEventAlertUnlinked, "Unlinked an alert", actor, now); err != nil {
 			return err
 		}
 		return s.audit.Create(ctx, s.event(actor, ws.ID, entity.ActionIncidentUpdated, id))
@@ -706,7 +783,7 @@ func (s *srv) Relate(ctx context.Context, workspaceSlug, id, relatedID string, k
 		if _, err := s.incidents.Relate(ctx, ws.ID, id, related.ID, kind); err != nil {
 			return err
 		}
-		if err := s.incidents.AppendEvent(ctx, timelineEvent(id, "related", fmt.Sprintf("Marked %s INC-%d", relationVerb(kind), related.Number), actor.Label, now)); err != nil {
+		if err := s.appendTimeline(ctx, ws, id, entity.IncidentEventRelated, fmt.Sprintf("Marked %s INC-%d", relationVerb(kind), related.Number), actor, now); err != nil {
 			return err
 		}
 		return s.audit.Create(ctx, s.event(actor, ws.ID, entity.ActionIncidentUpdated, id))
@@ -733,8 +810,12 @@ func (s *srv) Unrelate(ctx context.Context, workspaceSlug, id, relationID string
 	if err != nil {
 		return entity.Incident{}, err
 	}
+	now := time.Now().UTC()
 	err = s.tx.WithTx(ctx, func(ctx context.Context) error {
 		if err := s.incidents.Unrelate(ctx, ws.ID, id, relationID); err != nil {
+			return err
+		}
+		if err := s.appendTimeline(ctx, ws, id, entity.IncidentEventUnrelated, "Removed a related incident", actor, now); err != nil {
 			return err
 		}
 		return s.audit.Create(ctx, s.event(actor, ws.ID, entity.ActionIncidentUpdated, id))
@@ -771,7 +852,7 @@ func (s *srv) AddFollowup(ctx context.Context, workspaceSlug, id string, in enti
 		}); err != nil {
 			return err
 		}
-		if err := s.incidents.AppendEvent(ctx, timelineEvent(id, "followup_added", fmt.Sprintf("Added follow-up: %s", in.Title), actor.Label, now)); err != nil {
+		if err := s.appendTimeline(ctx, ws, id, entity.IncidentEventFollowupAdded, fmt.Sprintf("Added follow-up: %s", in.Title), actor, now); err != nil {
 			return err
 		}
 		return s.audit.Create(ctx, s.event(actor, ws.ID, entity.ActionIncidentUpdated, id))
@@ -783,14 +864,24 @@ func (s *srv) AddFollowup(ctx context.Context, workspaceSlug, id string, in enti
 }
 
 func (s *srv) ToggleFollowup(ctx context.Context, workspaceSlug, id, followupID string, done bool) (entity.Incident, error) {
-	_, ws, err := s.authorize(ctx, workspaceSlug, entity.PolicyActionWrite, entity.PolicyObjectIncidents)
+	actor, ws, err := s.authorize(ctx, workspaceSlug, entity.PolicyActionWrite, entity.PolicyObjectIncidents)
 	if err != nil {
 		return entity.Incident{}, err
 	}
 	now := time.Now().UTC()
 	err = s.tx.WithTx(ctx, func(ctx context.Context) error {
-		_, err := s.incidents.SetFollowupDone(ctx, ws.ID, followupID, done, now)
-		return err
+		followup, err := s.incidents.SetFollowupDone(ctx, ws.ID, followupID, done, now)
+		if err != nil {
+			return err
+		}
+		text := fmt.Sprintf("Reopened follow-up: %s", followup.Title)
+		if done {
+			text = fmt.Sprintf("Completed follow-up: %s", followup.Title)
+		}
+		if err := s.appendTimeline(ctx, ws, id, entity.IncidentEventFollowupDone, text, actor, now); err != nil {
+			return err
+		}
+		return s.audit.Create(ctx, s.event(actor, ws.ID, entity.ActionIncidentUpdated, id))
 	})
 	if err != nil {
 		return entity.Incident{}, err

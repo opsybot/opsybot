@@ -166,12 +166,25 @@ type IncidentFollowup struct {
 }
 
 type IncidentEvent struct {
-	ID         string
-	IncidentID string
-	At         time.Time
-	Kind       string
-	Text       string
-	Actor      string
+	ID             string
+	IncidentID     string
+	WorkspaceID    string
+	At             time.Time
+	Kind           IncidentEventKind
+	Category       IncidentEventCategory
+	Source         IncidentEventSource
+	Text           string
+	Actor          string
+	ActorUserID    string
+	Retroactive    bool
+	EditedAt       time.Time
+	EditedBy       string
+	IdempotencyKey string
+	Attachments    []IncidentEventAttachment
+	AlertID        string
+	AlertTitle     string
+	AlertKind      AlertEventKind
+	Result         string
 }
 
 type IncidentSeverity struct {

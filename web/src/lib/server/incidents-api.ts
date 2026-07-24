@@ -8,9 +8,11 @@ import type {
 	Incident,
 	IncidentStage,
 	LinkedAlert,
-	RelationKind
+	RelationKind,
+	TimelineEntry,
+	TimelineRevision
 } from '$lib/incidents';
-import { apiClient } from './api';
+import { apiClient, apiFetch } from './api';
 
 type Schemas = components['schemas'];
 type IncidentDto = Schemas['Incident'];
@@ -55,9 +57,31 @@ function alertSeverity(sev: string): { code: string; tone: Tone } {
 	return ALERT_SEVERITY[sev] ?? { code: sev.toUpperCase(), tone: 'neutral' };
 }
 
-function eventType(kind: string): EntryType {
-	if (kind === 'alert_linked' || kind === 'alert_unlinked' || kind === 'related') return 'action';
-	return 'status';
+function toTimelineEntry(e: Schemas['IncidentEvent']): TimelineEntry {
+	return {
+		id: e.id,
+		type: e.category as EntryType,
+		at: e.at,
+		actor: e.alertId ? (e.alertTitle ?? 'Linked alert') : (e.actor ?? 'Opsybot'),
+		text: e.text,
+		editable: e.kind === 'note' && !e.alertId,
+		attachments: (e.attachments ?? []).map((a) => ({
+			id: a.id,
+			entryId: a.entryId,
+			kind: a.kind,
+			label: a.label,
+			url: a.url,
+			body: a.body,
+			sizeBytes: a.sizeBytes
+		})),
+		ai: !e.actor && !e.alertId,
+		retro: e.retroactive,
+		edited: !!e.editedAt,
+		editedAt: e.editedAt,
+		alertId: e.alertId,
+		alertTitle: e.alertTitle,
+		result: e.result
+	};
 }
 
 function toCustomFields(
@@ -112,13 +136,7 @@ function toIncident(
 				status: a.status as LinkedAlert['status']
 			};
 		}),
-		timeline: (dto.timeline ?? []).map((e) => ({
-			id: e.id,
-			type: eventType(e.kind),
-			at: e.at,
-			actor: e.actor ?? 'system',
-			text: e.text
-		})),
+		timeline: (dto.timeline ?? []).map(toTimelineEntry),
 		statusPage: { domain: '', stage: 'none', title: '', updates: [] },
 		postmortem: 'not-started'
 	};
@@ -463,6 +481,164 @@ export async function toggleFollowUp(
 		}
 	);
 	return error ? { error: error.detail ?? 'Could not update the follow-up.' } : {};
+}
+
+export async function listTimeline(
+	cookies: Cookies,
+	workspace: string,
+	incidentId: string,
+	options: { category?: EntryType[]; cursor?: string; limit?: number } = {}
+): Promise<{ entries: TimelineEntry[]; nextCursor: string }> {
+	const { data } = await apiClient(cookies).GET(
+		'/workspaces/{workspaceId}/incidents/{incidentId}/timeline',
+		{
+			params: {
+				path: { workspaceId: workspace, incidentId },
+				query: {
+					category: options.category?.length ? options.category : undefined,
+					cursor: options.cursor || undefined,
+					limit: options.limit
+				}
+			}
+		}
+	);
+	return {
+		entries: (data?.entries ?? []).map(toTimelineEntry),
+		nextCursor: data?.nextCursor ?? ''
+	};
+}
+
+export async function addTimelineEntry(
+	cookies: Cookies,
+	workspace: string,
+	incidentId: string,
+	entry: { text: string; category: EntryType; at?: string; idempotencyKey?: string }
+): Promise<{ error?: string }> {
+	const { error } = await apiClient(cookies).POST(
+		'/workspaces/{workspaceId}/incidents/{incidentId}/timeline',
+		{
+			params: { path: { workspaceId: workspace, incidentId } },
+			body: {
+				text: entry.text,
+				category: entry.category,
+				at: entry.at,
+				idempotencyKey: entry.idempotencyKey
+			}
+		}
+	);
+	return error ? { error: error.detail ?? 'Could not add the entry.' } : {};
+}
+
+export async function editTimelineEntry(
+	cookies: Cookies,
+	workspace: string,
+	incidentId: string,
+	entryId: string,
+	entry: { text: string; category: EntryType }
+): Promise<{ error?: string }> {
+	const { error } = await apiClient(cookies).PATCH(
+		'/workspaces/{workspaceId}/incidents/{incidentId}/timeline/{entryId}',
+		{
+			params: { path: { workspaceId: workspace, incidentId, entryId } },
+			body: { text: entry.text, category: entry.category }
+		}
+	);
+	return error ? { error: error.detail ?? 'Could not save the entry.' } : {};
+}
+
+export async function listEntryRevisions(
+	cookies: Cookies,
+	workspace: string,
+	incidentId: string,
+	entryId: string
+): Promise<TimelineRevision[]> {
+	const { data } = await apiClient(cookies).GET(
+		'/workspaces/{workspaceId}/incidents/{incidentId}/timeline/{entryId}/revisions',
+		{ params: { path: { workspaceId: workspace, incidentId, entryId } } }
+	);
+	return (data?.revisions ?? []).map((r) => ({
+		id: r.id,
+		at: r.at,
+		editor: r.editorLabel ?? '',
+		text: r.text,
+		type: r.category as EntryType
+	}));
+}
+
+export async function addAttachment(
+	cookies: Cookies,
+	workspace: string,
+	incidentId: string,
+	entryId: string,
+	attachment: { kind: 'log' | 'link'; label: string; url?: string; body?: string }
+): Promise<{ error?: string }> {
+	const { error } = await apiClient(cookies).POST(
+		'/workspaces/{workspaceId}/incidents/{incidentId}/timeline/{entryId}/attachments',
+		{
+			params: { path: { workspaceId: workspace, incidentId, entryId } },
+			body: attachment
+		}
+	);
+	return error ? { error: error.detail ?? 'Could not attach the evidence.' } : {};
+}
+
+export async function uploadImageAttachment(
+	cookies: Cookies,
+	workspace: string,
+	incidentId: string,
+	entryId: string,
+	label: string,
+	file: File
+): Promise<{ error?: string }> {
+	const form = new FormData();
+	form.set('label', label);
+	form.set('file', file);
+	const response = await apiFetch(
+		cookies,
+		`/workspaces/${encodeURIComponent(workspace)}/incidents/${encodeURIComponent(incidentId)}/timeline/${encodeURIComponent(entryId)}/attachments`,
+		{ method: 'POST', body: form }
+	);
+	if (response.ok) return {};
+	const problem = await response.json().catch(() => null);
+	return { error: problem?.detail ?? 'Could not upload the image.' };
+}
+
+export function openAttachmentContent(
+	cookies: Cookies,
+	workspace: string,
+	incidentId: string,
+	attachmentId: string
+) {
+	return apiFetch(
+		cookies,
+		`/workspaces/${encodeURIComponent(workspace)}/incidents/${encodeURIComponent(incidentId)}/attachments/${encodeURIComponent(attachmentId)}/content`
+	);
+}
+
+export async function removeAttachment(
+	cookies: Cookies,
+	workspace: string,
+	incidentId: string,
+	attachmentId: string
+): Promise<{ error?: string }> {
+	const { error } = await apiClient(cookies).DELETE(
+		'/workspaces/{workspaceId}/incidents/{incidentId}/attachments/{attachmentId}',
+		{ params: { path: { workspaceId: workspace, incidentId, attachmentId } } }
+	);
+	return error ? { error: error.detail ?? 'Could not remove the attachment.' } : {};
+}
+
+export async function exportTimeline(
+	cookies: Cookies,
+	workspace: string,
+	incidentId: string
+): Promise<{ json: string; text: string } | { error: string }> {
+	const { data, error } = await apiClient(cookies).GET(
+		'/workspaces/{workspaceId}/incidents/{incidentId}/timeline/export',
+		{ params: { path: { workspaceId: workspace, incidentId } } }
+	);
+	if (error || !data) return { error: error?.detail ?? 'Could not export the timeline.' };
+	return { json: JSON.stringify(data, null, 2), text: data.text };
 }
 
 export type SeverityConfig = { id: string; def: string; label: string; tone: Tone; position: number };

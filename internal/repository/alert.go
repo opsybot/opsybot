@@ -24,6 +24,7 @@ type Alert interface {
 	AppendEvent(ctx context.Context, alertID string, event entity.AlertEvent) error
 	ReplaceLinks(ctx context.Context, alertID string, links []entity.AlertLink) error
 	ListEvents(ctx context.Context, alertID string, limit int) ([]entity.AlertEvent, error)
+	ListEventsForAlerts(ctx context.Context, alertIDs []string, kinds []entity.AlertEventKind, after entity.TimelineCursor, limit int) ([]entity.AlertEvent, error)
 	ListLinks(ctx context.Context, alertID string) ([]entity.AlertLink, error)
 	UpsertGroupParent(ctx context.Context, in entity.AlertUpsert, groupKey string) (entity.Alert, entity.IngestOutcome, error)
 	AttachToParent(ctx context.Context, childID, parentID string) error

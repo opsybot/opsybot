@@ -17,6 +17,7 @@ var Set = wire.NewSet(
 	NewCron,
 	NewWebhook,
 	NewNtfy,
+	NewS3,
 	NewSlack,
 	NewDiscord,
 	NewTelegram,

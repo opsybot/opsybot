@@ -57,15 +57,41 @@ export const ENTRY_TYPES: { id: EntryType; label: string }[] = [
 	{ id: 'decision', label: 'Decision' }
 ];
 
+export type AttachmentKind = 'image' | 'log' | 'link';
+
+export type Attachment = {
+	id: string;
+	entryId: string;
+	kind: AttachmentKind;
+	label: string;
+	url?: string;
+	body?: string;
+	sizeBytes?: number;
+};
+
 export type TimelineEntry = {
 	id: string;
 	type: EntryType;
 	at: string;
 	actor: string;
 	text: string;
+	editable?: boolean;
+	attachments?: Attachment[];
 	ai?: boolean;
 	retro?: boolean;
 	edited?: boolean;
+	editedAt?: string;
+	alertId?: string;
+	alertTitle?: string;
+	result?: string;
+};
+
+export type TimelineRevision = {
+	id: string;
+	at: string;
+	editor: string;
+	text: string;
+	type: EntryType;
 };
 
 export type LinkedAlert = {

@@ -160,86 +160,98 @@ var UserWhere = struct {
 
 // UserRels is where relationship names are stored.
 var UserRels = struct {
-	AlertActionTokens              string
-	CreatedByUserAlertSilences     string
-	AckedByUserAlerts              string
-	CreatedByAPIKeys               string
-	OwnerUserAPIKeys               string
-	ActorUserAuditEvents           string
-	ChannelVerifications           string
-	ConnectedByChatConnections     string
-	ChatIdentities                 string
-	OwnerUserIncidentFollowups     string
-	DeclaredByIncidents            string
-	LeadUserIncidents              string
-	InvitedByInvites               string
-	Invites                        string
-	NotificationAttempts           string
-	NotificationRuns               string
-	PasswordResetTokens            string
-	CreatedByUserScheduleOverrides string
-	Sessions                       string
-	UserChannels                   string
-	UserIdentities                 string
-	UserNotificationRules          string
-	UserRecoveryCodes              string
-	WorkspaceMembers               string
-	CreatedByWorkspaces            string
+	AlertActionTokens                 string
+	CreatedByUserAlertSilences        string
+	AckedByUserAlerts                 string
+	CreatedByAPIKeys                  string
+	OwnerUserAPIKeys                  string
+	ActorUserAuditEvents              string
+	ChannelVerifications              string
+	ConnectedByChatConnections        string
+	ChatIdentities                    string
+	CreatedByIncidentEventAttachments string
+	EditorUserIncidentEventRevisions  string
+	ActorUserIncidentEvents           string
+	EditedByIncidentEvents            string
+	OwnerUserIncidentFollowups        string
+	DeclaredByIncidents               string
+	LeadUserIncidents                 string
+	InvitedByInvites                  string
+	Invites                           string
+	NotificationAttempts              string
+	NotificationRuns                  string
+	PasswordResetTokens               string
+	CreatedByUserScheduleOverrides    string
+	Sessions                          string
+	UserChannels                      string
+	UserIdentities                    string
+	UserNotificationRules             string
+	UserRecoveryCodes                 string
+	WorkspaceMembers                  string
+	CreatedByWorkspaces               string
 }{
-	AlertActionTokens:              "AlertActionTokens",
-	CreatedByUserAlertSilences:     "CreatedByUserAlertSilences",
-	AckedByUserAlerts:              "AckedByUserAlerts",
-	CreatedByAPIKeys:               "CreatedByAPIKeys",
-	OwnerUserAPIKeys:               "OwnerUserAPIKeys",
-	ActorUserAuditEvents:           "ActorUserAuditEvents",
-	ChannelVerifications:           "ChannelVerifications",
-	ConnectedByChatConnections:     "ConnectedByChatConnections",
-	ChatIdentities:                 "ChatIdentities",
-	OwnerUserIncidentFollowups:     "OwnerUserIncidentFollowups",
-	DeclaredByIncidents:            "DeclaredByIncidents",
-	LeadUserIncidents:              "LeadUserIncidents",
-	InvitedByInvites:               "InvitedByInvites",
-	Invites:                        "Invites",
-	NotificationAttempts:           "NotificationAttempts",
-	NotificationRuns:               "NotificationRuns",
-	PasswordResetTokens:            "PasswordResetTokens",
-	CreatedByUserScheduleOverrides: "CreatedByUserScheduleOverrides",
-	Sessions:                       "Sessions",
-	UserChannels:                   "UserChannels",
-	UserIdentities:                 "UserIdentities",
-	UserNotificationRules:          "UserNotificationRules",
-	UserRecoveryCodes:              "UserRecoveryCodes",
-	WorkspaceMembers:               "WorkspaceMembers",
-	CreatedByWorkspaces:            "CreatedByWorkspaces",
+	AlertActionTokens:                 "AlertActionTokens",
+	CreatedByUserAlertSilences:        "CreatedByUserAlertSilences",
+	AckedByUserAlerts:                 "AckedByUserAlerts",
+	CreatedByAPIKeys:                  "CreatedByAPIKeys",
+	OwnerUserAPIKeys:                  "OwnerUserAPIKeys",
+	ActorUserAuditEvents:              "ActorUserAuditEvents",
+	ChannelVerifications:              "ChannelVerifications",
+	ConnectedByChatConnections:        "ConnectedByChatConnections",
+	ChatIdentities:                    "ChatIdentities",
+	CreatedByIncidentEventAttachments: "CreatedByIncidentEventAttachments",
+	EditorUserIncidentEventRevisions:  "EditorUserIncidentEventRevisions",
+	ActorUserIncidentEvents:           "ActorUserIncidentEvents",
+	EditedByIncidentEvents:            "EditedByIncidentEvents",
+	OwnerUserIncidentFollowups:        "OwnerUserIncidentFollowups",
+	DeclaredByIncidents:               "DeclaredByIncidents",
+	LeadUserIncidents:                 "LeadUserIncidents",
+	InvitedByInvites:                  "InvitedByInvites",
+	Invites:                           "Invites",
+	NotificationAttempts:              "NotificationAttempts",
+	NotificationRuns:                  "NotificationRuns",
+	PasswordResetTokens:               "PasswordResetTokens",
+	CreatedByUserScheduleOverrides:    "CreatedByUserScheduleOverrides",
+	Sessions:                          "Sessions",
+	UserChannels:                      "UserChannels",
+	UserIdentities:                    "UserIdentities",
+	UserNotificationRules:             "UserNotificationRules",
+	UserRecoveryCodes:                 "UserRecoveryCodes",
+	WorkspaceMembers:                  "WorkspaceMembers",
+	CreatedByWorkspaces:               "CreatedByWorkspaces",
 }
 
 // userR is where relationships are stored.
 type userR struct {
-	AlertActionTokens              AlertActionTokenSlice     `boil:"AlertActionTokens" json:"AlertActionTokens" toml:"AlertActionTokens" yaml:"AlertActionTokens"`
-	CreatedByUserAlertSilences     AlertSilenceSlice         `boil:"CreatedByUserAlertSilences" json:"CreatedByUserAlertSilences" toml:"CreatedByUserAlertSilences" yaml:"CreatedByUserAlertSilences"`
-	AckedByUserAlerts              AlertSlice                `boil:"AckedByUserAlerts" json:"AckedByUserAlerts" toml:"AckedByUserAlerts" yaml:"AckedByUserAlerts"`
-	CreatedByAPIKeys               APIKeySlice               `boil:"CreatedByAPIKeys" json:"CreatedByAPIKeys" toml:"CreatedByAPIKeys" yaml:"CreatedByAPIKeys"`
-	OwnerUserAPIKeys               APIKeySlice               `boil:"OwnerUserAPIKeys" json:"OwnerUserAPIKeys" toml:"OwnerUserAPIKeys" yaml:"OwnerUserAPIKeys"`
-	ActorUserAuditEvents           AuditEventSlice           `boil:"ActorUserAuditEvents" json:"ActorUserAuditEvents" toml:"ActorUserAuditEvents" yaml:"ActorUserAuditEvents"`
-	ChannelVerifications           ChannelVerificationSlice  `boil:"ChannelVerifications" json:"ChannelVerifications" toml:"ChannelVerifications" yaml:"ChannelVerifications"`
-	ConnectedByChatConnections     ChatConnectionSlice       `boil:"ConnectedByChatConnections" json:"ConnectedByChatConnections" toml:"ConnectedByChatConnections" yaml:"ConnectedByChatConnections"`
-	ChatIdentities                 ChatIdentitySlice         `boil:"ChatIdentities" json:"ChatIdentities" toml:"ChatIdentities" yaml:"ChatIdentities"`
-	OwnerUserIncidentFollowups     IncidentFollowupSlice     `boil:"OwnerUserIncidentFollowups" json:"OwnerUserIncidentFollowups" toml:"OwnerUserIncidentFollowups" yaml:"OwnerUserIncidentFollowups"`
-	DeclaredByIncidents            IncidentSlice             `boil:"DeclaredByIncidents" json:"DeclaredByIncidents" toml:"DeclaredByIncidents" yaml:"DeclaredByIncidents"`
-	LeadUserIncidents              IncidentSlice             `boil:"LeadUserIncidents" json:"LeadUserIncidents" toml:"LeadUserIncidents" yaml:"LeadUserIncidents"`
-	InvitedByInvites               InviteSlice               `boil:"InvitedByInvites" json:"InvitedByInvites" toml:"InvitedByInvites" yaml:"InvitedByInvites"`
-	Invites                        InviteSlice               `boil:"Invites" json:"Invites" toml:"Invites" yaml:"Invites"`
-	NotificationAttempts           NotificationAttemptSlice  `boil:"NotificationAttempts" json:"NotificationAttempts" toml:"NotificationAttempts" yaml:"NotificationAttempts"`
-	NotificationRuns               NotificationRunSlice      `boil:"NotificationRuns" json:"NotificationRuns" toml:"NotificationRuns" yaml:"NotificationRuns"`
-	PasswordResetTokens            PasswordResetTokenSlice   `boil:"PasswordResetTokens" json:"PasswordResetTokens" toml:"PasswordResetTokens" yaml:"PasswordResetTokens"`
-	CreatedByUserScheduleOverrides ScheduleOverrideSlice     `boil:"CreatedByUserScheduleOverrides" json:"CreatedByUserScheduleOverrides" toml:"CreatedByUserScheduleOverrides" yaml:"CreatedByUserScheduleOverrides"`
-	Sessions                       SessionSlice              `boil:"Sessions" json:"Sessions" toml:"Sessions" yaml:"Sessions"`
-	UserChannels                   UserChannelSlice          `boil:"UserChannels" json:"UserChannels" toml:"UserChannels" yaml:"UserChannels"`
-	UserIdentities                 UserIdentitySlice         `boil:"UserIdentities" json:"UserIdentities" toml:"UserIdentities" yaml:"UserIdentities"`
-	UserNotificationRules          UserNotificationRuleSlice `boil:"UserNotificationRules" json:"UserNotificationRules" toml:"UserNotificationRules" yaml:"UserNotificationRules"`
-	UserRecoveryCodes              UserRecoveryCodeSlice     `boil:"UserRecoveryCodes" json:"UserRecoveryCodes" toml:"UserRecoveryCodes" yaml:"UserRecoveryCodes"`
-	WorkspaceMembers               WorkspaceMemberSlice      `boil:"WorkspaceMembers" json:"WorkspaceMembers" toml:"WorkspaceMembers" yaml:"WorkspaceMembers"`
-	CreatedByWorkspaces            WorkspaceSlice            `boil:"CreatedByWorkspaces" json:"CreatedByWorkspaces" toml:"CreatedByWorkspaces" yaml:"CreatedByWorkspaces"`
+	AlertActionTokens                 AlertActionTokenSlice        `boil:"AlertActionTokens" json:"AlertActionTokens" toml:"AlertActionTokens" yaml:"AlertActionTokens"`
+	CreatedByUserAlertSilences        AlertSilenceSlice            `boil:"CreatedByUserAlertSilences" json:"CreatedByUserAlertSilences" toml:"CreatedByUserAlertSilences" yaml:"CreatedByUserAlertSilences"`
+	AckedByUserAlerts                 AlertSlice                   `boil:"AckedByUserAlerts" json:"AckedByUserAlerts" toml:"AckedByUserAlerts" yaml:"AckedByUserAlerts"`
+	CreatedByAPIKeys                  APIKeySlice                  `boil:"CreatedByAPIKeys" json:"CreatedByAPIKeys" toml:"CreatedByAPIKeys" yaml:"CreatedByAPIKeys"`
+	OwnerUserAPIKeys                  APIKeySlice                  `boil:"OwnerUserAPIKeys" json:"OwnerUserAPIKeys" toml:"OwnerUserAPIKeys" yaml:"OwnerUserAPIKeys"`
+	ActorUserAuditEvents              AuditEventSlice              `boil:"ActorUserAuditEvents" json:"ActorUserAuditEvents" toml:"ActorUserAuditEvents" yaml:"ActorUserAuditEvents"`
+	ChannelVerifications              ChannelVerificationSlice     `boil:"ChannelVerifications" json:"ChannelVerifications" toml:"ChannelVerifications" yaml:"ChannelVerifications"`
+	ConnectedByChatConnections        ChatConnectionSlice          `boil:"ConnectedByChatConnections" json:"ConnectedByChatConnections" toml:"ConnectedByChatConnections" yaml:"ConnectedByChatConnections"`
+	ChatIdentities                    ChatIdentitySlice            `boil:"ChatIdentities" json:"ChatIdentities" toml:"ChatIdentities" yaml:"ChatIdentities"`
+	CreatedByIncidentEventAttachments IncidentEventAttachmentSlice `boil:"CreatedByIncidentEventAttachments" json:"CreatedByIncidentEventAttachments" toml:"CreatedByIncidentEventAttachments" yaml:"CreatedByIncidentEventAttachments"`
+	EditorUserIncidentEventRevisions  IncidentEventRevisionSlice   `boil:"EditorUserIncidentEventRevisions" json:"EditorUserIncidentEventRevisions" toml:"EditorUserIncidentEventRevisions" yaml:"EditorUserIncidentEventRevisions"`
+	ActorUserIncidentEvents           IncidentEventSlice           `boil:"ActorUserIncidentEvents" json:"ActorUserIncidentEvents" toml:"ActorUserIncidentEvents" yaml:"ActorUserIncidentEvents"`
+	EditedByIncidentEvents            IncidentEventSlice           `boil:"EditedByIncidentEvents" json:"EditedByIncidentEvents" toml:"EditedByIncidentEvents" yaml:"EditedByIncidentEvents"`
+	OwnerUserIncidentFollowups        IncidentFollowupSlice        `boil:"OwnerUserIncidentFollowups" json:"OwnerUserIncidentFollowups" toml:"OwnerUserIncidentFollowups" yaml:"OwnerUserIncidentFollowups"`
+	DeclaredByIncidents               IncidentSlice                `boil:"DeclaredByIncidents" json:"DeclaredByIncidents" toml:"DeclaredByIncidents" yaml:"DeclaredByIncidents"`
+	LeadUserIncidents                 IncidentSlice                `boil:"LeadUserIncidents" json:"LeadUserIncidents" toml:"LeadUserIncidents" yaml:"LeadUserIncidents"`
+	InvitedByInvites                  InviteSlice                  `boil:"InvitedByInvites" json:"InvitedByInvites" toml:"InvitedByInvites" yaml:"InvitedByInvites"`
+	Invites                           InviteSlice                  `boil:"Invites" json:"Invites" toml:"Invites" yaml:"Invites"`
+	NotificationAttempts              NotificationAttemptSlice     `boil:"NotificationAttempts" json:"NotificationAttempts" toml:"NotificationAttempts" yaml:"NotificationAttempts"`
+	NotificationRuns                  NotificationRunSlice         `boil:"NotificationRuns" json:"NotificationRuns" toml:"NotificationRuns" yaml:"NotificationRuns"`
+	PasswordResetTokens               PasswordResetTokenSlice      `boil:"PasswordResetTokens" json:"PasswordResetTokens" toml:"PasswordResetTokens" yaml:"PasswordResetTokens"`
+	CreatedByUserScheduleOverrides    ScheduleOverrideSlice        `boil:"CreatedByUserScheduleOverrides" json:"CreatedByUserScheduleOverrides" toml:"CreatedByUserScheduleOverrides" yaml:"CreatedByUserScheduleOverrides"`
+	Sessions                          SessionSlice                 `boil:"Sessions" json:"Sessions" toml:"Sessions" yaml:"Sessions"`
+	UserChannels                      UserChannelSlice             `boil:"UserChannels" json:"UserChannels" toml:"UserChannels" yaml:"UserChannels"`
+	UserIdentities                    UserIdentitySlice            `boil:"UserIdentities" json:"UserIdentities" toml:"UserIdentities" yaml:"UserIdentities"`
+	UserNotificationRules             UserNotificationRuleSlice    `boil:"UserNotificationRules" json:"UserNotificationRules" toml:"UserNotificationRules" yaml:"UserNotificationRules"`
+	UserRecoveryCodes                 UserRecoveryCodeSlice        `boil:"UserRecoveryCodes" json:"UserRecoveryCodes" toml:"UserRecoveryCodes" yaml:"UserRecoveryCodes"`
+	WorkspaceMembers                  WorkspaceMemberSlice         `boil:"WorkspaceMembers" json:"WorkspaceMembers" toml:"WorkspaceMembers" yaml:"WorkspaceMembers"`
+	CreatedByWorkspaces               WorkspaceSlice               `boil:"CreatedByWorkspaces" json:"CreatedByWorkspaces" toml:"CreatedByWorkspaces" yaml:"CreatedByWorkspaces"`
 }
 
 // NewStruct creates a new relationship struct
@@ -389,6 +401,70 @@ func (r *userR) GetChatIdentities() ChatIdentitySlice {
 	}
 
 	return r.ChatIdentities
+}
+
+func (o *User) GetCreatedByIncidentEventAttachments() IncidentEventAttachmentSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetCreatedByIncidentEventAttachments()
+}
+
+func (r *userR) GetCreatedByIncidentEventAttachments() IncidentEventAttachmentSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.CreatedByIncidentEventAttachments
+}
+
+func (o *User) GetEditorUserIncidentEventRevisions() IncidentEventRevisionSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetEditorUserIncidentEventRevisions()
+}
+
+func (r *userR) GetEditorUserIncidentEventRevisions() IncidentEventRevisionSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.EditorUserIncidentEventRevisions
+}
+
+func (o *User) GetActorUserIncidentEvents() IncidentEventSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetActorUserIncidentEvents()
+}
+
+func (r *userR) GetActorUserIncidentEvents() IncidentEventSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.ActorUserIncidentEvents
+}
+
+func (o *User) GetEditedByIncidentEvents() IncidentEventSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetEditedByIncidentEvents()
+}
+
+func (r *userR) GetEditedByIncidentEvents() IncidentEventSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.EditedByIncidentEvents
 }
 
 func (o *User) GetOwnerUserIncidentFollowups() IncidentFollowupSlice {
@@ -1087,6 +1163,62 @@ func (o *User) ChatIdentities(mods ...qm.QueryMod) chatIdentityQuery {
 	)
 
 	return ChatIdentities(queryMods...)
+}
+
+// CreatedByIncidentEventAttachments retrieves all the incident_event_attachment's IncidentEventAttachments with an executor via created_by column.
+func (o *User) CreatedByIncidentEventAttachments(mods ...qm.QueryMod) incidentEventAttachmentQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"incident_event_attachments\".\"created_by\"=?", o.ID),
+	)
+
+	return IncidentEventAttachments(queryMods...)
+}
+
+// EditorUserIncidentEventRevisions retrieves all the incident_event_revision's IncidentEventRevisions with an executor via editor_user_id column.
+func (o *User) EditorUserIncidentEventRevisions(mods ...qm.QueryMod) incidentEventRevisionQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"incident_event_revisions\".\"editor_user_id\"=?", o.ID),
+	)
+
+	return IncidentEventRevisions(queryMods...)
+}
+
+// ActorUserIncidentEvents retrieves all the incident_event's IncidentEvents with an executor via actor_user_id column.
+func (o *User) ActorUserIncidentEvents(mods ...qm.QueryMod) incidentEventQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"incident_events\".\"actor_user_id\"=?", o.ID),
+	)
+
+	return IncidentEvents(queryMods...)
+}
+
+// EditedByIncidentEvents retrieves all the incident_event's IncidentEvents with an executor via edited_by column.
+func (o *User) EditedByIncidentEvents(mods ...qm.QueryMod) incidentEventQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"incident_events\".\"edited_by\"=?", o.ID),
+	)
+
+	return IncidentEvents(queryMods...)
 }
 
 // OwnerUserIncidentFollowups retrieves all the incident_followup's IncidentFollowups with an executor via owner_user_id column.
@@ -2322,6 +2454,458 @@ func (userL) LoadChatIdentities(ctx context.Context, e boil.ContextExecutor, sin
 					foreign.R = &chatIdentityR{}
 				}
 				foreign.R.User = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadCreatedByIncidentEventAttachments allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (userL) LoadCreatedByIncidentEventAttachments(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser any, mods queries.Applicator) error {
+	var slice []*User
+	var object *User
+
+	if singular {
+		var ok bool
+		object, ok = maybeUser.(*User)
+		if !ok {
+			object = new(User)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeUser))
+			}
+		}
+	} else {
+		s, ok := maybeUser.(*[]*User)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeUser))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &userR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`incident_event_attachments`),
+		qm.WhereIn(`incident_event_attachments.created_by in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load incident_event_attachments")
+	}
+
+	var resultSlice []*IncidentEventAttachment
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice incident_event_attachments")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on incident_event_attachments")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for incident_event_attachments")
+	}
+
+	if len(incidentEventAttachmentAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.CreatedByIncidentEventAttachments = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &incidentEventAttachmentR{}
+			}
+			foreign.R.CreatedByUser = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if queries.Equal(local.ID, foreign.CreatedBy) {
+				local.R.CreatedByIncidentEventAttachments = append(local.R.CreatedByIncidentEventAttachments, foreign)
+				if foreign.R == nil {
+					foreign.R = &incidentEventAttachmentR{}
+				}
+				foreign.R.CreatedByUser = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadEditorUserIncidentEventRevisions allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (userL) LoadEditorUserIncidentEventRevisions(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser any, mods queries.Applicator) error {
+	var slice []*User
+	var object *User
+
+	if singular {
+		var ok bool
+		object, ok = maybeUser.(*User)
+		if !ok {
+			object = new(User)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeUser))
+			}
+		}
+	} else {
+		s, ok := maybeUser.(*[]*User)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeUser))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &userR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`incident_event_revisions`),
+		qm.WhereIn(`incident_event_revisions.editor_user_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load incident_event_revisions")
+	}
+
+	var resultSlice []*IncidentEventRevision
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice incident_event_revisions")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on incident_event_revisions")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for incident_event_revisions")
+	}
+
+	if len(incidentEventRevisionAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.EditorUserIncidentEventRevisions = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &incidentEventRevisionR{}
+			}
+			foreign.R.EditorUser = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if queries.Equal(local.ID, foreign.EditorUserID) {
+				local.R.EditorUserIncidentEventRevisions = append(local.R.EditorUserIncidentEventRevisions, foreign)
+				if foreign.R == nil {
+					foreign.R = &incidentEventRevisionR{}
+				}
+				foreign.R.EditorUser = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadActorUserIncidentEvents allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (userL) LoadActorUserIncidentEvents(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser any, mods queries.Applicator) error {
+	var slice []*User
+	var object *User
+
+	if singular {
+		var ok bool
+		object, ok = maybeUser.(*User)
+		if !ok {
+			object = new(User)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeUser))
+			}
+		}
+	} else {
+		s, ok := maybeUser.(*[]*User)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeUser))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &userR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`incident_events`),
+		qm.WhereIn(`incident_events.actor_user_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load incident_events")
+	}
+
+	var resultSlice []*IncidentEvent
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice incident_events")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on incident_events")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for incident_events")
+	}
+
+	if len(incidentEventAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.ActorUserIncidentEvents = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &incidentEventR{}
+			}
+			foreign.R.ActorUser = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if queries.Equal(local.ID, foreign.ActorUserID) {
+				local.R.ActorUserIncidentEvents = append(local.R.ActorUserIncidentEvents, foreign)
+				if foreign.R == nil {
+					foreign.R = &incidentEventR{}
+				}
+				foreign.R.ActorUser = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadEditedByIncidentEvents allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (userL) LoadEditedByIncidentEvents(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUser any, mods queries.Applicator) error {
+	var slice []*User
+	var object *User
+
+	if singular {
+		var ok bool
+		object, ok = maybeUser.(*User)
+		if !ok {
+			object = new(User)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeUser))
+			}
+		}
+	} else {
+		s, ok := maybeUser.(*[]*User)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeUser)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeUser))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &userR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`incident_events`),
+		qm.WhereIn(`incident_events.edited_by in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load incident_events")
+	}
+
+	var resultSlice []*IncidentEvent
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice incident_events")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on incident_events")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for incident_events")
+	}
+
+	if len(incidentEventAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.EditedByIncidentEvents = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &incidentEventR{}
+			}
+			foreign.R.EditedByUser = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if queries.Equal(local.ID, foreign.EditedBy) {
+				local.R.EditedByIncidentEvents = append(local.R.EditedByIncidentEvents, foreign)
+				if foreign.R == nil {
+					foreign.R = &incidentEventR{}
+				}
+				foreign.R.EditedByUser = local
 				break
 			}
 		}
@@ -5056,6 +5640,514 @@ func (o *User) AddChatIdentities(ctx context.Context, exec boil.ContextExecutor,
 			rel.R.User = o
 		}
 	}
+	return nil
+}
+
+// AddCreatedByIncidentEventAttachments adds the given related objects to the existing relationships
+// of the user, optionally inserting them as new records.
+// Appends related to o.R.CreatedByIncidentEventAttachments.
+// Sets related.R.CreatedByUser appropriately.
+func (o *User) AddCreatedByIncidentEventAttachments(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*IncidentEventAttachment) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			queries.Assign(&rel.CreatedBy, o.ID)
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"incident_event_attachments\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"created_by"}),
+				strmangle.WhereClause("\"", "\"", 2, incidentEventAttachmentPrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			queries.Assign(&rel.CreatedBy, o.ID)
+		}
+	}
+
+	if o.R == nil {
+		o.R = &userR{
+			CreatedByIncidentEventAttachments: related,
+		}
+	} else {
+		o.R.CreatedByIncidentEventAttachments = append(o.R.CreatedByIncidentEventAttachments, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &incidentEventAttachmentR{
+				CreatedByUser: o,
+			}
+		} else {
+			rel.R.CreatedByUser = o
+		}
+	}
+	return nil
+}
+
+// SetCreatedByIncidentEventAttachments removes all previously related items of the
+// user replacing them completely with the passed
+// in related items, optionally inserting them as new records.
+// Sets o.R.CreatedByUser's CreatedByIncidentEventAttachments accordingly.
+// Replaces o.R.CreatedByIncidentEventAttachments with related.
+// Sets related.R.CreatedByUser's CreatedByIncidentEventAttachments accordingly.
+func (o *User) SetCreatedByIncidentEventAttachments(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*IncidentEventAttachment) error {
+	query := "update \"incident_event_attachments\" set \"created_by\" = null where \"created_by\" = $1"
+	values := []any{o.ID}
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, query)
+		fmt.Fprintln(writer, values)
+	}
+	_, err := exec.ExecContext(ctx, query, values...)
+	if err != nil {
+		return errors.Wrap(err, "failed to remove relationships before set")
+	}
+
+	if o.R != nil {
+		for _, rel := range o.R.CreatedByIncidentEventAttachments {
+			queries.SetScanner(&rel.CreatedBy, nil)
+			if rel.R == nil {
+				continue
+			}
+
+			rel.R.CreatedByUser = nil
+		}
+		o.R.CreatedByIncidentEventAttachments = nil
+	}
+
+	return o.AddCreatedByIncidentEventAttachments(ctx, exec, insert, related...)
+}
+
+// RemoveCreatedByIncidentEventAttachments relationships from objects passed in.
+// Removes related items from R.CreatedByIncidentEventAttachments (uses pointer comparison, removal does not keep order)
+// Sets related.R.CreatedByUser.
+func (o *User) RemoveCreatedByIncidentEventAttachments(ctx context.Context, exec boil.ContextExecutor, related ...*IncidentEventAttachment) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	for _, rel := range related {
+		queries.SetScanner(&rel.CreatedBy, nil)
+		if rel.R != nil {
+			rel.R.CreatedByUser = nil
+		}
+		if _, err = rel.Update(ctx, exec, boil.Whitelist("created_by")); err != nil {
+			return err
+		}
+	}
+	if o.R == nil {
+		return nil
+	}
+
+	for _, rel := range related {
+		for i, ri := range o.R.CreatedByIncidentEventAttachments {
+			if rel != ri {
+				continue
+			}
+
+			ln := len(o.R.CreatedByIncidentEventAttachments)
+			if ln > 1 && i < ln-1 {
+				o.R.CreatedByIncidentEventAttachments[i] = o.R.CreatedByIncidentEventAttachments[ln-1]
+			}
+			o.R.CreatedByIncidentEventAttachments = o.R.CreatedByIncidentEventAttachments[:ln-1]
+			break
+		}
+	}
+
+	return nil
+}
+
+// AddEditorUserIncidentEventRevisions adds the given related objects to the existing relationships
+// of the user, optionally inserting them as new records.
+// Appends related to o.R.EditorUserIncidentEventRevisions.
+// Sets related.R.EditorUser appropriately.
+func (o *User) AddEditorUserIncidentEventRevisions(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*IncidentEventRevision) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			queries.Assign(&rel.EditorUserID, o.ID)
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"incident_event_revisions\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"editor_user_id"}),
+				strmangle.WhereClause("\"", "\"", 2, incidentEventRevisionPrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			queries.Assign(&rel.EditorUserID, o.ID)
+		}
+	}
+
+	if o.R == nil {
+		o.R = &userR{
+			EditorUserIncidentEventRevisions: related,
+		}
+	} else {
+		o.R.EditorUserIncidentEventRevisions = append(o.R.EditorUserIncidentEventRevisions, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &incidentEventRevisionR{
+				EditorUser: o,
+			}
+		} else {
+			rel.R.EditorUser = o
+		}
+	}
+	return nil
+}
+
+// SetEditorUserIncidentEventRevisions removes all previously related items of the
+// user replacing them completely with the passed
+// in related items, optionally inserting them as new records.
+// Sets o.R.EditorUser's EditorUserIncidentEventRevisions accordingly.
+// Replaces o.R.EditorUserIncidentEventRevisions with related.
+// Sets related.R.EditorUser's EditorUserIncidentEventRevisions accordingly.
+func (o *User) SetEditorUserIncidentEventRevisions(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*IncidentEventRevision) error {
+	query := "update \"incident_event_revisions\" set \"editor_user_id\" = null where \"editor_user_id\" = $1"
+	values := []any{o.ID}
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, query)
+		fmt.Fprintln(writer, values)
+	}
+	_, err := exec.ExecContext(ctx, query, values...)
+	if err != nil {
+		return errors.Wrap(err, "failed to remove relationships before set")
+	}
+
+	if o.R != nil {
+		for _, rel := range o.R.EditorUserIncidentEventRevisions {
+			queries.SetScanner(&rel.EditorUserID, nil)
+			if rel.R == nil {
+				continue
+			}
+
+			rel.R.EditorUser = nil
+		}
+		o.R.EditorUserIncidentEventRevisions = nil
+	}
+
+	return o.AddEditorUserIncidentEventRevisions(ctx, exec, insert, related...)
+}
+
+// RemoveEditorUserIncidentEventRevisions relationships from objects passed in.
+// Removes related items from R.EditorUserIncidentEventRevisions (uses pointer comparison, removal does not keep order)
+// Sets related.R.EditorUser.
+func (o *User) RemoveEditorUserIncidentEventRevisions(ctx context.Context, exec boil.ContextExecutor, related ...*IncidentEventRevision) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	for _, rel := range related {
+		queries.SetScanner(&rel.EditorUserID, nil)
+		if rel.R != nil {
+			rel.R.EditorUser = nil
+		}
+		if _, err = rel.Update(ctx, exec, boil.Whitelist("editor_user_id")); err != nil {
+			return err
+		}
+	}
+	if o.R == nil {
+		return nil
+	}
+
+	for _, rel := range related {
+		for i, ri := range o.R.EditorUserIncidentEventRevisions {
+			if rel != ri {
+				continue
+			}
+
+			ln := len(o.R.EditorUserIncidentEventRevisions)
+			if ln > 1 && i < ln-1 {
+				o.R.EditorUserIncidentEventRevisions[i] = o.R.EditorUserIncidentEventRevisions[ln-1]
+			}
+			o.R.EditorUserIncidentEventRevisions = o.R.EditorUserIncidentEventRevisions[:ln-1]
+			break
+		}
+	}
+
+	return nil
+}
+
+// AddActorUserIncidentEvents adds the given related objects to the existing relationships
+// of the user, optionally inserting them as new records.
+// Appends related to o.R.ActorUserIncidentEvents.
+// Sets related.R.ActorUser appropriately.
+func (o *User) AddActorUserIncidentEvents(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*IncidentEvent) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			queries.Assign(&rel.ActorUserID, o.ID)
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"incident_events\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"actor_user_id"}),
+				strmangle.WhereClause("\"", "\"", 2, incidentEventPrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			queries.Assign(&rel.ActorUserID, o.ID)
+		}
+	}
+
+	if o.R == nil {
+		o.R = &userR{
+			ActorUserIncidentEvents: related,
+		}
+	} else {
+		o.R.ActorUserIncidentEvents = append(o.R.ActorUserIncidentEvents, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &incidentEventR{
+				ActorUser: o,
+			}
+		} else {
+			rel.R.ActorUser = o
+		}
+	}
+	return nil
+}
+
+// SetActorUserIncidentEvents removes all previously related items of the
+// user replacing them completely with the passed
+// in related items, optionally inserting them as new records.
+// Sets o.R.ActorUser's ActorUserIncidentEvents accordingly.
+// Replaces o.R.ActorUserIncidentEvents with related.
+// Sets related.R.ActorUser's ActorUserIncidentEvents accordingly.
+func (o *User) SetActorUserIncidentEvents(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*IncidentEvent) error {
+	query := "update \"incident_events\" set \"actor_user_id\" = null where \"actor_user_id\" = $1"
+	values := []any{o.ID}
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, query)
+		fmt.Fprintln(writer, values)
+	}
+	_, err := exec.ExecContext(ctx, query, values...)
+	if err != nil {
+		return errors.Wrap(err, "failed to remove relationships before set")
+	}
+
+	if o.R != nil {
+		for _, rel := range o.R.ActorUserIncidentEvents {
+			queries.SetScanner(&rel.ActorUserID, nil)
+			if rel.R == nil {
+				continue
+			}
+
+			rel.R.ActorUser = nil
+		}
+		o.R.ActorUserIncidentEvents = nil
+	}
+
+	return o.AddActorUserIncidentEvents(ctx, exec, insert, related...)
+}
+
+// RemoveActorUserIncidentEvents relationships from objects passed in.
+// Removes related items from R.ActorUserIncidentEvents (uses pointer comparison, removal does not keep order)
+// Sets related.R.ActorUser.
+func (o *User) RemoveActorUserIncidentEvents(ctx context.Context, exec boil.ContextExecutor, related ...*IncidentEvent) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	for _, rel := range related {
+		queries.SetScanner(&rel.ActorUserID, nil)
+		if rel.R != nil {
+			rel.R.ActorUser = nil
+		}
+		if _, err = rel.Update(ctx, exec, boil.Whitelist("actor_user_id")); err != nil {
+			return err
+		}
+	}
+	if o.R == nil {
+		return nil
+	}
+
+	for _, rel := range related {
+		for i, ri := range o.R.ActorUserIncidentEvents {
+			if rel != ri {
+				continue
+			}
+
+			ln := len(o.R.ActorUserIncidentEvents)
+			if ln > 1 && i < ln-1 {
+				o.R.ActorUserIncidentEvents[i] = o.R.ActorUserIncidentEvents[ln-1]
+			}
+			o.R.ActorUserIncidentEvents = o.R.ActorUserIncidentEvents[:ln-1]
+			break
+		}
+	}
+
+	return nil
+}
+
+// AddEditedByIncidentEvents adds the given related objects to the existing relationships
+// of the user, optionally inserting them as new records.
+// Appends related to o.R.EditedByIncidentEvents.
+// Sets related.R.EditedByUser appropriately.
+func (o *User) AddEditedByIncidentEvents(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*IncidentEvent) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			queries.Assign(&rel.EditedBy, o.ID)
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"incident_events\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"edited_by"}),
+				strmangle.WhereClause("\"", "\"", 2, incidentEventPrimaryKeyColumns),
+			)
+			values := []any{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			queries.Assign(&rel.EditedBy, o.ID)
+		}
+	}
+
+	if o.R == nil {
+		o.R = &userR{
+			EditedByIncidentEvents: related,
+		}
+	} else {
+		o.R.EditedByIncidentEvents = append(o.R.EditedByIncidentEvents, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &incidentEventR{
+				EditedByUser: o,
+			}
+		} else {
+			rel.R.EditedByUser = o
+		}
+	}
+	return nil
+}
+
+// SetEditedByIncidentEvents removes all previously related items of the
+// user replacing them completely with the passed
+// in related items, optionally inserting them as new records.
+// Sets o.R.EditedByUser's EditedByIncidentEvents accordingly.
+// Replaces o.R.EditedByIncidentEvents with related.
+// Sets related.R.EditedByUser's EditedByIncidentEvents accordingly.
+func (o *User) SetEditedByIncidentEvents(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*IncidentEvent) error {
+	query := "update \"incident_events\" set \"edited_by\" = null where \"edited_by\" = $1"
+	values := []any{o.ID}
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, query)
+		fmt.Fprintln(writer, values)
+	}
+	_, err := exec.ExecContext(ctx, query, values...)
+	if err != nil {
+		return errors.Wrap(err, "failed to remove relationships before set")
+	}
+
+	if o.R != nil {
+		for _, rel := range o.R.EditedByIncidentEvents {
+			queries.SetScanner(&rel.EditedBy, nil)
+			if rel.R == nil {
+				continue
+			}
+
+			rel.R.EditedByUser = nil
+		}
+		o.R.EditedByIncidentEvents = nil
+	}
+
+	return o.AddEditedByIncidentEvents(ctx, exec, insert, related...)
+}
+
+// RemoveEditedByIncidentEvents relationships from objects passed in.
+// Removes related items from R.EditedByIncidentEvents (uses pointer comparison, removal does not keep order)
+// Sets related.R.EditedByUser.
+func (o *User) RemoveEditedByIncidentEvents(ctx context.Context, exec boil.ContextExecutor, related ...*IncidentEvent) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	for _, rel := range related {
+		queries.SetScanner(&rel.EditedBy, nil)
+		if rel.R != nil {
+			rel.R.EditedByUser = nil
+		}
+		if _, err = rel.Update(ctx, exec, boil.Whitelist("edited_by")); err != nil {
+			return err
+		}
+	}
+	if o.R == nil {
+		return nil
+	}
+
+	for _, rel := range related {
+		for i, ri := range o.R.EditedByIncidentEvents {
+			if rel != ri {
+				continue
+			}
+
+			ln := len(o.R.EditedByIncidentEvents)
+			if ln > 1 && i < ln-1 {
+				o.R.EditedByIncidentEvents[i] = o.R.EditedByIncidentEvents[ln-1]
+			}
+			o.R.EditedByIncidentEvents = o.R.EditedByIncidentEvents[:ln-1]
+			break
+		}
+	}
+
 	return nil
 }
 

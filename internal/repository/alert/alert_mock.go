@@ -249,6 +249,21 @@ func (mr *MockAlertMockRecorder) ListEvents(ctx, alertID, limit any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListEvents", reflect.TypeOf((*MockAlert)(nil).ListEvents), ctx, alertID, limit)
 }
 
+// ListEventsForAlerts mocks base method.
+func (m *MockAlert) ListEventsForAlerts(ctx context.Context, alertIDs []string, kinds []entity.AlertEventKind, after entity.TimelineCursor, limit int) ([]entity.AlertEvent, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListEventsForAlerts", ctx, alertIDs, kinds, after, limit)
+	ret0, _ := ret[0].([]entity.AlertEvent)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListEventsForAlerts indicates an expected call of ListEventsForAlerts.
+func (mr *MockAlertMockRecorder) ListEventsForAlerts(ctx, alertIDs, kinds, after, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListEventsForAlerts", reflect.TypeOf((*MockAlert)(nil).ListEventsForAlerts), ctx, alertIDs, kinds, after, limit)
+}
+
 // ListLinks mocks base method.
 func (m *MockAlert) ListLinks(ctx context.Context, alertID string) ([]entity.AlertLink, error) {
 	m.ctrl.T.Helper()

@@ -30,6 +30,8 @@ var TableNames = struct {
 	EscalationRRState         string
 	EscalationWebhooks        string
 	IncidentAlerts            string
+	IncidentEventAttachments  string
+	IncidentEventRevisions    string
 	IncidentEvents            string
 	IncidentFieldDefs         string
 	IncidentFollowups         string
@@ -86,6 +88,8 @@ var TableNames = struct {
 	EscalationRRState:         "escalation_rr_state",
 	EscalationWebhooks:        "escalation_webhooks",
 	IncidentAlerts:            "incident_alerts",
+	IncidentEventAttachments:  "incident_event_attachments",
+	IncidentEventRevisions:    "incident_event_revisions",
 	IncidentEvents:            "incident_events",
 	IncidentFieldDefs:         "incident_field_defs",
 	IncidentFollowups:         "incident_followups",

@@ -37,6 +37,13 @@ func anySlice(values []string) []any {
 	return out
 }
 
+func nullString(value string) null.String {
+	if value == "" {
+		return null.String{}
+	}
+	return null.StringFrom(value)
+}
+
 func customFieldsToJSON(fields map[string]string) (types.JSON, error) {
 	if fields == nil {
 		fields = map[string]string{}
@@ -192,25 +199,6 @@ func (r *repo) GetByID(ctx context.Context, workspaceID, id string) (entity.Inci
 		inc.Followups = append(inc.Followups, followupToEntity(f))
 	}
 
-	events, err := dbpostgres.IncidentEvents(
-		qm.Where("incident_id = ?", id),
-		qm.OrderBy("at ASC, id ASC"),
-		qm.Limit(entity.IncidentTimelineLimit),
-	).All(ctx, exec)
-	if err != nil {
-		return entity.Incident{}, fmt.Errorf("list incident events: %w", err)
-	}
-	inc.Timeline = make([]entity.IncidentEvent, 0, len(events))
-	for _, e := range events {
-		inc.Timeline = append(inc.Timeline, entity.IncidentEvent{
-			ID:         e.ID,
-			IncidentID: e.IncidentID,
-			At:         e.At,
-			Kind:       e.Kind,
-			Text:       e.Text,
-			Actor:      e.Actor,
-		})
-	}
 	return inc, nil
 }
 
@@ -580,18 +568,267 @@ func (r *repo) Unrelate(ctx context.Context, workspaceID, incidentID, relationID
 	return nil
 }
 
-func (r *repo) AppendEvent(ctx context.Context, event entity.IncidentEvent) error {
-	m := &dbpostgres.IncidentEvent{
-		IncidentID: event.IncidentID,
-		At:         event.At,
-		Kind:       event.Kind,
-		Text:       event.Text,
-		Actor:      event.Actor,
+func (r *repo) AppendEvent(ctx context.Context, event entity.IncidentEvent) (entity.IncidentEvent, error) {
+	exec := r.db.Querier(ctx)
+	if event.IdempotencyKey != "" {
+		existing, err := dbpostgres.IncidentEvents(
+			qm.Where("incident_id = ? AND idempotency_key = ?", event.IncidentID, event.IdempotencyKey),
+		).One(ctx, exec)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return entity.IncidentEvent{}, fmt.Errorf("load replayed incident event: %w", err)
+		}
+		if err == nil {
+			return eventToEntity(existing), nil
+		}
 	}
-	if err := m.Insert(ctx, r.db.Querier(ctx), boil.Whitelist("incident_id", "at", "kind", "text", "actor")); err != nil {
-		return fmt.Errorf("append incident event: %w", err)
+	m := &dbpostgres.IncidentEvent{
+		IncidentID:     event.IncidentID,
+		WorkspaceID:    event.WorkspaceID,
+		At:             event.At,
+		Kind:           string(event.Kind),
+		Category:       string(event.Category),
+		Source:         string(event.Source),
+		Text:           event.Text,
+		Actor:          event.Actor,
+		Retroactive:    event.Retroactive,
+		ActorUserID:    nullString(event.ActorUserID),
+		IdempotencyKey: event.IdempotencyKey,
+	}
+	err := m.Insert(ctx, exec, boil.Whitelist(
+		"incident_id", "workspace_id", "at", "kind", "category", "source",
+		"text", "actor", "retroactive", "actor_user_id", "idempotency_key",
+	))
+	if err != nil {
+		return entity.IncidentEvent{}, fmt.Errorf("append incident event: %w", err)
+	}
+	return eventToEntity(m), nil
+}
+
+func (r *repo) ListEvents(ctx context.Context, workspaceID, incidentID string, categories []entity.IncidentEventCategory, after entity.TimelineCursor, limit int) ([]entity.IncidentEvent, error) {
+	if limit <= 0 || limit > entity.TimelineMaxPageSize {
+		limit = entity.TimelineMaxPageSize
+	}
+	mods := []qm.QueryMod{qm.Where("workspace_id = ? AND incident_id = ?", workspaceID, incidentID)}
+	if len(categories) > 0 {
+		raw := make([]string, len(categories))
+		for i, c := range categories {
+			raw[i] = string(c)
+		}
+		mods = append(mods, qm.WhereIn("category IN ?", anySlice(raw)...))
+	}
+	if !after.Zero() {
+		mods = append(mods, qm.Where("(at, id) > (?, ?)", after.At, after.ID))
+	}
+	mods = append(mods, qm.OrderBy("at, id"), qm.Limit(limit))
+
+	exec := r.db.Querier(ctx)
+	rows, err := dbpostgres.IncidentEvents(mods...).All(ctx, exec)
+	if err != nil {
+		return nil, fmt.Errorf("list incident events: %w", err)
+	}
+	out := make([]entity.IncidentEvent, 0, len(rows))
+	ids := make([]string, 0, len(rows))
+	for _, m := range rows {
+		out = append(out, eventToEntity(m))
+		ids = append(ids, m.ID)
+	}
+	attachments, err := r.attachmentsByEvent(ctx, exec, ids)
+	if err != nil {
+		return nil, err
+	}
+	for i := range out {
+		out[i].Attachments = attachments[out[i].ID]
+	}
+	return out, nil
+}
+
+func (r *repo) GetEvent(ctx context.Context, workspaceID, eventID string) (entity.IncidentEvent, error) {
+	exec := r.db.Querier(ctx)
+	m, err := dbpostgres.IncidentEvents(
+		qm.Where("workspace_id = ? AND id = ?", workspaceID, eventID),
+	).One(ctx, exec)
+	if errors.Is(err, sql.ErrNoRows) {
+		return entity.IncidentEvent{}, entity.ErrTimelineEntryNotFound
+	}
+	if err != nil {
+		return entity.IncidentEvent{}, fmt.Errorf("get incident event: %w", err)
+	}
+	event := eventToEntity(m)
+	attachments, err := r.attachmentsByEvent(ctx, exec, []string{m.ID})
+	if err != nil {
+		return entity.IncidentEvent{}, err
+	}
+	event.Attachments = attachments[m.ID]
+	return event, nil
+}
+
+func (r *repo) UpdateEvent(ctx context.Context, workspaceID, eventID string, edit entity.TimelineEdit, editedAt time.Time, editorUserID string) error {
+	affected, err := dbpostgres.IncidentEvents(
+		qm.Where("workspace_id = ? AND id = ?", workspaceID, eventID),
+	).UpdateAll(ctx, r.db.Querier(ctx), dbpostgres.M{
+		"text":      edit.Text,
+		"category":  string(edit.Category),
+		"edited_at": editedAt,
+		"edited_by": nullString(editorUserID),
+	})
+	if err != nil {
+		return fmt.Errorf("update incident event: %w", err)
+	}
+	if affected == 0 {
+		return entity.ErrTimelineEntryNotFound
 	}
 	return nil
+}
+
+func (r *repo) AppendRevision(ctx context.Context, revision entity.IncidentEventRevision) error {
+	m := &dbpostgres.IncidentEventRevision{
+		EventID:      revision.EventID,
+		WorkspaceID:  revision.WorkspaceID,
+		At:           revision.At,
+		EditorUserID: nullString(revision.EditorUserID),
+		EditorLabel:  revision.EditorLabel,
+		Text:         revision.Text,
+		Category:     string(revision.Category),
+	}
+	columns := boil.Whitelist("event_id", "workspace_id", "at", "editor_user_id", "editor_label", "text", "category")
+	if err := m.Insert(ctx, r.db.Querier(ctx), columns); err != nil {
+		return fmt.Errorf("append incident event revision: %w", err)
+	}
+	return nil
+}
+
+func (r *repo) ListRevisions(ctx context.Context, workspaceID, eventID string) ([]entity.IncidentEventRevision, error) {
+	rows, err := dbpostgres.IncidentEventRevisions(
+		qm.Where("workspace_id = ? AND event_id = ?", workspaceID, eventID),
+		qm.OrderBy("at, id"),
+	).All(ctx, r.db.Querier(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("list incident event revisions: %w", err)
+	}
+	out := make([]entity.IncidentEventRevision, 0, len(rows))
+	for _, m := range rows {
+		out = append(out, entity.IncidentEventRevision{
+			ID:           m.ID,
+			EventID:      m.EventID,
+			WorkspaceID:  m.WorkspaceID,
+			At:           m.At,
+			EditorUserID: m.EditorUserID.String,
+			EditorLabel:  m.EditorLabel,
+			Text:         m.Text,
+			Category:     entity.IncidentEventCategory(m.Category),
+		})
+	}
+	return out, nil
+}
+
+func (r *repo) AddAttachment(ctx context.Context, attachment entity.IncidentEventAttachment) (entity.IncidentEventAttachment, error) {
+	m := &dbpostgres.IncidentEventAttachment{
+		EventID:     attachment.EventID,
+		WorkspaceID: attachment.WorkspaceID,
+		Kind:        string(attachment.Kind),
+		Label:       attachment.Label,
+		URL:         attachment.URL,
+		Body:        attachment.Body,
+		ObjectKey:   attachment.ObjectKey,
+		ContentType: attachment.ContentType,
+		SizeBytes:   attachment.SizeBytes,
+		CreatedBy:   nullString(attachment.CreatedBy),
+	}
+	columns := boil.Whitelist("event_id", "workspace_id", "kind", "label", "url", "body", "object_key", "content_type", "size_bytes", "created_by")
+	if err := m.Insert(ctx, r.db.Querier(ctx), columns); err != nil {
+		return entity.IncidentEventAttachment{}, fmt.Errorf("add incident event attachment: %w", err)
+	}
+	return attachmentToEntity(m), nil
+}
+
+func (r *repo) GetAttachment(ctx context.Context, workspaceID, attachmentID string) (entity.IncidentEventAttachment, error) {
+	m, err := dbpostgres.IncidentEventAttachments(
+		qm.Where("workspace_id = ? AND id = ?", workspaceID, attachmentID),
+	).One(ctx, r.db.Querier(ctx))
+	if errors.Is(err, sql.ErrNoRows) {
+		return entity.IncidentEventAttachment{}, entity.ErrAttachmentNotFound
+	}
+	if err != nil {
+		return entity.IncidentEventAttachment{}, fmt.Errorf("get incident event attachment: %w", err)
+	}
+	return attachmentToEntity(m), nil
+}
+
+func (r *repo) RemoveAttachment(ctx context.Context, workspaceID, attachmentID string) error {
+	affected, err := dbpostgres.IncidentEventAttachments(
+		qm.Where("workspace_id = ? AND id = ?", workspaceID, attachmentID),
+	).DeleteAll(ctx, r.db.Querier(ctx))
+	if err != nil {
+		return fmt.Errorf("remove incident event attachment: %w", err)
+	}
+	if affected == 0 {
+		return entity.ErrAttachmentNotFound
+	}
+	return nil
+}
+
+func (r *repo) CountAttachments(ctx context.Context, workspaceID, eventID string) (int, error) {
+	total, err := dbpostgres.IncidentEventAttachments(
+		qm.Where("workspace_id = ? AND event_id = ?", workspaceID, eventID),
+	).Count(ctx, r.db.Querier(ctx))
+	if err != nil {
+		return 0, fmt.Errorf("count incident event attachments: %w", err)
+	}
+	return int(total), nil
+}
+
+func (r *repo) attachmentsByEvent(ctx context.Context, exec boil.ContextExecutor, eventIDs []string) (map[string][]entity.IncidentEventAttachment, error) {
+	out := map[string][]entity.IncidentEventAttachment{}
+	if len(eventIDs) == 0 {
+		return out, nil
+	}
+	rows, err := dbpostgres.IncidentEventAttachments(
+		qm.WhereIn("event_id IN ?", anySlice(eventIDs)...),
+		qm.OrderBy("created_at, id"),
+	).All(ctx, exec)
+	if err != nil {
+		return nil, fmt.Errorf("list incident event attachments: %w", err)
+	}
+	for _, m := range rows {
+		out[m.EventID] = append(out[m.EventID], attachmentToEntity(m))
+	}
+	return out, nil
+}
+
+func eventToEntity(m *dbpostgres.IncidentEvent) entity.IncidentEvent {
+	return entity.IncidentEvent{
+		ID:             m.ID,
+		IncidentID:     m.IncidentID,
+		WorkspaceID:    m.WorkspaceID,
+		At:             m.At,
+		Kind:           entity.IncidentEventKind(m.Kind),
+		Category:       entity.IncidentEventCategory(m.Category),
+		Source:         entity.IncidentEventSource(m.Source),
+		Text:           m.Text,
+		Actor:          m.Actor,
+		ActorUserID:    m.ActorUserID.String,
+		Retroactive:    m.Retroactive,
+		EditedAt:       m.EditedAt.Time,
+		EditedBy:       m.EditedBy.String,
+		IdempotencyKey: m.IdempotencyKey,
+	}
+}
+
+func attachmentToEntity(m *dbpostgres.IncidentEventAttachment) entity.IncidentEventAttachment {
+	return entity.IncidentEventAttachment{
+		ID:          m.ID,
+		EventID:     m.EventID,
+		WorkspaceID: m.WorkspaceID,
+		Kind:        entity.AttachmentKind(m.Kind),
+		Label:       m.Label,
+		URL:         m.URL,
+		Body:        m.Body,
+		ObjectKey:   m.ObjectKey,
+		ContentType: m.ContentType,
+		SizeBytes:   m.SizeBytes,
+		CreatedAt:   m.CreatedAt,
+		CreatedBy:   m.CreatedBy.String,
+	}
 }
 
 func (r *repo) AddFollowup(ctx context.Context, f entity.IncidentFollowup) (entity.IncidentFollowup, error) {

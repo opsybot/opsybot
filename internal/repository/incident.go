@@ -24,7 +24,16 @@ type Incident interface {
 	LinkedAlertIDs(ctx context.Context, incidentID string) ([]string, error)
 	Relate(ctx context.Context, workspaceID, incidentID, relatedID string, kind entity.IncidentRelationKind) (entity.IncidentRelation, error)
 	Unrelate(ctx context.Context, workspaceID, incidentID, relationID string) error
-	AppendEvent(ctx context.Context, event entity.IncidentEvent) error
+	AppendEvent(ctx context.Context, event entity.IncidentEvent) (entity.IncidentEvent, error)
+	ListEvents(ctx context.Context, workspaceID, incidentID string, categories []entity.IncidentEventCategory, after entity.TimelineCursor, limit int) ([]entity.IncidentEvent, error)
+	GetEvent(ctx context.Context, workspaceID, eventID string) (entity.IncidentEvent, error)
+	UpdateEvent(ctx context.Context, workspaceID, eventID string, edit entity.TimelineEdit, editedAt time.Time, editorUserID string) error
+	AppendRevision(ctx context.Context, revision entity.IncidentEventRevision) error
+	ListRevisions(ctx context.Context, workspaceID, eventID string) ([]entity.IncidentEventRevision, error)
+	AddAttachment(ctx context.Context, attachment entity.IncidentEventAttachment) (entity.IncidentEventAttachment, error)
+	GetAttachment(ctx context.Context, workspaceID, attachmentID string) (entity.IncidentEventAttachment, error)
+	RemoveAttachment(ctx context.Context, workspaceID, attachmentID string) error
+	CountAttachments(ctx context.Context, workspaceID, eventID string) (int, error)
 	AddFollowup(ctx context.Context, f entity.IncidentFollowup) (entity.IncidentFollowup, error)
 	SetFollowupDone(ctx context.Context, workspaceID, id string, done bool, at time.Time) (entity.IncidentFollowup, error)
 	ListFollowups(ctx context.Context, workspaceID string) ([]entity.IncidentFollowup, error)
