@@ -177,4 +177,4 @@
 	</div>
 </Page>
 
-<EditDialog bind:open service={data.service} names={data.names} error={form?.error} />
+<EditDialog bind:open service={data.service} teams={data.teams} error={form?.error} />

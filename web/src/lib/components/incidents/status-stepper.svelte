@@ -15,6 +15,7 @@
 	} = $props();
 
 	const current = $derived(STAGES.indexOf(stage));
+	const isResolved = $derived(stage === 'resolved');
 </script>
 
 <form
@@ -25,8 +26,8 @@
 	aria-label="Incident status"
 >
 	{#each STAGES as step, index (step)}
-		{@const done = index < current}
-		{@const active = index === current}
+		{@const done = index < current || isResolved}
+		{@const active = index === current && !isResolved}
 		{@const allowed = canMoveTo(stage, step)}
 
 		{#if index > 0}

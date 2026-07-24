@@ -145,19 +145,19 @@ func (mr *MockIncidentMockRecorder) List(ctx, workspaceID, filter any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockIncident)(nil).List), ctx, workspaceID, filter)
 }
 
-// ListOpenFollowups mocks base method.
-func (m *MockIncident) ListOpenFollowups(ctx context.Context, workspaceID string) ([]entity.IncidentFollowup, error) {
+// ListFollowups mocks base method.
+func (m *MockIncident) ListFollowups(ctx context.Context, workspaceID string) ([]entity.IncidentFollowup, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListOpenFollowups", ctx, workspaceID)
+	ret := m.ctrl.Call(m, "ListFollowups", ctx, workspaceID)
 	ret0, _ := ret[0].([]entity.IncidentFollowup)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListOpenFollowups indicates an expected call of ListOpenFollowups.
-func (mr *MockIncidentMockRecorder) ListOpenFollowups(ctx, workspaceID any) *gomock.Call {
+// ListFollowups indicates an expected call of ListFollowups.
+func (mr *MockIncidentMockRecorder) ListFollowups(ctx, workspaceID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListOpenFollowups", reflect.TypeOf((*MockIncident)(nil).ListOpenFollowups), ctx, workspaceID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListFollowups", reflect.TypeOf((*MockIncident)(nil).ListFollowups), ctx, workspaceID)
 }
 
 // NextNumber mocks base method.

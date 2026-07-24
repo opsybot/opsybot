@@ -24,7 +24,7 @@ type Incidents interface {
 	Unrelate(ctx context.Context, workspaceSlug, id, relationID string) (entity.Incident, error)
 	AddFollowup(ctx context.Context, workspaceSlug, id string, in entity.NewFollowup) (entity.Incident, error)
 	ToggleFollowup(ctx context.Context, workspaceSlug, id, followupID string, done bool) (entity.Incident, error)
-	ListOpenFollowups(ctx context.Context, workspaceSlug string) ([]entity.IncidentFollowup, error)
+	ListFollowups(ctx context.Context, workspaceSlug string) ([]entity.IncidentFollowup, error)
 	ListSeverities(ctx context.Context, workspaceSlug string) ([]entity.IncidentSeverity, error)
 	SaveSeverities(ctx context.Context, workspaceSlug string, severities []entity.IncidentSeverity) ([]entity.IncidentSeverity, error)
 	ListFieldDefs(ctx context.Context, workspaceSlug string) ([]entity.IncidentFieldDef, error)

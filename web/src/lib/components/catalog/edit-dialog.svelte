@@ -12,15 +12,17 @@
 	import { Input } from '$lib/components/ui/input';
 	import * as Select from '$lib/components/ui/select';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import { CATALOG_TEAMS, type Service } from '$lib/catalog';
+	import type { Service } from '$lib/catalog';
 
 	let {
 		open = $bindable(false),
 		service,
+		teams = [],
 		error
 	}: {
 		open?: boolean;
 		service: Service | null;
+		teams?: { slug: string; name: string }[];
 		error?: string;
 	} = $props();
 
@@ -29,6 +31,8 @@
 	let name = $state('');
 	let team = $state('');
 	let description = $state('');
+
+	const teamName = $derived(teams.find((entry) => entry.slug === team)?.name ?? 'No team');
 
 	let seededFor = $state<string | null | undefined>(undefined);
 	$effect(() => {
@@ -122,12 +126,12 @@
 								Owning team
 							</Field.FieldLabel>
 							<Select.Root type="single" name="team" bind:value={team}>
-								<Select.Trigger>{team || 'No team'}</Select.Trigger>
+								<Select.Trigger>{teamName}</Select.Trigger>
 								<Select.Content>
 									<Select.Group>
 										<Select.Item value="" label="No team">No team</Select.Item>
-										{#each CATALOG_TEAMS as option (option)}
-											<Select.Item value={option} label={option}>{option}</Select.Item>
+										{#each teams as option (option.slug)}
+											<Select.Item value={option.slug} label={option.name}>{option.name}</Select.Item>
 										{/each}
 									</Select.Group>
 								</Select.Content>

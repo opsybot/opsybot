@@ -798,12 +798,12 @@ func (s *srv) ToggleFollowup(ctx context.Context, workspaceSlug, id, followupID 
 	return s.hydrate(ctx, ws.ID, id)
 }
 
-func (s *srv) ListOpenFollowups(ctx context.Context, workspaceSlug string) ([]entity.IncidentFollowup, error) {
+func (s *srv) ListFollowups(ctx context.Context, workspaceSlug string) ([]entity.IncidentFollowup, error) {
 	_, ws, err := s.authorize(ctx, workspaceSlug, entity.PolicyActionRead, entity.PolicyObjectIncidents)
 	if err != nil {
 		return nil, err
 	}
-	followups, err := s.incidents.ListOpenFollowups(ctx, ws.ID)
+	followups, err := s.incidents.ListFollowups(ctx, ws.ID)
 	if err != nil {
 		return nil, err
 	}

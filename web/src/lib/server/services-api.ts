@@ -22,6 +22,16 @@ function toService(dto: Schemas['Service']): CatalogService {
 	};
 }
 
+export async function listTeams(
+	cookies: Cookies,
+	workspace: string
+): Promise<{ slug: string; name: string }[]> {
+	const { data } = await apiClient(cookies).GET('/workspaces/{workspaceId}/teams', {
+		params: { path: { workspaceId: workspace } }
+	});
+	return (data?.items ?? []).map((team) => ({ slug: team.slug, name: team.name }));
+}
+
 export async function listServices(cookies: Cookies, workspace: string): Promise<CatalogService[]> {
 	const { data } = await apiClient(cookies).GET('/workspaces/{workspaceId}/services', {
 		params: { path: { workspaceId: workspace } }

@@ -21,7 +21,7 @@ export const load: LayoutServerLoad = async ({ params, cookies, locals }) => {
 
 	return {
 		session,
-		counts: getNavCounts(),
+		counts: await getNavCounts(cookies, params.workspace),
 		sidebarOpen: cookies.get(SIDEBAR_COOKIE_NAME) !== 'false'
 	};
 };

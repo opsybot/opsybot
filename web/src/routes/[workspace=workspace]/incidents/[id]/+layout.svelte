@@ -4,6 +4,7 @@
 	import MessageSquareIcon from '@lucide/svelte/icons/message-square';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import RotateCwIcon from '@lucide/svelte/icons/rotate-cw';
+	import { tick, untrack } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
 	import IncidentTabs from '$lib/components/incidents/incident-tabs.svelte';
@@ -34,8 +35,33 @@
 
 	const tab = $derived(page.url.pathname.slice(base.length));
 
-	let form: HTMLFormElement | undefined = $state();
-	let roleForms: Record<string, HTMLFormElement | undefined> = $state({});
+	let severityForm: HTMLFormElement | undefined = $state();
+	let leadForm: HTMLFormElement | undefined = $state();
+	let severityValue = $state(untrack(() => incident.severity));
+	let leadValue = $state(untrack(() => incident.leadUserId ?? ''));
+
+	$effect(() => {
+		severityValue = incident.severity;
+	});
+	$effect(() => {
+		leadValue = incident.leadUserId ?? '';
+	});
+
+	const leadName = $derived(data.people.find((person) => person.id === leadValue)?.name ?? 'Unassigned');
+
+	async function changeSeverity(next: string) {
+		if (next === incident.severity) return;
+		severityValue = next;
+		await tick();
+		severityForm?.requestSubmit();
+	}
+
+	async function changeLead(next: string) {
+		if (next === (incident.leadUserId ?? '')) return;
+		leadValue = next;
+		await tick();
+		leadForm?.requestSubmit();
+	}
 </script>
 
 <Page title="Incidents" subtitle="From alert to postmortem">
@@ -94,14 +120,10 @@
 			<span class="text-subtle-foreground font-mono text-xs">{incident.ref ?? incident.id}</span>
 			<div class="flex-1"></div>
 
-			<form method="POST" action="{base}?/severity" use:enhance bind:this={form}>
-				<Select.Root
-					type="single"
-					name="severity"
-					value={incident.severity}
-					onValueChange={() => form?.requestSubmit()}
-				>
-					<Select.Trigger size="sm" class="w-24">{incident.severity}</Select.Trigger>
+			<form method="POST" action="{base}?/severity" use:enhance bind:this={severityForm}>
+				<input type="hidden" name="severity" value={severityValue} />
+				<Select.Root type="single" value={severityValue} onValueChange={changeSeverity}>
+					<Select.Trigger size="sm" class="w-24">{severityValue}</Select.Trigger>
 					<Select.Content>
 						<Select.Group>
 							{#each SEVERITIES as level (level.id)}
@@ -133,17 +155,11 @@
 					<span class="text-subtle-foreground w-13 font-mono text-[10.5px] tracking-[0.06em] uppercase">
 						Lead
 					</span>
-					<form method="POST" action="{base}?/role" use:enhance bind:this={roleForms['lead']}>
+					<form method="POST" action="{base}?/role" use:enhance bind:this={leadForm}>
 						<input type="hidden" name="role" value="lead" />
-						<Select.Root
-							type="single"
-							name="person"
-							value={incident.leadUserId ?? ''}
-							onValueChange={() => roleForms['lead']?.requestSubmit()}
-						>
-							<Select.Trigger size="sm" class="w-[150px]">
-								{incident.lead || 'Unassigned'}
-							</Select.Trigger>
+						<input type="hidden" name="person" value={leadValue} />
+						<Select.Root type="single" value={leadValue} onValueChange={changeLead}>
+							<Select.Trigger size="sm" class="w-[150px]">{leadName}</Select.Trigger>
 							<Select.Content>
 								<Select.Group>
 									{#each data.people as candidate (candidate.id)}

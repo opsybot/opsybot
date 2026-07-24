@@ -32,8 +32,10 @@
 	const leadName = $derived(members.find((member) => member.id === lead)?.name ?? 'Unassigned');
 
 	function toggle(value: string) {
-		if (selected.has(value)) selected.delete(value);
-		else selected.add(value);
+		const next = new Set(selected);
+		if (next.has(value)) next.delete(value);
+		else next.add(value);
+		selected = next;
 	}
 </script>
 

@@ -1,6 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { listAlerts } from '$lib/server/alerts';
 import { getService, serviceActivity, serviceNames } from '$lib/server/catalog';
+import { listTeams } from '$lib/server/services-api';
 import { save } from '../save';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -14,6 +15,7 @@ export const load: PageServerLoad = async ({ params, url, cookies }) => {
 		service,
 		activity: await serviceActivity(cookies, params.workspace, params.id, alerts),
 		names: await serviceNames(cookies, params.workspace),
+		teams: await listTeams(cookies, params.workspace),
 		dialogOpen: url.searchParams.has('edit')
 	};
 };

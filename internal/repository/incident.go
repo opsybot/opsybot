@@ -27,5 +27,5 @@ type Incident interface {
 	AppendEvent(ctx context.Context, event entity.IncidentEvent) error
 	AddFollowup(ctx context.Context, f entity.IncidentFollowup) (entity.IncidentFollowup, error)
 	SetFollowupDone(ctx context.Context, workspaceID, id string, done bool, at time.Time) (entity.IncidentFollowup, error)
-	ListOpenFollowups(ctx context.Context, workspaceID string) ([]entity.IncidentFollowup, error)
+	ListFollowups(ctx context.Context, workspaceID string) ([]entity.IncidentFollowup, error)
 }

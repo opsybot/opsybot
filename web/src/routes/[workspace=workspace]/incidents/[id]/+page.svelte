@@ -18,6 +18,10 @@
 
 	let relation = $state('caused by');
 	let other = $state('');
+
+	const otherName = $derived(
+		data.candidates.find((candidate) => candidate.id === other)?.name ?? 'Incident'
+	);
 </script>
 
 <div class="grid items-start gap-3.5 min-[1100px]:grid-cols-[minmax(0,1fr)_300px]">
@@ -90,11 +94,11 @@
 				</Select.Root>
 
 				<Select.Root type="single" name="incident" bind:value={other}>
-					<Select.Trigger size="sm" class="w-[130px]">{other || 'Incident'}</Select.Trigger>
+					<Select.Trigger size="sm" class="w-[180px]">{otherName}</Select.Trigger>
 					<Select.Content>
 						<Select.Group>
 							{#each data.candidates as candidate (candidate.id)}
-								<Select.Item value={candidate.id} label={candidate.id}>{candidate.id}</Select.Item>
+								<Select.Item value={candidate.id} label={candidate.name}>{candidate.name}</Select.Item>
 							{/each}
 						</Select.Group>
 					</Select.Content>

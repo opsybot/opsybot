@@ -584,7 +584,7 @@ func (h *handler) ToggleIncidentFollowup(ctx context.Context, request api.Toggle
 }
 
 func (h *handler) ListIncidentFollowups(ctx context.Context, request api.ListIncidentFollowupsRequestObject) (api.ListIncidentFollowupsResponseObject, error) {
-	list, err := h.incidents.ListOpenFollowups(ctx, request.WorkspaceId)
+	list, err := h.incidents.ListFollowups(ctx, request.WorkspaceId)
 	if err != nil {
 		status, p := incidentProblem(err)
 		switch status {

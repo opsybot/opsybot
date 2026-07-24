@@ -641,13 +641,13 @@ func (r *repo) SetFollowupDone(ctx context.Context, workspaceID, id string, done
 	return followupToEntity(reloaded), nil
 }
 
-func (r *repo) ListOpenFollowups(ctx context.Context, workspaceID string) ([]entity.IncidentFollowup, error) {
+func (r *repo) ListFollowups(ctx context.Context, workspaceID string) ([]entity.IncidentFollowup, error) {
 	rows, err := dbpostgres.IncidentFollowups(
-		qm.Where("workspace_id = ? AND done = false", workspaceID),
-		qm.OrderBy("due_at ASC NULLS LAST, created_at ASC"),
+		qm.Where("workspace_id = ?", workspaceID),
+		qm.OrderBy("done ASC, due_at ASC NULLS LAST, created_at ASC"),
 	).All(ctx, r.db.Querier(ctx))
 	if err != nil {
-		return nil, fmt.Errorf("list open follow-ups: %w", err)
+		return nil, fmt.Errorf("list follow-ups: %w", err)
 	}
 	out := make([]entity.IncidentFollowup, 0, len(rows))
 	for _, m := range rows {
