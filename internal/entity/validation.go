@@ -116,6 +116,18 @@ var (
 	errNotificationFirstStep  = validation.NewError("notification_first_step", "The first step always fires immediately.")
 	errNotificationChannel    = validation.NewError("notification_channel_invalid", "Pick a channel you've connected.")
 	errNotificationQuietHours = validation.NewError("notification_quiet_hours_invalid", "Quiet hours need at least one day, a start and end that differ, and a real timezone.")
+
+	errServiceName        = validation.NewError("service_name_invalid", "Enter a service name of 80 characters or fewer.")
+	errServiceDescription = validation.NewError("service_description_invalid", "Keep the description to 280 characters or fewer.")
+	errIncidentName       = validation.NewError("incident_name_invalid", "Enter an incident name of 120 characters or fewer.")
+	errIncidentSummary    = validation.NewError("incident_summary_invalid", "Keep the summary to 2000 characters or fewer.")
+	errFollowupTitle      = validation.NewError("followup_title_invalid", "Enter a follow-up title of 200 characters or fewer.")
+	errSeverityLevel      = validation.NewError("severity_level_invalid", "A severity code uses up to 12 uppercase letters or digits and starts with a letter.")
+	errSeverityLabel      = validation.NewError("severity_label_invalid", "Give the severity a label of 24 characters or fewer.")
+	errSeverityDefinition = validation.NewError("severity_definition_invalid", "Keep the severity definition to 200 characters or fewer.")
+	errFieldName          = validation.NewError("field_name_invalid", "Give the custom field a name of 60 characters or fewer.")
+	errFieldKind          = validation.NewError("field_kind_invalid", "Choose text, select, multi-select, or number.")
+	errFieldOptions       = validation.NewError("field_options_invalid", "A select field needs between 1 and 40 non-empty options.")
 )
 
 func nameField(value any) error {
@@ -815,6 +827,100 @@ func escalationWebhookURLField(value any) error {
 	u, err := url.ParseRequestURI(raw)
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
 		return errEscalationHookURL
+	}
+	return nil
+}
+
+func serviceNameField(value any) error {
+	s, _ := value.(string)
+	name := strings.TrimSpace(s)
+	if name == "" || len(name) > ServiceNameMaxLength {
+		return errServiceName
+	}
+	return nil
+}
+
+func serviceDescriptionField(value any) error {
+	s, _ := value.(string)
+	if len(s) > ServiceDescriptionMaxLength {
+		return errServiceDescription
+	}
+	return nil
+}
+
+func incidentNameField(value any) error {
+	s, _ := value.(string)
+	name := strings.TrimSpace(s)
+	if name == "" || len(name) > IncidentNameMaxLength {
+		return errIncidentName
+	}
+	return nil
+}
+
+func incidentSummaryField(value any) error {
+	s, _ := value.(string)
+	if len(s) > IncidentSummaryMaxLength {
+		return errIncidentSummary
+	}
+	return nil
+}
+
+func followupTitleField(value any) error {
+	s, _ := value.(string)
+	title := strings.TrimSpace(s)
+	if title == "" || len(title) > FollowupTitleMaxLength {
+		return errFollowupTitle
+	}
+	return nil
+}
+
+func severityLevelField(value any) error {
+	s, _ := value.(string)
+	level := strings.TrimSpace(s)
+	if level == "" || len(level) > SeverityLevelMaxLength {
+		return errSeverityLevel
+	}
+	for i, r := range level {
+		switch {
+		case r >= 'A' && r <= 'Z':
+		case r >= '0' && r <= '9' && i > 0:
+		default:
+			return errSeverityLevel
+		}
+	}
+	return nil
+}
+
+func severityLabelField(value any) error {
+	s, _ := value.(string)
+	label := strings.TrimSpace(s)
+	if label == "" || len(label) > SeverityLabelMaxLength {
+		return errSeverityLabel
+	}
+	return nil
+}
+
+func severityDefinitionField(value any) error {
+	s, _ := value.(string)
+	if len(s) > SeverityDefinitionMaxLength {
+		return errSeverityDefinition
+	}
+	return nil
+}
+
+func fieldNameField(value any) error {
+	s, _ := value.(string)
+	name := strings.TrimSpace(s)
+	if name == "" || len(name) > FieldNameMaxLength {
+		return errFieldName
+	}
+	return nil
+}
+
+func fieldKindField(value any) error {
+	k, _ := value.(CustomFieldKind)
+	if !k.Valid() {
+		return errFieldKind
 	}
 	return nil
 }

@@ -29,7 +29,7 @@
 	const columns: ColumnDef<Incident>[] = [
 		{
 			id: 'search',
-			accessorFn: (row) => `${row.name} ${row.id}`.toLowerCase(),
+			accessorFn: (row) => `${row.name} ${row.ref ?? row.id}`.toLowerCase(),
 			filterFn: (row, id, value) => String(row.getValue(id)).includes(String(value).toLowerCase())
 		},
 		{ id: 'severity', accessorKey: 'severity' },
@@ -98,7 +98,7 @@
 						<div>
 							<div class="text-foreground font-medium">{incident.name}</div>
 							<span class="text-subtle-foreground font-mono text-[11px]">
-								{incident.id} · {incident.services.join(', ')}
+								{incident.ref ?? incident.id} · {incident.services.join(', ')}
 							</span>
 						</div>
 					</div>

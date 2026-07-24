@@ -2747,6 +2747,420 @@ paths:
         "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
         "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
         "409": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incidents:
+    get:
+      operationId: listIncidents
+      summary: List incidents in a workspace
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: status, in: query, required: false, schema: { type: array, items: { type: string } }, style: form, explode: false }
+        - { name: severity, in: query, required: false, schema: { type: array, items: { type: string } }, style: form, explode: false }
+        - { name: service, in: query, required: false, schema: { type: array, items: { type: string } }, style: form, explode: false }
+        - { name: team, in: query, required: false, schema: { type: array, items: { type: string } }, style: form, explode: false }
+        - { name: active, in: query, required: false, schema: { type: boolean } }
+        - { name: since, in: query, required: false, schema: { type: string, format: date-time } }
+        - { name: query, in: query, required: false, schema: { type: string } }
+        - { name: cursor, in: query, required: false, schema: { type: string } }
+        - { name: limit, in: query, required: false, schema: { type: integer } }
+      responses:
+        "200": { description: Incidents, content: { application/json: { schema: { $ref: "#/components/schemas/IncidentList" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    post:
+      operationId: declareIncident
+      summary: Declare a new incident
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DeclareIncidentRequest" }
+      responses:
+        "201": { description: Incident declared, content: { application/json: { schema: { $ref: "#/components/schemas/Incident" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incidents/from-alert:
+    post:
+      operationId: declareIncidentFromAlert
+      summary: Declare an incident from an existing alert, preserving its context
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DeclareFromAlertRequest" }
+      responses:
+        "201": { description: Incident declared, content: { application/json: { schema: { $ref: "#/components/schemas/Incident" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incidents/{incidentId}:
+    get:
+      operationId: getIncident
+      summary: Get one incident with its timeline, alerts, relations, and follow-ups
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: incidentId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Incident, content: { application/json: { schema: { $ref: "#/components/schemas/Incident" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    patch:
+      operationId: updateIncident
+      summary: Update incident name, summary, lead, team, and affected services
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: incidentId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateIncidentRequest" }
+      responses:
+        "200": { description: Incident, content: { application/json: { schema: { $ref: "#/components/schemas/Incident" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incidents/{incidentId}/status:
+    post:
+      operationId: changeIncidentStatus
+      summary: Move an incident to a valid next status
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: incidentId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChangeStatusRequest" }
+      responses:
+        "200": { description: Incident, content: { application/json: { schema: { $ref: "#/components/schemas/Incident" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incidents/{incidentId}/severity:
+    post:
+      operationId: changeIncidentSeverity
+      summary: Change an incident's severity
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: incidentId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChangeSeverityRequest" }
+      responses:
+        "200": { description: Incident, content: { application/json: { schema: { $ref: "#/components/schemas/Incident" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incidents/{incidentId}/resolve:
+    post:
+      operationId: resolveIncident
+      summary: Resolve an incident with a required resolution summary
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: incidentId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ResolveIncidentRequest" }
+      responses:
+        "200": { description: Incident, content: { application/json: { schema: { $ref: "#/components/schemas/Incident" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incidents/{incidentId}/reopen:
+    post:
+      operationId: reopenIncident
+      summary: Reopen a resolved incident
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: incidentId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Incident, content: { application/json: { schema: { $ref: "#/components/schemas/Incident" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incidents/{incidentId}/custom-fields:
+    put:
+      operationId: setIncidentCustomFields
+      summary: Set an incident's custom field values
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: incidentId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SetCustomFieldsRequest" }
+      responses:
+        "200": { description: Incident, content: { application/json: { schema: { $ref: "#/components/schemas/Incident" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incidents/{incidentId}/alerts:
+    post:
+      operationId: linkIncidentAlert
+      summary: Link an alert to an incident
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: incidentId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LinkAlertRequest" }
+      responses:
+        "200": { description: Incident, content: { application/json: { schema: { $ref: "#/components/schemas/Incident" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incidents/{incidentId}/alerts/{alertId}:
+    delete:
+      operationId: unlinkIncidentAlert
+      summary: Unlink an alert from an incident
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: incidentId, in: path, required: true, schema: { type: string } }
+        - { name: alertId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Incident, content: { application/json: { schema: { $ref: "#/components/schemas/Incident" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incidents/{incidentId}/relations:
+    post:
+      operationId: relateIncident
+      summary: Relate an incident to another incident
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: incidentId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RelateIncidentRequest" }
+      responses:
+        "200": { description: Incident, content: { application/json: { schema: { $ref: "#/components/schemas/Incident" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incidents/{incidentId}/relations/{relationId}:
+    delete:
+      operationId: unrelateIncident
+      summary: Remove a relation between incidents
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: incidentId, in: path, required: true, schema: { type: string } }
+        - { name: relationId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Incident, content: { application/json: { schema: { $ref: "#/components/schemas/Incident" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incidents/{incidentId}/followups:
+    post:
+      operationId: addIncidentFollowup
+      summary: Add a follow-up item to an incident
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: incidentId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AddFollowupRequest" }
+      responses:
+        "200": { description: Incident, content: { application/json: { schema: { $ref: "#/components/schemas/Incident" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incidents/{incidentId}/followups/{followupId}:
+    post:
+      operationId: toggleIncidentFollowup
+      summary: Mark a follow-up item done or not done
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: incidentId, in: path, required: true, schema: { type: string } }
+        - { name: followupId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ToggleFollowupRequest" }
+      responses:
+        "200": { description: Incident, content: { application/json: { schema: { $ref: "#/components/schemas/Incident" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incident-severities:
+    get:
+      operationId: listIncidentSeverities
+      summary: List the workspace severity levels
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Severities, content: { application/json: { schema: { $ref: "#/components/schemas/IncidentSeverityList" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    put:
+      operationId: saveIncidentSeverities
+      summary: Replace the workspace severity levels
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SaveSeveritiesRequest" }
+      responses:
+        "200": { description: Severities, content: { application/json: { schema: { $ref: "#/components/schemas/IncidentSeverityList" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incident-fields:
+    get:
+      operationId: listIncidentFields
+      summary: List the workspace incident custom fields
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Fields, content: { application/json: { schema: { $ref: "#/components/schemas/IncidentFieldList" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    put:
+      operationId: saveIncidentFields
+      summary: Replace the workspace incident custom fields
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SaveFieldsRequest" }
+      responses:
+        "200": { description: Fields, content: { application/json: { schema: { $ref: "#/components/schemas/IncidentFieldList" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incident-followups:
+    get:
+      operationId: listIncidentFollowups
+      summary: List open follow-up items across the workspace
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Follow-ups, content: { application/json: { schema: { $ref: "#/components/schemas/IncidentFollowupList" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/services:
+    get:
+      operationId: listServices
+      summary: List the workspace services
+      tags: [services]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Services, content: { application/json: { schema: { $ref: "#/components/schemas/ServiceList" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    post:
+      operationId: createService
+      summary: Create a service
+      tags: [services]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SaveServiceRequest" }
+      responses:
+        "201": { description: Service created, content: { application/json: { schema: { $ref: "#/components/schemas/Service" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/services/{serviceId}:
+    patch:
+      operationId: updateService
+      summary: Update a service
+      tags: [services]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: serviceId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SaveServiceRequest" }
+      responses:
+        "200": { description: Service, content: { application/json: { schema: { $ref: "#/components/schemas/Service" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    delete:
+      operationId: deleteService
+      summary: Delete a service
+      tags: [services]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: serviceId, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Service deleted }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
 components:
   schemas:
     AlertLink:
@@ -3716,6 +4130,217 @@ components:
         allowedEmailDomains:
           type: array
           items: { type: string }
+    Service:
+      type: object
+      required: [id, slug, name, description]
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        name: { type: string }
+        teamSlug: { type: string }
+        description: { type: string }
+    ServiceList:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/Service" } }
+    SaveServiceRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        teamSlug: { type: string }
+        description: { type: string }
+    IncidentAlertRef:
+      type: object
+      required: [alertId, title, severity, status]
+      properties:
+        alertId: { type: string }
+        title: { type: string }
+        severity: { type: string }
+        status: { type: string }
+    IncidentRelationRef:
+      type: object
+      required: [id, kind, relatedId, relatedNumber, relatedName, relatedStatus]
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [related, duplicate, caused_by] }
+        relatedId: { type: string }
+        relatedNumber: { type: integer }
+        relatedName: { type: string }
+        relatedStatus: { type: string }
+    IncidentFollowup:
+      type: object
+      required: [id, incidentId, title, done]
+      properties:
+        id: { type: string }
+        incidentId: { type: string }
+        title: { type: string }
+        ownerUserId: { type: string }
+        ownerLabel: { type: string }
+        dueAt: { type: string, format: date-time }
+        done: { type: boolean }
+        doneAt: { type: string, format: date-time }
+    IncidentEvent:
+      type: object
+      required: [id, at, kind, text]
+      properties:
+        id: { type: string }
+        at: { type: string, format: date-time }
+        kind: { type: string }
+        text: { type: string }
+        actor: { type: string }
+    Incident:
+      type: object
+      required: [id, number, name, summary, severityLevel, status, declaredAt, services, alerts, relations, followups, timeline, customFields]
+      properties:
+        id: { type: string }
+        number: { type: integer }
+        name: { type: string }
+        summary: { type: string }
+        severityLevel: { type: string }
+        status: { type: string, enum: [declared, investigating, identified, monitoring, resolved] }
+        leadUserId: { type: string }
+        leadLabel: { type: string }
+        teamSlug: { type: string }
+        resolutionSummary: { type: string }
+        declaredBy: { type: string }
+        declaredAt: { type: string, format: date-time }
+        resolvedAt: { type: string, format: date-time }
+        customFields:
+          type: object
+          additionalProperties: { type: string }
+        services: { type: array, items: { $ref: "#/components/schemas/Service" } }
+        alerts: { type: array, items: { $ref: "#/components/schemas/IncidentAlertRef" } }
+        relations: { type: array, items: { $ref: "#/components/schemas/IncidentRelationRef" } }
+        followups: { type: array, items: { $ref: "#/components/schemas/IncidentFollowup" } }
+        timeline: { type: array, items: { $ref: "#/components/schemas/IncidentEvent" } }
+    IncidentList:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/Incident" } }
+        nextCursor: { type: string }
+    IncidentSeverity:
+      type: object
+      required: [level, label, tone]
+      properties:
+        id: { type: string }
+        level: { type: string }
+        label: { type: string }
+        definition: { type: string }
+        tone: { type: string }
+        position: { type: integer }
+    IncidentSeverityList:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/IncidentSeverity" } }
+    IncidentField:
+      type: object
+      required: [name, kind]
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        name: { type: string }
+        kind: { type: string, enum: [text, select, multi_select, number] }
+        options: { type: array, items: { type: string } }
+        position: { type: integer }
+    IncidentFieldList:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/IncidentField" } }
+    IncidentFollowupList:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/IncidentFollowup" } }
+    DeclareIncidentRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        summary: { type: string }
+        severityLevel: { type: string }
+        teamSlug: { type: string }
+        leadUserId: { type: string }
+        serviceIds: { type: array, items: { type: string } }
+    DeclareFromAlertRequest:
+      type: object
+      required: [alertId]
+      properties:
+        alertId: { type: string }
+        name: { type: string }
+        summary: { type: string }
+        severityLevel: { type: string }
+        teamSlug: { type: string }
+        leadUserId: { type: string }
+        serviceIds: { type: array, items: { type: string } }
+    UpdateIncidentRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        summary: { type: string }
+        teamSlug: { type: string }
+        leadUserId: { type: string }
+        serviceIds: { type: array, items: { type: string } }
+    ChangeStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [declared, investigating, identified, monitoring, resolved] }
+    ChangeSeverityRequest:
+      type: object
+      required: [level]
+      properties:
+        level: { type: string }
+    ResolveIncidentRequest:
+      type: object
+      required: [summary]
+      properties:
+        summary: { type: string }
+    SetCustomFieldsRequest:
+      type: object
+      required: [fields]
+      properties:
+        fields:
+          type: object
+          additionalProperties: { type: string }
+    LinkAlertRequest:
+      type: object
+      required: [alertId]
+      properties:
+        alertId: { type: string }
+    RelateIncidentRequest:
+      type: object
+      required: [relatedId, kind]
+      properties:
+        relatedId: { type: string }
+        kind: { type: string, enum: [related, duplicate, caused_by] }
+    AddFollowupRequest:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string }
+        ownerUserId: { type: string }
+        dueAt: { type: string, format: date-time }
+    ToggleFollowupRequest:
+      type: object
+      required: [done]
+      properties:
+        done: { type: boolean }
+    SaveSeveritiesRequest:
+      type: object
+      required: [severities]
+      properties:
+        severities: { type: array, items: { $ref: "#/components/schemas/IncidentSeverity" } }
+    SaveFieldsRequest:
+      type: object
+      required: [fields]
+      properties:
+        fields: { type: array, items: { $ref: "#/components/schemas/IncidentField" } }
     Problem:
       type: object
       required:

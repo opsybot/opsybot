@@ -29,6 +29,14 @@ var TableNames = struct {
 	EscalationPolicyTargets   string
 	EscalationRRState         string
 	EscalationWebhooks        string
+	IncidentAlerts            string
+	IncidentEvents            string
+	IncidentFieldDefs         string
+	IncidentFollowups         string
+	IncidentRelations         string
+	IncidentServices          string
+	IncidentSeverities        string
+	Incidents                 string
 	Invites                   string
 	NotificationAttempts      string
 	NotificationRuns          string
@@ -38,6 +46,7 @@ var TableNames = struct {
 	ScheduleLayers            string
 	ScheduleOverrides         string
 	Schedules                 string
+	Services                  string
 	Sessions                  string
 	SsoConnections            string
 	TeamMembers               string
@@ -76,6 +85,14 @@ var TableNames = struct {
 	EscalationPolicyTargets:   "escalation_policy_targets",
 	EscalationRRState:         "escalation_rr_state",
 	EscalationWebhooks:        "escalation_webhooks",
+	IncidentAlerts:            "incident_alerts",
+	IncidentEvents:            "incident_events",
+	IncidentFieldDefs:         "incident_field_defs",
+	IncidentFollowups:         "incident_followups",
+	IncidentRelations:         "incident_relations",
+	IncidentServices:          "incident_services",
+	IncidentSeverities:        "incident_severities",
+	Incidents:                 "incidents",
 	Invites:                   "invites",
 	NotificationAttempts:      "notification_attempts",
 	NotificationRuns:          "notification_runs",
@@ -85,6 +102,7 @@ var TableNames = struct {
 	ScheduleLayers:            "schedule_layers",
 	ScheduleOverrides:         "schedule_overrides",
 	Schedules:                 "schedules",
+	Services:                  "services",
 	Sessions:                  "sessions",
 	SsoConnections:            "sso_connections",
 	TeamMembers:               "team_members",

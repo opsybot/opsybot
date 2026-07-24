@@ -4,6 +4,7 @@
 	import MessageSquareIcon from '@lucide/svelte/icons/message-square';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import RotateCwIcon from '@lucide/svelte/icons/rotate-cw';
+	import { tick, untrack } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
 	import IncidentTabs from '$lib/components/incidents/incident-tabs.svelte';
@@ -18,7 +19,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import * as Select from '$lib/components/ui/select';
 	import { SEVERITY_TONE } from '$lib/dashboard';
-	import { PEOPLE, SEVERITIES } from '$lib/incidents';
+	import { SEVERITIES } from '$lib/incidents';
 	import { ws } from '$lib/navigation';
 	import type { LayoutProps } from './$types';
 
@@ -34,8 +35,33 @@
 
 	const tab = $derived(page.url.pathname.slice(base.length));
 
-	let form: HTMLFormElement | undefined = $state();
-	let roleForms: Record<string, HTMLFormElement | undefined> = $state({});
+	let severityForm: HTMLFormElement | undefined = $state();
+	let leadForm: HTMLFormElement | undefined = $state();
+	let severityValue = $state(untrack(() => incident.severity));
+	let leadValue = $state(untrack(() => incident.leadUserId ?? ''));
+
+	$effect(() => {
+		severityValue = incident.severity;
+	});
+	$effect(() => {
+		leadValue = incident.leadUserId ?? '';
+	});
+
+	const leadName = $derived(data.people.find((person) => person.id === leadValue)?.name ?? 'Unassigned');
+
+	async function changeSeverity(next: string) {
+		if (next === incident.severity) return;
+		severityValue = next;
+		await tick();
+		severityForm?.requestSubmit();
+	}
+
+	async function changeLead(next: string) {
+		if (next === (incident.leadUserId ?? '')) return;
+		leadValue = next;
+		await tick();
+		leadForm?.requestSubmit();
+	}
 </script>
 
 <Page title="Incidents" subtitle="From alert to postmortem">
@@ -91,17 +117,13 @@
 				</h2>
 			{/if}
 
-			<span class="text-subtle-foreground font-mono text-xs">{incident.id}</span>
+			<span class="text-subtle-foreground font-mono text-xs">{incident.ref ?? incident.id}</span>
 			<div class="flex-1"></div>
 
-			<form method="POST" action="{base}?/severity" use:enhance bind:this={form}>
-				<Select.Root
-					type="single"
-					name="severity"
-					value={incident.severity}
-					onValueChange={() => form?.requestSubmit()}
-				>
-					<Select.Trigger size="sm" class="w-24">{incident.severity}</Select.Trigger>
+			<form method="POST" action="{base}?/severity" use:enhance bind:this={severityForm}>
+				<input type="hidden" name="severity" value={severityValue} />
+				<Select.Root type="single" value={severityValue} onValueChange={changeSeverity}>
+					<Select.Trigger size="sm" class="w-24">{severityValue}</Select.Trigger>
 					<Select.Content>
 						<Select.Group>
 							{#each SEVERITIES as level (level.id)}
@@ -117,7 +139,7 @@
 				class="text-muted-foreground hover:text-brand-foreground hover:border-brand-edge border-input inline-flex items-center gap-1.5 rounded-full border px-[11px] py-[5px] font-mono text-xs"
 			>
 				<MessageSquareIcon class="size-3.5" />
-				#inc-{incident.id.split('-')[1].toLowerCase()}
+				#inc-{incident.ref ? incident.ref.replace('INC-', '') : incident.id.slice(0, 6)}
 			</a>
 		</div>
 
@@ -129,31 +151,27 @@
 
 		<div class="bg-card grid gap-6 rounded-xl border px-3.5 py-3 min-[900px]:grid-cols-[auto_1fr_auto]">
 			<div class="flex flex-col gap-2">
-				{#each [['lead', 'Lead', incident.lead], ['comms', 'Comms', incident.comms]] as [role, label, person] (role)}
-					<div class="flex items-center gap-2">
-						<span class="text-subtle-foreground w-13 font-mono text-[10.5px] tracking-[0.06em] uppercase">
-							{label}
-						</span>
-						<form method="POST" action="{base}?/role" use:enhance bind:this={roleForms[role]}>
-							<input type="hidden" name="role" value={role} />
-							<Select.Root
-								type="single"
-								name="person"
-								value={person}
-								onValueChange={() => roleForms[role]?.requestSubmit()}
-							>
-								<Select.Trigger size="sm" class="w-[150px]">{person}</Select.Trigger>
-								<Select.Content>
-									<Select.Group>
-										{#each PEOPLE as candidate (candidate)}
-											<Select.Item value={candidate} label={candidate}>{candidate}</Select.Item>
-										{/each}
-									</Select.Group>
-								</Select.Content>
-							</Select.Root>
-						</form>
-					</div>
-				{/each}
+				<div class="flex items-center gap-2">
+					<span class="text-subtle-foreground w-13 font-mono text-[10.5px] tracking-[0.06em] uppercase">
+						Lead
+					</span>
+					<form method="POST" action="{base}?/role" use:enhance bind:this={leadForm}>
+						<input type="hidden" name="role" value="lead" />
+						<input type="hidden" name="person" value={leadValue} />
+						<Select.Root type="single" value={leadValue} onValueChange={changeLead}>
+							<Select.Trigger size="sm" class="w-[150px]">{leadName}</Select.Trigger>
+							<Select.Content>
+								<Select.Group>
+									{#each data.people as candidate (candidate.id)}
+										<Select.Item value={candidate.id} label={candidate.name}>
+											{candidate.name}
+										</Select.Item>
+									{/each}
+								</Select.Group>
+							</Select.Content>
+						</Select.Root>
+					</form>
+				</div>
 			</div>
 
 			<div class="flex flex-col gap-2">
@@ -209,6 +227,6 @@
 
 <ResolveDialog
 	bind:open={resolving}
-	incidentId={incident.id}
+	incidentId={incident.ref ?? incident.id}
 	linkedAlerts={incident.alerts.filter((alert) => alert.status !== 'resolved').length}
 />

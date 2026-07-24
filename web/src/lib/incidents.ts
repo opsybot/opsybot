@@ -91,6 +91,7 @@ export type RelatedIncident = {
 	relation: RelationKind;
 	id: string;
 	name: string;
+	relationId?: string;
 };
 
 export type StatusPageUpdate = {
@@ -103,10 +104,12 @@ export type PostmortemState = 'not-started' | 'draft' | 'in-review' | 'published
 
 export type Incident = {
 	id: string;
+	ref?: string;
 	name: string;
 	severity: Severity;
 	status: IncidentStage;
 	lead: string;
+	leadUserId?: string;
 	comms: string;
 	team: string;
 	services: string[];
@@ -116,6 +119,7 @@ export type Incident = {
 	mine: boolean;
 	summary: string;
 	customFields: { label: string; value: string; mono?: boolean }[];
+	customFieldsRaw?: Record<string, string>;
 	related: RelatedIncident[];
 	alerts: LinkedAlert[];
 	timeline: TimelineEntry[];

@@ -1,7 +1,9 @@
+import type { Cookies } from '@sveltejs/kit';
 import type { Alert, Dashboard, Incident, OnCallEntry, OverdueItem, Shift } from '$lib/dashboard';
 import { isActive } from '$lib/incidents';
 import { scenario } from './fixtures';
 import { listIncidents } from './incidents';
+import { listIncidents as listIncidentsApi } from './incidents-api';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -150,6 +152,10 @@ export function getDashboard(): Dashboard {
 	};
 }
 
-export function getNavCounts(): { openIncidents: number } {
-	return { openIncidents: listIncidents().filter(isActive).length };
+export async function getNavCounts(
+	cookies: Cookies,
+	workspace: string
+): Promise<{ openIncidents: number }> {
+	const { incidents } = await listIncidentsApi(cookies, workspace, { active: true, limit: 100 });
+	return { openIncidents: incidents.length };
 }

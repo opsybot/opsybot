@@ -272,6 +272,33 @@ func (e ApiKeyKind) Valid() bool {
 	}
 }
 
+// Defines values for ChangeStatusRequestStatus.
+const (
+	ChangeStatusRequestStatusDeclared      ChangeStatusRequestStatus = "declared"
+	ChangeStatusRequestStatusIdentified    ChangeStatusRequestStatus = "identified"
+	ChangeStatusRequestStatusInvestigating ChangeStatusRequestStatus = "investigating"
+	ChangeStatusRequestStatusMonitoring    ChangeStatusRequestStatus = "monitoring"
+	ChangeStatusRequestStatusResolved      ChangeStatusRequestStatus = "resolved"
+)
+
+// Valid indicates whether the value is a known member of the ChangeStatusRequestStatus enum.
+func (e ChangeStatusRequestStatus) Valid() bool {
+	switch e {
+	case ChangeStatusRequestStatusDeclared:
+		return true
+	case ChangeStatusRequestStatusIdentified:
+		return true
+	case ChangeStatusRequestStatusInvestigating:
+		return true
+	case ChangeStatusRequestStatusMonitoring:
+		return true
+	case ChangeStatusRequestStatusResolved:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ChannelType.
 const (
 	ChannelTypeDiscord  ChannelType = "discord"
@@ -650,6 +677,78 @@ func (e HealthStatus) Valid() bool {
 	}
 }
 
+// Defines values for IncidentStatus.
+const (
+	IncidentStatusDeclared      IncidentStatus = "declared"
+	IncidentStatusIdentified    IncidentStatus = "identified"
+	IncidentStatusInvestigating IncidentStatus = "investigating"
+	IncidentStatusMonitoring    IncidentStatus = "monitoring"
+	IncidentStatusResolved      IncidentStatus = "resolved"
+)
+
+// Valid indicates whether the value is a known member of the IncidentStatus enum.
+func (e IncidentStatus) Valid() bool {
+	switch e {
+	case IncidentStatusDeclared:
+		return true
+	case IncidentStatusIdentified:
+		return true
+	case IncidentStatusInvestigating:
+		return true
+	case IncidentStatusMonitoring:
+		return true
+	case IncidentStatusResolved:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IncidentFieldKind.
+const (
+	MultiSelect IncidentFieldKind = "multi_select"
+	Number      IncidentFieldKind = "number"
+	Select      IncidentFieldKind = "select"
+	Text        IncidentFieldKind = "text"
+)
+
+// Valid indicates whether the value is a known member of the IncidentFieldKind enum.
+func (e IncidentFieldKind) Valid() bool {
+	switch e {
+	case MultiSelect:
+		return true
+	case Number:
+		return true
+	case Select:
+		return true
+	case Text:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IncidentRelationRefKind.
+const (
+	IncidentRelationRefKindCausedBy  IncidentRelationRefKind = "caused_by"
+	IncidentRelationRefKindDuplicate IncidentRelationRefKind = "duplicate"
+	IncidentRelationRefKindRelated   IncidentRelationRefKind = "related"
+)
+
+// Valid indicates whether the value is a known member of the IncidentRelationRefKind enum.
+func (e IncidentRelationRefKind) Valid() bool {
+	switch e {
+	case IncidentRelationRefKindCausedBy:
+		return true
+	case IncidentRelationRefKindDuplicate:
+		return true
+	case IncidentRelationRefKindRelated:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LoginResultStatus.
 const (
 	LoginResultStatusOk                LoginResultStatus = "ok"
@@ -761,6 +860,27 @@ func (e RecentEscalationState) Valid() bool {
 	case RecentEscalationStateResolved:
 		return true
 	case RecentEscalationStateRunning:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RelateIncidentRequestKind.
+const (
+	RelateIncidentRequestKindCausedBy  RelateIncidentRequestKind = "caused_by"
+	RelateIncidentRequestKindDuplicate RelateIncidentRequestKind = "duplicate"
+	RelateIncidentRequestKindRelated   RelateIncidentRequestKind = "related"
+)
+
+// Valid indicates whether the value is a known member of the RelateIncidentRequestKind enum.
+func (e RelateIncidentRequestKind) Valid() bool {
+	switch e {
+	case RelateIncidentRequestKindCausedBy:
+		return true
+	case RelateIncidentRequestKindDuplicate:
+		return true
+	case RelateIncidentRequestKindRelated:
 		return true
 	default:
 		return false
@@ -992,6 +1112,13 @@ type AcceptInviteRequest struct {
 	Password string `json:"password"`
 	Timezone string `json:"timezone"`
 	Token    string `json:"token"`
+}
+
+// AddFollowupRequest defines model for AddFollowupRequest.
+type AddFollowupRequest struct {
+	DueAt       *time.Time `json:"dueAt,omitempty"`
+	OwnerUserId *string    `json:"ownerUserId,omitempty"`
+	Title       string     `json:"title"`
 }
 
 // AddOverrideRequest defines model for AddOverrideRequest.
@@ -1286,6 +1413,19 @@ type ChangeRoleRequest struct {
 	Role Role `json:"role"`
 }
 
+// ChangeSeverityRequest defines model for ChangeSeverityRequest.
+type ChangeSeverityRequest struct {
+	Level string `json:"level"`
+}
+
+// ChangeStatusRequest defines model for ChangeStatusRequest.
+type ChangeStatusRequest struct {
+	Status ChangeStatusRequestStatus `json:"status"`
+}
+
+// ChangeStatusRequestStatus defines model for ChangeStatusRequest.Status.
+type ChangeStatusRequestStatus string
+
 // Channel defines model for Channel.
 type Channel struct {
 	Detail   string      `json:"detail"`
@@ -1478,6 +1618,27 @@ type DeactivateMemberRequest struct {
 	Replacements map[string]string `json:"replacements"`
 }
 
+// DeclareFromAlertRequest defines model for DeclareFromAlertRequest.
+type DeclareFromAlertRequest struct {
+	AlertId       string    `json:"alertId"`
+	LeadUserId    *string   `json:"leadUserId,omitempty"`
+	Name          *string   `json:"name,omitempty"`
+	ServiceIds    *[]string `json:"serviceIds,omitempty"`
+	SeverityLevel *string   `json:"severityLevel,omitempty"`
+	Summary       *string   `json:"summary,omitempty"`
+	TeamSlug      *string   `json:"teamSlug,omitempty"`
+}
+
+// DeclareIncidentRequest defines model for DeclareIncidentRequest.
+type DeclareIncidentRequest struct {
+	LeadUserId    *string   `json:"leadUserId,omitempty"`
+	Name          string    `json:"name"`
+	ServiceIds    *[]string `json:"serviceIds,omitempty"`
+	SeverityLevel *string   `json:"severityLevel,omitempty"`
+	Summary       *string   `json:"summary,omitempty"`
+	TeamSlug      *string   `json:"teamSlug,omitempty"`
+}
+
 // DefaultPolicyRequest defines model for DefaultPolicyRequest.
 type DefaultPolicyRequest struct {
 	PolicySlug string `json:"policySlug"`
@@ -1622,6 +1783,118 @@ type Health struct {
 // HealthStatus defines model for Health.Status.
 type HealthStatus string
 
+// Incident defines model for Incident.
+type Incident struct {
+	Alerts            []IncidentAlertRef    `json:"alerts"`
+	CustomFields      map[string]string     `json:"customFields"`
+	DeclaredAt        time.Time             `json:"declaredAt"`
+	DeclaredBy        *string               `json:"declaredBy,omitempty"`
+	Followups         []IncidentFollowup    `json:"followups"`
+	Id                string                `json:"id"`
+	LeadLabel         *string               `json:"leadLabel,omitempty"`
+	LeadUserId        *string               `json:"leadUserId,omitempty"`
+	Name              string                `json:"name"`
+	Number            int                   `json:"number"`
+	Relations         []IncidentRelationRef `json:"relations"`
+	ResolutionSummary *string               `json:"resolutionSummary,omitempty"`
+	ResolvedAt        *time.Time            `json:"resolvedAt,omitempty"`
+	Services          []Service             `json:"services"`
+	SeverityLevel     string                `json:"severityLevel"`
+	Status            IncidentStatus        `json:"status"`
+	Summary           string                `json:"summary"`
+	TeamSlug          *string               `json:"teamSlug,omitempty"`
+	Timeline          []IncidentEvent       `json:"timeline"`
+}
+
+// IncidentStatus defines model for Incident.Status.
+type IncidentStatus string
+
+// IncidentAlertRef defines model for IncidentAlertRef.
+type IncidentAlertRef struct {
+	AlertId  string `json:"alertId"`
+	Severity string `json:"severity"`
+	Status   string `json:"status"`
+	Title    string `json:"title"`
+}
+
+// IncidentEvent defines model for IncidentEvent.
+type IncidentEvent struct {
+	Actor *string   `json:"actor,omitempty"`
+	At    time.Time `json:"at"`
+	Id    string    `json:"id"`
+	Kind  string    `json:"kind"`
+	Text  string    `json:"text"`
+}
+
+// IncidentField defines model for IncidentField.
+type IncidentField struct {
+	Id       *string           `json:"id,omitempty"`
+	Kind     IncidentFieldKind `json:"kind"`
+	Name     string            `json:"name"`
+	Options  *[]string         `json:"options,omitempty"`
+	Position *int              `json:"position,omitempty"`
+	Slug     *string           `json:"slug,omitempty"`
+}
+
+// IncidentFieldKind defines model for IncidentField.Kind.
+type IncidentFieldKind string
+
+// IncidentFieldList defines model for IncidentFieldList.
+type IncidentFieldList struct {
+	Items []IncidentField `json:"items"`
+}
+
+// IncidentFollowup defines model for IncidentFollowup.
+type IncidentFollowup struct {
+	Done        bool       `json:"done"`
+	DoneAt      *time.Time `json:"doneAt,omitempty"`
+	DueAt       *time.Time `json:"dueAt,omitempty"`
+	Id          string     `json:"id"`
+	IncidentId  string     `json:"incidentId"`
+	OwnerLabel  *string    `json:"ownerLabel,omitempty"`
+	OwnerUserId *string    `json:"ownerUserId,omitempty"`
+	Title       string     `json:"title"`
+}
+
+// IncidentFollowupList defines model for IncidentFollowupList.
+type IncidentFollowupList struct {
+	Items []IncidentFollowup `json:"items"`
+}
+
+// IncidentList defines model for IncidentList.
+type IncidentList struct {
+	Items      []Incident `json:"items"`
+	NextCursor *string    `json:"nextCursor,omitempty"`
+}
+
+// IncidentRelationRef defines model for IncidentRelationRef.
+type IncidentRelationRef struct {
+	Id            string                  `json:"id"`
+	Kind          IncidentRelationRefKind `json:"kind"`
+	RelatedId     string                  `json:"relatedId"`
+	RelatedName   string                  `json:"relatedName"`
+	RelatedNumber int                     `json:"relatedNumber"`
+	RelatedStatus string                  `json:"relatedStatus"`
+}
+
+// IncidentRelationRefKind defines model for IncidentRelationRef.Kind.
+type IncidentRelationRefKind string
+
+// IncidentSeverity defines model for IncidentSeverity.
+type IncidentSeverity struct {
+	Definition *string `json:"definition,omitempty"`
+	Id         *string `json:"id,omitempty"`
+	Label      string  `json:"label"`
+	Level      string  `json:"level"`
+	Position   *int    `json:"position,omitempty"`
+	Tone       string  `json:"tone"`
+}
+
+// IncidentSeverityList defines model for IncidentSeverityList.
+type IncidentSeverityList struct {
+	Items []IncidentSeverity `json:"items"`
+}
+
 // IngestFailure defines model for IngestFailure.
 type IngestFailure struct {
 	At      time.Time `json:"at"`
@@ -1677,6 +1950,11 @@ type LayerCoverage struct {
 	Index    int       `json:"index"`
 	Segments []Segment `json:"segments"`
 	Via      string    `json:"via"`
+}
+
+// LinkAlertRequest defines model for LinkAlertRequest.
+type LinkAlertRequest struct {
+	AlertId string `json:"alertId"`
 }
 
 // LoginRequest defines model for LoginRequest.
@@ -1822,6 +2100,15 @@ type RecoveryCodes struct {
 	Codes []string `json:"codes"`
 }
 
+// RelateIncidentRequest defines model for RelateIncidentRequest.
+type RelateIncidentRequest struct {
+	Kind      RelateIncidentRequestKind `json:"kind"`
+	RelatedId string                    `json:"relatedId"`
+}
+
+// RelateIncidentRequestKind defines model for RelateIncidentRequest.Kind.
+type RelateIncidentRequestKind string
+
 // ReorderAlertRoutesRequest defines model for ReorderAlertRoutesRequest.
 type ReorderAlertRoutesRequest struct {
 	Ids []string `json:"ids"`
@@ -1831,6 +2118,11 @@ type ReorderAlertRoutesRequest struct {
 type ResetPasswordRequest struct {
 	Password string `json:"password"`
 	Token    string `json:"token"`
+}
+
+// ResolveIncidentRequest defines model for ResolveIncidentRequest.
+type ResolveIncidentRequest struct {
+	Summary string `json:"summary"`
 }
 
 // Role defines model for Role.
@@ -1875,6 +2167,23 @@ type SaveEscalationWebhookRequest struct {
 	Secret *string `json:"secret,omitempty"`
 	Slug   *string `json:"slug,omitempty"`
 	Url    string  `json:"url"`
+}
+
+// SaveFieldsRequest defines model for SaveFieldsRequest.
+type SaveFieldsRequest struct {
+	Fields []IncidentField `json:"fields"`
+}
+
+// SaveServiceRequest defines model for SaveServiceRequest.
+type SaveServiceRequest struct {
+	Description *string `json:"description,omitempty"`
+	Name        string  `json:"name"`
+	TeamSlug    *string `json:"teamSlug,omitempty"`
+}
+
+// SaveSeveritiesRequest defines model for SaveSeveritiesRequest.
+type SaveSeveritiesRequest struct {
+	Severities []IncidentSeverity `json:"severities"`
 }
 
 // Schedule defines model for Schedule.
@@ -1971,6 +2280,20 @@ type Segment struct {
 	Via      *string   `json:"via,omitempty"`
 }
 
+// Service defines model for Service.
+type Service struct {
+	Description string  `json:"description"`
+	Id          string  `json:"id"`
+	Name        string  `json:"name"`
+	Slug        string  `json:"slug"`
+	TeamSlug    *string `json:"teamSlug,omitempty"`
+}
+
+// ServiceList defines model for ServiceList.
+type ServiceList struct {
+	Items []Service `json:"items"`
+}
+
 // Session defines model for Session.
 type Session struct {
 	CreatedAt  time.Time `json:"createdAt"`
@@ -1992,6 +2315,11 @@ type SessionUser struct {
 	Id       string `json:"id"`
 	Name     string `json:"name"`
 	Timezone string `json:"timezone"`
+}
+
+// SetCustomFieldsRequest defines model for SetCustomFieldsRequest.
+type SetCustomFieldsRequest struct {
+	Fields map[string]string `json:"fields"`
 }
 
 // SetupRequest defines model for SetupRequest.
@@ -2104,6 +2432,11 @@ type TeamList struct {
 	Items []Team `json:"items"`
 }
 
+// ToggleFollowupRequest defines model for ToggleFollowupRequest.
+type ToggleFollowupRequest struct {
+	Done bool `json:"done"`
+}
+
 // TokenRequest defines model for TokenRequest.
 type TokenRequest struct {
 	Token string `json:"token"`
@@ -2135,6 +2468,15 @@ type UpdateAlertMonitorRequestSeverity string
 // UpdateAlertSourceMappingRequest defines model for UpdateAlertSourceMappingRequest.
 type UpdateAlertSourceMappingRequest struct {
 	Mapping []AlertSourceMapping `json:"mapping"`
+}
+
+// UpdateIncidentRequest defines model for UpdateIncidentRequest.
+type UpdateIncidentRequest struct {
+	LeadUserId *string   `json:"leadUserId,omitempty"`
+	Name       string    `json:"name"`
+	ServiceIds *[]string `json:"serviceIds,omitempty"`
+	Summary    *string   `json:"summary,omitempty"`
+	TeamSlug   *string   `json:"teamSlug,omitempty"`
 }
 
 // UpdateProfileRequest defines model for UpdateProfileRequest.
@@ -2206,6 +2548,19 @@ type ListAuditParams struct {
 	Actor  *string `form:"actor,omitempty" json:"actor,omitempty"`
 	Action *string `form:"action,omitempty" json:"action,omitempty"`
 	Q      *string `form:"q,omitempty" json:"q,omitempty"`
+}
+
+// ListIncidentsParams defines parameters for ListIncidents.
+type ListIncidentsParams struct {
+	Status   *[]string  `form:"status,omitempty" json:"status,omitempty"`
+	Severity *[]string  `form:"severity,omitempty" json:"severity,omitempty"`
+	Service  *[]string  `form:"service,omitempty" json:"service,omitempty"`
+	Team     *[]string  `form:"team,omitempty" json:"team,omitempty"`
+	Active   *bool      `form:"active,omitempty" json:"active,omitempty"`
+	Since    *time.Time `form:"since,omitempty" json:"since,omitempty"`
+	Query    *string    `form:"query,omitempty" json:"query,omitempty"`
+	Cursor   *string    `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit    *int       `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // MyOnCallParams defines parameters for MyOnCall.
@@ -2337,6 +2692,45 @@ type CreateEscalationWebhookJSONRequestBody = SaveEscalationWebhookRequest
 // UpdateEscalationWebhookJSONRequestBody defines body for UpdateEscalationWebhook for application/json ContentType.
 type UpdateEscalationWebhookJSONRequestBody = SaveEscalationWebhookRequest
 
+// SaveIncidentFieldsJSONRequestBody defines body for SaveIncidentFields for application/json ContentType.
+type SaveIncidentFieldsJSONRequestBody = SaveFieldsRequest
+
+// SaveIncidentSeveritiesJSONRequestBody defines body for SaveIncidentSeverities for application/json ContentType.
+type SaveIncidentSeveritiesJSONRequestBody = SaveSeveritiesRequest
+
+// DeclareIncidentJSONRequestBody defines body for DeclareIncident for application/json ContentType.
+type DeclareIncidentJSONRequestBody = DeclareIncidentRequest
+
+// DeclareIncidentFromAlertJSONRequestBody defines body for DeclareIncidentFromAlert for application/json ContentType.
+type DeclareIncidentFromAlertJSONRequestBody = DeclareFromAlertRequest
+
+// UpdateIncidentJSONRequestBody defines body for UpdateIncident for application/json ContentType.
+type UpdateIncidentJSONRequestBody = UpdateIncidentRequest
+
+// LinkIncidentAlertJSONRequestBody defines body for LinkIncidentAlert for application/json ContentType.
+type LinkIncidentAlertJSONRequestBody = LinkAlertRequest
+
+// SetIncidentCustomFieldsJSONRequestBody defines body for SetIncidentCustomFields for application/json ContentType.
+type SetIncidentCustomFieldsJSONRequestBody = SetCustomFieldsRequest
+
+// AddIncidentFollowupJSONRequestBody defines body for AddIncidentFollowup for application/json ContentType.
+type AddIncidentFollowupJSONRequestBody = AddFollowupRequest
+
+// ToggleIncidentFollowupJSONRequestBody defines body for ToggleIncidentFollowup for application/json ContentType.
+type ToggleIncidentFollowupJSONRequestBody = ToggleFollowupRequest
+
+// RelateIncidentJSONRequestBody defines body for RelateIncident for application/json ContentType.
+type RelateIncidentJSONRequestBody = RelateIncidentRequest
+
+// ResolveIncidentJSONRequestBody defines body for ResolveIncident for application/json ContentType.
+type ResolveIncidentJSONRequestBody = ResolveIncidentRequest
+
+// ChangeIncidentSeverityJSONRequestBody defines body for ChangeIncidentSeverity for application/json ContentType.
+type ChangeIncidentSeverityJSONRequestBody = ChangeSeverityRequest
+
+// ChangeIncidentStatusJSONRequestBody defines body for ChangeIncidentStatus for application/json ContentType.
+type ChangeIncidentStatusJSONRequestBody = ChangeStatusRequest
+
 // CreateKeyJSONRequestBody defines body for CreateKey for application/json ContentType.
 type CreateKeyJSONRequestBody = CreateApiKeyRequest
 
@@ -2363,6 +2757,12 @@ type UpdateScheduleJSONRequestBody = UpdateScheduleRequest
 
 // AddScheduleOverrideJSONRequestBody defines body for AddScheduleOverride for application/json ContentType.
 type AddScheduleOverrideJSONRequestBody = AddOverrideRequest
+
+// CreateServiceJSONRequestBody defines body for CreateService for application/json ContentType.
+type CreateServiceJSONRequestBody = SaveServiceRequest
+
+// UpdateServiceJSONRequestBody defines body for UpdateService for application/json ContentType.
+type UpdateServiceJSONRequestBody = SaveServiceRequest
 
 // PutSsoConfigJSONRequestBody defines body for PutSsoConfig for application/json ContentType.
 type PutSsoConfigJSONRequestBody = SsoConfigRequest
@@ -2621,6 +3021,69 @@ type ServerInterface interface {
 	// Update an escalation webhook target
 	// (PUT /workspaces/{workspaceId}/escalation-webhooks/{webhookSlug})
 	UpdateEscalationWebhook(w http.ResponseWriter, r *http.Request, workspaceId string, webhookSlug string)
+	// List the workspace incident custom fields
+	// (GET /workspaces/{workspaceId}/incident-fields)
+	ListIncidentFields(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Replace the workspace incident custom fields
+	// (PUT /workspaces/{workspaceId}/incident-fields)
+	SaveIncidentFields(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// List open follow-up items across the workspace
+	// (GET /workspaces/{workspaceId}/incident-followups)
+	ListIncidentFollowups(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// List the workspace severity levels
+	// (GET /workspaces/{workspaceId}/incident-severities)
+	ListIncidentSeverities(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Replace the workspace severity levels
+	// (PUT /workspaces/{workspaceId}/incident-severities)
+	SaveIncidentSeverities(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// List incidents in a workspace
+	// (GET /workspaces/{workspaceId}/incidents)
+	ListIncidents(w http.ResponseWriter, r *http.Request, workspaceId string, params ListIncidentsParams)
+	// Declare a new incident
+	// (POST /workspaces/{workspaceId}/incidents)
+	DeclareIncident(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Declare an incident from an existing alert, preserving its context
+	// (POST /workspaces/{workspaceId}/incidents/from-alert)
+	DeclareIncidentFromAlert(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Get one incident with its timeline, alerts, relations, and follow-ups
+	// (GET /workspaces/{workspaceId}/incidents/{incidentId})
+	GetIncident(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string)
+	// Update incident name, summary, lead, team, and affected services
+	// (PATCH /workspaces/{workspaceId}/incidents/{incidentId})
+	UpdateIncident(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string)
+	// Link an alert to an incident
+	// (POST /workspaces/{workspaceId}/incidents/{incidentId}/alerts)
+	LinkIncidentAlert(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string)
+	// Unlink an alert from an incident
+	// (DELETE /workspaces/{workspaceId}/incidents/{incidentId}/alerts/{alertId})
+	UnlinkIncidentAlert(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, alertId string)
+	// Set an incident's custom field values
+	// (PUT /workspaces/{workspaceId}/incidents/{incidentId}/custom-fields)
+	SetIncidentCustomFields(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string)
+	// Add a follow-up item to an incident
+	// (POST /workspaces/{workspaceId}/incidents/{incidentId}/followups)
+	AddIncidentFollowup(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string)
+	// Mark a follow-up item done or not done
+	// (POST /workspaces/{workspaceId}/incidents/{incidentId}/followups/{followupId})
+	ToggleIncidentFollowup(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, followupId string)
+	// Relate an incident to another incident
+	// (POST /workspaces/{workspaceId}/incidents/{incidentId}/relations)
+	RelateIncident(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string)
+	// Remove a relation between incidents
+	// (DELETE /workspaces/{workspaceId}/incidents/{incidentId}/relations/{relationId})
+	UnrelateIncident(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, relationId string)
+	// Reopen a resolved incident
+	// (POST /workspaces/{workspaceId}/incidents/{incidentId}/reopen)
+	ReopenIncident(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string)
+	// Resolve an incident with a required resolution summary
+	// (POST /workspaces/{workspaceId}/incidents/{incidentId}/resolve)
+	ResolveIncident(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string)
+	// Change an incident's severity
+	// (POST /workspaces/{workspaceId}/incidents/{incidentId}/severity)
+	ChangeIncidentSeverity(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string)
+	// Move an incident to a valid next status
+	// (POST /workspaces/{workspaceId}/incidents/{incidentId}/status)
+	ChangeIncidentStatus(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string)
 	// List API keys in a workspace
 	// (GET /workspaces/{workspaceId}/keys)
 	ListKeys(w http.ResponseWriter, r *http.Request, workspaceId string)
@@ -2708,6 +3171,18 @@ type ServerInterface interface {
 	// Restore an archived schedule
 	// (POST /workspaces/{workspaceId}/schedules/{scheduleSlug}/unarchive)
 	UnarchiveSchedule(w http.ResponseWriter, r *http.Request, workspaceId string, scheduleSlug string)
+	// List the workspace services
+	// (GET /workspaces/{workspaceId}/services)
+	ListServices(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Create a service
+	// (POST /workspaces/{workspaceId}/services)
+	CreateService(w http.ResponseWriter, r *http.Request, workspaceId string)
+	// Delete a service
+	// (DELETE /workspaces/{workspaceId}/services/{serviceId})
+	DeleteService(w http.ResponseWriter, r *http.Request, workspaceId string, serviceId string)
+	// Update a service
+	// (PATCH /workspaces/{workspaceId}/services/{serviceId})
+	UpdateService(w http.ResponseWriter, r *http.Request, workspaceId string, serviceId string)
 	// Read the workspace SSO configuration
 	// (GET /workspaces/{workspaceId}/sso)
 	GetSsoConfig(w http.ResponseWriter, r *http.Request, workspaceId string)
@@ -3230,6 +3705,132 @@ func (_ Unimplemented) UpdateEscalationWebhook(w http.ResponseWriter, r *http.Re
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// List the workspace incident custom fields
+// (GET /workspaces/{workspaceId}/incident-fields)
+func (_ Unimplemented) ListIncidentFields(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Replace the workspace incident custom fields
+// (PUT /workspaces/{workspaceId}/incident-fields)
+func (_ Unimplemented) SaveIncidentFields(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List open follow-up items across the workspace
+// (GET /workspaces/{workspaceId}/incident-followups)
+func (_ Unimplemented) ListIncidentFollowups(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List the workspace severity levels
+// (GET /workspaces/{workspaceId}/incident-severities)
+func (_ Unimplemented) ListIncidentSeverities(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Replace the workspace severity levels
+// (PUT /workspaces/{workspaceId}/incident-severities)
+func (_ Unimplemented) SaveIncidentSeverities(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List incidents in a workspace
+// (GET /workspaces/{workspaceId}/incidents)
+func (_ Unimplemented) ListIncidents(w http.ResponseWriter, r *http.Request, workspaceId string, params ListIncidentsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Declare a new incident
+// (POST /workspaces/{workspaceId}/incidents)
+func (_ Unimplemented) DeclareIncident(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Declare an incident from an existing alert, preserving its context
+// (POST /workspaces/{workspaceId}/incidents/from-alert)
+func (_ Unimplemented) DeclareIncidentFromAlert(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get one incident with its timeline, alerts, relations, and follow-ups
+// (GET /workspaces/{workspaceId}/incidents/{incidentId})
+func (_ Unimplemented) GetIncident(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update incident name, summary, lead, team, and affected services
+// (PATCH /workspaces/{workspaceId}/incidents/{incidentId})
+func (_ Unimplemented) UpdateIncident(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Link an alert to an incident
+// (POST /workspaces/{workspaceId}/incidents/{incidentId}/alerts)
+func (_ Unimplemented) LinkIncidentAlert(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Unlink an alert from an incident
+// (DELETE /workspaces/{workspaceId}/incidents/{incidentId}/alerts/{alertId})
+func (_ Unimplemented) UnlinkIncidentAlert(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, alertId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Set an incident's custom field values
+// (PUT /workspaces/{workspaceId}/incidents/{incidentId}/custom-fields)
+func (_ Unimplemented) SetIncidentCustomFields(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Add a follow-up item to an incident
+// (POST /workspaces/{workspaceId}/incidents/{incidentId}/followups)
+func (_ Unimplemented) AddIncidentFollowup(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Mark a follow-up item done or not done
+// (POST /workspaces/{workspaceId}/incidents/{incidentId}/followups/{followupId})
+func (_ Unimplemented) ToggleIncidentFollowup(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, followupId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Relate an incident to another incident
+// (POST /workspaces/{workspaceId}/incidents/{incidentId}/relations)
+func (_ Unimplemented) RelateIncident(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Remove a relation between incidents
+// (DELETE /workspaces/{workspaceId}/incidents/{incidentId}/relations/{relationId})
+func (_ Unimplemented) UnrelateIncident(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, relationId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Reopen a resolved incident
+// (POST /workspaces/{workspaceId}/incidents/{incidentId}/reopen)
+func (_ Unimplemented) ReopenIncident(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Resolve an incident with a required resolution summary
+// (POST /workspaces/{workspaceId}/incidents/{incidentId}/resolve)
+func (_ Unimplemented) ResolveIncident(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Change an incident's severity
+// (POST /workspaces/{workspaceId}/incidents/{incidentId}/severity)
+func (_ Unimplemented) ChangeIncidentSeverity(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Move an incident to a valid next status
+// (POST /workspaces/{workspaceId}/incidents/{incidentId}/status)
+func (_ Unimplemented) ChangeIncidentStatus(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // List API keys in a workspace
 // (GET /workspaces/{workspaceId}/keys)
 func (_ Unimplemented) ListKeys(w http.ResponseWriter, r *http.Request, workspaceId string) {
@@ -3401,6 +4002,30 @@ func (_ Unimplemented) ResumeSchedule(w http.ResponseWriter, r *http.Request, wo
 // Restore an archived schedule
 // (POST /workspaces/{workspaceId}/schedules/{scheduleSlug}/unarchive)
 func (_ Unimplemented) UnarchiveSchedule(w http.ResponseWriter, r *http.Request, workspaceId string, scheduleSlug string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List the workspace services
+// (GET /workspaces/{workspaceId}/services)
+func (_ Unimplemented) ListServices(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create a service
+// (POST /workspaces/{workspaceId}/services)
+func (_ Unimplemented) CreateService(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete a service
+// (DELETE /workspaces/{workspaceId}/services/{serviceId})
+func (_ Unimplemented) DeleteService(w http.ResponseWriter, r *http.Request, workspaceId string, serviceId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update a service
+// (PATCH /workspaces/{workspaceId}/services/{serviceId})
+func (_ Unimplemented) UpdateService(w http.ResponseWriter, r *http.Request, workspaceId string, serviceId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -5778,6 +6403,816 @@ func (siw *ServerInterfaceWrapper) UpdateEscalationWebhook(w http.ResponseWriter
 	handler.ServeHTTP(w, r)
 }
 
+// ListIncidentFields operation middleware
+func (siw *ServerInterfaceWrapper) ListIncidentFields(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListIncidentFields(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SaveIncidentFields operation middleware
+func (siw *ServerInterfaceWrapper) SaveIncidentFields(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SaveIncidentFields(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListIncidentFollowups operation middleware
+func (siw *ServerInterfaceWrapper) ListIncidentFollowups(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListIncidentFollowups(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListIncidentSeverities operation middleware
+func (siw *ServerInterfaceWrapper) ListIncidentSeverities(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListIncidentSeverities(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SaveIncidentSeverities operation middleware
+func (siw *ServerInterfaceWrapper) SaveIncidentSeverities(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SaveIncidentSeverities(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListIncidents operation middleware
+func (siw *ServerInterfaceWrapper) ListIncidents(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListIncidentsParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", false, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "severity" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", false, false, "severity", r.URL.Query(), &params.Severity, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "severity"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "severity", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "service" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", false, false, "service", r.URL.Query(), &params.Service, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "service"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "team" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", false, false, "team", r.URL.Query(), &params.Team, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "team"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "team", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "active" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "active", r.URL.Query(), &params.Active, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "active"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "active", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "since" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "since", r.URL.Query(), &params.Since, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "since"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "since", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "query" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "query", r.URL.Query(), &params.Query, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "query"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "query", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListIncidents(w, r, workspaceId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeclareIncident operation middleware
+func (siw *ServerInterfaceWrapper) DeclareIncident(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeclareIncident(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeclareIncidentFromAlert operation middleware
+func (siw *ServerInterfaceWrapper) DeclareIncidentFromAlert(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeclareIncidentFromAlert(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetIncident operation middleware
+func (siw *ServerInterfaceWrapper) GetIncident(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "incidentId" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incidentId", chi.URLParam(r, "incidentId"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incidentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetIncident(w, r, workspaceId, incidentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateIncident operation middleware
+func (siw *ServerInterfaceWrapper) UpdateIncident(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "incidentId" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incidentId", chi.URLParam(r, "incidentId"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incidentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateIncident(w, r, workspaceId, incidentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// LinkIncidentAlert operation middleware
+func (siw *ServerInterfaceWrapper) LinkIncidentAlert(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "incidentId" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incidentId", chi.URLParam(r, "incidentId"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incidentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.LinkIncidentAlert(w, r, workspaceId, incidentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UnlinkIncidentAlert operation middleware
+func (siw *ServerInterfaceWrapper) UnlinkIncidentAlert(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "incidentId" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incidentId", chi.URLParam(r, "incidentId"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incidentId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "alertId" -------------
+	var alertId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "alertId", chi.URLParam(r, "alertId"), &alertId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "alertId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UnlinkIncidentAlert(w, r, workspaceId, incidentId, alertId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetIncidentCustomFields operation middleware
+func (siw *ServerInterfaceWrapper) SetIncidentCustomFields(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "incidentId" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incidentId", chi.URLParam(r, "incidentId"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incidentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetIncidentCustomFields(w, r, workspaceId, incidentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AddIncidentFollowup operation middleware
+func (siw *ServerInterfaceWrapper) AddIncidentFollowup(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "incidentId" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incidentId", chi.URLParam(r, "incidentId"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incidentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddIncidentFollowup(w, r, workspaceId, incidentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ToggleIncidentFollowup operation middleware
+func (siw *ServerInterfaceWrapper) ToggleIncidentFollowup(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "incidentId" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incidentId", chi.URLParam(r, "incidentId"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incidentId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "followupId" -------------
+	var followupId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "followupId", chi.URLParam(r, "followupId"), &followupId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "followupId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ToggleIncidentFollowup(w, r, workspaceId, incidentId, followupId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RelateIncident operation middleware
+func (siw *ServerInterfaceWrapper) RelateIncident(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "incidentId" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incidentId", chi.URLParam(r, "incidentId"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incidentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RelateIncident(w, r, workspaceId, incidentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UnrelateIncident operation middleware
+func (siw *ServerInterfaceWrapper) UnrelateIncident(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "incidentId" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incidentId", chi.URLParam(r, "incidentId"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incidentId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "relationId" -------------
+	var relationId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "relationId", chi.URLParam(r, "relationId"), &relationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "relationId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UnrelateIncident(w, r, workspaceId, incidentId, relationId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReopenIncident operation middleware
+func (siw *ServerInterfaceWrapper) ReopenIncident(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "incidentId" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incidentId", chi.URLParam(r, "incidentId"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incidentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReopenIncident(w, r, workspaceId, incidentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ResolveIncident operation middleware
+func (siw *ServerInterfaceWrapper) ResolveIncident(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "incidentId" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incidentId", chi.URLParam(r, "incidentId"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incidentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ResolveIncident(w, r, workspaceId, incidentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ChangeIncidentSeverity operation middleware
+func (siw *ServerInterfaceWrapper) ChangeIncidentSeverity(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "incidentId" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incidentId", chi.URLParam(r, "incidentId"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incidentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ChangeIncidentSeverity(w, r, workspaceId, incidentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ChangeIncidentStatus operation middleware
+func (siw *ServerInterfaceWrapper) ChangeIncidentStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "incidentId" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incidentId", chi.URLParam(r, "incidentId"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incidentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ChangeIncidentStatus(w, r, workspaceId, incidentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListKeys operation middleware
 func (siw *ServerInterfaceWrapper) ListKeys(w http.ResponseWriter, r *http.Request) {
 
@@ -6784,6 +8219,128 @@ func (siw *ServerInterfaceWrapper) UnarchiveSchedule(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
+// ListServices operation middleware
+func (siw *ServerInterfaceWrapper) ListServices(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListServices(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateService operation middleware
+func (siw *ServerInterfaceWrapper) CreateService(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateService(w, r, workspaceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteService operation middleware
+func (siw *ServerInterfaceWrapper) DeleteService(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "serviceId" -------------
+	var serviceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "serviceId", chi.URLParam(r, "serviceId"), &serviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "serviceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteService(w, r, workspaceId, serviceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateService operation middleware
+func (siw *ServerInterfaceWrapper) UpdateService(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "serviceId" -------------
+	var serviceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "serviceId", chi.URLParam(r, "serviceId"), &serviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "serviceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateService(w, r, workspaceId, serviceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetSsoConfig operation middleware
 func (siw *ServerInterfaceWrapper) GetSsoConfig(w http.ResponseWriter, r *http.Request) {
 
@@ -7404,6 +8961,69 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Put(options.BaseURL+"/workspaces/{workspaceId}/escalation-webhooks/{webhookSlug}", wrapper.UpdateEscalationWebhook)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/incident-fields", wrapper.ListIncidentFields)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/workspaces/{workspaceId}/incident-fields", wrapper.SaveIncidentFields)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/incident-followups", wrapper.ListIncidentFollowups)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/incident-severities", wrapper.ListIncidentSeverities)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/workspaces/{workspaceId}/incident-severities", wrapper.SaveIncidentSeverities)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/incidents", wrapper.ListIncidents)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/incidents", wrapper.DeclareIncident)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/incidents/from-alert", wrapper.DeclareIncidentFromAlert)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/incidents/{incidentId}", wrapper.GetIncident)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/workspaces/{workspaceId}/incidents/{incidentId}", wrapper.UpdateIncident)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/incidents/{incidentId}/alerts", wrapper.LinkIncidentAlert)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/workspaces/{workspaceId}/incidents/{incidentId}/alerts/{alertId}", wrapper.UnlinkIncidentAlert)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/workspaces/{workspaceId}/incidents/{incidentId}/custom-fields", wrapper.SetIncidentCustomFields)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/incidents/{incidentId}/followups", wrapper.AddIncidentFollowup)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/incidents/{incidentId}/followups/{followupId}", wrapper.ToggleIncidentFollowup)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/incidents/{incidentId}/relations", wrapper.RelateIncident)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/workspaces/{workspaceId}/incidents/{incidentId}/relations/{relationId}", wrapper.UnrelateIncident)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/incidents/{incidentId}/reopen", wrapper.ReopenIncident)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/incidents/{incidentId}/resolve", wrapper.ResolveIncident)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/incidents/{incidentId}/severity", wrapper.ChangeIncidentSeverity)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/incidents/{incidentId}/status", wrapper.ChangeIncidentStatus)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/workspaces/{workspaceId}/keys", wrapper.ListKeys)
 	})
 	r.Group(func(r chi.Router) {
@@ -7489,6 +9109,18 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/workspaces/{workspaceId}/schedules/{scheduleSlug}/unarchive", wrapper.UnarchiveSchedule)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/services", wrapper.ListServices)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/services", wrapper.CreateService)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/workspaces/{workspaceId}/services/{serviceId}", wrapper.DeleteService)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/workspaces/{workspaceId}/services/{serviceId}", wrapper.UpdateService)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/workspaces/{workspaceId}/sso", wrapper.GetSsoConfig)
@@ -12819,6 +14451,1604 @@ func (response UpdateEscalationWebhook404ApplicationProblemPlusJSONResponse) Vis
 	return err
 }
 
+type ListIncidentFieldsRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+}
+
+type ListIncidentFieldsResponseObject interface {
+	VisitListIncidentFieldsResponse(w http.ResponseWriter) error
+}
+
+type ListIncidentFields200JSONResponse IncidentFieldList
+
+func (response ListIncidentFields200JSONResponse) VisitListIncidentFieldsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentFields401ApplicationProblemPlusJSONResponse Problem
+
+func (response ListIncidentFields401ApplicationProblemPlusJSONResponse) VisitListIncidentFieldsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentFields403ApplicationProblemPlusJSONResponse Problem
+
+func (response ListIncidentFields403ApplicationProblemPlusJSONResponse) VisitListIncidentFieldsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentFields404ApplicationProblemPlusJSONResponse Problem
+
+func (response ListIncidentFields404ApplicationProblemPlusJSONResponse) VisitListIncidentFieldsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveIncidentFieldsRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	Body        *SaveIncidentFieldsJSONRequestBody
+}
+
+type SaveIncidentFieldsResponseObject interface {
+	VisitSaveIncidentFieldsResponse(w http.ResponseWriter) error
+}
+
+type SaveIncidentFields200JSONResponse IncidentFieldList
+
+func (response SaveIncidentFields200JSONResponse) VisitSaveIncidentFieldsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveIncidentFields400ApplicationProblemPlusJSONResponse Problem
+
+func (response SaveIncidentFields400ApplicationProblemPlusJSONResponse) VisitSaveIncidentFieldsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveIncidentFields401ApplicationProblemPlusJSONResponse Problem
+
+func (response SaveIncidentFields401ApplicationProblemPlusJSONResponse) VisitSaveIncidentFieldsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveIncidentFields403ApplicationProblemPlusJSONResponse Problem
+
+func (response SaveIncidentFields403ApplicationProblemPlusJSONResponse) VisitSaveIncidentFieldsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveIncidentFields404ApplicationProblemPlusJSONResponse Problem
+
+func (response SaveIncidentFields404ApplicationProblemPlusJSONResponse) VisitSaveIncidentFieldsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentFollowupsRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+}
+
+type ListIncidentFollowupsResponseObject interface {
+	VisitListIncidentFollowupsResponse(w http.ResponseWriter) error
+}
+
+type ListIncidentFollowups200JSONResponse IncidentFollowupList
+
+func (response ListIncidentFollowups200JSONResponse) VisitListIncidentFollowupsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentFollowups401ApplicationProblemPlusJSONResponse Problem
+
+func (response ListIncidentFollowups401ApplicationProblemPlusJSONResponse) VisitListIncidentFollowupsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentFollowups403ApplicationProblemPlusJSONResponse Problem
+
+func (response ListIncidentFollowups403ApplicationProblemPlusJSONResponse) VisitListIncidentFollowupsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentFollowups404ApplicationProblemPlusJSONResponse Problem
+
+func (response ListIncidentFollowups404ApplicationProblemPlusJSONResponse) VisitListIncidentFollowupsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentSeveritiesRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+}
+
+type ListIncidentSeveritiesResponseObject interface {
+	VisitListIncidentSeveritiesResponse(w http.ResponseWriter) error
+}
+
+type ListIncidentSeverities200JSONResponse IncidentSeverityList
+
+func (response ListIncidentSeverities200JSONResponse) VisitListIncidentSeveritiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentSeverities401ApplicationProblemPlusJSONResponse Problem
+
+func (response ListIncidentSeverities401ApplicationProblemPlusJSONResponse) VisitListIncidentSeveritiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentSeverities403ApplicationProblemPlusJSONResponse Problem
+
+func (response ListIncidentSeverities403ApplicationProblemPlusJSONResponse) VisitListIncidentSeveritiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentSeverities404ApplicationProblemPlusJSONResponse Problem
+
+func (response ListIncidentSeverities404ApplicationProblemPlusJSONResponse) VisitListIncidentSeveritiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveIncidentSeveritiesRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	Body        *SaveIncidentSeveritiesJSONRequestBody
+}
+
+type SaveIncidentSeveritiesResponseObject interface {
+	VisitSaveIncidentSeveritiesResponse(w http.ResponseWriter) error
+}
+
+type SaveIncidentSeverities200JSONResponse IncidentSeverityList
+
+func (response SaveIncidentSeverities200JSONResponse) VisitSaveIncidentSeveritiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveIncidentSeverities400ApplicationProblemPlusJSONResponse Problem
+
+func (response SaveIncidentSeverities400ApplicationProblemPlusJSONResponse) VisitSaveIncidentSeveritiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveIncidentSeverities401ApplicationProblemPlusJSONResponse Problem
+
+func (response SaveIncidentSeverities401ApplicationProblemPlusJSONResponse) VisitSaveIncidentSeveritiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveIncidentSeverities403ApplicationProblemPlusJSONResponse Problem
+
+func (response SaveIncidentSeverities403ApplicationProblemPlusJSONResponse) VisitSaveIncidentSeveritiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveIncidentSeverities404ApplicationProblemPlusJSONResponse Problem
+
+func (response SaveIncidentSeverities404ApplicationProblemPlusJSONResponse) VisitSaveIncidentSeveritiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentsRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	Params      ListIncidentsParams
+}
+
+type ListIncidentsResponseObject interface {
+	VisitListIncidentsResponse(w http.ResponseWriter) error
+}
+
+type ListIncidents200JSONResponse IncidentList
+
+func (response ListIncidents200JSONResponse) VisitListIncidentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidents401ApplicationProblemPlusJSONResponse Problem
+
+func (response ListIncidents401ApplicationProblemPlusJSONResponse) VisitListIncidentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidents403ApplicationProblemPlusJSONResponse Problem
+
+func (response ListIncidents403ApplicationProblemPlusJSONResponse) VisitListIncidentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidents404ApplicationProblemPlusJSONResponse Problem
+
+func (response ListIncidents404ApplicationProblemPlusJSONResponse) VisitListIncidentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeclareIncidentRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	Body        *DeclareIncidentJSONRequestBody
+}
+
+type DeclareIncidentResponseObject interface {
+	VisitDeclareIncidentResponse(w http.ResponseWriter) error
+}
+
+type DeclareIncident201JSONResponse Incident
+
+func (response DeclareIncident201JSONResponse) VisitDeclareIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeclareIncident400ApplicationProblemPlusJSONResponse Problem
+
+func (response DeclareIncident400ApplicationProblemPlusJSONResponse) VisitDeclareIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeclareIncident401ApplicationProblemPlusJSONResponse Problem
+
+func (response DeclareIncident401ApplicationProblemPlusJSONResponse) VisitDeclareIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeclareIncident403ApplicationProblemPlusJSONResponse Problem
+
+func (response DeclareIncident403ApplicationProblemPlusJSONResponse) VisitDeclareIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeclareIncident404ApplicationProblemPlusJSONResponse Problem
+
+func (response DeclareIncident404ApplicationProblemPlusJSONResponse) VisitDeclareIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeclareIncidentFromAlertRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	Body        *DeclareIncidentFromAlertJSONRequestBody
+}
+
+type DeclareIncidentFromAlertResponseObject interface {
+	VisitDeclareIncidentFromAlertResponse(w http.ResponseWriter) error
+}
+
+type DeclareIncidentFromAlert201JSONResponse Incident
+
+func (response DeclareIncidentFromAlert201JSONResponse) VisitDeclareIncidentFromAlertResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeclareIncidentFromAlert400ApplicationProblemPlusJSONResponse Problem
+
+func (response DeclareIncidentFromAlert400ApplicationProblemPlusJSONResponse) VisitDeclareIncidentFromAlertResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeclareIncidentFromAlert401ApplicationProblemPlusJSONResponse Problem
+
+func (response DeclareIncidentFromAlert401ApplicationProblemPlusJSONResponse) VisitDeclareIncidentFromAlertResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeclareIncidentFromAlert403ApplicationProblemPlusJSONResponse Problem
+
+func (response DeclareIncidentFromAlert403ApplicationProblemPlusJSONResponse) VisitDeclareIncidentFromAlertResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeclareIncidentFromAlert404ApplicationProblemPlusJSONResponse Problem
+
+func (response DeclareIncidentFromAlert404ApplicationProblemPlusJSONResponse) VisitDeclareIncidentFromAlertResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetIncidentRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	IncidentId  string `json:"incidentId"`
+}
+
+type GetIncidentResponseObject interface {
+	VisitGetIncidentResponse(w http.ResponseWriter) error
+}
+
+type GetIncident200JSONResponse Incident
+
+func (response GetIncident200JSONResponse) VisitGetIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetIncident401ApplicationProblemPlusJSONResponse Problem
+
+func (response GetIncident401ApplicationProblemPlusJSONResponse) VisitGetIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetIncident403ApplicationProblemPlusJSONResponse Problem
+
+func (response GetIncident403ApplicationProblemPlusJSONResponse) VisitGetIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetIncident404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetIncident404ApplicationProblemPlusJSONResponse) VisitGetIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateIncidentRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	IncidentId  string `json:"incidentId"`
+	Body        *UpdateIncidentJSONRequestBody
+}
+
+type UpdateIncidentResponseObject interface {
+	VisitUpdateIncidentResponse(w http.ResponseWriter) error
+}
+
+type UpdateIncident200JSONResponse Incident
+
+func (response UpdateIncident200JSONResponse) VisitUpdateIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateIncident400ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateIncident400ApplicationProblemPlusJSONResponse) VisitUpdateIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateIncident401ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateIncident401ApplicationProblemPlusJSONResponse) VisitUpdateIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateIncident403ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateIncident403ApplicationProblemPlusJSONResponse) VisitUpdateIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateIncident404ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateIncident404ApplicationProblemPlusJSONResponse) VisitUpdateIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LinkIncidentAlertRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	IncidentId  string `json:"incidentId"`
+	Body        *LinkIncidentAlertJSONRequestBody
+}
+
+type LinkIncidentAlertResponseObject interface {
+	VisitLinkIncidentAlertResponse(w http.ResponseWriter) error
+}
+
+type LinkIncidentAlert200JSONResponse Incident
+
+func (response LinkIncidentAlert200JSONResponse) VisitLinkIncidentAlertResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LinkIncidentAlert400ApplicationProblemPlusJSONResponse Problem
+
+func (response LinkIncidentAlert400ApplicationProblemPlusJSONResponse) VisitLinkIncidentAlertResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LinkIncidentAlert401ApplicationProblemPlusJSONResponse Problem
+
+func (response LinkIncidentAlert401ApplicationProblemPlusJSONResponse) VisitLinkIncidentAlertResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LinkIncidentAlert403ApplicationProblemPlusJSONResponse Problem
+
+func (response LinkIncidentAlert403ApplicationProblemPlusJSONResponse) VisitLinkIncidentAlertResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LinkIncidentAlert404ApplicationProblemPlusJSONResponse Problem
+
+func (response LinkIncidentAlert404ApplicationProblemPlusJSONResponse) VisitLinkIncidentAlertResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnlinkIncidentAlertRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	IncidentId  string `json:"incidentId"`
+	AlertId     string `json:"alertId"`
+}
+
+type UnlinkIncidentAlertResponseObject interface {
+	VisitUnlinkIncidentAlertResponse(w http.ResponseWriter) error
+}
+
+type UnlinkIncidentAlert200JSONResponse Incident
+
+func (response UnlinkIncidentAlert200JSONResponse) VisitUnlinkIncidentAlertResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnlinkIncidentAlert401ApplicationProblemPlusJSONResponse Problem
+
+func (response UnlinkIncidentAlert401ApplicationProblemPlusJSONResponse) VisitUnlinkIncidentAlertResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnlinkIncidentAlert403ApplicationProblemPlusJSONResponse Problem
+
+func (response UnlinkIncidentAlert403ApplicationProblemPlusJSONResponse) VisitUnlinkIncidentAlertResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnlinkIncidentAlert404ApplicationProblemPlusJSONResponse Problem
+
+func (response UnlinkIncidentAlert404ApplicationProblemPlusJSONResponse) VisitUnlinkIncidentAlertResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetIncidentCustomFieldsRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	IncidentId  string `json:"incidentId"`
+	Body        *SetIncidentCustomFieldsJSONRequestBody
+}
+
+type SetIncidentCustomFieldsResponseObject interface {
+	VisitSetIncidentCustomFieldsResponse(w http.ResponseWriter) error
+}
+
+type SetIncidentCustomFields200JSONResponse Incident
+
+func (response SetIncidentCustomFields200JSONResponse) VisitSetIncidentCustomFieldsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetIncidentCustomFields400ApplicationProblemPlusJSONResponse Problem
+
+func (response SetIncidentCustomFields400ApplicationProblemPlusJSONResponse) VisitSetIncidentCustomFieldsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetIncidentCustomFields401ApplicationProblemPlusJSONResponse Problem
+
+func (response SetIncidentCustomFields401ApplicationProblemPlusJSONResponse) VisitSetIncidentCustomFieldsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetIncidentCustomFields403ApplicationProblemPlusJSONResponse Problem
+
+func (response SetIncidentCustomFields403ApplicationProblemPlusJSONResponse) VisitSetIncidentCustomFieldsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetIncidentCustomFields404ApplicationProblemPlusJSONResponse Problem
+
+func (response SetIncidentCustomFields404ApplicationProblemPlusJSONResponse) VisitSetIncidentCustomFieldsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddIncidentFollowupRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	IncidentId  string `json:"incidentId"`
+	Body        *AddIncidentFollowupJSONRequestBody
+}
+
+type AddIncidentFollowupResponseObject interface {
+	VisitAddIncidentFollowupResponse(w http.ResponseWriter) error
+}
+
+type AddIncidentFollowup200JSONResponse Incident
+
+func (response AddIncidentFollowup200JSONResponse) VisitAddIncidentFollowupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddIncidentFollowup400ApplicationProblemPlusJSONResponse Problem
+
+func (response AddIncidentFollowup400ApplicationProblemPlusJSONResponse) VisitAddIncidentFollowupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddIncidentFollowup401ApplicationProblemPlusJSONResponse Problem
+
+func (response AddIncidentFollowup401ApplicationProblemPlusJSONResponse) VisitAddIncidentFollowupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddIncidentFollowup403ApplicationProblemPlusJSONResponse Problem
+
+func (response AddIncidentFollowup403ApplicationProblemPlusJSONResponse) VisitAddIncidentFollowupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddIncidentFollowup404ApplicationProblemPlusJSONResponse Problem
+
+func (response AddIncidentFollowup404ApplicationProblemPlusJSONResponse) VisitAddIncidentFollowupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ToggleIncidentFollowupRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	IncidentId  string `json:"incidentId"`
+	FollowupId  string `json:"followupId"`
+	Body        *ToggleIncidentFollowupJSONRequestBody
+}
+
+type ToggleIncidentFollowupResponseObject interface {
+	VisitToggleIncidentFollowupResponse(w http.ResponseWriter) error
+}
+
+type ToggleIncidentFollowup200JSONResponse Incident
+
+func (response ToggleIncidentFollowup200JSONResponse) VisitToggleIncidentFollowupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ToggleIncidentFollowup400ApplicationProblemPlusJSONResponse Problem
+
+func (response ToggleIncidentFollowup400ApplicationProblemPlusJSONResponse) VisitToggleIncidentFollowupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ToggleIncidentFollowup401ApplicationProblemPlusJSONResponse Problem
+
+func (response ToggleIncidentFollowup401ApplicationProblemPlusJSONResponse) VisitToggleIncidentFollowupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ToggleIncidentFollowup403ApplicationProblemPlusJSONResponse Problem
+
+func (response ToggleIncidentFollowup403ApplicationProblemPlusJSONResponse) VisitToggleIncidentFollowupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ToggleIncidentFollowup404ApplicationProblemPlusJSONResponse Problem
+
+func (response ToggleIncidentFollowup404ApplicationProblemPlusJSONResponse) VisitToggleIncidentFollowupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RelateIncidentRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	IncidentId  string `json:"incidentId"`
+	Body        *RelateIncidentJSONRequestBody
+}
+
+type RelateIncidentResponseObject interface {
+	VisitRelateIncidentResponse(w http.ResponseWriter) error
+}
+
+type RelateIncident200JSONResponse Incident
+
+func (response RelateIncident200JSONResponse) VisitRelateIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RelateIncident400ApplicationProblemPlusJSONResponse Problem
+
+func (response RelateIncident400ApplicationProblemPlusJSONResponse) VisitRelateIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RelateIncident401ApplicationProblemPlusJSONResponse Problem
+
+func (response RelateIncident401ApplicationProblemPlusJSONResponse) VisitRelateIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RelateIncident403ApplicationProblemPlusJSONResponse Problem
+
+func (response RelateIncident403ApplicationProblemPlusJSONResponse) VisitRelateIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RelateIncident404ApplicationProblemPlusJSONResponse Problem
+
+func (response RelateIncident404ApplicationProblemPlusJSONResponse) VisitRelateIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnrelateIncidentRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	IncidentId  string `json:"incidentId"`
+	RelationId  string `json:"relationId"`
+}
+
+type UnrelateIncidentResponseObject interface {
+	VisitUnrelateIncidentResponse(w http.ResponseWriter) error
+}
+
+type UnrelateIncident200JSONResponse Incident
+
+func (response UnrelateIncident200JSONResponse) VisitUnrelateIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnrelateIncident401ApplicationProblemPlusJSONResponse Problem
+
+func (response UnrelateIncident401ApplicationProblemPlusJSONResponse) VisitUnrelateIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnrelateIncident403ApplicationProblemPlusJSONResponse Problem
+
+func (response UnrelateIncident403ApplicationProblemPlusJSONResponse) VisitUnrelateIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnrelateIncident404ApplicationProblemPlusJSONResponse Problem
+
+func (response UnrelateIncident404ApplicationProblemPlusJSONResponse) VisitUnrelateIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReopenIncidentRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	IncidentId  string `json:"incidentId"`
+}
+
+type ReopenIncidentResponseObject interface {
+	VisitReopenIncidentResponse(w http.ResponseWriter) error
+}
+
+type ReopenIncident200JSONResponse Incident
+
+func (response ReopenIncident200JSONResponse) VisitReopenIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReopenIncident401ApplicationProblemPlusJSONResponse Problem
+
+func (response ReopenIncident401ApplicationProblemPlusJSONResponse) VisitReopenIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReopenIncident403ApplicationProblemPlusJSONResponse Problem
+
+func (response ReopenIncident403ApplicationProblemPlusJSONResponse) VisitReopenIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReopenIncident404ApplicationProblemPlusJSONResponse Problem
+
+func (response ReopenIncident404ApplicationProblemPlusJSONResponse) VisitReopenIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReopenIncident409ApplicationProblemPlusJSONResponse Problem
+
+func (response ReopenIncident409ApplicationProblemPlusJSONResponse) VisitReopenIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResolveIncidentRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	IncidentId  string `json:"incidentId"`
+	Body        *ResolveIncidentJSONRequestBody
+}
+
+type ResolveIncidentResponseObject interface {
+	VisitResolveIncidentResponse(w http.ResponseWriter) error
+}
+
+type ResolveIncident200JSONResponse Incident
+
+func (response ResolveIncident200JSONResponse) VisitResolveIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResolveIncident400ApplicationProblemPlusJSONResponse Problem
+
+func (response ResolveIncident400ApplicationProblemPlusJSONResponse) VisitResolveIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResolveIncident401ApplicationProblemPlusJSONResponse Problem
+
+func (response ResolveIncident401ApplicationProblemPlusJSONResponse) VisitResolveIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResolveIncident403ApplicationProblemPlusJSONResponse Problem
+
+func (response ResolveIncident403ApplicationProblemPlusJSONResponse) VisitResolveIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResolveIncident404ApplicationProblemPlusJSONResponse Problem
+
+func (response ResolveIncident404ApplicationProblemPlusJSONResponse) VisitResolveIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResolveIncident409ApplicationProblemPlusJSONResponse Problem
+
+func (response ResolveIncident409ApplicationProblemPlusJSONResponse) VisitResolveIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeIncidentSeverityRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	IncidentId  string `json:"incidentId"`
+	Body        *ChangeIncidentSeverityJSONRequestBody
+}
+
+type ChangeIncidentSeverityResponseObject interface {
+	VisitChangeIncidentSeverityResponse(w http.ResponseWriter) error
+}
+
+type ChangeIncidentSeverity200JSONResponse Incident
+
+func (response ChangeIncidentSeverity200JSONResponse) VisitChangeIncidentSeverityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeIncidentSeverity400ApplicationProblemPlusJSONResponse Problem
+
+func (response ChangeIncidentSeverity400ApplicationProblemPlusJSONResponse) VisitChangeIncidentSeverityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeIncidentSeverity401ApplicationProblemPlusJSONResponse Problem
+
+func (response ChangeIncidentSeverity401ApplicationProblemPlusJSONResponse) VisitChangeIncidentSeverityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeIncidentSeverity403ApplicationProblemPlusJSONResponse Problem
+
+func (response ChangeIncidentSeverity403ApplicationProblemPlusJSONResponse) VisitChangeIncidentSeverityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeIncidentSeverity404ApplicationProblemPlusJSONResponse Problem
+
+func (response ChangeIncidentSeverity404ApplicationProblemPlusJSONResponse) VisitChangeIncidentSeverityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeIncidentStatusRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	IncidentId  string `json:"incidentId"`
+	Body        *ChangeIncidentStatusJSONRequestBody
+}
+
+type ChangeIncidentStatusResponseObject interface {
+	VisitChangeIncidentStatusResponse(w http.ResponseWriter) error
+}
+
+type ChangeIncidentStatus200JSONResponse Incident
+
+func (response ChangeIncidentStatus200JSONResponse) VisitChangeIncidentStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeIncidentStatus400ApplicationProblemPlusJSONResponse Problem
+
+func (response ChangeIncidentStatus400ApplicationProblemPlusJSONResponse) VisitChangeIncidentStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeIncidentStatus401ApplicationProblemPlusJSONResponse Problem
+
+func (response ChangeIncidentStatus401ApplicationProblemPlusJSONResponse) VisitChangeIncidentStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeIncidentStatus403ApplicationProblemPlusJSONResponse Problem
+
+func (response ChangeIncidentStatus403ApplicationProblemPlusJSONResponse) VisitChangeIncidentStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeIncidentStatus404ApplicationProblemPlusJSONResponse Problem
+
+func (response ChangeIncidentStatus404ApplicationProblemPlusJSONResponse) VisitChangeIncidentStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeIncidentStatus409ApplicationProblemPlusJSONResponse Problem
+
+func (response ChangeIncidentStatus409ApplicationProblemPlusJSONResponse) VisitChangeIncidentStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListKeysRequestObject struct {
 	WorkspaceId string `json:"workspaceId"`
 }
@@ -15024,6 +18254,288 @@ func (response UnarchiveSchedule409ApplicationProblemPlusJSONResponse) VisitUnar
 	return err
 }
 
+type ListServicesRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+}
+
+type ListServicesResponseObject interface {
+	VisitListServicesResponse(w http.ResponseWriter) error
+}
+
+type ListServices200JSONResponse ServiceList
+
+func (response ListServices200JSONResponse) VisitListServicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListServices401ApplicationProblemPlusJSONResponse Problem
+
+func (response ListServices401ApplicationProblemPlusJSONResponse) VisitListServicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListServices403ApplicationProblemPlusJSONResponse Problem
+
+func (response ListServices403ApplicationProblemPlusJSONResponse) VisitListServicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListServices404ApplicationProblemPlusJSONResponse Problem
+
+func (response ListServices404ApplicationProblemPlusJSONResponse) VisitListServicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateServiceRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	Body        *CreateServiceJSONRequestBody
+}
+
+type CreateServiceResponseObject interface {
+	VisitCreateServiceResponse(w http.ResponseWriter) error
+}
+
+type CreateService201JSONResponse Service
+
+func (response CreateService201JSONResponse) VisitCreateServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateService400ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateService400ApplicationProblemPlusJSONResponse) VisitCreateServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateService401ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateService401ApplicationProblemPlusJSONResponse) VisitCreateServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateService403ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateService403ApplicationProblemPlusJSONResponse) VisitCreateServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateService404ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateService404ApplicationProblemPlusJSONResponse) VisitCreateServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteServiceRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	ServiceId   string `json:"serviceId"`
+}
+
+type DeleteServiceResponseObject interface {
+	VisitDeleteServiceResponse(w http.ResponseWriter) error
+}
+
+type DeleteService204Response struct {
+}
+
+func (response DeleteService204Response) VisitDeleteServiceResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteService401ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteService401ApplicationProblemPlusJSONResponse) VisitDeleteServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteService403ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteService403ApplicationProblemPlusJSONResponse) VisitDeleteServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteService404ApplicationProblemPlusJSONResponse Problem
+
+func (response DeleteService404ApplicationProblemPlusJSONResponse) VisitDeleteServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateServiceRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	ServiceId   string `json:"serviceId"`
+	Body        *UpdateServiceJSONRequestBody
+}
+
+type UpdateServiceResponseObject interface {
+	VisitUpdateServiceResponse(w http.ResponseWriter) error
+}
+
+type UpdateService200JSONResponse Service
+
+func (response UpdateService200JSONResponse) VisitUpdateServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateService400ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateService400ApplicationProblemPlusJSONResponse) VisitUpdateServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateService401ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateService401ApplicationProblemPlusJSONResponse) VisitUpdateServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateService403ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateService403ApplicationProblemPlusJSONResponse) VisitUpdateServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateService404ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateService404ApplicationProblemPlusJSONResponse) VisitUpdateServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetSsoConfigRequestObject struct {
 	WorkspaceId string `json:"workspaceId"`
 }
@@ -15904,6 +19416,69 @@ type StrictServerInterface interface {
 	// Update an escalation webhook target
 	// (PUT /workspaces/{workspaceId}/escalation-webhooks/{webhookSlug})
 	UpdateEscalationWebhook(ctx context.Context, request UpdateEscalationWebhookRequestObject) (UpdateEscalationWebhookResponseObject, error)
+	// List the workspace incident custom fields
+	// (GET /workspaces/{workspaceId}/incident-fields)
+	ListIncidentFields(ctx context.Context, request ListIncidentFieldsRequestObject) (ListIncidentFieldsResponseObject, error)
+	// Replace the workspace incident custom fields
+	// (PUT /workspaces/{workspaceId}/incident-fields)
+	SaveIncidentFields(ctx context.Context, request SaveIncidentFieldsRequestObject) (SaveIncidentFieldsResponseObject, error)
+	// List open follow-up items across the workspace
+	// (GET /workspaces/{workspaceId}/incident-followups)
+	ListIncidentFollowups(ctx context.Context, request ListIncidentFollowupsRequestObject) (ListIncidentFollowupsResponseObject, error)
+	// List the workspace severity levels
+	// (GET /workspaces/{workspaceId}/incident-severities)
+	ListIncidentSeverities(ctx context.Context, request ListIncidentSeveritiesRequestObject) (ListIncidentSeveritiesResponseObject, error)
+	// Replace the workspace severity levels
+	// (PUT /workspaces/{workspaceId}/incident-severities)
+	SaveIncidentSeverities(ctx context.Context, request SaveIncidentSeveritiesRequestObject) (SaveIncidentSeveritiesResponseObject, error)
+	// List incidents in a workspace
+	// (GET /workspaces/{workspaceId}/incidents)
+	ListIncidents(ctx context.Context, request ListIncidentsRequestObject) (ListIncidentsResponseObject, error)
+	// Declare a new incident
+	// (POST /workspaces/{workspaceId}/incidents)
+	DeclareIncident(ctx context.Context, request DeclareIncidentRequestObject) (DeclareIncidentResponseObject, error)
+	// Declare an incident from an existing alert, preserving its context
+	// (POST /workspaces/{workspaceId}/incidents/from-alert)
+	DeclareIncidentFromAlert(ctx context.Context, request DeclareIncidentFromAlertRequestObject) (DeclareIncidentFromAlertResponseObject, error)
+	// Get one incident with its timeline, alerts, relations, and follow-ups
+	// (GET /workspaces/{workspaceId}/incidents/{incidentId})
+	GetIncident(ctx context.Context, request GetIncidentRequestObject) (GetIncidentResponseObject, error)
+	// Update incident name, summary, lead, team, and affected services
+	// (PATCH /workspaces/{workspaceId}/incidents/{incidentId})
+	UpdateIncident(ctx context.Context, request UpdateIncidentRequestObject) (UpdateIncidentResponseObject, error)
+	// Link an alert to an incident
+	// (POST /workspaces/{workspaceId}/incidents/{incidentId}/alerts)
+	LinkIncidentAlert(ctx context.Context, request LinkIncidentAlertRequestObject) (LinkIncidentAlertResponseObject, error)
+	// Unlink an alert from an incident
+	// (DELETE /workspaces/{workspaceId}/incidents/{incidentId}/alerts/{alertId})
+	UnlinkIncidentAlert(ctx context.Context, request UnlinkIncidentAlertRequestObject) (UnlinkIncidentAlertResponseObject, error)
+	// Set an incident's custom field values
+	// (PUT /workspaces/{workspaceId}/incidents/{incidentId}/custom-fields)
+	SetIncidentCustomFields(ctx context.Context, request SetIncidentCustomFieldsRequestObject) (SetIncidentCustomFieldsResponseObject, error)
+	// Add a follow-up item to an incident
+	// (POST /workspaces/{workspaceId}/incidents/{incidentId}/followups)
+	AddIncidentFollowup(ctx context.Context, request AddIncidentFollowupRequestObject) (AddIncidentFollowupResponseObject, error)
+	// Mark a follow-up item done or not done
+	// (POST /workspaces/{workspaceId}/incidents/{incidentId}/followups/{followupId})
+	ToggleIncidentFollowup(ctx context.Context, request ToggleIncidentFollowupRequestObject) (ToggleIncidentFollowupResponseObject, error)
+	// Relate an incident to another incident
+	// (POST /workspaces/{workspaceId}/incidents/{incidentId}/relations)
+	RelateIncident(ctx context.Context, request RelateIncidentRequestObject) (RelateIncidentResponseObject, error)
+	// Remove a relation between incidents
+	// (DELETE /workspaces/{workspaceId}/incidents/{incidentId}/relations/{relationId})
+	UnrelateIncident(ctx context.Context, request UnrelateIncidentRequestObject) (UnrelateIncidentResponseObject, error)
+	// Reopen a resolved incident
+	// (POST /workspaces/{workspaceId}/incidents/{incidentId}/reopen)
+	ReopenIncident(ctx context.Context, request ReopenIncidentRequestObject) (ReopenIncidentResponseObject, error)
+	// Resolve an incident with a required resolution summary
+	// (POST /workspaces/{workspaceId}/incidents/{incidentId}/resolve)
+	ResolveIncident(ctx context.Context, request ResolveIncidentRequestObject) (ResolveIncidentResponseObject, error)
+	// Change an incident's severity
+	// (POST /workspaces/{workspaceId}/incidents/{incidentId}/severity)
+	ChangeIncidentSeverity(ctx context.Context, request ChangeIncidentSeverityRequestObject) (ChangeIncidentSeverityResponseObject, error)
+	// Move an incident to a valid next status
+	// (POST /workspaces/{workspaceId}/incidents/{incidentId}/status)
+	ChangeIncidentStatus(ctx context.Context, request ChangeIncidentStatusRequestObject) (ChangeIncidentStatusResponseObject, error)
 	// List API keys in a workspace
 	// (GET /workspaces/{workspaceId}/keys)
 	ListKeys(ctx context.Context, request ListKeysRequestObject) (ListKeysResponseObject, error)
@@ -15991,6 +19566,18 @@ type StrictServerInterface interface {
 	// Restore an archived schedule
 	// (POST /workspaces/{workspaceId}/schedules/{scheduleSlug}/unarchive)
 	UnarchiveSchedule(ctx context.Context, request UnarchiveScheduleRequestObject) (UnarchiveScheduleResponseObject, error)
+	// List the workspace services
+	// (GET /workspaces/{workspaceId}/services)
+	ListServices(ctx context.Context, request ListServicesRequestObject) (ListServicesResponseObject, error)
+	// Create a service
+	// (POST /workspaces/{workspaceId}/services)
+	CreateService(ctx context.Context, request CreateServiceRequestObject) (CreateServiceResponseObject, error)
+	// Delete a service
+	// (DELETE /workspaces/{workspaceId}/services/{serviceId})
+	DeleteService(ctx context.Context, request DeleteServiceRequestObject) (DeleteServiceResponseObject, error)
+	// Update a service
+	// (PATCH /workspaces/{workspaceId}/services/{serviceId})
+	UpdateService(ctx context.Context, request UpdateServiceRequestObject) (UpdateServiceResponseObject, error)
 	// Read the workspace SSO configuration
 	// (GET /workspaces/{workspaceId}/sso)
 	GetSsoConfig(ctx context.Context, request GetSsoConfigRequestObject) (GetSsoConfigResponseObject, error)
@@ -18403,6 +21990,660 @@ func (sh *strictHandler) UpdateEscalationWebhook(w http.ResponseWriter, r *http.
 	}
 }
 
+// ListIncidentFields operation middleware
+func (sh *strictHandler) ListIncidentFields(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request ListIncidentFieldsRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListIncidentFields(ctx, request.(ListIncidentFieldsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListIncidentFields")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListIncidentFieldsResponseObject); ok {
+		if err := validResponse.VisitListIncidentFieldsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SaveIncidentFields operation middleware
+func (sh *strictHandler) SaveIncidentFields(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request SaveIncidentFieldsRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	var body SaveIncidentFieldsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SaveIncidentFields(ctx, request.(SaveIncidentFieldsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SaveIncidentFields")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SaveIncidentFieldsResponseObject); ok {
+		if err := validResponse.VisitSaveIncidentFieldsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListIncidentFollowups operation middleware
+func (sh *strictHandler) ListIncidentFollowups(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request ListIncidentFollowupsRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListIncidentFollowups(ctx, request.(ListIncidentFollowupsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListIncidentFollowups")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListIncidentFollowupsResponseObject); ok {
+		if err := validResponse.VisitListIncidentFollowupsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListIncidentSeverities operation middleware
+func (sh *strictHandler) ListIncidentSeverities(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request ListIncidentSeveritiesRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListIncidentSeverities(ctx, request.(ListIncidentSeveritiesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListIncidentSeverities")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListIncidentSeveritiesResponseObject); ok {
+		if err := validResponse.VisitListIncidentSeveritiesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SaveIncidentSeverities operation middleware
+func (sh *strictHandler) SaveIncidentSeverities(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request SaveIncidentSeveritiesRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	var body SaveIncidentSeveritiesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SaveIncidentSeverities(ctx, request.(SaveIncidentSeveritiesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SaveIncidentSeverities")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SaveIncidentSeveritiesResponseObject); ok {
+		if err := validResponse.VisitSaveIncidentSeveritiesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListIncidents operation middleware
+func (sh *strictHandler) ListIncidents(w http.ResponseWriter, r *http.Request, workspaceId string, params ListIncidentsParams) {
+	var request ListIncidentsRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListIncidents(ctx, request.(ListIncidentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListIncidents")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListIncidentsResponseObject); ok {
+		if err := validResponse.VisitListIncidentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeclareIncident operation middleware
+func (sh *strictHandler) DeclareIncident(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request DeclareIncidentRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	var body DeclareIncidentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeclareIncident(ctx, request.(DeclareIncidentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeclareIncident")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeclareIncidentResponseObject); ok {
+		if err := validResponse.VisitDeclareIncidentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeclareIncidentFromAlert operation middleware
+func (sh *strictHandler) DeclareIncidentFromAlert(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request DeclareIncidentFromAlertRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	var body DeclareIncidentFromAlertJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeclareIncidentFromAlert(ctx, request.(DeclareIncidentFromAlertRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeclareIncidentFromAlert")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeclareIncidentFromAlertResponseObject); ok {
+		if err := validResponse.VisitDeclareIncidentFromAlertResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetIncident operation middleware
+func (sh *strictHandler) GetIncident(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	var request GetIncidentRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.IncidentId = incidentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetIncident(ctx, request.(GetIncidentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetIncident")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetIncidentResponseObject); ok {
+		if err := validResponse.VisitGetIncidentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateIncident operation middleware
+func (sh *strictHandler) UpdateIncident(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	var request UpdateIncidentRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.IncidentId = incidentId
+
+	var body UpdateIncidentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateIncident(ctx, request.(UpdateIncidentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateIncident")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateIncidentResponseObject); ok {
+		if err := validResponse.VisitUpdateIncidentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// LinkIncidentAlert operation middleware
+func (sh *strictHandler) LinkIncidentAlert(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	var request LinkIncidentAlertRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.IncidentId = incidentId
+
+	var body LinkIncidentAlertJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.LinkIncidentAlert(ctx, request.(LinkIncidentAlertRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "LinkIncidentAlert")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(LinkIncidentAlertResponseObject); ok {
+		if err := validResponse.VisitLinkIncidentAlertResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UnlinkIncidentAlert operation middleware
+func (sh *strictHandler) UnlinkIncidentAlert(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, alertId string) {
+	var request UnlinkIncidentAlertRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.IncidentId = incidentId
+	request.AlertId = alertId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UnlinkIncidentAlert(ctx, request.(UnlinkIncidentAlertRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UnlinkIncidentAlert")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UnlinkIncidentAlertResponseObject); ok {
+		if err := validResponse.VisitUnlinkIncidentAlertResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetIncidentCustomFields operation middleware
+func (sh *strictHandler) SetIncidentCustomFields(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	var request SetIncidentCustomFieldsRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.IncidentId = incidentId
+
+	var body SetIncidentCustomFieldsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetIncidentCustomFields(ctx, request.(SetIncidentCustomFieldsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetIncidentCustomFields")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetIncidentCustomFieldsResponseObject); ok {
+		if err := validResponse.VisitSetIncidentCustomFieldsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AddIncidentFollowup operation middleware
+func (sh *strictHandler) AddIncidentFollowup(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	var request AddIncidentFollowupRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.IncidentId = incidentId
+
+	var body AddIncidentFollowupJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddIncidentFollowup(ctx, request.(AddIncidentFollowupRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddIncidentFollowup")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddIncidentFollowupResponseObject); ok {
+		if err := validResponse.VisitAddIncidentFollowupResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ToggleIncidentFollowup operation middleware
+func (sh *strictHandler) ToggleIncidentFollowup(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, followupId string) {
+	var request ToggleIncidentFollowupRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.IncidentId = incidentId
+	request.FollowupId = followupId
+
+	var body ToggleIncidentFollowupJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ToggleIncidentFollowup(ctx, request.(ToggleIncidentFollowupRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ToggleIncidentFollowup")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ToggleIncidentFollowupResponseObject); ok {
+		if err := validResponse.VisitToggleIncidentFollowupResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RelateIncident operation middleware
+func (sh *strictHandler) RelateIncident(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	var request RelateIncidentRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.IncidentId = incidentId
+
+	var body RelateIncidentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RelateIncident(ctx, request.(RelateIncidentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RelateIncident")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RelateIncidentResponseObject); ok {
+		if err := validResponse.VisitRelateIncidentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UnrelateIncident operation middleware
+func (sh *strictHandler) UnrelateIncident(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, relationId string) {
+	var request UnrelateIncidentRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.IncidentId = incidentId
+	request.RelationId = relationId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UnrelateIncident(ctx, request.(UnrelateIncidentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UnrelateIncident")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UnrelateIncidentResponseObject); ok {
+		if err := validResponse.VisitUnrelateIncidentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReopenIncident operation middleware
+func (sh *strictHandler) ReopenIncident(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	var request ReopenIncidentRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.IncidentId = incidentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReopenIncident(ctx, request.(ReopenIncidentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReopenIncident")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReopenIncidentResponseObject); ok {
+		if err := validResponse.VisitReopenIncidentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ResolveIncident operation middleware
+func (sh *strictHandler) ResolveIncident(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	var request ResolveIncidentRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.IncidentId = incidentId
+
+	var body ResolveIncidentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ResolveIncident(ctx, request.(ResolveIncidentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ResolveIncident")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ResolveIncidentResponseObject); ok {
+		if err := validResponse.VisitResolveIncidentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ChangeIncidentSeverity operation middleware
+func (sh *strictHandler) ChangeIncidentSeverity(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	var request ChangeIncidentSeverityRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.IncidentId = incidentId
+
+	var body ChangeIncidentSeverityJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ChangeIncidentSeverity(ctx, request.(ChangeIncidentSeverityRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ChangeIncidentSeverity")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ChangeIncidentSeverityResponseObject); ok {
+		if err := validResponse.VisitChangeIncidentSeverityResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ChangeIncidentStatus operation middleware
+func (sh *strictHandler) ChangeIncidentStatus(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	var request ChangeIncidentStatusRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.IncidentId = incidentId
+
+	var body ChangeIncidentStatusJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ChangeIncidentStatus(ctx, request.(ChangeIncidentStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ChangeIncidentStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ChangeIncidentStatusResponseObject); ok {
+		if err := validResponse.VisitChangeIncidentStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListKeys operation middleware
 func (sh *strictHandler) ListKeys(w http.ResponseWriter, r *http.Request, workspaceId string) {
 	var request ListKeysRequestObject
@@ -19235,6 +23476,126 @@ func (sh *strictHandler) UnarchiveSchedule(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UnarchiveScheduleResponseObject); ok {
 		if err := validResponse.VisitUnarchiveScheduleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListServices operation middleware
+func (sh *strictHandler) ListServices(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request ListServicesRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListServices(ctx, request.(ListServicesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListServices")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListServicesResponseObject); ok {
+		if err := validResponse.VisitListServicesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateService operation middleware
+func (sh *strictHandler) CreateService(w http.ResponseWriter, r *http.Request, workspaceId string) {
+	var request CreateServiceRequestObject
+
+	request.WorkspaceId = workspaceId
+
+	var body CreateServiceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateService(ctx, request.(CreateServiceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateService")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateServiceResponseObject); ok {
+		if err := validResponse.VisitCreateServiceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteService operation middleware
+func (sh *strictHandler) DeleteService(w http.ResponseWriter, r *http.Request, workspaceId string, serviceId string) {
+	var request DeleteServiceRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.ServiceId = serviceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteService(ctx, request.(DeleteServiceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteService")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteServiceResponseObject); ok {
+		if err := validResponse.VisitDeleteServiceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateService operation middleware
+func (sh *strictHandler) UpdateService(w http.ResponseWriter, r *http.Request, workspaceId string, serviceId string) {
+	var request UpdateServiceRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.ServiceId = serviceId
+
+	var body UpdateServiceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateService(ctx, request.(UpdateServiceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateService")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateServiceResponseObject); ok {
+		if err := validResponse.VisitUpdateServiceResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
