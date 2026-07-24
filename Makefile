@@ -13,6 +13,8 @@ MIGRATIONS_DIR := db/migrations/postgres
 
 TEST_POSTGRES_URL ?= postgres://opsybot:opsybot@localhost:5432/opsybot_test?sslmode=disable
 TEST_VALKEY_ADDRS ?= localhost:6379
+TEST_S3_ENDPOINT ?= localhost:$(OPSYBOT_S3_PORT)
+TEST_S3_REGION ?= garage
 
 .PHONY: help env require-env infra infra-up infra-down infra-restart infra-reset infra-ps infra-logs psql migration gen wire db-gen test test-integration
 
@@ -98,4 +100,7 @@ test:
 
 test-integration:
 	-PGPASSWORD="$${OPSYBOT_POSTGRES_PASSWORD:-opsybot}" createdb -h "$${OPSYBOT_POSTGRES_HOST:-localhost}" -p "$${OPSYBOT_POSTGRES_PORT:-5432}" -U "$${OPSYBOT_POSTGRES_USER:-opsybot}" opsybot_test
-	OPSYBOT_TEST_POSTGRES_URL="$(TEST_POSTGRES_URL)" OPSYBOT_TEST_VALKEY_ADDRS="$(TEST_VALKEY_ADDRS)" go test ./...
+	OPSYBOT_TEST_POSTGRES_URL="$(TEST_POSTGRES_URL)" OPSYBOT_TEST_VALKEY_ADDRS="$(TEST_VALKEY_ADDRS)" \
+		OPSYBOT_TEST_S3_ENDPOINT="$(TEST_S3_ENDPOINT)" OPSYBOT_TEST_S3_REGION="$(TEST_S3_REGION)" \
+		OPSYBOT_TEST_S3_BUCKET="$(OPSYBOT_S3_BUCKET)" OPSYBOT_TEST_S3_ACCESS_KEY="$(OPSYBOT_S3_ACCESS_KEY)" \
+		OPSYBOT_TEST_S3_SECRET_KEY="$(OPSYBOT_S3_SECRET_KEY)" go test ./...

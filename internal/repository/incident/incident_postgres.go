@@ -21,6 +21,8 @@ import (
 	"github.com/opsybot/opsybot/internal/repository"
 )
 
+const incidentEventSavepoint = "incident_event_append"
+
 type repo struct {
 	db postgres.Client
 }
@@ -516,10 +518,14 @@ func (r *repo) LinkAlert(ctx context.Context, workspaceID, incidentID, alertID s
 }
 
 func (r *repo) UnlinkAlert(ctx context.Context, workspaceID, incidentID, alertID string) error {
-	if _, err := dbpostgres.IncidentAlerts(
+	affected, err := dbpostgres.IncidentAlerts(
 		qm.Where("workspace_id = ? AND incident_id = ? AND alert_id = ?", workspaceID, incidentID, alertID),
-	).DeleteAll(ctx, r.db.Querier(ctx)); err != nil {
+	).DeleteAll(ctx, r.db.Querier(ctx))
+	if err != nil {
 		return fmt.Errorf("unlink alert: %w", err)
+	}
+	if affected == 0 {
+		return entity.ErrAlertNotFound
 	}
 	return nil
 }
@@ -569,16 +575,13 @@ func (r *repo) Unrelate(ctx context.Context, workspaceID, incidentID, relationID
 }
 
 func (r *repo) AppendEvent(ctx context.Context, event entity.IncidentEvent) (entity.IncidentEvent, error) {
-	exec := r.db.Querier(ctx)
 	if event.IdempotencyKey != "" {
-		existing, err := dbpostgres.IncidentEvents(
-			qm.Where("incident_id = ? AND idempotency_key = ?", event.IncidentID, event.IdempotencyKey),
-		).One(ctx, exec)
+		existing, err := r.eventByKey(ctx, event.IncidentID, event.IdempotencyKey)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return entity.IncidentEvent{}, fmt.Errorf("load replayed incident event: %w", err)
+			return entity.IncidentEvent{}, err
 		}
 		if err == nil {
-			return eventToEntity(existing), nil
+			return existing, nil
 		}
 	}
 	m := &dbpostgres.IncidentEvent{
@@ -594,19 +597,41 @@ func (r *repo) AppendEvent(ctx context.Context, event entity.IncidentEvent) (ent
 		ActorUserID:    nullString(event.ActorUserID),
 		IdempotencyKey: event.IdempotencyKey,
 	}
-	err := m.Insert(ctx, exec, boil.Whitelist(
-		"incident_id", "workspace_id", "at", "kind", "category", "source",
-		"text", "actor", "retroactive", "actor_user_id", "idempotency_key",
-	))
+	err := r.db.WithSavepoint(ctx, incidentEventSavepoint, func(ctx context.Context) error {
+		return m.Insert(ctx, r.db.Querier(ctx), boil.Whitelist(
+			"incident_id", "workspace_id", "at", "kind", "category", "source",
+			"text", "actor", "retroactive", "actor_user_id", "idempotency_key",
+		))
+	})
 	if err != nil {
+		if _, ok := postgres.UniqueViolation(err); ok && event.IdempotencyKey != "" {
+			existing, findErr := r.eventByKey(ctx, event.IncidentID, event.IdempotencyKey)
+			if findErr != nil {
+				return entity.IncidentEvent{}, findErr
+			}
+			return existing, nil
+		}
 		return entity.IncidentEvent{}, fmt.Errorf("append incident event: %w", err)
 	}
 	return eventToEntity(m), nil
 }
 
+func (r *repo) eventByKey(ctx context.Context, incidentID, idempotencyKey string) (entity.IncidentEvent, error) {
+	m, err := dbpostgres.IncidentEvents(
+		qm.Where("incident_id = ? AND idempotency_key = ?", incidentID, idempotencyKey),
+	).One(ctx, r.db.Querier(ctx))
+	if errors.Is(err, sql.ErrNoRows) {
+		return entity.IncidentEvent{}, err
+	}
+	if err != nil {
+		return entity.IncidentEvent{}, fmt.Errorf("load replayed incident event: %w", err)
+	}
+	return eventToEntity(m), nil
+}
+
 func (r *repo) ListEvents(ctx context.Context, workspaceID, incidentID string, categories []entity.IncidentEventCategory, after entity.TimelineCursor, limit int) ([]entity.IncidentEvent, error) {
-	if limit <= 0 || limit > entity.TimelineMaxPageSize {
-		limit = entity.TimelineMaxPageSize
+	if limit <= 0 || limit > entity.TimelineFetchLimit {
+		limit = entity.TimelineFetchLimit
 	}
 	mods := []qm.QueryMod{qm.Where("workspace_id = ? AND incident_id = ?", workspaceID, incidentID)}
 	if len(categories) > 0 {
@@ -660,6 +685,20 @@ func (r *repo) GetEvent(ctx context.Context, workspaceID, eventID string) (entit
 	}
 	event.Attachments = attachments[m.ID]
 	return event, nil
+}
+
+func (r *repo) GetEventForUpdate(ctx context.Context, workspaceID, eventID string) (entity.IncidentEvent, error) {
+	m, err := dbpostgres.IncidentEvents(
+		qm.Where("workspace_id = ? AND id = ?", workspaceID, eventID),
+		qm.For("UPDATE"),
+	).One(ctx, r.db.Querier(ctx))
+	if errors.Is(err, sql.ErrNoRows) {
+		return entity.IncidentEvent{}, entity.ErrTimelineEntryNotFound
+	}
+	if err != nil {
+		return entity.IncidentEvent{}, fmt.Errorf("lock incident event: %w", err)
+	}
+	return eventToEntity(m), nil
 }
 
 func (r *repo) UpdateEvent(ctx context.Context, workspaceID, eventID string, edit entity.TimelineEdit, editedAt time.Time, editorUserID string) error {

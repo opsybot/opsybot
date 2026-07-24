@@ -159,7 +159,9 @@ func (h *handler) AddIncidentTimelineAttachment(ctx context.Context, request api
 			if status == http.StatusRequestEntityTooLarge {
 				return api.AddIncidentTimelineAttachment413ApplicationProblemPlusJSONResponse(p), nil
 			}
-			p = prob(http.StatusBadRequest, "Invalid upload", "Send a file and a label.", "")
+			if status != http.StatusBadRequest {
+				p = prob(http.StatusBadRequest, "Invalid upload", "Send exactly one file and an optional label.", "")
+			}
 			return api.AddIncidentTimelineAttachment400ApplicationProblemPlusJSONResponse(p), nil
 		}
 		in, content = upload, body
@@ -237,16 +239,19 @@ type attachmentContent struct {
 
 func (a attachmentContent) VisitDownloadIncidentTimelineAttachmentResponse(w http.ResponseWriter) error {
 	defer a.body.Close()
-	contentType := a.contentType
-	if contentType == "" {
-		contentType = "application/octet-stream"
+	contentType := "application/octet-stream"
+	disposition := "attachment"
+	if entity.AttachmentImageTypeAllowed(a.contentType) {
+		contentType = a.contentType
+		disposition = "inline"
 	}
 	w.Header().Set("Content-Type", contentType)
 	if a.size > 0 {
 		w.Header().Set("Content-Length", strconv.FormatInt(a.size, 10))
 	}
-	w.Header().Set("Content-Disposition", "inline")
+	w.Header().Set("Content-Disposition", disposition)
 	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; sandbox")
 	w.WriteHeader(http.StatusOK)
 	_, err := io.Copy(w, a.body)
 	return err
@@ -273,12 +278,14 @@ func (h *handler) ExportIncidentTimeline(ctx context.Context, request api.Export
 		ExportedAt: export.ExportedAt,
 		Entries:    eventsDTO(export.Entries),
 		Text:       export.Text(),
+		Truncated:  export.Truncated,
 	}), nil
 }
 
 func readAttachmentUpload(reader *multipart.Reader) (entity.NewAttachment, io.Reader, error) {
 	out := entity.NewAttachment{Kind: entity.AttachmentImage}
 	var content bytes.Buffer
+	seenFile := false
 	for {
 		part, err := reader.NextPart()
 		if err == io.EOF {
@@ -287,15 +294,21 @@ func readAttachmentUpload(reader *multipart.Reader) (entity.NewAttachment, io.Re
 		if err != nil {
 			return entity.NewAttachment{}, nil, err
 		}
-		switch part.FormName() {
-		case "label":
+		name := part.FormName()
+		switch {
+		case name == "label" && out.Label == "":
 			label, err := io.ReadAll(io.LimitReader(part, entity.AttachmentLabelMaxLength+1))
+			part.Close()
 			if err != nil {
 				return entity.NewAttachment{}, nil, err
 			}
 			out.Label = string(label)
-		case "file":
+		case name == "file" && !seenFile:
+			seenFile = true
 			size, err := io.Copy(&content, io.LimitReader(part, entity.AttachmentUploadMaxBytes+1))
+			fileName := part.FileName()
+			contentType := part.Header.Get("Content-Type")
+			part.Close()
 			if err != nil {
 				return entity.NewAttachment{}, nil, err
 			}
@@ -303,12 +316,17 @@ func readAttachmentUpload(reader *multipart.Reader) (entity.NewAttachment, io.Re
 				return entity.NewAttachment{}, nil, entity.ErrAttachmentTooLarge
 			}
 			out.SizeBytes = size
-			out.ContentType = part.Header.Get("Content-Type")
+			out.ContentType = contentType
 			if out.Label == "" {
-				out.Label = part.FileName()
+				out.Label = fileName
 			}
+		default:
+			part.Close()
+			return entity.NewAttachment{}, nil, entity.ErrAttachmentUploadInvalid
 		}
-		part.Close()
+	}
+	if !seenFile {
+		return entity.NewAttachment{}, nil, entity.ErrAttachmentUploadInvalid
 	}
 	return out, &content, nil
 }

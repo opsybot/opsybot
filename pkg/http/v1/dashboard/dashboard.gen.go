@@ -2576,6 +2576,7 @@ type TimelineExport struct {
 	Name       string          `json:"name"`
 	Number     int             `json:"number"`
 	Text       string          `json:"text"`
+	Truncated  bool            `json:"truncated"`
 }
 
 // TimelinePage defines model for TimelinePage.

@@ -27,6 +27,7 @@ type Incident interface {
 	AppendEvent(ctx context.Context, event entity.IncidentEvent) (entity.IncidentEvent, error)
 	ListEvents(ctx context.Context, workspaceID, incidentID string, categories []entity.IncidentEventCategory, after entity.TimelineCursor, limit int) ([]entity.IncidentEvent, error)
 	GetEvent(ctx context.Context, workspaceID, eventID string) (entity.IncidentEvent, error)
+	GetEventForUpdate(ctx context.Context, workspaceID, eventID string) (entity.IncidentEvent, error)
 	UpdateEvent(ctx context.Context, workspaceID, eventID string, edit entity.TimelineEdit, editedAt time.Time, editorUserID string) error
 	AppendRevision(ctx context.Context, revision entity.IncidentEventRevision) error
 	ListRevisions(ctx context.Context, workspaceID, eventID string) ([]entity.IncidentEventRevision, error)

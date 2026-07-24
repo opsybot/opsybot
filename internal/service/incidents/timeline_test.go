@@ -3,6 +3,8 @@ package incidents
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -10,6 +12,10 @@ import (
 
 	"github.com/opsybot/opsybot/internal/entity"
 )
+
+func testID(n int) string {
+	return fmt.Sprintf("019f94e2-6957-7987-af9a-%012d", n)
+}
 
 func at(offset int) time.Time {
 	return time.Date(2026, 7, 24, 10, 0, 0, 0, time.UTC).Add(time.Duration(offset) * time.Minute)
@@ -19,7 +25,7 @@ func TestEditRejectsAutomaticEntry(t *testing.T) {
 	h := newHarness(t)
 	h.authorizeOK()
 
-	h.incidents.EXPECT().GetEvent(gomock.Any(), "ws-1", "ev-1").Return(entity.IncidentEvent{
+	h.incidents.EXPECT().GetEventForUpdate(gomock.Any(), "ws-1", "ev-1").Return(entity.IncidentEvent{
 		ID: "ev-1", IncidentID: "inc-1", Kind: entity.IncidentEventStatusChanged, Text: "Status moved to identified",
 	}, nil)
 
@@ -35,7 +41,7 @@ func TestEditRecordsPreviousTextAsRevision(t *testing.T) {
 	h := newHarness(t)
 	h.authorizeOK()
 
-	h.incidents.EXPECT().GetEvent(gomock.Any(), "ws-1", "ev-1").Return(entity.IncidentEvent{
+	h.incidents.EXPECT().GetEventForUpdate(gomock.Any(), "ws-1", "ev-1").Return(entity.IncidentEvent{
 		ID: "ev-1", IncidentID: "inc-1", Kind: entity.IncidentEventNote,
 		Category: entity.IncidentCategoryObservation, Text: "Cache hit rate dropped",
 	}, nil)
@@ -182,15 +188,15 @@ func TestTimelineOrdersEqualTimestampsById(t *testing.T) {
 	inc := entity.Incident{ID: "inc-1", WorkspaceID: "ws-1", Alerts: []entity.IncidentAlert{{AlertID: "al-1"}}}
 	h.incidents.EXPECT().GetByID(gomock.Any(), "ws-1", "inc-1").Return(inc, nil)
 	h.incidents.EXPECT().ListEvents(gomock.Any(), "ws-1", "inc-1", gomock.Any(), gomock.Any(), gomock.Any()).Return(
-		[]entity.IncidentEvent{{ID: "0192-b", At: at(3), Kind: entity.IncidentEventNote, Text: "note"}}, nil)
+		[]entity.IncidentEvent{{ID: testID(2), At: at(3), Kind: entity.IncidentEventNote, Text: "note"}}, nil)
 	h.alerts.EXPECT().ListEventsForAlerts(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(
-		[]entity.AlertEvent{{ID: "0192-a", AlertID: "al-1", At: at(3), Kind: entity.AlertEventAcked, Text: "acked"}}, nil)
+		[]entity.AlertEvent{{ID: testID(1), AlertID: "al-1", At: at(3), Kind: entity.AlertEventAcked, Text: "acked"}}, nil)
 
 	page, err := h.srv.ListTimeline(adminCtx(), "acme", "inc-1", entity.TimelineFilter{})
 	if err != nil {
 		t.Fatalf("list timeline: %v", err)
 	}
-	if page.Entries[0].ID != "0192-a" || page.Entries[1].ID != "0192-b" {
+	if page.Entries[0].ID != testID(1) || page.Entries[1].ID != testID(2) {
 		t.Fatalf("tie broken wrong: %s then %s", page.Entries[0].ID, page.Entries[1].ID)
 	}
 }
@@ -200,13 +206,13 @@ func TestTimelinePaginationReturnsEveryEventOnce(t *testing.T) {
 	h.authorizeOK()
 
 	own := []entity.IncidentEvent{
-		{ID: "i1", At: at(0), Kind: entity.IncidentEventDeclared},
-		{ID: "i2", At: at(3), Kind: entity.IncidentEventStatusChanged},
-		{ID: "i3", At: at(5), Kind: entity.IncidentEventResolved},
+		{ID: testID(1), At: at(0), Kind: entity.IncidentEventDeclared},
+		{ID: testID(3), At: at(3), Kind: entity.IncidentEventStatusChanged},
+		{ID: testID(5), At: at(5), Kind: entity.IncidentEventResolved},
 	}
 	linked := []entity.AlertEvent{
-		{ID: "a1", AlertID: "al-1", At: at(1), Kind: entity.AlertEventNotified},
-		{ID: "a2", AlertID: "al-1", At: at(4), Kind: entity.AlertEventAcked},
+		{ID: testID(2), AlertID: "al-1", At: at(1), Kind: entity.AlertEventNotified},
+		{ID: testID(4), AlertID: "al-1", At: at(4), Kind: entity.AlertEventAcked},
 	}
 	inc := entity.Incident{ID: "inc-1", WorkspaceID: "ws-1", Alerts: []entity.IncidentAlert{{AlertID: "al-1"}}}
 	h.incidents.EXPECT().GetByID(gomock.Any(), "ws-1", "inc-1").Return(inc, nil).AnyTimes()
@@ -252,7 +258,7 @@ func TestTimelinePaginationReturnsEveryEventOnce(t *testing.T) {
 		}
 		cursor = page.NextCursor
 	}
-	want := []string{"i1", "a1", "i2", "a2", "i3"}
+	want := []string{testID(1), testID(2), testID(3), testID(4), testID(5)}
 	if len(seen) != len(want) {
 		t.Fatalf("paged entries = %v, want %v", seen, want)
 	}
@@ -270,7 +276,6 @@ func TestAddImageAttachmentWithoutStorage(t *testing.T) {
 	h.incidents.EXPECT().GetEvent(gomock.Any(), "ws-1", "ev-1").Return(entity.IncidentEvent{
 		ID: "ev-1", IncidentID: "inc-1", Kind: entity.IncidentEventNote,
 	}, nil)
-	h.incidents.EXPECT().CountAttachments(gomock.Any(), "ws-1", "ev-1").Return(0, nil)
 	h.blobs.EXPECT().Enabled(gomock.Any()).Return(false)
 
 	_, err := h.srv.AddAttachment(adminCtx(), "acme", "inc-1", "ev-1", entity.NewAttachment{
@@ -286,6 +291,9 @@ func TestAddLinkAttachmentWorksWithoutStorage(t *testing.T) {
 	h.authorizeOK()
 
 	h.incidents.EXPECT().GetEvent(gomock.Any(), "ws-1", "ev-1").Return(entity.IncidentEvent{
+		ID: "ev-1", IncidentID: "inc-1", Kind: entity.IncidentEventNote,
+	}, nil)
+	h.incidents.EXPECT().GetEventForUpdate(gomock.Any(), "ws-1", "ev-1").Return(entity.IncidentEvent{
 		ID: "ev-1", IncidentID: "inc-1", Kind: entity.IncidentEventNote,
 	}, nil)
 	h.incidents.EXPECT().CountAttachments(gomock.Any(), "ws-1", "ev-1").Return(0, nil)
@@ -314,6 +322,9 @@ func TestAttachmentLimitPerEntry(t *testing.T) {
 	h.incidents.EXPECT().GetEvent(gomock.Any(), "ws-1", "ev-1").Return(entity.IncidentEvent{
 		ID: "ev-1", IncidentID: "inc-1", Kind: entity.IncidentEventNote,
 	}, nil)
+	h.incidents.EXPECT().GetEventForUpdate(gomock.Any(), "ws-1", "ev-1").Return(entity.IncidentEvent{
+		ID: "ev-1", IncidentID: "inc-1", Kind: entity.IncidentEventNote,
+	}, nil)
 	h.incidents.EXPECT().CountAttachments(gomock.Any(), "ws-1", "ev-1").Return(entity.AttachmentsPerEntryMax, nil)
 
 	_, err := h.srv.AddAttachment(adminCtx(), "acme", "inc-1", "ev-1", entity.NewAttachment{
@@ -321,5 +332,311 @@ func TestAttachmentLimitPerEntry(t *testing.T) {
 	}, nil)
 	if !errors.Is(err, entity.ErrAttachmentsPerEntryExceeded) {
 		t.Fatalf("err = %v, want ErrAttachmentsPerEntryExceeded", err)
+	}
+}
+
+func TestRemoveAttachmentDeletesStoredObject(t *testing.T) {
+	h := newHarness(t)
+	h.authorizeOK()
+
+	h.incidents.EXPECT().GetAttachment(gomock.Any(), "ws-1", "att-1").Return(entity.IncidentEventAttachment{
+		ID: "att-1", EventID: "ev-1", Kind: entity.AttachmentImage, ObjectKey: "incidents/ws-1/ev-1/abc",
+	}, nil)
+	h.incidents.EXPECT().GetEvent(gomock.Any(), "ws-1", "ev-1").Return(entity.IncidentEvent{
+		ID: "ev-1", IncidentID: "inc-1", Kind: entity.IncidentEventNote,
+	}, nil)
+	h.incidents.EXPECT().RemoveAttachment(gomock.Any(), "ws-1", "att-1").Return(nil)
+	h.audit.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+	h.blobs.EXPECT().Remove(gomock.Any(), "incidents/ws-1/ev-1/abc").Return(nil)
+
+	if err := h.srv.RemoveAttachment(adminCtx(), "acme", "inc-1", "att-1"); err != nil {
+		t.Fatalf("remove attachment: %v", err)
+	}
+}
+
+func TestRemoveAttachmentSucceedsWhenStorageIsGone(t *testing.T) {
+	h := newHarness(t)
+	h.authorizeOK()
+
+	h.incidents.EXPECT().GetAttachment(gomock.Any(), "ws-1", "att-1").Return(entity.IncidentEventAttachment{
+		ID: "att-1", EventID: "ev-1", Kind: entity.AttachmentImage, ObjectKey: "incidents/ws-1/ev-1/abc",
+	}, nil)
+	h.incidents.EXPECT().GetEvent(gomock.Any(), "ws-1", "ev-1").Return(entity.IncidentEvent{
+		ID: "ev-1", IncidentID: "inc-1", Kind: entity.IncidentEventNote,
+	}, nil)
+	h.incidents.EXPECT().RemoveAttachment(gomock.Any(), "ws-1", "att-1").Return(nil)
+	h.audit.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+	h.blobs.EXPECT().Remove(gomock.Any(), gomock.Any()).Return(entity.ErrAttachmentStorageUnavailable)
+
+	if err := h.srv.RemoveAttachment(adminCtx(), "acme", "inc-1", "att-1"); err != nil {
+		t.Fatalf("row removal must survive an unreachable object store: %v", err)
+	}
+}
+
+func TestRemoveAttachmentRejectedOnAutomaticEntry(t *testing.T) {
+	h := newHarness(t)
+	h.authorizeOK()
+
+	h.incidents.EXPECT().GetAttachment(gomock.Any(), "ws-1", "att-1").Return(entity.IncidentEventAttachment{
+		ID: "att-1", EventID: "ev-1", Kind: entity.AttachmentLink,
+	}, nil)
+	h.incidents.EXPECT().GetEvent(gomock.Any(), "ws-1", "ev-1").Return(entity.IncidentEvent{
+		ID: "ev-1", IncidentID: "inc-1", Kind: entity.IncidentEventDeclared,
+	}, nil)
+
+	err := h.srv.RemoveAttachment(adminCtx(), "acme", "inc-1", "att-1")
+	if !errors.Is(err, entity.ErrTimelineEntryNotEditable) {
+		t.Fatalf("err = %v, want ErrTimelineEntryNotEditable", err)
+	}
+}
+
+func TestRemoveAttachmentFromAnotherIncidentIsNotFound(t *testing.T) {
+	h := newHarness(t)
+	h.authorizeOK()
+
+	h.incidents.EXPECT().GetAttachment(gomock.Any(), "ws-1", "att-1").Return(entity.IncidentEventAttachment{
+		ID: "att-1", EventID: "ev-9", Kind: entity.AttachmentLink,
+	}, nil)
+	h.incidents.EXPECT().GetEvent(gomock.Any(), "ws-1", "ev-9").Return(entity.IncidentEvent{
+		ID: "ev-9", IncidentID: "inc-other", Kind: entity.IncidentEventNote,
+	}, nil)
+
+	err := h.srv.RemoveAttachment(adminCtx(), "acme", "inc-1", "att-1")
+	if !errors.Is(err, entity.ErrAttachmentNotFound) {
+		t.Fatalf("err = %v, want ErrAttachmentNotFound", err)
+	}
+}
+
+func TestExportMarksTruncationWhenTheTimelineIsHuge(t *testing.T) {
+	h := newHarness(t)
+	h.authorizeOK()
+	h.emptyDirectory()
+
+	inc := entity.Incident{ID: "inc-1", WorkspaceID: "ws-1", Number: 4, Name: "Long incident"}
+	h.incidents.EXPECT().GetByID(gomock.Any(), "ws-1", "inc-1").Return(inc, nil)
+	h.alerts.EXPECT().ListEventsForAlerts(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(nil, nil).AnyTimes()
+
+	full := make([]entity.IncidentEvent, entity.TimelineMaxPageSize+1)
+	for i := range full {
+		full[i] = entity.IncidentEvent{
+			ID:   testID(i),
+			At:   at(i),
+			Kind: entity.IncidentEventNote,
+		}
+	}
+	h.incidents.EXPECT().ListEvents(gomock.Any(), "ws-1", "inc-1", gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(full, nil).AnyTimes()
+
+	export, err := h.srv.ExportTimeline(adminCtx(), "acme", "inc-1")
+	if err != nil {
+		t.Fatalf("export: %v", err)
+	}
+	if !export.Truncated {
+		t.Fatal("export past the cap must report truncation")
+	}
+	if !strings.Contains(export.Text(), "Truncated to the first") {
+		t.Fatal("human-readable export must say it was truncated")
+	}
+}
+
+func TestExportFollowsCursorPastTheRepositoryPageCap(t *testing.T) {
+	h := newHarness(t)
+	h.authorizeOK()
+	h.emptyDirectory()
+
+	total := entity.TimelineMaxPageSize * 2
+	all := make([]entity.IncidentEvent, total)
+	for i := range all {
+		all[i] = entity.IncidentEvent{ID: testID(i), At: at(i), Kind: entity.IncidentEventNote}
+	}
+
+	h.incidents.EXPECT().GetByID(gomock.Any(), "ws-1", "inc-1").
+		Return(entity.Incident{ID: "inc-1", WorkspaceID: "ws-1", Number: 9, Name: "Long"}, nil)
+	h.alerts.EXPECT().ListEventsForAlerts(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(nil, nil).AnyTimes()
+	h.incidents.EXPECT().ListEvents(gomock.Any(), "ws-1", "inc-1", gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, _, _ string, _ []entity.IncidentEventCategory, after entity.TimelineCursor, limit int) ([]entity.IncidentEvent, error) {
+			if limit > entity.TimelineFetchLimit {
+				limit = entity.TimelineFetchLimit
+			}
+			out := []entity.IncidentEvent{}
+			for _, e := range all {
+				if !after.Zero() && !after.Before(entity.TimelineCursor{At: e.At, ID: e.ID}) {
+					continue
+				}
+				out = append(out, e)
+				if len(out) == limit {
+					break
+				}
+			}
+			return out, nil
+		}).AnyTimes()
+
+	export, err := h.srv.ExportTimeline(adminCtx(), "acme", "inc-1")
+	if err != nil {
+		t.Fatalf("export: %v", err)
+	}
+	if len(export.Entries) != total {
+		t.Fatalf("exported %d of %d entries", len(export.Entries), total)
+	}
+	if export.Truncated {
+		t.Fatal("timeline is under the export cap and must not report truncation")
+	}
+}
+
+func TestAddImageAttachmentRejectsScriptableTypes(t *testing.T) {
+	blocked := []string{
+		"image/svg+xml",
+		"image/svg+xml; charset=utf-8",
+		"IMAGE/SVG+XML",
+		"text/html",
+		"application/xhtml+xml",
+		"",
+	}
+	for _, contentType := range blocked {
+		t.Run(contentType, func(t *testing.T) {
+			h := newHarness(t)
+			h.authorizeOK()
+
+			_, err := h.srv.AddAttachment(adminCtx(), "acme", "inc-1", "ev-1", entity.NewAttachment{
+				Kind: entity.AttachmentImage, Label: "payload", ContentType: contentType, SizeBytes: 64,
+			}, nil)
+			if !entity.IsValidationError(err) {
+				t.Fatalf("content type %q was accepted; err = %v", contentType, err)
+			}
+		})
+	}
+}
+
+func TestAddImageAttachmentAcceptsRasterTypes(t *testing.T) {
+	for _, contentType := range entity.AttachmentImageTypes {
+		t.Run(contentType, func(t *testing.T) {
+			h := newHarness(t)
+			h.authorizeOK()
+
+			h.incidents.EXPECT().GetEvent(gomock.Any(), "ws-1", "ev-1").Return(entity.IncidentEvent{
+				ID: "ev-1", IncidentID: "inc-1", Kind: entity.IncidentEventNote,
+			}, nil)
+			h.incidents.EXPECT().GetEventForUpdate(gomock.Any(), "ws-1", "ev-1").Return(entity.IncidentEvent{
+				ID: "ev-1", IncidentID: "inc-1", Kind: entity.IncidentEventNote,
+			}, nil)
+			h.incidents.EXPECT().CountAttachments(gomock.Any(), "ws-1", "ev-1").Return(0, nil)
+			h.blobs.EXPECT().Enabled(gomock.Any()).Return(true)
+			h.blobs.EXPECT().Put(gomock.Any(), gomock.Any(), gomock.Any(), int64(64), contentType).Return(nil)
+			h.incidents.EXPECT().AddAttachment(gomock.Any(), gomock.Any()).DoAndReturn(
+				func(_ context.Context, in entity.IncidentEventAttachment) (entity.IncidentEventAttachment, error) {
+					in.ID = "att-1"
+					return in, nil
+				})
+			h.audit.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+
+			out, err := h.srv.AddAttachment(adminCtx(), "acme", "inc-1", "ev-1", entity.NewAttachment{
+				Kind: entity.AttachmentImage, Label: "screenshot", ContentType: contentType, SizeBytes: 64,
+			}, nil)
+			if err != nil {
+				t.Fatalf("content type %q rejected: %v", contentType, err)
+			}
+			if out.ObjectKey == "" {
+				t.Fatal("stored image has no object key")
+			}
+		})
+	}
+}
+
+func TestAddAttachmentRejectedOnAutomaticEntry(t *testing.T) {
+	h := newHarness(t)
+	h.authorizeOK()
+
+	h.incidents.EXPECT().GetEvent(gomock.Any(), "ws-1", "ev-1").Return(entity.IncidentEvent{
+		ID: "ev-1", IncidentID: "inc-1", Kind: entity.IncidentEventStatusChanged,
+	}, nil)
+
+	_, err := h.srv.AddAttachment(adminCtx(), "acme", "inc-1", "ev-1", entity.NewAttachment{
+		Kind: entity.AttachmentLink, Label: "evidence", URL: "https://example.test/x",
+	}, nil)
+	if !errors.Is(err, entity.ErrTimelineEntryNotEditable) {
+		t.Fatalf("err = %v, want ErrTimelineEntryNotEditable; an attachment on an automatic entry could never be removed", err)
+	}
+}
+
+func TestRemoveAttachmentSurvivesObjectStoreFailure(t *testing.T) {
+	h := newHarness(t)
+	h.authorizeOK()
+
+	h.incidents.EXPECT().GetAttachment(gomock.Any(), "ws-1", "att-1").Return(entity.IncidentEventAttachment{
+		ID: "att-1", EventID: "ev-1", Kind: entity.AttachmentImage, ObjectKey: "incidents/ws-1/ev-1/abc",
+	}, nil)
+	h.incidents.EXPECT().GetEvent(gomock.Any(), "ws-1", "ev-1").Return(entity.IncidentEvent{
+		ID: "ev-1", IncidentID: "inc-1", Kind: entity.IncidentEventNote,
+	}, nil)
+	h.incidents.EXPECT().RemoveAttachment(gomock.Any(), "ws-1", "att-1").Return(nil)
+	h.audit.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+	h.blobs.EXPECT().Remove(gomock.Any(), gomock.Any()).Return(errors.New("bucket unreachable"))
+
+	if err := h.srv.RemoveAttachment(adminCtx(), "acme", "inc-1", "att-1"); err != nil {
+		t.Fatalf("the row is already deleted, so the caller must see success: %v", err)
+	}
+}
+
+func TestAddAttachmentRequiresALabel(t *testing.T) {
+	h := newHarness(t)
+	h.authorizeOK()
+
+	_, err := h.srv.AddAttachment(adminCtx(), "acme", "inc-1", "ev-1", entity.NewAttachment{
+		Kind: entity.AttachmentLink, Label: "   ", URL: "https://example.test/x",
+	}, nil)
+	if !entity.IsValidationError(err) {
+		t.Fatalf("err = %v, want a validation error for a blank label", err)
+	}
+}
+
+func TestListTimelineRejectsMalformedCursor(t *testing.T) {
+	h := newHarness(t)
+	h.authorizeOK()
+	h.incidents.EXPECT().GetByID(gomock.Any(), "ws-1", "inc-1").
+		Return(entity.Incident{ID: "inc-1", WorkspaceID: "ws-1"}, nil).AnyTimes()
+
+	for _, cursor := range []string{
+		"2026-07-24T10:00:00Z|abc",
+		"2026-07-24T10:00:00Z|",
+		"2026-07-24T10:00:00Z|'; DROP TABLE incident_events--",
+		"not-a-time|019f94e2-6957-7987-af9a-00a25f112554",
+		"missing-separator",
+	} {
+		t.Run(cursor, func(t *testing.T) {
+			_, err := h.srv.ListTimeline(adminCtx(), "acme", "inc-1", entity.TimelineFilter{Cursor: cursor})
+			if !errors.Is(err, entity.ErrTimelineCursorInvalid) {
+				t.Fatalf("cursor %q gave err = %v, want ErrTimelineCursorInvalid (otherwise it reaches Postgres as a uuid comparand)", cursor, err)
+			}
+		})
+	}
+}
+
+func TestListTimelineAcceptsAGeneratedCursor(t *testing.T) {
+	h := newHarness(t)
+	h.authorizeOK()
+
+	inc := entity.Incident{ID: "inc-1", WorkspaceID: "ws-1"}
+	h.incidents.EXPECT().GetByID(gomock.Any(), "ws-1", "inc-1").Return(inc, nil)
+	h.incidents.EXPECT().ListEvents(gomock.Any(), "ws-1", "inc-1", gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+	h.alerts.EXPECT().ListEventsForAlerts(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+
+	cursor := entity.TimelineCursor{At: at(0), ID: "019f94e2-6957-7987-af9a-00a25f112554"}.Encode()
+	if _, err := h.srv.ListTimeline(adminCtx(), "acme", "inc-1", entity.TimelineFilter{Cursor: cursor}); err != nil {
+		t.Fatalf("a cursor this service emitted was rejected: %v", err)
+	}
+}
+
+func TestToggleFollowupRejectsAFollowupFromAnotherIncident(t *testing.T) {
+	h := newHarness(t)
+	h.authorizeOK()
+
+	h.incidents.EXPECT().SetFollowupDone(gomock.Any(), "ws-1", "fu-1", true, gomock.Any()).Return(
+		entity.IncidentFollowup{ID: "fu-1", IncidentID: "inc-other", Title: "Patch the indexer"}, nil)
+
+	_, err := h.srv.ToggleFollowup(adminCtx(), "acme", "inc-1", "fu-1", true)
+	if !errors.Is(err, entity.ErrFollowupNotFound) {
+		t.Fatalf("err = %v, want ErrFollowupNotFound; the event would otherwise land on the wrong incident", err)
 	}
 }

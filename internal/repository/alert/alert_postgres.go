@@ -511,8 +511,8 @@ func (r *repo) ListEventsForAlerts(ctx context.Context, alertIDs []string, kinds
 	if len(alertIDs) == 0 {
 		return nil, nil
 	}
-	if limit <= 0 || limit > entity.AlertTimelineLimit {
-		limit = entity.AlertTimelineLimit
+	if limit <= 0 || limit > entity.TimelineFetchLimit {
+		limit = entity.TimelineFetchLimit
 	}
 	mods := []qm.QueryMod{qm.WhereIn("alert_id IN ?", anySlice(alertIDs)...)}
 	if len(kinds) > 0 {

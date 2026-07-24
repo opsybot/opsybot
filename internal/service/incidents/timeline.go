@@ -2,7 +2,6 @@ package incidents
 
 import (
 	"context"
-	"errors"
 	"io"
 	"strings"
 	"time"
@@ -160,7 +159,7 @@ func (s *srv) EditTimelineEntry(ctx context.Context, workspaceSlug, id, entryID 
 
 	var updated entity.IncidentEvent
 	err = s.tx.WithTx(ctx, func(ctx context.Context) error {
-		entry, err := s.entry(ctx, ws.ID, id, entryID)
+		entry, err := s.lockedEntry(ctx, ws.ID, id, entryID)
 		if err != nil {
 			return err
 		}
@@ -222,12 +221,8 @@ func (s *srv) AddAttachment(ctx context.Context, workspaceSlug, id, entryID stri
 	if err != nil {
 		return entity.IncidentEventAttachment{}, err
 	}
-	count, err := s.incidents.CountAttachments(ctx, ws.ID, entry.ID)
-	if err != nil {
-		return entity.IncidentEventAttachment{}, err
-	}
-	if count >= entity.AttachmentsPerEntryMax {
-		return entity.IncidentEventAttachment{}, entity.ErrAttachmentsPerEntryExceeded
+	if entry.Kind != entity.IncidentEventNote {
+		return entity.IncidentEventAttachment{}, entity.ErrTimelineEntryNotEditable
 	}
 
 	attachment := entity.IncidentEventAttachment{
@@ -260,6 +255,20 @@ func (s *srv) AddAttachment(ctx context.Context, workspaceSlug, id, entryID stri
 
 	var stored entity.IncidentEventAttachment
 	err = s.tx.WithTx(ctx, func(ctx context.Context) error {
+		locked, err := s.lockedEntry(ctx, ws.ID, id, entryID)
+		if err != nil {
+			return err
+		}
+		if locked.Kind != entity.IncidentEventNote {
+			return entity.ErrTimelineEntryNotEditable
+		}
+		count, err := s.incidents.CountAttachments(ctx, ws.ID, locked.ID)
+		if err != nil {
+			return err
+		}
+		if count >= entity.AttachmentsPerEntryMax {
+			return entity.ErrAttachmentsPerEntryExceeded
+		}
 		stored, err = s.incidents.AddAttachment(ctx, attachment)
 		if err != nil {
 			return err
@@ -268,9 +277,7 @@ func (s *srv) AddAttachment(ctx context.Context, workspaceSlug, id, entryID stri
 	})
 	if err != nil {
 		if attachment.ObjectKey != "" {
-			if removeErr := s.blobs.Remove(ctx, attachment.ObjectKey); removeErr != nil {
-				return entity.IncidentEventAttachment{}, errors.Join(err, removeErr)
-			}
+			_ = s.blobs.Remove(context.WithoutCancel(ctx), attachment.ObjectKey)
 		}
 		return entity.IncidentEventAttachment{}, err
 	}
@@ -324,11 +331,8 @@ func (s *srv) RemoveAttachment(ctx context.Context, workspaceSlug, id, attachmen
 	if err != nil {
 		return err
 	}
-	if attachment.ObjectKey == "" {
-		return nil
-	}
-	if err := s.blobs.Remove(ctx, attachment.ObjectKey); err != nil && !errors.Is(err, entity.ErrAttachmentStorageUnavailable) {
-		return err
+	if attachment.ObjectKey != "" {
+		_ = s.blobs.Remove(context.WithoutCancel(ctx), attachment.ObjectKey)
 	}
 	return nil
 }
@@ -344,7 +348,8 @@ func (s *srv) ExportTimeline(ctx context.Context, workspaceSlug, id string) (ent
 	}
 	entries := make([]entity.IncidentEvent, 0, entity.TimelineDefaultPageSize)
 	cursor := ""
-	for len(entries) < entity.TimelineExportMaxEntries {
+	truncated := false
+	for {
 		page, err := s.timeline(ctx, inc, entity.TimelineFilter{Cursor: cursor, Limit: entity.TimelineMaxPageSize})
 		if err != nil {
 			return entity.TimelineExport{}, err
@@ -353,9 +358,29 @@ func (s *srv) ExportTimeline(ctx context.Context, workspaceSlug, id string) (ent
 		if page.NextCursor == "" {
 			break
 		}
+		if len(entries) >= entity.TimelineExportMaxEntries {
+			truncated = true
+			break
+		}
 		cursor = page.NextCursor
 	}
-	return entity.TimelineExport{Incident: inc, Entries: entries, ExportedAt: time.Now().UTC()}, nil
+	return entity.TimelineExport{
+		Incident:   inc,
+		Entries:    entries,
+		ExportedAt: time.Now().UTC(),
+		Truncated:  truncated,
+	}, nil
+}
+
+func (s *srv) lockedEntry(ctx context.Context, workspaceID, incidentID, entryID string) (entity.IncidentEvent, error) {
+	entry, err := s.incidents.GetEventForUpdate(ctx, workspaceID, entryID)
+	if err != nil {
+		return entity.IncidentEvent{}, err
+	}
+	if entry.IncidentID != incidentID {
+		return entity.IncidentEvent{}, entity.ErrTimelineEntryNotFound
+	}
+	return entry, nil
 }
 
 func (s *srv) entry(ctx context.Context, workspaceID, incidentID, entryID string) (entity.IncidentEvent, error) {

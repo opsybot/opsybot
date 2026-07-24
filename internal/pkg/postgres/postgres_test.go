@@ -140,3 +140,90 @@ func TestDSNWithoutPassword(t *testing.T) {
 		t.Fatalf("dsn = %q, want %q", got, want)
 	}
 }
+
+func TestWithSavepointReleasesOnSuccess(t *testing.T) {
+	c, mock := newMockClient(t)
+	mock.ExpectBegin()
+	mock.ExpectExec("SAVEPOINT probe").WillReturnResult(sqlmock.NewResult(0, 0))
+	mock.ExpectExec("INSERT INTO events").WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectExec("RELEASE SAVEPOINT probe").WillReturnResult(sqlmock.NewResult(0, 0))
+	mock.ExpectCommit()
+
+	err := c.WithTx(context.Background(), func(ctx context.Context) error {
+		return c.WithSavepoint(ctx, "probe", func(ctx context.Context) error {
+			_, err := c.Querier(ctx).ExecContext(ctx, "INSERT INTO events DEFAULT VALUES")
+			return err
+		})
+	})
+	if err != nil {
+		t.Fatalf("WithSavepoint: %v", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestWithSavepointRollsBackAndKeepsTxUsable(t *testing.T) {
+	c, mock := newMockClient(t)
+	sentinel := errors.New("duplicate key")
+	mock.ExpectBegin()
+	mock.ExpectExec("SAVEPOINT probe").WillReturnResult(sqlmock.NewResult(0, 0))
+	mock.ExpectExec("INSERT INTO events").WillReturnError(sentinel)
+	mock.ExpectExec("ROLLBACK TO SAVEPOINT probe").WillReturnResult(sqlmock.NewResult(0, 0))
+	mock.ExpectQuery("SELECT id FROM events").WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow("ev-1"))
+	mock.ExpectCommit()
+
+	err := c.WithTx(context.Background(), func(ctx context.Context) error {
+		inner := c.WithSavepoint(ctx, "probe", func(ctx context.Context) error {
+			_, err := c.Querier(ctx).ExecContext(ctx, "INSERT INTO events DEFAULT VALUES")
+			return err
+		})
+		if !errors.Is(inner, sentinel) {
+			t.Fatalf("inner err = %v, want the insert error", inner)
+		}
+		row := c.Querier(ctx).QueryRowContext(ctx, "SELECT id FROM events")
+		var id string
+		return row.Scan(&id)
+	})
+	if err != nil {
+		t.Fatalf("tx stayed usable after savepoint rollback: %v", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestWithSavepointRejectsUnsafeName(t *testing.T) {
+	c, mock := newMockClient(t)
+	mock.ExpectBegin()
+	mock.ExpectRollback()
+
+	err := c.WithTx(context.Background(), func(ctx context.Context) error {
+		return c.WithSavepoint(ctx, "probe; DROP TABLE users", func(context.Context) error {
+			t.Fatal("callback must not run for an unsafe savepoint name")
+			return nil
+		})
+	})
+	if err == nil {
+		t.Fatal("want an error for an unsafe savepoint name")
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestWithSavepointOutsideTxRunsDirectly(t *testing.T) {
+	c, mock := newMockClient(t)
+	mock.ExpectExec("INSERT INTO events").WillReturnResult(sqlmock.NewResult(0, 1))
+
+	err := c.WithSavepoint(context.Background(), "probe", func(ctx context.Context) error {
+		_, err := c.Querier(ctx).ExecContext(ctx, "INSERT INTO events DEFAULT VALUES")
+		return err
+	})
+	if err != nil {
+		t.Fatalf("WithSavepoint outside tx: %v", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}

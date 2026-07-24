@@ -2900,6 +2900,7 @@ export interface components {
             exportedAt: string;
             entries: components["schemas"]["IncidentEvent"][];
             text: string;
+            truncated: boolean;
         };
         AddTimelineEntryRequest: {
             text: string;

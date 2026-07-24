@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -129,7 +130,69 @@ func TestIntegrationIncidentTimeline(t *testing.T) {
 		}
 	})
 
+	t.Run("concurrent replay of one key yields one entry", func(t *testing.T) {
+		tx := transactor.New(client)
+		key := fmt.Sprintf("race-%d", stamp)
+		const racers = 4
+
+		start := make(chan struct{})
+		ids := make([]string, racers)
+		errs := make([]error, racers)
+		var wg sync.WaitGroup
+		for i := range racers {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				<-start
+				errs[i] = tx.WithTx(ctx, func(ctx context.Context) error {
+					got, err := incidents.AppendEvent(ctx, entity.IncidentEvent{
+						IncidentID:     inc.ID,
+						WorkspaceID:    ws.ID,
+						At:             declaredAt,
+						Kind:           entity.IncidentEventNote,
+						Category:       entity.IncidentCategoryCommunication,
+						Source:         entity.IncidentSourceChat,
+						Text:           fmt.Sprintf("racer %d", i),
+						IdempotencyKey: key,
+					})
+					ids[i] = got.ID
+					return err
+				})
+			}()
+		}
+		close(start)
+		wg.Wait()
+
+		for i, err := range errs {
+			if err != nil {
+				t.Fatalf("racer %d failed instead of resolving to the winning entry: %v", i, err)
+			}
+		}
+		for i, id := range ids {
+			if id == "" || id != ids[0] {
+				t.Fatalf("racer %d returned %q, want the same entry as %q", i, id, ids[0])
+			}
+		}
+
+		var stored int
+		row := client.Querier(ctx).QueryRowContext(ctx,
+			`SELECT count(*) FROM incident_events WHERE incident_id = $1 AND idempotency_key = $2`, inc.ID, key)
+		if err := row.Scan(&stored); err != nil {
+			t.Fatalf("count entries: %v", err)
+		}
+		if stored != 1 {
+			t.Fatalf("%d rows stored for one idempotency key, want 1", stored)
+		}
+	})
+
 	t.Run("keyset pagination returns every entry exactly once", func(t *testing.T) {
+		var existing int
+		row := client.Querier(ctx).QueryRowContext(ctx,
+			`SELECT count(*) FROM incident_events WHERE incident_id = $1`, inc.ID)
+		if err := row.Scan(&existing); err != nil {
+			t.Fatalf("count existing entries: %v", err)
+		}
+
 		const total = 7
 		for i := range total {
 			if _, err := incidents.AppendEvent(ctx, entity.IncidentEvent{
@@ -147,7 +210,7 @@ func TestIntegrationIncidentTimeline(t *testing.T) {
 
 		seen := map[string]int{}
 		cursor := entity.TimelineCursor{}
-		for pages := 0; pages < total+2; pages++ {
+		for pages := 0; pages < existing+total+2; pages++ {
 			page, err := incidents.ListEvents(ctx, ws.ID, inc.ID, nil, cursor, 2)
 			if err != nil {
 				t.Fatalf("list events: %v", err)
@@ -162,13 +225,146 @@ func TestIntegrationIncidentTimeline(t *testing.T) {
 			cursor = entity.TimelineCursor{At: last.At, ID: last.ID}
 		}
 
-		if len(seen) != total+1 {
-			t.Fatalf("paged %d distinct entries, want %d", len(seen), total+1)
+		if len(seen) != existing+total {
+			t.Fatalf("paged %d distinct entries, want %d", len(seen), existing+total)
 		}
 		for id, count := range seen {
 			if count != 1 {
 				t.Fatalf("entry %s returned %d times", id, count)
 			}
+		}
+	})
+
+	t.Run("repository serves the page-plus-lookahead row", func(t *testing.T) {
+		var existing int
+		row := client.Querier(ctx).QueryRowContext(ctx,
+			`SELECT count(*) FROM incident_events WHERE incident_id = $1`, inc.ID)
+		if err := row.Scan(&existing); err != nil {
+			t.Fatalf("count existing entries: %v", err)
+		}
+		for i := existing; i < entity.TimelineFetchLimit; i++ {
+			if _, err := incidents.AppendEvent(ctx, entity.IncidentEvent{
+				IncidentID:  inc.ID,
+				WorkspaceID: ws.ID,
+				At:          declaredAt.Add(time.Duration(i) * time.Millisecond),
+				Kind:        entity.IncidentEventNote,
+				Category:    entity.IncidentCategoryObservation,
+				Source:      entity.IncidentSourceUI,
+				Text:        fmt.Sprintf("lookahead filler %d", i),
+			}); err != nil {
+				t.Fatalf("append filler %d: %v", i, err)
+			}
+		}
+
+		page, err := incidents.ListEvents(ctx, ws.ID, inc.ID, nil, entity.TimelineCursor{}, entity.TimelineFetchLimit)
+		if err != nil {
+			t.Fatalf("list events: %v", err)
+		}
+		if len(page) != entity.TimelineFetchLimit {
+			t.Fatalf("repository returned %d rows for a %d-row request; the lookahead row that "+
+				"signals another page exists is being clamped away", len(page), entity.TimelineFetchLimit)
+		}
+	})
+
+	t.Run("concurrent edits serialise instead of losing one", func(t *testing.T) {
+		tx := transactor.New(client)
+		entry, err := incidents.AppendEvent(ctx, entity.IncidentEvent{
+			IncidentID:  inc.ID,
+			WorkspaceID: ws.ID,
+			At:          declaredAt.Add(3 * time.Minute),
+			Kind:        entity.IncidentEventNote,
+			Category:    entity.IncidentCategoryObservation,
+			Source:      entity.IncidentSourceUI,
+			Text:        "A",
+		})
+		if err != nil {
+			t.Fatalf("append entry: %v", err)
+		}
+
+		edit := func(ctx context.Context, next string) error {
+			locked, err := incidents.GetEventForUpdate(ctx, ws.ID, entry.ID)
+			if err != nil {
+				return err
+			}
+			if err := incidents.AppendRevision(ctx, entity.IncidentEventRevision{
+				EventID:     entry.ID,
+				WorkspaceID: ws.ID,
+				At:          declaredAt.Add(4 * time.Minute),
+				EditorLabel: next,
+				Text:        locked.Text,
+				Category:    locked.Category,
+			}); err != nil {
+				return err
+			}
+			return incidents.UpdateEvent(ctx, ws.ID, entry.ID, entity.TimelineEdit{
+				Text: next, Category: entity.IncidentCategoryObservation,
+			}, declaredAt.Add(4*time.Minute), "")
+		}
+
+		firstRead := make(chan struct{})
+		secondStarted := make(chan struct{})
+		errs := make([]error, 2)
+		var wg sync.WaitGroup
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			errs[0] = tx.WithTx(ctx, func(ctx context.Context) error {
+				locked, err := incidents.GetEventForUpdate(ctx, ws.ID, entry.ID)
+				if err != nil {
+					return err
+				}
+				close(firstRead)
+				<-secondStarted
+				time.Sleep(100 * time.Millisecond)
+				if err := incidents.AppendRevision(ctx, entity.IncidentEventRevision{
+					EventID:     entry.ID,
+					WorkspaceID: ws.ID,
+					At:          declaredAt.Add(4 * time.Minute),
+					EditorLabel: "B",
+					Text:        locked.Text,
+					Category:    locked.Category,
+				}); err != nil {
+					return err
+				}
+				return incidents.UpdateEvent(ctx, ws.ID, entry.ID, entity.TimelineEdit{
+					Text: "B", Category: entity.IncidentCategoryObservation,
+				}, declaredAt.Add(4*time.Minute), "")
+			})
+		}()
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-firstRead
+			close(secondStarted)
+			errs[1] = tx.WithTx(ctx, func(ctx context.Context) error { return edit(ctx, "C") })
+		}()
+		wg.Wait()
+
+		for i, err := range errs {
+			if err != nil {
+				t.Fatalf("edit %d: %v", i, err)
+			}
+		}
+
+		revisions, err := incidents.ListRevisions(ctx, ws.ID, entry.ID)
+		if err != nil {
+			t.Fatalf("list revisions: %v", err)
+		}
+		if len(revisions) != 2 {
+			t.Fatalf("%d revisions, want 2", len(revisions))
+		}
+		if revisions[0].Text == revisions[1].Text {
+			t.Fatalf("both revisions captured %q: the second edit read a stale pre-image, so one edit vanished "+
+				"from the audit trail", revisions[0].Text)
+		}
+		final, err := incidents.GetEvent(ctx, ws.ID, entry.ID)
+		if err != nil {
+			t.Fatalf("get event: %v", err)
+		}
+		if final.Text != "C" {
+			t.Fatalf("final text = %q, want the second edit to have applied on top of the first", final.Text)
 		}
 	})
 

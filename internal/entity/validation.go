@@ -132,8 +132,8 @@ var (
 	errTimelineText     = validation.NewError("timeline_text_invalid", "Enter a note of 4000 characters or fewer.")
 	errTimelineCategory = validation.NewError("timeline_category_invalid", "Choose status, communication, action, observation, or decision.")
 	errAttachmentKind   = validation.NewError("attachment_kind_invalid", "Choose an image, a log snippet, or a link.")
-	errAttachmentLabel  = validation.NewError("attachment_label_invalid", "Keep the label to 120 characters or fewer.")
-	errAttachmentImage  = validation.NewError("attachment_image_invalid", "Attach an image file.")
+	errAttachmentLabel  = validation.NewError("attachment_label_invalid", "Add a label of 120 characters or fewer.")
+	errAttachmentImage  = validation.NewError("attachment_image_invalid", "Attach a PNG, JPEG, GIF, WebP, or AVIF image.")
 	errAttachmentURL    = validation.NewError("attachment_url_invalid", "Enter a valid http or https link.")
 	errAttachmentBody   = validation.NewError("attachment_body_invalid", "Paste a log snippet of 20000 characters or fewer.")
 )
@@ -960,7 +960,7 @@ func attachmentKindField(value any) error {
 
 func attachmentLabelField(value any) error {
 	s, _ := value.(string)
-	if len(s) > AttachmentLabelMaxLength {
+	if strings.TrimSpace(s) == "" || len(s) > AttachmentLabelMaxLength {
 		return errAttachmentLabel
 	}
 	return nil
@@ -981,7 +981,7 @@ func attachmentURLField(value any) error {
 
 func attachmentImageField(value any) error {
 	s, _ := value.(string)
-	if !strings.HasPrefix(strings.ToLower(strings.TrimSpace(s)), "image/") {
+	if !AttachmentImageTypeAllowed(s) {
 		return errAttachmentImage
 	}
 	return nil

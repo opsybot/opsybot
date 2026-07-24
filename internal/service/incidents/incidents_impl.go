@@ -874,6 +874,9 @@ func (s *srv) ToggleFollowup(ctx context.Context, workspaceSlug, id, followupID 
 		if err != nil {
 			return err
 		}
+		if followup.IncidentID != id {
+			return entity.ErrFollowupNotFound
+		}
 		text := fmt.Sprintf("Reopened follow-up: %s", followup.Title)
 		if done {
 			text = fmt.Sprintf("Completed follow-up: %s", followup.Title)

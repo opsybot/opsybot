@@ -69,8 +69,8 @@
 	let attaching = $state(false);
 	let showRevisions = $state(false);
 	let evidence = $state<AttachmentKind>('link');
-	let draft = $state(entry.text);
-	let draftType = $state<EntryType>(entry.type);
+	let draft = $state('');
+	let draftType = $state<EntryType>('observation');
 
 	function startEdit() {
 		draft = entry.text;
@@ -163,7 +163,7 @@
 				<div class="flex flex-wrap items-center gap-1.5">
 					{#each ENTRY_TYPES as entryType (entryType.id)}
 						<label
-							class="inline-flex h-6 cursor-pointer items-center rounded-md border px-2.5 text-xs font-medium {draftType ===
+							class="inline-flex h-6 cursor-pointer items-center rounded-md border px-2.5 text-xs font-medium has-[:focus-visible]:border-brand-edge has-[:focus-visible]:ring-brand-edge/50 has-[:focus-visible]:ring-2 {draftType ===
 							entryType.id
 								? 'bg-brand-wash border-brand-edge text-brand-foreground'
 								: 'bg-popover border-input text-muted-foreground'}"

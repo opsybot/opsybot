@@ -8,6 +8,7 @@ import (
 	"time"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/google/uuid"
 )
 
 type IncidentEventKind string
@@ -88,6 +89,27 @@ const (
 	AttachmentLink  AttachmentKind = "link"
 )
 
+var AttachmentImageTypes = []string{
+	"image/png",
+	"image/jpeg",
+	"image/gif",
+	"image/webp",
+	"image/avif",
+}
+
+func AttachmentImageTypeAllowed(contentType string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(contentType))
+	if index := strings.IndexByte(normalized, ';'); index >= 0 {
+		normalized = strings.TrimSpace(normalized[:index])
+	}
+	for _, allowed := range AttachmentImageTypes {
+		if normalized == allowed {
+			return true
+		}
+	}
+	return false
+}
+
 func (k AttachmentKind) Valid() bool {
 	switch k {
 	case AttachmentImage, AttachmentLog, AttachmentLink:
@@ -100,6 +122,7 @@ const (
 	TimelineNoteMaxLength    = 4000
 	TimelineDefaultPageSize  = 100
 	TimelineMaxPageSize      = 200
+	TimelineFetchLimit       = TimelineMaxPageSize + 1
 	TimelineExportMaxEntries = 5000
 	TimelineRetroThreshold   = time.Minute
 	AttachmentLabelMaxLength = 120
@@ -119,6 +142,7 @@ var (
 	ErrAttachmentStorageUnavailable = errors.New("attachment storage unavailable")
 	ErrAttachmentTooLarge           = errors.New("attachment too large")
 	ErrAttachmentsPerEntryExceeded  = errors.New("attachment limit reached for this entry")
+	ErrAttachmentUploadInvalid      = errors.New("attachment upload must carry exactly one file part")
 )
 
 type IncidentEventRevision struct {
@@ -209,7 +233,10 @@ func ParseTimelineCursor(raw string) (TimelineCursor, error) {
 		return TimelineCursor{}, nil
 	}
 	at, id, ok := strings.Cut(raw, "|")
-	if !ok || id == "" {
+	if !ok {
+		return TimelineCursor{}, ErrTimelineCursorInvalid
+	}
+	if _, err := uuid.Parse(id); err != nil {
 		return TimelineCursor{}, ErrTimelineCursorInvalid
 	}
 	parsed, err := time.Parse(time.RFC3339Nano, at)
@@ -240,6 +267,7 @@ type TimelineExport struct {
 	Incident   Incident
 	Entries    []IncidentEvent
 	ExportedAt time.Time
+	Truncated  bool
 }
 
 func (e TimelineExport) Text() string {
@@ -251,7 +279,11 @@ func (e TimelineExport) Text() string {
 		fmt.Fprintf(&b, "Resolved %s\n", e.Incident.ResolvedAt.UTC().Format(time.RFC3339))
 	}
 	fmt.Fprintf(&b, "Exported %s\n", e.ExportedAt.UTC().Format(time.RFC3339))
-	b.WriteString("All times UTC\n\n")
+	b.WriteString("All times UTC\n")
+	if e.Truncated {
+		fmt.Fprintf(&b, "Truncated to the first %d entries\n", TimelineExportMaxEntries)
+	}
+	b.WriteString("\n")
 	for _, entry := range e.Entries {
 		b.WriteString(entry.Line())
 		b.WriteString("\n")

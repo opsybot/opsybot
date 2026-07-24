@@ -488,8 +488,8 @@ export async function listTimeline(
 	workspace: string,
 	incidentId: string,
 	options: { category?: EntryType[]; cursor?: string; limit?: number } = {}
-): Promise<{ entries: TimelineEntry[]; nextCursor: string }> {
-	const { data } = await apiClient(cookies).GET(
+): Promise<{ entries: TimelineEntry[]; nextCursor: string; error?: string }> {
+	const { data, error } = await apiClient(cookies).GET(
 		'/workspaces/{workspaceId}/incidents/{incidentId}/timeline',
 		{
 			params: {
@@ -502,9 +502,12 @@ export async function listTimeline(
 			}
 		}
 	);
+	if (error || !data) {
+		return { entries: [], nextCursor: '', error: error?.detail ?? 'Could not load the timeline.' };
+	}
 	return {
-		entries: (data?.entries ?? []).map(toTimelineEntry),
-		nextCursor: data?.nextCursor ?? ''
+		entries: data.entries.map(toTimelineEntry),
+		nextCursor: data.nextCursor ?? ''
 	};
 }
 

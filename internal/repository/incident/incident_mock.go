@@ -176,6 +176,21 @@ func (mr *MockIncidentMockRecorder) GetEvent(ctx, workspaceID, eventID any) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEvent", reflect.TypeOf((*MockIncident)(nil).GetEvent), ctx, workspaceID, eventID)
 }
 
+// GetEventForUpdate mocks base method.
+func (m *MockIncident) GetEventForUpdate(ctx context.Context, workspaceID, eventID string) (entity.IncidentEvent, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetEventForUpdate", ctx, workspaceID, eventID)
+	ret0, _ := ret[0].(entity.IncidentEvent)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEventForUpdate indicates an expected call of GetEventForUpdate.
+func (mr *MockIncidentMockRecorder) GetEventForUpdate(ctx, workspaceID, eventID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEventForUpdate", reflect.TypeOf((*MockIncident)(nil).GetEventForUpdate), ctx, workspaceID, eventID)
+}
+
 // LinkAlert mocks base method.
 func (m *MockIncident) LinkAlert(ctx context.Context, workspaceID, incidentID, alertID string) error {
 	m.ctrl.T.Helper()

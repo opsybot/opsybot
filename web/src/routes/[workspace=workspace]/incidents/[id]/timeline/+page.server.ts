@@ -1,10 +1,9 @@
-import { fail } from '@sveltejs/kit';
+import { error, fail } from '@sveltejs/kit';
 import { ENTRY_TYPES, type EntryType } from '$lib/incidents';
 import {
 	addAttachment,
 	addTimelineEntry,
 	editTimelineEntry,
-	exportTimeline,
 	listEntryRevisions,
 	listTimeline,
 	removeAttachment,
@@ -24,14 +23,22 @@ function entryType(value: FormDataEntryValue | null): EntryType {
 	return TYPES.has(raw) ? (raw as EntryType) : 'observation';
 }
 
+function localToUtc(local: string, offsetMinutes: string): string | undefined {
+	const wallClock = Date.parse(`${local}Z`);
+	if (Number.isNaN(wallClock)) return undefined;
+	const offset = Number(offsetMinutes);
+	return new Date(wallClock + (Number.isFinite(offset) ? offset : 0) * 60_000).toISOString();
+}
+
 export const load: PageServerLoad = async ({ params, cookies, url }) => {
 	const filter = categories(url.searchParams.getAll('type'));
-	const limit = Number(url.searchParams.get('limit') ?? '') || undefined;
+	const cursor = url.searchParams.get('cursor') ?? '';
 	const page = await listTimeline(cookies, params.workspace, params.id, {
 		category: filter,
-		limit
+		cursor
 	});
-	return { filter, entries: page.entries, nextCursor: page.nextCursor };
+	if (page.error) error(502, page.error);
+	return { filter, cursor, entries: page.entries, nextCursor: page.nextCursor };
 };
 
 export const actions = {
@@ -45,7 +52,7 @@ export const actions = {
 		const result = await addTimelineEntry(cookies, params.workspace, params.id!, {
 			text,
 			category: entryType(form.get('category')),
-			at: at ? new Date(at).toISOString() : undefined,
+			at: at ? localToUtc(at, String(form.get('tzOffset') ?? '')) : undefined,
 			idempotencyKey: String(form.get('idempotencyKey') ?? '') || undefined
 		});
 		if (result.error) return fail(400, { error: result.error });
@@ -116,11 +123,5 @@ export const actions = {
 			String(form.get('attachmentId') ?? '')
 		);
 		if (result.error) return fail(400, { error: result.error });
-	},
-
-	export: async ({ params, cookies }) => {
-		const result = await exportTimeline(cookies, params.workspace, params.id!);
-		if ('error' in result) return fail(400, { error: result.error });
-		return { timelineExport: result };
 	}
 } satisfies Actions;

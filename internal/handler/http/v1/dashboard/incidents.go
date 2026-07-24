@@ -35,6 +35,8 @@ func incidentProblem(err error) (int, api.Problem) {
 		return http.StatusBadRequest, prob(http.StatusBadRequest, "Duplicate field", "Two custom fields resolve to the same key. Rename one.", "")
 	case errors.Is(err, entity.ErrTeamNotFound):
 		return http.StatusBadRequest, prob(http.StatusBadRequest, "Unknown team", "Pick an existing team for this incident.", "")
+	case errors.Is(err, entity.ErrAttachmentUploadInvalid):
+		return http.StatusBadRequest, prob(http.StatusBadRequest, "Invalid upload", "Send exactly one file and an optional label.", "")
 	case errors.Is(err, entity.ErrTimelineRetroFuture):
 		return http.StatusBadRequest, prob(http.StatusBadRequest, "Invalid time", "A timeline entry can't be dated in the future.", "")
 	case errors.Is(err, entity.ErrTimelineCursorInvalid):

@@ -74,6 +74,8 @@ DROP INDEX incident_events_idem_uq;
 DROP INDEX incident_events_incident_order_idx;
 DROP INDEX incident_events_id_ws_uq;
 
+DELETE FROM incident_events WHERE kind IN ('note', 'unrelated', 'followup_done');
+
 ALTER TABLE incident_events DROP CONSTRAINT incident_events_kind_valid;
 ALTER TABLE incident_events ADD CONSTRAINT incident_events_kind_valid CHECK (
     kind IN ('declared', 'status_changed', 'severity_changed', 'lead_changed', 'renamed', 'summary_changed', 'fields_changed', 'reopened', 'resolved', 'alert_linked', 'alert_unlinked', 'related', 'followup_added', 'updated')

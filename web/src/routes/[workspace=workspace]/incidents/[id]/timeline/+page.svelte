@@ -24,9 +24,20 @@
 	const revisions = $derived(form && 'revisions' in form ? form.revisions : []);
 	const revisionEntryId = $derived(form && 'entryId' in form ? form.entryId : '');
 
+	let tzOffset = $state('');
+	$effect(() => {
+		tzOffset = String(new Date().getTimezoneOffset());
+	});
+
 	let composing = $state(false);
 	let backdated = $state(false);
 	let category = $state<EntryType>('observation');
+	let composeKey = $state('');
+
+	function startComposing() {
+		composeKey = crypto.randomUUID();
+		composing = true;
+	}
 
 	function navigate(update: (params: URLSearchParams) => void) {
 		const url = new URL(page.url);
@@ -41,28 +52,22 @@
 		navigate((params) => {
 			params.delete('type');
 			for (const value of next) params.append('type', value);
-			params.delete('limit');
+			params.delete('cursor');
 		});
 	}
 
 	function clearFilter() {
 		navigate((params) => {
 			params.delete('type');
-			params.delete('limit');
+			params.delete('cursor');
 		});
 	}
 
-	function loadMore() {
-		navigate((params) => params.set('limit', String(data.entries.length + 100)));
-	}
-
-	function copyExport(format: 'json' | 'text', payload: string) {
-		navigator.clipboard.writeText(payload);
-		toast.success(
-			format === 'json'
-				? 'Structured timeline copied to clipboard.'
-				: 'Human-readable timeline copied to clipboard.'
-		);
+	function showPage(cursor: string | undefined) {
+		navigate((params) => {
+			if (cursor) params.set('cursor', cursor);
+			else params.delete('cursor');
+		});
 	}
 
 	$effect(() => {
@@ -79,46 +84,26 @@
 			</Tag>
 		{/each}
 		<div class="flex-1"></div>
-		<form
-			method="POST"
-			action="?/export"
-			use:enhance={() =>
-				async ({ result, update }) => {
-					if (result.type === 'success' && result.data?.timelineExport) {
-						copyExport('json', result.data.timelineExport.json);
-					}
-					await update({ reset: false, invalidateAll: false });
-				}}
-		>
-			<Button type="submit" variant="ghost" size="sm">
-				<BracesIcon data-icon="inline-start" />
-				Export JSON
-			</Button>
-		</form>
-		<form
-			method="POST"
-			action="?/export"
-			use:enhance={() =>
-				async ({ result, update }) => {
-					if (result.type === 'success' && result.data?.timelineExport) {
-						copyExport('text', result.data.timelineExport.text);
-					}
-					await update({ reset: false, invalidateAll: false });
-				}}
-		>
-			<Button type="submit" variant="ghost" size="sm">
-				<FileTextIcon data-icon="inline-start" />
-				Export text
-			</Button>
-		</form>
+		<Button variant="ghost" size="sm" href="{page.url.pathname}/export">
+			<BracesIcon data-icon="inline-start" />
+			Export JSON
+		</Button>
+		<Button variant="ghost" size="sm" href="{page.url.pathname}/export?format=text">
+			<FileTextIcon data-icon="inline-start" />
+			Export text
+		</Button>
 	</div>
 
 	<Panel class="px-4 pt-4 pb-1">
 		{#if data.entries.length === 0}
 			<p class="text-subtle-foreground m-0 mb-3.5 text-[13px]">
-				{data.filter.length === 0
-					? 'Nothing on the timeline yet.'
-					: 'No entries match the selected types.'}
+				{#if data.cursor}
+					No further entries.
+				{:else if data.filter.length > 0}
+					No entries match the selected types.
+				{:else}
+					Nothing on the timeline yet.
+				{/if}
 			</p>
 		{:else}
 			{#each data.entries as entry, index (entry.id)}
@@ -134,9 +119,19 @@
 		{/if}
 	</Panel>
 
-	{#if data.nextCursor}
-		<div class="flex justify-center">
-			<Button variant="outline" size="sm" onclick={loadMore}>Load older entries</Button>
+	{#if data.nextCursor || data.cursor}
+		<div class="flex items-center gap-2">
+			{#if data.cursor}
+				<Button variant="ghost" size="sm" onclick={() => showPage(undefined)}>
+					Back to the start
+				</Button>
+			{/if}
+			<div class="flex-1"></div>
+			{#if data.nextCursor}
+				<Button variant="outline" size="sm" onclick={() => showPage(data.nextCursor)}>
+					Later entries →
+				</Button>
+			{/if}
 		</div>
 	{/if}
 
@@ -151,10 +146,12 @@
 						if (result.type === 'success') {
 							composing = false;
 							backdated = false;
+							if (data.nextCursor) toast.info('Entry added at the end of the timeline.');
 						}
 						await update({ reset: true });
 					}}
 			>
+				<input type="hidden" name="idempotencyKey" value={composeKey} />
 				<Textarea
 					name="text"
 					rows={3}
@@ -164,7 +161,7 @@
 				<div class="flex flex-wrap items-center gap-1.5">
 					{#each ENTRY_TYPES as entryType (entryType.id)}
 						<label
-							class="inline-flex h-6 cursor-pointer items-center rounded-md border px-2.5 text-xs font-medium {category ===
+							class="inline-flex h-6 cursor-pointer items-center rounded-md border px-2.5 text-xs font-medium has-[:focus-visible]:border-brand-edge has-[:focus-visible]:ring-brand-edge/50 has-[:focus-visible]:ring-2 {category ===
 							entryType.id
 								? 'bg-brand-wash border-brand-edge text-brand-foreground'
 								: 'bg-popover border-input text-muted-foreground'}"
@@ -186,6 +183,7 @@
 				</label>
 				{#if backdated}
 					<div class="flex flex-col gap-1">
+						<input type="hidden" name="tzOffset" value={tzOffset} />
 						<Input
 							name="at"
 							type="datetime-local"
@@ -203,7 +201,7 @@
 				</div>
 			</form>
 		{:else}
-			<Button variant="outline" size="sm" onclick={() => (composing = true)}>
+			<Button variant="outline" size="sm" onclick={startComposing}>
 				<PlusIcon data-icon="inline-start" />
 				Add timeline entry
 			</Button>

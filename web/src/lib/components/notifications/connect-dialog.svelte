@@ -22,7 +22,7 @@
 	let ntfyTopic = $state('');
 	let detail = $state('');
 	let secret = $state('');
-	let connectForm: HTMLFormElement;
+	let connectForm: HTMLFormElement | undefined = $state();
 
 	const open = $derived(!!type);
 	const meta = $derived(current ? channelMeta(current) : null);
