@@ -128,6 +128,14 @@ var (
 	errFieldName          = validation.NewError("field_name_invalid", "Give the custom field a name of 60 characters or fewer.")
 	errFieldKind          = validation.NewError("field_kind_invalid", "Choose text, select, multi-select, or number.")
 	errFieldOptions       = validation.NewError("field_options_invalid", "A select field needs between 1 and 40 non-empty options.")
+
+	errTimelineText     = validation.NewError("timeline_text_invalid", "Enter a note of 4000 characters or fewer.")
+	errTimelineCategory = validation.NewError("timeline_category_invalid", "Choose status, communication, action, observation, or decision.")
+	errAttachmentKind   = validation.NewError("attachment_kind_invalid", "Choose an image, a log snippet, or a link.")
+	errAttachmentLabel  = validation.NewError("attachment_label_invalid", "Add a label of 120 characters or fewer.")
+	errAttachmentImage  = validation.NewError("attachment_image_invalid", "Attach a PNG, JPEG, GIF, WebP, or AVIF image.")
+	errAttachmentURL    = validation.NewError("attachment_url_invalid", "Enter a valid http or https link.")
+	errAttachmentBody   = validation.NewError("attachment_body_invalid", "Paste a log snippet of 20000 characters or fewer.")
 )
 
 func nameField(value any) error {
@@ -921,6 +929,69 @@ func fieldKindField(value any) error {
 	k, _ := value.(CustomFieldKind)
 	if !k.Valid() {
 		return errFieldKind
+	}
+	return nil
+}
+
+func timelineTextField(value any) error {
+	s, _ := value.(string)
+	text := strings.TrimSpace(s)
+	if text == "" || len(text) > TimelineNoteMaxLength {
+		return errTimelineText
+	}
+	return nil
+}
+
+func timelineCategoryField(value any) error {
+	c, _ := value.(IncidentEventCategory)
+	if !c.Valid() {
+		return errTimelineCategory
+	}
+	return nil
+}
+
+func attachmentKindField(value any) error {
+	k, _ := value.(AttachmentKind)
+	if !k.Valid() {
+		return errAttachmentKind
+	}
+	return nil
+}
+
+func attachmentLabelField(value any) error {
+	s, _ := value.(string)
+	if strings.TrimSpace(s) == "" || len(s) > AttachmentLabelMaxLength {
+		return errAttachmentLabel
+	}
+	return nil
+}
+
+func attachmentURLField(value any) error {
+	s, _ := value.(string)
+	raw := strings.TrimSpace(s)
+	if raw == "" || len(raw) > AttachmentURLMaxLength {
+		return errAttachmentURL
+	}
+	u, err := url.ParseRequestURI(raw)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return errAttachmentURL
+	}
+	return nil
+}
+
+func attachmentImageField(value any) error {
+	s, _ := value.(string)
+	if !AttachmentImageTypeAllowed(s) {
+		return errAttachmentImage
+	}
+	return nil
+}
+
+func attachmentBodyField(value any) error {
+	s, _ := value.(string)
+	body := strings.TrimSpace(s)
+	if body == "" || len(body) > AttachmentBodyMaxLength {
+		return errAttachmentBody
 	}
 	return nil
 }

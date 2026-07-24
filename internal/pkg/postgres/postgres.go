@@ -3,9 +3,11 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net"
 	"net/url"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -15,6 +17,8 @@ import (
 )
 
 const defaultConnectTimeout = 5 * time.Second
+
+var savepointName = regexp.MustCompile(`^[a-z_][a-z0-9_]*$`)
 
 type Client struct{ *sql.DB }
 
@@ -49,6 +53,27 @@ func (c Client) WithTx(ctx context.Context, fn func(context.Context) error) erro
 		return err
 	}
 	return tx.Commit()
+}
+
+func (c Client) WithSavepoint(ctx context.Context, name string, fn func(context.Context) error) error {
+	tx, ok := ctx.Value(txKey{}).(*sql.Tx)
+	if !ok {
+		return fn(ctx)
+	}
+	if !savepointName.MatchString(name) {
+		return fmt.Errorf("invalid savepoint name %q", name)
+	}
+	if _, err := tx.ExecContext(ctx, "SAVEPOINT "+name); err != nil {
+		return err
+	}
+	if err := fn(ctx); err != nil {
+		if _, rollbackErr := tx.ExecContext(ctx, "ROLLBACK TO SAVEPOINT "+name); rollbackErr != nil {
+			return errors.Join(err, rollbackErr)
+		}
+		return err
+	}
+	_, err := tx.ExecContext(ctx, "RELEASE SAVEPOINT "+name)
+	return err
 }
 
 func New(cfg config.Postgres) (Client, func(), error) {

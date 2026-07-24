@@ -60,6 +60,22 @@ const (
 	AlertEventExhausted  AlertEventKind = "exhausted"
 )
 
+var AlertEventKinds = []AlertEventKind{
+	AlertEventReceived,
+	AlertEventDeduped,
+	AlertEventGrouped,
+	AlertEventRouted,
+	AlertEventSuppressed,
+	AlertEventAcked,
+	AlertEventResolved,
+	AlertEventEscalation,
+	AlertEventNotified,
+	AlertEventPush,
+	AlertEventChat,
+	AlertEventTimeout,
+	AlertEventExhausted,
+}
+
 const (
 	AlertTitleMaxLength       = 255
 	AlertDescriptionMaxLength = 15000

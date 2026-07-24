@@ -10,6 +10,7 @@ import (
 	"github.com/opsybot/opsybot/internal/entity"
 	"github.com/opsybot/opsybot/internal/repository/alert"
 	"github.com/opsybot/opsybot/internal/repository/audit"
+	"github.com/opsybot/opsybot/internal/repository/blob"
 	"github.com/opsybot/opsybot/internal/repository/incident"
 	"github.com/opsybot/opsybot/internal/repository/incident_field_def"
 	"github.com/opsybot/opsybot/internal/repository/incident_severity"
@@ -37,6 +38,7 @@ type harness struct {
 	severities *incident_severity.MockIncidentSeverity
 	fieldDefs  *incident_field_def.MockIncidentFieldDef
 	alerts     *alert.MockAlert
+	blobs      *blob.MockBlob
 	pol        *policy.MockPolicy
 	audit      *audit.MockAudit
 	esc        *escalations.MockEscalations
@@ -55,6 +57,7 @@ func newHarness(t *testing.T) *harness {
 		severities: incident_severity.NewMockIncidentSeverity(ctrl),
 		fieldDefs:  incident_field_def.NewMockIncidentFieldDef(ctrl),
 		alerts:     alert.NewMockAlert(ctrl),
+		blobs:      blob.NewMockBlob(ctrl),
 		pol:        policy.NewMockPolicy(ctrl),
 		audit:      audit.NewMockAudit(ctrl),
 		esc:        escalations.NewMockEscalations(ctrl),
@@ -62,7 +65,7 @@ func newHarness(t *testing.T) *harness {
 	h.srv = &srv{
 		tx: fakeTx{}, lock: h.lock, workspaces: h.ws, members: h.members, teams: h.teams,
 		incidents: h.incidents, services: h.services, severities: h.severities, fieldDefs: h.fieldDefs,
-		alerts: h.alerts, policy: h.pol, audit: h.audit, escalations: h.esc,
+		alerts: h.alerts, blobs: h.blobs, policy: h.pol, audit: h.audit, escalations: h.esc,
 	}
 	return h
 }
@@ -78,6 +81,13 @@ func (h *harness) emptyDirectory() {
 	h.teams.EXPECT().ListByWorkspace(gomock.Any(), "ws-1", true).Return(nil, nil).AnyTimes()
 }
 
+func (h *harness) emptyTimeline() {
+	h.incidents.EXPECT().ListEvents(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(nil, nil).AnyTimes()
+	h.alerts.EXPECT().ListEventsForAlerts(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(nil, nil).AnyTimes()
+}
+
 func adminCtx() context.Context {
 	return entity.WithIdentity(context.Background(), entity.Identity{Kind: entity.IdentityKindSession, UserID: "u1", Label: "Priya"})
 }
@@ -86,6 +96,7 @@ func TestDeclareFromAlertPreservesContext(t *testing.T) {
 	h := newHarness(t)
 	h.authorizeOK()
 	h.emptyDirectory()
+	h.emptyTimeline()
 
 	h.alerts.EXPECT().GetByID(gomock.Any(), "ws-1", "al-1").Return(entity.Alert{
 		ID: "al-1", Title: "Checkout latency spike", Severity: entity.SeverityCritical, ServiceName: "checkout",
@@ -102,7 +113,7 @@ func TestDeclareFromAlertPreservesContext(t *testing.T) {
 			return created, nil
 		})
 	h.incidents.EXPECT().LinkAlert(gomock.Any(), "ws-1", "inc-1", "al-1").Return(nil)
-	h.incidents.EXPECT().AppendEvent(gomock.Any(), gomock.Any()).Return(nil).Times(2)
+	h.incidents.EXPECT().AppendEvent(gomock.Any(), gomock.Any()).Return(entity.IncidentEvent{}, nil).Times(2)
 	h.audit.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
 	h.incidents.EXPECT().GetByID(gomock.Any(), "ws-1", "inc-1").DoAndReturn(
 		func(_ context.Context, _, id string) (entity.Incident, error) {
@@ -131,6 +142,7 @@ func TestResolveResolvesLinkedAlerts(t *testing.T) {
 	h := newHarness(t)
 	h.authorizeOK()
 	h.emptyDirectory()
+	h.emptyTimeline()
 
 	h.incidents.EXPECT().GetByID(gomock.Any(), "ws-1", "inc-1").Return(entity.Incident{
 		ID: "inc-1", Number: 7, Status: entity.IncidentStatusMonitoring,
@@ -140,7 +152,7 @@ func TestResolveResolvesLinkedAlerts(t *testing.T) {
 	h.alerts.EXPECT().Resolve(gomock.Any(), "ws-1", []string{"al-1", "al-2"}, gomock.Any(), entity.ResolveModeIncident).Return([]string{"al-1", "al-2"}, nil)
 	h.alerts.EXPECT().AppendEvent(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(2)
 	h.esc.EXPECT().OnResolved(gomock.Any(), "ws-1", []string{"al-1", "al-2"}, gomock.Any()).Return(nil)
-	h.incidents.EXPECT().AppendEvent(gomock.Any(), gomock.Any()).Return(nil)
+	h.incidents.EXPECT().AppendEvent(gomock.Any(), gomock.Any()).Return(entity.IncidentEvent{}, nil)
 	h.audit.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
 
 	if _, err := h.srv.Resolve(adminCtx(), "acme", "inc-1", "Root cause patched"); err != nil {

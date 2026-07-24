@@ -4,6 +4,7 @@ package service
 
 import (
 	"context"
+	"io"
 
 	"github.com/opsybot/opsybot/internal/entity"
 )
@@ -22,6 +23,14 @@ type Incidents interface {
 	UnlinkAlert(ctx context.Context, workspaceSlug, id, alertID string) (entity.Incident, error)
 	Relate(ctx context.Context, workspaceSlug, id, relatedID string, kind entity.IncidentRelationKind) (entity.Incident, error)
 	Unrelate(ctx context.Context, workspaceSlug, id, relationID string) (entity.Incident, error)
+	ListTimeline(ctx context.Context, workspaceSlug, id string, filter entity.TimelineFilter) (entity.TimelinePage, error)
+	AddTimelineEntry(ctx context.Context, workspaceSlug, id string, in entity.NewTimelineEntry) (entity.IncidentEvent, error)
+	EditTimelineEntry(ctx context.Context, workspaceSlug, id, entryID string, in entity.TimelineEdit) (entity.IncidentEvent, error)
+	ListEntryRevisions(ctx context.Context, workspaceSlug, id, entryID string) ([]entity.IncidentEventRevision, error)
+	AddAttachment(ctx context.Context, workspaceSlug, id, entryID string, in entity.NewAttachment, content io.Reader) (entity.IncidentEventAttachment, error)
+	OpenAttachment(ctx context.Context, workspaceSlug, id, attachmentID string) (entity.IncidentEventAttachment, io.ReadCloser, error)
+	RemoveAttachment(ctx context.Context, workspaceSlug, id, attachmentID string) error
+	ExportTimeline(ctx context.Context, workspaceSlug, id string) (entity.TimelineExport, error)
 	AddFollowup(ctx context.Context, workspaceSlug, id string, in entity.NewFollowup) (entity.Incident, error)
 	ToggleFollowup(ctx context.Context, workspaceSlug, id, followupID string, done bool) (entity.Incident, error)
 	ListFollowups(ctx context.Context, workspaceSlug string) ([]entity.IncidentFollowup, error)

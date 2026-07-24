@@ -24,6 +24,17 @@ export function apiClient(cookies: Cookies) {
 	return client;
 }
 
+export function apiFetch(cookies: Cookies, path: string, init: RequestInit = {}) {
+	const headers = new Headers(init.headers);
+	const parts: string[] = [];
+	const session = cookies.get(SESSION_COOKIE);
+	if (session) parts.push(`${SESSION_COOKIE}=${session}`);
+	const pending = cookies.get(PENDING_COOKIE);
+	if (pending) parts.push(`${PENDING_COOKIE}=${pending}`);
+	if (parts.length) headers.set('cookie', parts.join('; '));
+	return fetch(BASE + path, { ...init, headers });
+}
+
 export function cookieValue(setCookie: string | null, name: string): string | null {
 	if (!setCookie) return null;
 	const match = new RegExp(`${name}=([^;]+)`).exec(setCookie);

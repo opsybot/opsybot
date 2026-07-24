@@ -11,6 +11,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/alert_source"
 	"github.com/opsybot/opsybot/internal/repository/api_key"
 	"github.com/opsybot/opsybot/internal/repository/audit"
+	"github.com/opsybot/opsybot/internal/repository/blob"
 	"github.com/opsybot/opsybot/internal/repository/channel"
 	"github.com/opsybot/opsybot/internal/repository/channel_verification"
 	"github.com/opsybot/opsybot/internal/repository/chat_connection"
@@ -93,6 +94,7 @@ var repositoryProviders = wire.NewSet(
 	sso_state.New,
 	ratelimit.New,
 	audit.New,
+	blob.New,
 	mailer.New,
 	password_reset.New,
 	recovery_code.New,

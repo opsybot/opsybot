@@ -35,6 +35,22 @@ func incidentProblem(err error) (int, api.Problem) {
 		return http.StatusBadRequest, prob(http.StatusBadRequest, "Duplicate field", "Two custom fields resolve to the same key. Rename one.", "")
 	case errors.Is(err, entity.ErrTeamNotFound):
 		return http.StatusBadRequest, prob(http.StatusBadRequest, "Unknown team", "Pick an existing team for this incident.", "")
+	case errors.Is(err, entity.ErrAttachmentUploadInvalid):
+		return http.StatusBadRequest, prob(http.StatusBadRequest, "Invalid upload", "Send exactly one file and an optional label.", "")
+	case errors.Is(err, entity.ErrTimelineRetroFuture):
+		return http.StatusBadRequest, prob(http.StatusBadRequest, "Invalid time", "A timeline entry can't be dated in the future.", "")
+	case errors.Is(err, entity.ErrTimelineCursorInvalid):
+		return http.StatusBadRequest, prob(http.StatusBadRequest, "Invalid cursor", "Reload the timeline and try again.", "")
+	case errors.Is(err, entity.ErrTimelineEntryNotEditable):
+		return http.StatusConflict, prob(http.StatusConflict, "Entry not editable", "Automatic entries are the factual record and can't be changed.", "")
+	case errors.Is(err, entity.ErrAttachmentsPerEntryExceeded):
+		return http.StatusConflict, prob(http.StatusConflict, "Too many attachments", "An entry holds up to 10 attachments. Add a new entry instead.", "")
+	case errors.Is(err, entity.ErrAttachmentStorageUnavailable):
+		return http.StatusConflict, prob(http.StatusConflict, "Storage not configured", "Image attachments need object storage. Set OPSYBOT_S3_ENDPOINT, or attach a link or log snippet instead.", "")
+	case errors.Is(err, entity.ErrAttachmentTooLarge):
+		return http.StatusRequestEntityTooLarge, prob(http.StatusRequestEntityTooLarge, "File too large", "Attachments are limited to 10 MB.", "")
+	case errors.Is(err, entity.ErrTimelineEntryNotFound), errors.Is(err, entity.ErrAttachmentNotFound):
+		return http.StatusNotFound, prob(http.StatusNotFound, "Not found", "That timeline entry no longer exists.", "")
 	case errors.Is(err, entity.ErrIncidentNotFound), errors.Is(err, entity.ErrFollowupNotFound),
 		errors.Is(err, entity.ErrAlertNotFound), errors.Is(err, entity.ErrWorkspaceNotFound),
 		errors.Is(err, entity.ErrNotMember):
@@ -151,11 +167,74 @@ func followupsDTO(in []entity.IncidentFollowup) []api.IncidentFollowup {
 func eventsDTO(in []entity.IncidentEvent) []api.IncidentEvent {
 	out := make([]api.IncidentEvent, 0, len(in))
 	for _, e := range in {
-		ev := api.IncidentEvent{Id: e.ID, At: e.At, Kind: e.Kind, Text: e.Text}
-		if e.Actor != "" {
-			ev.Actor = ptr(e.Actor)
+		out = append(out, eventDTO(e))
+	}
+	return out
+}
+
+func eventDTO(e entity.IncidentEvent) api.IncidentEvent {
+	out := api.IncidentEvent{
+		Id:          e.ID,
+		At:          e.At,
+		Text:        e.Text,
+		Category:    api.TimelineCategory(e.Category),
+		Source:      api.IncidentEventSource(e.Source),
+		Retroactive: e.Retroactive,
+		Attachments: attachmentsDTO(e.Attachments),
+	}
+	if e.Kind != "" {
+		out.Kind = ptr(string(e.Kind))
+	}
+	if e.Actor != "" {
+		out.Actor = ptr(e.Actor)
+	}
+	if e.ActorUserID != "" {
+		out.ActorUserId = ptr(e.ActorUserID)
+	}
+	if !e.EditedAt.IsZero() {
+		out.EditedAt = ptr(e.EditedAt)
+	}
+	if e.EditedBy != "" {
+		out.EditedBy = ptr(e.EditedBy)
+	}
+	if e.AlertID != "" {
+		out.AlertId = ptr(e.AlertID)
+		out.AlertKind = ptr(string(e.AlertKind))
+	}
+	if e.AlertTitle != "" {
+		out.AlertTitle = ptr(e.AlertTitle)
+	}
+	if e.Result != "" {
+		out.Result = ptr(e.Result)
+	}
+	return out
+}
+
+func attachmentsDTO(in []entity.IncidentEventAttachment) []api.IncidentAttachment {
+	out := make([]api.IncidentAttachment, 0, len(in))
+	for _, a := range in {
+		item := api.IncidentAttachment{
+			Id:      a.ID,
+			EntryId: a.EventID,
+			Kind:    api.AttachmentKind(a.Kind),
+			Label:   a.Label,
 		}
-		out = append(out, ev)
+		if a.URL != "" {
+			item.Url = ptr(a.URL)
+		}
+		if a.Body != "" {
+			item.Body = ptr(a.Body)
+		}
+		if a.ContentType != "" {
+			item.ContentType = ptr(a.ContentType)
+		}
+		if a.SizeBytes > 0 {
+			item.SizeBytes = ptr(a.SizeBytes)
+		}
+		if !a.CreatedAt.IsZero() {
+			item.CreatedAt = ptr(a.CreatedAt)
+		}
+		out = append(out, item)
 	}
 	return out
 }

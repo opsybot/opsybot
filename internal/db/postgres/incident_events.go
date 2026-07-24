@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aarondl/null/v8"
 	"github.com/aarondl/sqlboiler/v4/boil"
 	"github.com/aarondl/sqlboiler/v4/queries"
 	"github.com/aarondl/sqlboiler/v4/queries/qm"
@@ -23,77 +24,136 @@ import (
 
 // IncidentEvent is an object representing the database table.
 type IncidentEvent struct {
-	ID         string    `boil:"id" json:"id" toml:"id" yaml:"id"`
-	IncidentID string    `boil:"incident_id" json:"incident_id" toml:"incident_id" yaml:"incident_id"`
-	At         time.Time `boil:"at" json:"at" toml:"at" yaml:"at"`
-	Kind       string    `boil:"kind" json:"kind" toml:"kind" yaml:"kind"`
-	Text       string    `boil:"text" json:"text" toml:"text" yaml:"text"`
-	Actor      string    `boil:"actor" json:"actor" toml:"actor" yaml:"actor"`
+	ID             string      `boil:"id" json:"id" toml:"id" yaml:"id"`
+	IncidentID     string      `boil:"incident_id" json:"incident_id" toml:"incident_id" yaml:"incident_id"`
+	At             time.Time   `boil:"at" json:"at" toml:"at" yaml:"at"`
+	Kind           string      `boil:"kind" json:"kind" toml:"kind" yaml:"kind"`
+	Text           string      `boil:"text" json:"text" toml:"text" yaml:"text"`
+	Actor          string      `boil:"actor" json:"actor" toml:"actor" yaml:"actor"`
+	WorkspaceID    string      `boil:"workspace_id" json:"workspace_id" toml:"workspace_id" yaml:"workspace_id"`
+	Category       string      `boil:"category" json:"category" toml:"category" yaml:"category"`
+	Source         string      `boil:"source" json:"source" toml:"source" yaml:"source"`
+	Retroactive    bool        `boil:"retroactive" json:"retroactive" toml:"retroactive" yaml:"retroactive"`
+	ActorUserID    null.String `boil:"actor_user_id" json:"actor_user_id,omitempty" toml:"actor_user_id" yaml:"actor_user_id,omitempty"`
+	EditedAt       null.Time   `boil:"edited_at" json:"edited_at,omitempty" toml:"edited_at" yaml:"edited_at,omitempty"`
+	EditedBy       null.String `boil:"edited_by" json:"edited_by,omitempty" toml:"edited_by" yaml:"edited_by,omitempty"`
+	IdempotencyKey string      `boil:"idempotency_key" json:"idempotency_key" toml:"idempotency_key" yaml:"idempotency_key"`
 
 	R *incidentEventR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L incidentEventL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var IncidentEventColumns = struct {
-	ID         string
-	IncidentID string
-	At         string
-	Kind       string
-	Text       string
-	Actor      string
+	ID             string
+	IncidentID     string
+	At             string
+	Kind           string
+	Text           string
+	Actor          string
+	WorkspaceID    string
+	Category       string
+	Source         string
+	Retroactive    string
+	ActorUserID    string
+	EditedAt       string
+	EditedBy       string
+	IdempotencyKey string
 }{
-	ID:         "id",
-	IncidentID: "incident_id",
-	At:         "at",
-	Kind:       "kind",
-	Text:       "text",
-	Actor:      "actor",
+	ID:             "id",
+	IncidentID:     "incident_id",
+	At:             "at",
+	Kind:           "kind",
+	Text:           "text",
+	Actor:          "actor",
+	WorkspaceID:    "workspace_id",
+	Category:       "category",
+	Source:         "source",
+	Retroactive:    "retroactive",
+	ActorUserID:    "actor_user_id",
+	EditedAt:       "edited_at",
+	EditedBy:       "edited_by",
+	IdempotencyKey: "idempotency_key",
 }
 
 var IncidentEventTableColumns = struct {
-	ID         string
-	IncidentID string
-	At         string
-	Kind       string
-	Text       string
-	Actor      string
+	ID             string
+	IncidentID     string
+	At             string
+	Kind           string
+	Text           string
+	Actor          string
+	WorkspaceID    string
+	Category       string
+	Source         string
+	Retroactive    string
+	ActorUserID    string
+	EditedAt       string
+	EditedBy       string
+	IdempotencyKey string
 }{
-	ID:         "incident_events.id",
-	IncidentID: "incident_events.incident_id",
-	At:         "incident_events.at",
-	Kind:       "incident_events.kind",
-	Text:       "incident_events.text",
-	Actor:      "incident_events.actor",
+	ID:             "incident_events.id",
+	IncidentID:     "incident_events.incident_id",
+	At:             "incident_events.at",
+	Kind:           "incident_events.kind",
+	Text:           "incident_events.text",
+	Actor:          "incident_events.actor",
+	WorkspaceID:    "incident_events.workspace_id",
+	Category:       "incident_events.category",
+	Source:         "incident_events.source",
+	Retroactive:    "incident_events.retroactive",
+	ActorUserID:    "incident_events.actor_user_id",
+	EditedAt:       "incident_events.edited_at",
+	EditedBy:       "incident_events.edited_by",
+	IdempotencyKey: "incident_events.idempotency_key",
 }
 
 // Generated where
 
 var IncidentEventWhere = struct {
-	ID         whereHelperstring
-	IncidentID whereHelperstring
-	At         whereHelpertime_Time
-	Kind       whereHelperstring
-	Text       whereHelperstring
-	Actor      whereHelperstring
+	ID             whereHelperstring
+	IncidentID     whereHelperstring
+	At             whereHelpertime_Time
+	Kind           whereHelperstring
+	Text           whereHelperstring
+	Actor          whereHelperstring
+	WorkspaceID    whereHelperstring
+	Category       whereHelperstring
+	Source         whereHelperstring
+	Retroactive    whereHelperbool
+	ActorUserID    whereHelpernull_String
+	EditedAt       whereHelpernull_Time
+	EditedBy       whereHelpernull_String
+	IdempotencyKey whereHelperstring
 }{
-	ID:         whereHelperstring{field: "\"incident_events\".\"id\""},
-	IncidentID: whereHelperstring{field: "\"incident_events\".\"incident_id\""},
-	At:         whereHelpertime_Time{field: "\"incident_events\".\"at\""},
-	Kind:       whereHelperstring{field: "\"incident_events\".\"kind\""},
-	Text:       whereHelperstring{field: "\"incident_events\".\"text\""},
-	Actor:      whereHelperstring{field: "\"incident_events\".\"actor\""},
+	ID:             whereHelperstring{field: "\"incident_events\".\"id\""},
+	IncidentID:     whereHelperstring{field: "\"incident_events\".\"incident_id\""},
+	At:             whereHelpertime_Time{field: "\"incident_events\".\"at\""},
+	Kind:           whereHelperstring{field: "\"incident_events\".\"kind\""},
+	Text:           whereHelperstring{field: "\"incident_events\".\"text\""},
+	Actor:          whereHelperstring{field: "\"incident_events\".\"actor\""},
+	WorkspaceID:    whereHelperstring{field: "\"incident_events\".\"workspace_id\""},
+	Category:       whereHelperstring{field: "\"incident_events\".\"category\""},
+	Source:         whereHelperstring{field: "\"incident_events\".\"source\""},
+	Retroactive:    whereHelperbool{field: "\"incident_events\".\"retroactive\""},
+	ActorUserID:    whereHelpernull_String{field: "\"incident_events\".\"actor_user_id\""},
+	EditedAt:       whereHelpernull_Time{field: "\"incident_events\".\"edited_at\""},
+	EditedBy:       whereHelpernull_String{field: "\"incident_events\".\"edited_by\""},
+	IdempotencyKey: whereHelperstring{field: "\"incident_events\".\"idempotency_key\""},
 }
 
 // IncidentEventRels is where relationship names are stored.
 var IncidentEventRels = struct {
-	Incident string
+	ActorUser    string
+	EditedByUser string
 }{
-	Incident: "Incident",
+	ActorUser:    "ActorUser",
+	EditedByUser: "EditedByUser",
 }
 
 // incidentEventR is where relationships are stored.
 type incidentEventR struct {
-	Incident *Incident `boil:"Incident" json:"Incident" toml:"Incident" yaml:"Incident"`
+	ActorUser    *User `boil:"ActorUser" json:"ActorUser" toml:"ActorUser" yaml:"ActorUser"`
+	EditedByUser *User `boil:"EditedByUser" json:"EditedByUser" toml:"EditedByUser" yaml:"EditedByUser"`
 }
 
 // NewStruct creates a new relationship struct
@@ -101,29 +161,45 @@ func (*incidentEventR) NewStruct() *incidentEventR {
 	return &incidentEventR{}
 }
 
-func (o *IncidentEvent) GetIncident() *Incident {
+func (o *IncidentEvent) GetActorUser() *User {
 	if o == nil {
 		return nil
 	}
 
-	return o.R.GetIncident()
+	return o.R.GetActorUser()
 }
 
-func (r *incidentEventR) GetIncident() *Incident {
+func (r *incidentEventR) GetActorUser() *User {
 	if r == nil {
 		return nil
 	}
 
-	return r.Incident
+	return r.ActorUser
+}
+
+func (o *IncidentEvent) GetEditedByUser() *User {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetEditedByUser()
+}
+
+func (r *incidentEventR) GetEditedByUser() *User {
+	if r == nil {
+		return nil
+	}
+
+	return r.EditedByUser
 }
 
 // incidentEventL is where Load methods for each relationship are stored.
 type incidentEventL struct{}
 
 var (
-	incidentEventAllColumns            = []string{"id", "incident_id", "at", "kind", "text", "actor"}
-	incidentEventColumnsWithoutDefault = []string{"incident_id", "kind"}
-	incidentEventColumnsWithDefault    = []string{"id", "at", "text", "actor"}
+	incidentEventAllColumns            = []string{"id", "incident_id", "at", "kind", "text", "actor", "workspace_id", "category", "source", "retroactive", "actor_user_id", "edited_at", "edited_by", "idempotency_key"}
+	incidentEventColumnsWithoutDefault = []string{"incident_id", "kind", "workspace_id"}
+	incidentEventColumnsWithDefault    = []string{"id", "at", "text", "actor", "category", "source", "retroactive", "actor_user_id", "edited_at", "edited_by", "idempotency_key"}
 	incidentEventPrimaryKeyColumns     = []string{"id"}
 	incidentEventGeneratedColumns      = []string{}
 )
@@ -433,20 +509,31 @@ func (q incidentEventQuery) Exists(ctx context.Context, exec boil.ContextExecuto
 	return count > 0, nil
 }
 
-// Incident pointed to by the foreign key.
-func (o *IncidentEvent) Incident(mods ...qm.QueryMod) incidentQuery {
+// ActorUser pointed to by the foreign key.
+func (o *IncidentEvent) ActorUser(mods ...qm.QueryMod) userQuery {
 	queryMods := []qm.QueryMod{
-		qm.Where("\"id\" = ?", o.IncidentID),
+		qm.Where("\"id\" = ?", o.ActorUserID),
 	}
 
 	queryMods = append(queryMods, mods...)
 
-	return Incidents(queryMods...)
+	return Users(queryMods...)
 }
 
-// LoadIncident allows an eager lookup of values, cached into the
+// EditedByUser pointed to by the foreign key.
+func (o *IncidentEvent) EditedByUser(mods ...qm.QueryMod) userQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"id\" = ?", o.EditedBy),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return Users(queryMods...)
+}
+
+// LoadActorUser allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for an N-1 relationship.
-func (incidentEventL) LoadIncident(ctx context.Context, e boil.ContextExecutor, singular bool, maybeIncidentEvent any, mods queries.Applicator) error {
+func (incidentEventL) LoadActorUser(ctx context.Context, e boil.ContextExecutor, singular bool, maybeIncidentEvent any, mods queries.Applicator) error {
 	var slice []*IncidentEvent
 	var object *IncidentEvent
 
@@ -477,7 +564,9 @@ func (incidentEventL) LoadIncident(ctx context.Context, e boil.ContextExecutor, 
 		if object.R == nil {
 			object.R = &incidentEventR{}
 		}
-		args[object.IncidentID] = struct{}{}
+		if !queries.IsNil(object.ActorUserID) {
+			args[object.ActorUserID] = struct{}{}
+		}
 
 	} else {
 		for _, obj := range slice {
@@ -485,7 +574,9 @@ func (incidentEventL) LoadIncident(ctx context.Context, e boil.ContextExecutor, 
 				obj.R = &incidentEventR{}
 			}
 
-			args[obj.IncidentID] = struct{}{}
+			if !queries.IsNil(obj.ActorUserID) {
+				args[obj.ActorUserID] = struct{}{}
+			}
 
 		}
 	}
@@ -502,8 +593,8 @@ func (incidentEventL) LoadIncident(ctx context.Context, e boil.ContextExecutor, 
 	}
 
 	query := NewQuery(
-		qm.From(`incidents`),
-		qm.WhereIn(`incidents.id in ?`, argsSlice...),
+		qm.From(`users`),
+		qm.WhereIn(`users.id in ?`, argsSlice...),
 	)
 	if mods != nil {
 		mods.Apply(query)
@@ -511,22 +602,22 @@ func (incidentEventL) LoadIncident(ctx context.Context, e boil.ContextExecutor, 
 
 	results, err := query.QueryContext(ctx, e)
 	if err != nil {
-		return errors.Wrap(err, "failed to eager load Incident")
+		return errors.Wrap(err, "failed to eager load User")
 	}
 
-	var resultSlice []*Incident
+	var resultSlice []*User
 	if err = queries.Bind(results, &resultSlice); err != nil {
-		return errors.Wrap(err, "failed to bind eager loaded slice Incident")
+		return errors.Wrap(err, "failed to bind eager loaded slice User")
 	}
 
 	if err = results.Close(); err != nil {
-		return errors.Wrap(err, "failed to close results of eager load for incidents")
+		return errors.Wrap(err, "failed to close results of eager load for users")
 	}
 	if err = results.Err(); err != nil {
-		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for incidents")
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for users")
 	}
 
-	if len(incidentAfterSelectHooks) != 0 {
+	if len(userAfterSelectHooks) != 0 {
 		for _, obj := range resultSlice {
 			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
 				return err
@@ -540,22 +631,22 @@ func (incidentEventL) LoadIncident(ctx context.Context, e boil.ContextExecutor, 
 
 	if singular {
 		foreign := resultSlice[0]
-		object.R.Incident = foreign
+		object.R.ActorUser = foreign
 		if foreign.R == nil {
-			foreign.R = &incidentR{}
+			foreign.R = &userR{}
 		}
-		foreign.R.IncidentEvents = append(foreign.R.IncidentEvents, object)
+		foreign.R.ActorUserIncidentEvents = append(foreign.R.ActorUserIncidentEvents, object)
 		return nil
 	}
 
 	for _, local := range slice {
 		for _, foreign := range resultSlice {
-			if local.IncidentID == foreign.ID {
-				local.R.Incident = foreign
+			if queries.Equal(local.ActorUserID, foreign.ID) {
+				local.R.ActorUser = foreign
 				if foreign.R == nil {
-					foreign.R = &incidentR{}
+					foreign.R = &userR{}
 				}
-				foreign.R.IncidentEvents = append(foreign.R.IncidentEvents, local)
+				foreign.R.ActorUserIncidentEvents = append(foreign.R.ActorUserIncidentEvents, local)
 				break
 			}
 		}
@@ -564,10 +655,134 @@ func (incidentEventL) LoadIncident(ctx context.Context, e boil.ContextExecutor, 
 	return nil
 }
 
-// SetIncident of the incidentEvent to the related item.
-// Sets o.R.Incident to related.
-// Adds o to related.R.IncidentEvents.
-func (o *IncidentEvent) SetIncident(ctx context.Context, exec boil.ContextExecutor, insert bool, related *Incident) error {
+// LoadEditedByUser allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for an N-1 relationship.
+func (incidentEventL) LoadEditedByUser(ctx context.Context, e boil.ContextExecutor, singular bool, maybeIncidentEvent any, mods queries.Applicator) error {
+	var slice []*IncidentEvent
+	var object *IncidentEvent
+
+	if singular {
+		var ok bool
+		object, ok = maybeIncidentEvent.(*IncidentEvent)
+		if !ok {
+			object = new(IncidentEvent)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeIncidentEvent)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeIncidentEvent))
+			}
+		}
+	} else {
+		s, ok := maybeIncidentEvent.(*[]*IncidentEvent)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeIncidentEvent)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeIncidentEvent))
+			}
+		}
+	}
+
+	args := make(map[any]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &incidentEventR{}
+		}
+		if !queries.IsNil(object.EditedBy) {
+			args[object.EditedBy] = struct{}{}
+		}
+
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &incidentEventR{}
+			}
+
+			if !queries.IsNil(obj.EditedBy) {
+				args[obj.EditedBy] = struct{}{}
+			}
+
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]any, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`users`),
+		qm.WhereIn(`users.id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load User")
+	}
+
+	var resultSlice []*User
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice User")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for users")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for users")
+	}
+
+	if len(userAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.EditedByUser = foreign
+		if foreign.R == nil {
+			foreign.R = &userR{}
+		}
+		foreign.R.EditedByIncidentEvents = append(foreign.R.EditedByIncidentEvents, object)
+		return nil
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if queries.Equal(local.EditedBy, foreign.ID) {
+				local.R.EditedByUser = foreign
+				if foreign.R == nil {
+					foreign.R = &userR{}
+				}
+				foreign.R.EditedByIncidentEvents = append(foreign.R.EditedByIncidentEvents, local)
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// SetActorUser of the incidentEvent to the related item.
+// Sets o.R.ActorUser to related.
+// Adds o to related.R.ActorUserIncidentEvents.
+func (o *IncidentEvent) SetActorUser(ctx context.Context, exec boil.ContextExecutor, insert bool, related *User) error {
 	var err error
 	if insert {
 		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
@@ -577,7 +792,7 @@ func (o *IncidentEvent) SetIncident(ctx context.Context, exec boil.ContextExecut
 
 	updateQuery := fmt.Sprintf(
 		"UPDATE \"incident_events\" SET %s WHERE %s",
-		strmangle.SetParamNames("\"", "\"", 1, []string{"incident_id"}),
+		strmangle.SetParamNames("\"", "\"", 1, []string{"actor_user_id"}),
 		strmangle.WhereClause("\"", "\"", 2, incidentEventPrimaryKeyColumns),
 	)
 	values := []any{related.ID, o.ID}
@@ -591,23 +806,136 @@ func (o *IncidentEvent) SetIncident(ctx context.Context, exec boil.ContextExecut
 		return errors.Wrap(err, "failed to update local table")
 	}
 
-	o.IncidentID = related.ID
+	queries.Assign(&o.ActorUserID, related.ID)
 	if o.R == nil {
 		o.R = &incidentEventR{
-			Incident: related,
+			ActorUser: related,
 		}
 	} else {
-		o.R.Incident = related
+		o.R.ActorUser = related
 	}
 
 	if related.R == nil {
-		related.R = &incidentR{
-			IncidentEvents: IncidentEventSlice{o},
+		related.R = &userR{
+			ActorUserIncidentEvents: IncidentEventSlice{o},
 		}
 	} else {
-		related.R.IncidentEvents = append(related.R.IncidentEvents, o)
+		related.R.ActorUserIncidentEvents = append(related.R.ActorUserIncidentEvents, o)
 	}
 
+	return nil
+}
+
+// RemoveActorUser relationship.
+// Sets o.R.ActorUser to nil.
+// Removes o from all passed in related items' relationships struct.
+func (o *IncidentEvent) RemoveActorUser(ctx context.Context, exec boil.ContextExecutor, related *User) error {
+	var err error
+
+	queries.SetScanner(&o.ActorUserID, nil)
+	if _, err = o.Update(ctx, exec, boil.Whitelist("actor_user_id")); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	if o.R != nil {
+		o.R.ActorUser = nil
+	}
+	if related == nil || related.R == nil {
+		return nil
+	}
+
+	for i, ri := range related.R.ActorUserIncidentEvents {
+		if queries.Equal(o.ActorUserID, ri.ActorUserID) {
+			continue
+		}
+
+		ln := len(related.R.ActorUserIncidentEvents)
+		if ln > 1 && i < ln-1 {
+			related.R.ActorUserIncidentEvents[i] = related.R.ActorUserIncidentEvents[ln-1]
+		}
+		related.R.ActorUserIncidentEvents = related.R.ActorUserIncidentEvents[:ln-1]
+		break
+	}
+	return nil
+}
+
+// SetEditedByUser of the incidentEvent to the related item.
+// Sets o.R.EditedByUser to related.
+// Adds o to related.R.EditedByIncidentEvents.
+func (o *IncidentEvent) SetEditedByUser(ctx context.Context, exec boil.ContextExecutor, insert bool, related *User) error {
+	var err error
+	if insert {
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	}
+
+	updateQuery := fmt.Sprintf(
+		"UPDATE \"incident_events\" SET %s WHERE %s",
+		strmangle.SetParamNames("\"", "\"", 1, []string{"edited_by"}),
+		strmangle.WhereClause("\"", "\"", 2, incidentEventPrimaryKeyColumns),
+	)
+	values := []any{related.ID, o.ID}
+
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, updateQuery)
+		fmt.Fprintln(writer, values)
+	}
+	if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	queries.Assign(&o.EditedBy, related.ID)
+	if o.R == nil {
+		o.R = &incidentEventR{
+			EditedByUser: related,
+		}
+	} else {
+		o.R.EditedByUser = related
+	}
+
+	if related.R == nil {
+		related.R = &userR{
+			EditedByIncidentEvents: IncidentEventSlice{o},
+		}
+	} else {
+		related.R.EditedByIncidentEvents = append(related.R.EditedByIncidentEvents, o)
+	}
+
+	return nil
+}
+
+// RemoveEditedByUser relationship.
+// Sets o.R.EditedByUser to nil.
+// Removes o from all passed in related items' relationships struct.
+func (o *IncidentEvent) RemoveEditedByUser(ctx context.Context, exec boil.ContextExecutor, related *User) error {
+	var err error
+
+	queries.SetScanner(&o.EditedBy, nil)
+	if _, err = o.Update(ctx, exec, boil.Whitelist("edited_by")); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	if o.R != nil {
+		o.R.EditedByUser = nil
+	}
+	if related == nil || related.R == nil {
+		return nil
+	}
+
+	for i, ri := range related.R.EditedByIncidentEvents {
+		if queries.Equal(o.EditedBy, ri.EditedBy) {
+			continue
+		}
+
+		ln := len(related.R.EditedByIncidentEvents)
+		if ln > 1 && i < ln-1 {
+			related.R.EditedByIncidentEvents[i] = related.R.EditedByIncidentEvents[ln-1]
+		}
+		related.R.EditedByIncidentEvents = related.R.EditedByIncidentEvents[:ln-1]
+		break
+	}
 	return nil
 }
 

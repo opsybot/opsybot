@@ -11,6 +11,7 @@ package incidents
 
 import (
 	context "context"
+	io "io"
 	reflect "reflect"
 
 	entity "github.com/opsybot/opsybot/internal/entity"
@@ -41,6 +42,21 @@ func (m *MockIncidents) EXPECT() *MockIncidentsMockRecorder {
 	return m.recorder
 }
 
+// AddAttachment mocks base method.
+func (m *MockIncidents) AddAttachment(ctx context.Context, workspaceSlug, id, entryID string, in entity.NewAttachment, content io.Reader) (entity.IncidentEventAttachment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddAttachment", ctx, workspaceSlug, id, entryID, in, content)
+	ret0, _ := ret[0].(entity.IncidentEventAttachment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AddAttachment indicates an expected call of AddAttachment.
+func (mr *MockIncidentsMockRecorder) AddAttachment(ctx, workspaceSlug, id, entryID, in, content any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddAttachment", reflect.TypeOf((*MockIncidents)(nil).AddAttachment), ctx, workspaceSlug, id, entryID, in, content)
+}
+
 // AddFollowup mocks base method.
 func (m *MockIncidents) AddFollowup(ctx context.Context, workspaceSlug, id string, in entity.NewFollowup) (entity.Incident, error) {
 	m.ctrl.T.Helper()
@@ -54,6 +70,21 @@ func (m *MockIncidents) AddFollowup(ctx context.Context, workspaceSlug, id strin
 func (mr *MockIncidentsMockRecorder) AddFollowup(ctx, workspaceSlug, id, in any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddFollowup", reflect.TypeOf((*MockIncidents)(nil).AddFollowup), ctx, workspaceSlug, id, in)
+}
+
+// AddTimelineEntry mocks base method.
+func (m *MockIncidents) AddTimelineEntry(ctx context.Context, workspaceSlug, id string, in entity.NewTimelineEntry) (entity.IncidentEvent, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddTimelineEntry", ctx, workspaceSlug, id, in)
+	ret0, _ := ret[0].(entity.IncidentEvent)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AddTimelineEntry indicates an expected call of AddTimelineEntry.
+func (mr *MockIncidentsMockRecorder) AddTimelineEntry(ctx, workspaceSlug, id, in any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTimelineEntry", reflect.TypeOf((*MockIncidents)(nil).AddTimelineEntry), ctx, workspaceSlug, id, in)
 }
 
 // ChangeSeverity mocks base method.
@@ -101,6 +132,36 @@ func (mr *MockIncidentsMockRecorder) Declare(ctx, workspaceSlug, in any) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Declare", reflect.TypeOf((*MockIncidents)(nil).Declare), ctx, workspaceSlug, in)
 }
 
+// EditTimelineEntry mocks base method.
+func (m *MockIncidents) EditTimelineEntry(ctx context.Context, workspaceSlug, id, entryID string, in entity.TimelineEdit) (entity.IncidentEvent, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EditTimelineEntry", ctx, workspaceSlug, id, entryID, in)
+	ret0, _ := ret[0].(entity.IncidentEvent)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// EditTimelineEntry indicates an expected call of EditTimelineEntry.
+func (mr *MockIncidentsMockRecorder) EditTimelineEntry(ctx, workspaceSlug, id, entryID, in any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EditTimelineEntry", reflect.TypeOf((*MockIncidents)(nil).EditTimelineEntry), ctx, workspaceSlug, id, entryID, in)
+}
+
+// ExportTimeline mocks base method.
+func (m *MockIncidents) ExportTimeline(ctx context.Context, workspaceSlug, id string) (entity.TimelineExport, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExportTimeline", ctx, workspaceSlug, id)
+	ret0, _ := ret[0].(entity.TimelineExport)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ExportTimeline indicates an expected call of ExportTimeline.
+func (mr *MockIncidentsMockRecorder) ExportTimeline(ctx, workspaceSlug, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportTimeline", reflect.TypeOf((*MockIncidents)(nil).ExportTimeline), ctx, workspaceSlug, id)
+}
+
 // Get mocks base method.
 func (m *MockIncidents) Get(ctx context.Context, workspaceSlug, id string) (entity.Incident, error) {
 	m.ctrl.T.Helper()
@@ -144,6 +205,21 @@ func (m *MockIncidents) List(ctx context.Context, workspaceSlug string, filter e
 func (mr *MockIncidentsMockRecorder) List(ctx, workspaceSlug, filter any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockIncidents)(nil).List), ctx, workspaceSlug, filter)
+}
+
+// ListEntryRevisions mocks base method.
+func (m *MockIncidents) ListEntryRevisions(ctx context.Context, workspaceSlug, id, entryID string) ([]entity.IncidentEventRevision, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListEntryRevisions", ctx, workspaceSlug, id, entryID)
+	ret0, _ := ret[0].([]entity.IncidentEventRevision)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListEntryRevisions indicates an expected call of ListEntryRevisions.
+func (mr *MockIncidentsMockRecorder) ListEntryRevisions(ctx, workspaceSlug, id, entryID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListEntryRevisions", reflect.TypeOf((*MockIncidents)(nil).ListEntryRevisions), ctx, workspaceSlug, id, entryID)
 }
 
 // ListFieldDefs mocks base method.
@@ -191,6 +267,37 @@ func (mr *MockIncidentsMockRecorder) ListSeverities(ctx, workspaceSlug any) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSeverities", reflect.TypeOf((*MockIncidents)(nil).ListSeverities), ctx, workspaceSlug)
 }
 
+// ListTimeline mocks base method.
+func (m *MockIncidents) ListTimeline(ctx context.Context, workspaceSlug, id string, filter entity.TimelineFilter) (entity.TimelinePage, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListTimeline", ctx, workspaceSlug, id, filter)
+	ret0, _ := ret[0].(entity.TimelinePage)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListTimeline indicates an expected call of ListTimeline.
+func (mr *MockIncidentsMockRecorder) ListTimeline(ctx, workspaceSlug, id, filter any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTimeline", reflect.TypeOf((*MockIncidents)(nil).ListTimeline), ctx, workspaceSlug, id, filter)
+}
+
+// OpenAttachment mocks base method.
+func (m *MockIncidents) OpenAttachment(ctx context.Context, workspaceSlug, id, attachmentID string) (entity.IncidentEventAttachment, io.ReadCloser, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OpenAttachment", ctx, workspaceSlug, id, attachmentID)
+	ret0, _ := ret[0].(entity.IncidentEventAttachment)
+	ret1, _ := ret[1].(io.ReadCloser)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// OpenAttachment indicates an expected call of OpenAttachment.
+func (mr *MockIncidentsMockRecorder) OpenAttachment(ctx, workspaceSlug, id, attachmentID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OpenAttachment", reflect.TypeOf((*MockIncidents)(nil).OpenAttachment), ctx, workspaceSlug, id, attachmentID)
+}
+
 // Relate mocks base method.
 func (m *MockIncidents) Relate(ctx context.Context, workspaceSlug, id, relatedID string, kind entity.IncidentRelationKind) (entity.Incident, error) {
 	m.ctrl.T.Helper()
@@ -204,6 +311,20 @@ func (m *MockIncidents) Relate(ctx context.Context, workspaceSlug, id, relatedID
 func (mr *MockIncidentsMockRecorder) Relate(ctx, workspaceSlug, id, relatedID, kind any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Relate", reflect.TypeOf((*MockIncidents)(nil).Relate), ctx, workspaceSlug, id, relatedID, kind)
+}
+
+// RemoveAttachment mocks base method.
+func (m *MockIncidents) RemoveAttachment(ctx context.Context, workspaceSlug, id, attachmentID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveAttachment", ctx, workspaceSlug, id, attachmentID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RemoveAttachment indicates an expected call of RemoveAttachment.
+func (mr *MockIncidentsMockRecorder) RemoveAttachment(ctx, workspaceSlug, id, attachmentID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveAttachment", reflect.TypeOf((*MockIncidents)(nil).RemoveAttachment), ctx, workspaceSlug, id, attachmentID)
 }
 
 // Reopen mocks base method.

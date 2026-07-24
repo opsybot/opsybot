@@ -28,6 +28,16 @@ type Config struct {
 	Telegram        Telegram      `mapstructure:"telegram"`
 	Teams           Teams         `mapstructure:"teams"`
 	Chat            Chat          `mapstructure:"chat"`
+	S3              S3            `mapstructure:"s3"`
+}
+
+type S3 struct {
+	Endpoint  string `mapstructure:"endpoint"`
+	Region    string `mapstructure:"region"`
+	Bucket    string `mapstructure:"bucket"`
+	AccessKey string `mapstructure:"access_key"`
+	SecretKey string `mapstructure:"secret_key"`
+	UseSSL    bool   `mapstructure:"use_ssl"`
 }
 
 type Webhook struct {
@@ -229,6 +239,10 @@ func NewNtfy(cfg Config) Ntfy {
 	return cfg.Ntfy
 }
 
+func NewS3(cfg Config) S3 {
+	return cfg.S3
+}
+
 func NewSlack(cfg Config) Slack {
 	return cfg.Slack
 }
@@ -342,6 +356,12 @@ func New(cfgFile string) (Config, error) {
 	v.SetDefault("ntfy.default_server", "https://ntfy.sh")
 	v.SetDefault("ntfy.timeout", "10s")
 	v.SetDefault("ntfy.user_agent", "opsybot")
+	v.SetDefault("s3.endpoint", "")
+	v.SetDefault("s3.region", "garage")
+	v.SetDefault("s3.bucket", "opsybot")
+	v.SetDefault("s3.access_key", "")
+	v.SetDefault("s3.secret_key", "")
+	v.SetDefault("s3.use_ssl", false)
 	v.SetDefault("slack.client_id", "")
 	v.SetDefault("slack.client_secret", "")
 	v.SetDefault("slack.signing_secret", "")

@@ -10,11 +10,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // Defines values for AlertSeverity.
@@ -266,6 +269,27 @@ func (e ApiKeyKind) Valid() bool {
 	case ApiKeyKindPersonal:
 		return true
 	case ApiKeyKindWorkspace:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AttachmentKind.
+const (
+	Image AttachmentKind = "image"
+	Link  AttachmentKind = "link"
+	Log   AttachmentKind = "log"
+)
+
+// Valid indicates whether the value is a known member of the AttachmentKind enum.
+func (e AttachmentKind) Valid() bool {
+	switch e {
+	case Image:
+		return true
+	case Link:
+		return true
+	case Log:
 		return true
 	default:
 		return false
@@ -704,6 +728,30 @@ func (e IncidentStatus) Valid() bool {
 	}
 }
 
+// Defines values for IncidentEventSource.
+const (
+	Api    IncidentEventSource = "api"
+	Chat   IncidentEventSource = "chat"
+	System IncidentEventSource = "system"
+	Ui     IncidentEventSource = "ui"
+)
+
+// Valid indicates whether the value is a known member of the IncidentEventSource enum.
+func (e IncidentEventSource) Valid() bool {
+	switch e {
+	case Api:
+		return true
+	case Chat:
+		return true
+	case System:
+		return true
+	case Ui:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for IncidentFieldKind.
 const (
 	MultiSelect IncidentFieldKind = "multi_select"
@@ -1085,6 +1133,33 @@ func (e SsoMode) Valid() bool {
 	}
 }
 
+// Defines values for TimelineCategory.
+const (
+	Action        TimelineCategory = "action"
+	Communication TimelineCategory = "communication"
+	Decision      TimelineCategory = "decision"
+	Observation   TimelineCategory = "observation"
+	Status        TimelineCategory = "status"
+)
+
+// Valid indicates whether the value is a known member of the TimelineCategory enum.
+func (e TimelineCategory) Valid() bool {
+	switch e {
+	case Action:
+		return true
+	case Communication:
+		return true
+	case Decision:
+		return true
+	case Observation:
+		return true
+	case Status:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for UpdateAlertMonitorRequestSeverity.
 const (
 	UpdateAlertMonitorRequestSeverityCritical UpdateAlertMonitorRequestSeverity = "critical"
@@ -1114,6 +1189,20 @@ type AcceptInviteRequest struct {
 	Token    string `json:"token"`
 }
 
+// AddAttachmentRequest defines model for AddAttachmentRequest.
+type AddAttachmentRequest struct {
+	Body  *string        `json:"body,omitempty"`
+	Kind  AttachmentKind `json:"kind"`
+	Label string         `json:"label"`
+	Url   *string        `json:"url,omitempty"`
+}
+
+// AddAttachmentUpload defines model for AddAttachmentUpload.
+type AddAttachmentUpload struct {
+	File  openapi_types.File `json:"file"`
+	Label string             `json:"label"`
+}
+
 // AddFollowupRequest defines model for AddFollowupRequest.
 type AddFollowupRequest struct {
 	DueAt       *time.Time `json:"dueAt,omitempty"`
@@ -1127,6 +1216,14 @@ type AddOverrideRequest struct {
 	Reason   *string   `json:"reason,omitempty"`
 	StartsAt time.Time `json:"startsAt"`
 	UserId   string    `json:"userId"`
+}
+
+// AddTimelineEntryRequest defines model for AddTimelineEntryRequest.
+type AddTimelineEntryRequest struct {
+	At             *time.Time        `json:"at,omitempty"`
+	Category       *TimelineCategory `json:"category,omitempty"`
+	IdempotencyKey *string           `json:"idempotencyKey,omitempty"`
+	Text           string            `json:"text"`
 }
 
 // Alert defines model for Alert.
@@ -1386,6 +1483,9 @@ type ApiKeyList struct {
 	Workspace []ApiKey `json:"workspace"`
 }
 
+// AttachmentKind defines model for AttachmentKind.
+type AttachmentKind string
+
 // AuditEvent defines model for AuditEvent.
 type AuditEvent struct {
 	Action string    `json:"action"`
@@ -1644,6 +1744,12 @@ type DefaultPolicyRequest struct {
 	PolicySlug string `json:"policySlug"`
 }
 
+// EditTimelineEntryRequest defines model for EditTimelineEntryRequest.
+type EditTimelineEntryRequest struct {
+	Category TimelineCategory `json:"category"`
+	Text     string           `json:"text"`
+}
+
 // EscalationDirectory defines model for EscalationDirectory.
 type EscalationDirectory struct {
 	Members   []EscalationDirectoryMember `json:"members"`
@@ -1817,14 +1923,41 @@ type IncidentAlertRef struct {
 	Title    string `json:"title"`
 }
 
+// IncidentAttachment defines model for IncidentAttachment.
+type IncidentAttachment struct {
+	Body        *string        `json:"body,omitempty"`
+	ContentType *string        `json:"contentType,omitempty"`
+	CreatedAt   *time.Time     `json:"createdAt,omitempty"`
+	EntryId     string         `json:"entryId"`
+	Id          string         `json:"id"`
+	Kind        AttachmentKind `json:"kind"`
+	Label       string         `json:"label"`
+	SizeBytes   *int64         `json:"sizeBytes,omitempty"`
+	Url         *string        `json:"url,omitempty"`
+}
+
 // IncidentEvent defines model for IncidentEvent.
 type IncidentEvent struct {
-	Actor *string   `json:"actor,omitempty"`
-	At    time.Time `json:"at"`
-	Id    string    `json:"id"`
-	Kind  string    `json:"kind"`
-	Text  string    `json:"text"`
+	Actor       *string              `json:"actor,omitempty"`
+	ActorUserId *string              `json:"actorUserId,omitempty"`
+	AlertId     *string              `json:"alertId,omitempty"`
+	AlertKind   *string              `json:"alertKind,omitempty"`
+	AlertTitle  *string              `json:"alertTitle,omitempty"`
+	At          time.Time            `json:"at"`
+	Attachments []IncidentAttachment `json:"attachments"`
+	Category    TimelineCategory     `json:"category"`
+	EditedAt    *time.Time           `json:"editedAt,omitempty"`
+	EditedBy    *string              `json:"editedBy,omitempty"`
+	Id          string               `json:"id"`
+	Kind        *string              `json:"kind,omitempty"`
+	Result      *string              `json:"result,omitempty"`
+	Retroactive bool                 `json:"retroactive"`
+	Source      IncidentEventSource  `json:"source"`
+	Text        string               `json:"text"`
 }
+
+// IncidentEventSource defines model for IncidentEvent.Source.
+type IncidentEventSource string
 
 // IncidentField defines model for IncidentField.
 type IncidentField struct {
@@ -2432,6 +2565,40 @@ type TeamList struct {
 	Items []Team `json:"items"`
 }
 
+// TimelineCategory defines model for TimelineCategory.
+type TimelineCategory string
+
+// TimelineExport defines model for TimelineExport.
+type TimelineExport struct {
+	Entries    []IncidentEvent `json:"entries"`
+	ExportedAt time.Time       `json:"exportedAt"`
+	IncidentId string          `json:"incidentId"`
+	Name       string          `json:"name"`
+	Number     int             `json:"number"`
+	Text       string          `json:"text"`
+	Truncated  bool            `json:"truncated"`
+}
+
+// TimelinePage defines model for TimelinePage.
+type TimelinePage struct {
+	Entries    []IncidentEvent `json:"entries"`
+	NextCursor *string         `json:"nextCursor,omitempty"`
+}
+
+// TimelineRevision defines model for TimelineRevision.
+type TimelineRevision struct {
+	At          time.Time        `json:"at"`
+	Category    TimelineCategory `json:"category"`
+	EditorLabel *string          `json:"editorLabel,omitempty"`
+	Id          string           `json:"id"`
+	Text        string           `json:"text"`
+}
+
+// TimelineRevisionList defines model for TimelineRevisionList.
+type TimelineRevisionList struct {
+	Revisions []TimelineRevision `json:"revisions"`
+}
+
 // ToggleFollowupRequest defines model for ToggleFollowupRequest.
 type ToggleFollowupRequest struct {
 	Done bool `json:"done"`
@@ -2561,6 +2728,13 @@ type ListIncidentsParams struct {
 	Query    *string    `form:"query,omitempty" json:"query,omitempty"`
 	Cursor   *string    `form:"cursor,omitempty" json:"cursor,omitempty"`
 	Limit    *int       `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListIncidentTimelineParams defines parameters for ListIncidentTimeline.
+type ListIncidentTimelineParams struct {
+	Category *[]TimelineCategory `form:"category,omitempty" json:"category,omitempty"`
+	Cursor   *string             `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit    *int                `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // MyOnCallParams defines parameters for MyOnCall.
@@ -2730,6 +2904,18 @@ type ChangeIncidentSeverityJSONRequestBody = ChangeSeverityRequest
 
 // ChangeIncidentStatusJSONRequestBody defines body for ChangeIncidentStatus for application/json ContentType.
 type ChangeIncidentStatusJSONRequestBody = ChangeStatusRequest
+
+// AddIncidentTimelineEntryJSONRequestBody defines body for AddIncidentTimelineEntry for application/json ContentType.
+type AddIncidentTimelineEntryJSONRequestBody = AddTimelineEntryRequest
+
+// EditIncidentTimelineEntryJSONRequestBody defines body for EditIncidentTimelineEntry for application/json ContentType.
+type EditIncidentTimelineEntryJSONRequestBody = EditTimelineEntryRequest
+
+// AddIncidentTimelineAttachmentJSONRequestBody defines body for AddIncidentTimelineAttachment for application/json ContentType.
+type AddIncidentTimelineAttachmentJSONRequestBody = AddAttachmentRequest
+
+// AddIncidentTimelineAttachmentMultipartRequestBody defines body for AddIncidentTimelineAttachment for multipart/form-data ContentType.
+type AddIncidentTimelineAttachmentMultipartRequestBody = AddAttachmentUpload
 
 // CreateKeyJSONRequestBody defines body for CreateKey for application/json ContentType.
 type CreateKeyJSONRequestBody = CreateApiKeyRequest
@@ -3057,6 +3243,12 @@ type ServerInterface interface {
 	// Unlink an alert from an incident
 	// (DELETE /workspaces/{workspaceId}/incidents/{incidentId}/alerts/{alertId})
 	UnlinkIncidentAlert(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, alertId string)
+	// Remove an attachment from a timeline entry
+	// (DELETE /workspaces/{workspaceId}/incidents/{incidentId}/attachments/{attachmentId})
+	RemoveIncidentTimelineAttachment(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, attachmentId string)
+	// Download an attachment stored for a timeline entry
+	// (GET /workspaces/{workspaceId}/incidents/{incidentId}/attachments/{attachmentId}/content)
+	DownloadIncidentTimelineAttachment(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, attachmentId string)
 	// Set an incident's custom field values
 	// (PUT /workspaces/{workspaceId}/incidents/{incidentId}/custom-fields)
 	SetIncidentCustomFields(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string)
@@ -3084,6 +3276,24 @@ type ServerInterface interface {
 	// Move an incident to a valid next status
 	// (POST /workspaces/{workspaceId}/incidents/{incidentId}/status)
 	ChangeIncidentStatus(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string)
+	// List the incident timeline
+	// (GET /workspaces/{workspaceId}/incidents/{incidentId}/timeline)
+	ListIncidentTimeline(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, params ListIncidentTimelineParams)
+	// Add a manual timeline entry
+	// (POST /workspaces/{workspaceId}/incidents/{incidentId}/timeline)
+	AddIncidentTimelineEntry(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string)
+	// Export the incident timeline
+	// (GET /workspaces/{workspaceId}/incidents/{incidentId}/timeline/export)
+	ExportIncidentTimeline(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string)
+	// Edit a manual timeline entry
+	// (PATCH /workspaces/{workspaceId}/incidents/{incidentId}/timeline/{entryId})
+	EditIncidentTimelineEntry(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, entryId string)
+	// Attach evidence to a timeline entry
+	// (POST /workspaces/{workspaceId}/incidents/{incidentId}/timeline/{entryId}/attachments)
+	AddIncidentTimelineAttachment(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, entryId string)
+	// List the edit history of a timeline entry
+	// (GET /workspaces/{workspaceId}/incidents/{incidentId}/timeline/{entryId}/revisions)
+	ListIncidentTimelineRevisions(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, entryId string)
 	// List API keys in a workspace
 	// (GET /workspaces/{workspaceId}/keys)
 	ListKeys(w http.ResponseWriter, r *http.Request, workspaceId string)
@@ -3777,6 +3987,18 @@ func (_ Unimplemented) UnlinkIncidentAlert(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Remove an attachment from a timeline entry
+// (DELETE /workspaces/{workspaceId}/incidents/{incidentId}/attachments/{attachmentId})
+func (_ Unimplemented) RemoveIncidentTimelineAttachment(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, attachmentId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Download an attachment stored for a timeline entry
+// (GET /workspaces/{workspaceId}/incidents/{incidentId}/attachments/{attachmentId}/content)
+func (_ Unimplemented) DownloadIncidentTimelineAttachment(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, attachmentId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Set an incident's custom field values
 // (PUT /workspaces/{workspaceId}/incidents/{incidentId}/custom-fields)
 func (_ Unimplemented) SetIncidentCustomFields(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
@@ -3828,6 +4050,42 @@ func (_ Unimplemented) ChangeIncidentSeverity(w http.ResponseWriter, r *http.Req
 // Move an incident to a valid next status
 // (POST /workspaces/{workspaceId}/incidents/{incidentId}/status)
 func (_ Unimplemented) ChangeIncidentStatus(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List the incident timeline
+// (GET /workspaces/{workspaceId}/incidents/{incidentId}/timeline)
+func (_ Unimplemented) ListIncidentTimeline(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, params ListIncidentTimelineParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Add a manual timeline entry
+// (POST /workspaces/{workspaceId}/incidents/{incidentId}/timeline)
+func (_ Unimplemented) AddIncidentTimelineEntry(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Export the incident timeline
+// (GET /workspaces/{workspaceId}/incidents/{incidentId}/timeline/export)
+func (_ Unimplemented) ExportIncidentTimeline(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Edit a manual timeline entry
+// (PATCH /workspaces/{workspaceId}/incidents/{incidentId}/timeline/{entryId})
+func (_ Unimplemented) EditIncidentTimelineEntry(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, entryId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Attach evidence to a timeline entry
+// (POST /workspaces/{workspaceId}/incidents/{incidentId}/timeline/{entryId}/attachments)
+func (_ Unimplemented) AddIncidentTimelineAttachment(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, entryId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List the edit history of a timeline entry
+// (GET /workspaces/{workspaceId}/incidents/{incidentId}/timeline/{entryId}/revisions)
+func (_ Unimplemented) ListIncidentTimelineRevisions(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, entryId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -6880,6 +7138,94 @@ func (siw *ServerInterfaceWrapper) UnlinkIncidentAlert(w http.ResponseWriter, r 
 	handler.ServeHTTP(w, r)
 }
 
+// RemoveIncidentTimelineAttachment operation middleware
+func (siw *ServerInterfaceWrapper) RemoveIncidentTimelineAttachment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "incidentId" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incidentId", chi.URLParam(r, "incidentId"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incidentId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "attachmentId" -------------
+	var attachmentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "attachmentId", chi.URLParam(r, "attachmentId"), &attachmentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "attachmentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RemoveIncidentTimelineAttachment(w, r, workspaceId, incidentId, attachmentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DownloadIncidentTimelineAttachment operation middleware
+func (siw *ServerInterfaceWrapper) DownloadIncidentTimelineAttachment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "incidentId" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incidentId", chi.URLParam(r, "incidentId"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incidentId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "attachmentId" -------------
+	var attachmentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "attachmentId", chi.URLParam(r, "attachmentId"), &attachmentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "attachmentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DownloadIncidentTimelineAttachment(w, r, workspaceId, incidentId, attachmentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // SetIncidentCustomFields operation middleware
 func (siw *ServerInterfaceWrapper) SetIncidentCustomFields(w http.ResponseWriter, r *http.Request) {
 
@@ -7204,6 +7550,285 @@ func (siw *ServerInterfaceWrapper) ChangeIncidentStatus(w http.ResponseWriter, r
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ChangeIncidentStatus(w, r, workspaceId, incidentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListIncidentTimeline operation middleware
+func (siw *ServerInterfaceWrapper) ListIncidentTimeline(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "incidentId" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incidentId", chi.URLParam(r, "incidentId"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incidentId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListIncidentTimelineParams
+
+	// ------------- Optional query parameter "category" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "category", r.URL.Query(), &params.Category, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "category"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "category", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListIncidentTimeline(w, r, workspaceId, incidentId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AddIncidentTimelineEntry operation middleware
+func (siw *ServerInterfaceWrapper) AddIncidentTimelineEntry(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "incidentId" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incidentId", chi.URLParam(r, "incidentId"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incidentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddIncidentTimelineEntry(w, r, workspaceId, incidentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ExportIncidentTimeline operation middleware
+func (siw *ServerInterfaceWrapper) ExportIncidentTimeline(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "incidentId" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incidentId", chi.URLParam(r, "incidentId"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incidentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ExportIncidentTimeline(w, r, workspaceId, incidentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// EditIncidentTimelineEntry operation middleware
+func (siw *ServerInterfaceWrapper) EditIncidentTimelineEntry(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "incidentId" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incidentId", chi.URLParam(r, "incidentId"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incidentId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "entryId" -------------
+	var entryId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "entryId", chi.URLParam(r, "entryId"), &entryId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "entryId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.EditIncidentTimelineEntry(w, r, workspaceId, incidentId, entryId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AddIncidentTimelineAttachment operation middleware
+func (siw *ServerInterfaceWrapper) AddIncidentTimelineAttachment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "incidentId" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incidentId", chi.URLParam(r, "incidentId"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incidentId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "entryId" -------------
+	var entryId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "entryId", chi.URLParam(r, "entryId"), &entryId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "entryId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddIncidentTimelineAttachment(w, r, workspaceId, incidentId, entryId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListIncidentTimelineRevisions operation middleware
+func (siw *ServerInterfaceWrapper) ListIncidentTimelineRevisions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", chi.URLParam(r, "workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workspaceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "incidentId" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incidentId", chi.URLParam(r, "incidentId"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incidentId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "entryId" -------------
+	var entryId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "entryId", chi.URLParam(r, "entryId"), &entryId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "entryId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListIncidentTimelineRevisions(w, r, workspaceId, incidentId, entryId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -8997,6 +9622,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Delete(options.BaseURL+"/workspaces/{workspaceId}/incidents/{incidentId}/alerts/{alertId}", wrapper.UnlinkIncidentAlert)
 	})
 	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/workspaces/{workspaceId}/incidents/{incidentId}/attachments/{attachmentId}", wrapper.RemoveIncidentTimelineAttachment)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/incidents/{incidentId}/attachments/{attachmentId}/content", wrapper.DownloadIncidentTimelineAttachment)
+	})
+	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/workspaces/{workspaceId}/incidents/{incidentId}/custom-fields", wrapper.SetIncidentCustomFields)
 	})
 	r.Group(func(r chi.Router) {
@@ -9022,6 +9653,24 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/workspaces/{workspaceId}/incidents/{incidentId}/status", wrapper.ChangeIncidentStatus)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/incidents/{incidentId}/timeline", wrapper.ListIncidentTimeline)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/incidents/{incidentId}/timeline", wrapper.AddIncidentTimelineEntry)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/incidents/{incidentId}/timeline/export", wrapper.ExportIncidentTimeline)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/workspaces/{workspaceId}/incidents/{incidentId}/timeline/{entryId}", wrapper.EditIncidentTimelineEntry)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/workspaces/{workspaceId}/incidents/{incidentId}/timeline/{entryId}/attachments", wrapper.AddIncidentTimelineAttachment)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/workspaces/{workspaceId}/incidents/{incidentId}/timeline/{entryId}/revisions", wrapper.ListIncidentTimelineRevisions)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/workspaces/{workspaceId}/keys", wrapper.ListKeys)
@@ -15315,6 +15964,166 @@ func (response UnlinkIncidentAlert404ApplicationProblemPlusJSONResponse) VisitUn
 	return err
 }
 
+type RemoveIncidentTimelineAttachmentRequestObject struct {
+	WorkspaceId  string `json:"workspaceId"`
+	IncidentId   string `json:"incidentId"`
+	AttachmentId string `json:"attachmentId"`
+}
+
+type RemoveIncidentTimelineAttachmentResponseObject interface {
+	VisitRemoveIncidentTimelineAttachmentResponse(w http.ResponseWriter) error
+}
+
+type RemoveIncidentTimelineAttachment204Response struct {
+}
+
+func (response RemoveIncidentTimelineAttachment204Response) VisitRemoveIncidentTimelineAttachmentResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RemoveIncidentTimelineAttachment401ApplicationProblemPlusJSONResponse Problem
+
+func (response RemoveIncidentTimelineAttachment401ApplicationProblemPlusJSONResponse) VisitRemoveIncidentTimelineAttachmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveIncidentTimelineAttachment403ApplicationProblemPlusJSONResponse Problem
+
+func (response RemoveIncidentTimelineAttachment403ApplicationProblemPlusJSONResponse) VisitRemoveIncidentTimelineAttachmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveIncidentTimelineAttachment404ApplicationProblemPlusJSONResponse Problem
+
+func (response RemoveIncidentTimelineAttachment404ApplicationProblemPlusJSONResponse) VisitRemoveIncidentTimelineAttachmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveIncidentTimelineAttachment409ApplicationProblemPlusJSONResponse Problem
+
+func (response RemoveIncidentTimelineAttachment409ApplicationProblemPlusJSONResponse) VisitRemoveIncidentTimelineAttachmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadIncidentTimelineAttachmentRequestObject struct {
+	WorkspaceId  string `json:"workspaceId"`
+	IncidentId   string `json:"incidentId"`
+	AttachmentId string `json:"attachmentId"`
+}
+
+type DownloadIncidentTimelineAttachmentResponseObject interface {
+	VisitDownloadIncidentTimelineAttachmentResponse(w http.ResponseWriter) error
+}
+
+type DownloadIncidentTimelineAttachment200ApplicationoctetStreamResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response DownloadIncidentTimelineAttachment200ApplicationoctetStreamResponse) VisitDownloadIncidentTimelineAttachmentResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type DownloadIncidentTimelineAttachment401ApplicationProblemPlusJSONResponse Problem
+
+func (response DownloadIncidentTimelineAttachment401ApplicationProblemPlusJSONResponse) VisitDownloadIncidentTimelineAttachmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadIncidentTimelineAttachment403ApplicationProblemPlusJSONResponse Problem
+
+func (response DownloadIncidentTimelineAttachment403ApplicationProblemPlusJSONResponse) VisitDownloadIncidentTimelineAttachmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadIncidentTimelineAttachment404ApplicationProblemPlusJSONResponse Problem
+
+func (response DownloadIncidentTimelineAttachment404ApplicationProblemPlusJSONResponse) VisitDownloadIncidentTimelineAttachmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadIncidentTimelineAttachment409ApplicationProblemPlusJSONResponse Problem
+
+func (response DownloadIncidentTimelineAttachment409ApplicationProblemPlusJSONResponse) VisitDownloadIncidentTimelineAttachmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type SetIncidentCustomFieldsRequestObject struct {
 	WorkspaceId string `json:"workspaceId"`
 	IncidentId  string `json:"incidentId"`
@@ -16045,6 +16854,502 @@ func (response ChangeIncidentStatus409ApplicationProblemPlusJSONResponse) VisitC
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentTimelineRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	IncidentId  string `json:"incidentId"`
+	Params      ListIncidentTimelineParams
+}
+
+type ListIncidentTimelineResponseObject interface {
+	VisitListIncidentTimelineResponse(w http.ResponseWriter) error
+}
+
+type ListIncidentTimeline200JSONResponse TimelinePage
+
+func (response ListIncidentTimeline200JSONResponse) VisitListIncidentTimelineResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentTimeline400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListIncidentTimeline400ApplicationProblemPlusJSONResponse) VisitListIncidentTimelineResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentTimeline401ApplicationProblemPlusJSONResponse Problem
+
+func (response ListIncidentTimeline401ApplicationProblemPlusJSONResponse) VisitListIncidentTimelineResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentTimeline403ApplicationProblemPlusJSONResponse Problem
+
+func (response ListIncidentTimeline403ApplicationProblemPlusJSONResponse) VisitListIncidentTimelineResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentTimeline404ApplicationProblemPlusJSONResponse Problem
+
+func (response ListIncidentTimeline404ApplicationProblemPlusJSONResponse) VisitListIncidentTimelineResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddIncidentTimelineEntryRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	IncidentId  string `json:"incidentId"`
+	Body        *AddIncidentTimelineEntryJSONRequestBody
+}
+
+type AddIncidentTimelineEntryResponseObject interface {
+	VisitAddIncidentTimelineEntryResponse(w http.ResponseWriter) error
+}
+
+type AddIncidentTimelineEntry200JSONResponse IncidentEvent
+
+func (response AddIncidentTimelineEntry200JSONResponse) VisitAddIncidentTimelineEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddIncidentTimelineEntry400ApplicationProblemPlusJSONResponse Problem
+
+func (response AddIncidentTimelineEntry400ApplicationProblemPlusJSONResponse) VisitAddIncidentTimelineEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddIncidentTimelineEntry401ApplicationProblemPlusJSONResponse Problem
+
+func (response AddIncidentTimelineEntry401ApplicationProblemPlusJSONResponse) VisitAddIncidentTimelineEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddIncidentTimelineEntry403ApplicationProblemPlusJSONResponse Problem
+
+func (response AddIncidentTimelineEntry403ApplicationProblemPlusJSONResponse) VisitAddIncidentTimelineEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddIncidentTimelineEntry404ApplicationProblemPlusJSONResponse Problem
+
+func (response AddIncidentTimelineEntry404ApplicationProblemPlusJSONResponse) VisitAddIncidentTimelineEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExportIncidentTimelineRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	IncidentId  string `json:"incidentId"`
+}
+
+type ExportIncidentTimelineResponseObject interface {
+	VisitExportIncidentTimelineResponse(w http.ResponseWriter) error
+}
+
+type ExportIncidentTimeline200JSONResponse TimelineExport
+
+func (response ExportIncidentTimeline200JSONResponse) VisitExportIncidentTimelineResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExportIncidentTimeline401ApplicationProblemPlusJSONResponse Problem
+
+func (response ExportIncidentTimeline401ApplicationProblemPlusJSONResponse) VisitExportIncidentTimelineResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExportIncidentTimeline403ApplicationProblemPlusJSONResponse Problem
+
+func (response ExportIncidentTimeline403ApplicationProblemPlusJSONResponse) VisitExportIncidentTimelineResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExportIncidentTimeline404ApplicationProblemPlusJSONResponse Problem
+
+func (response ExportIncidentTimeline404ApplicationProblemPlusJSONResponse) VisitExportIncidentTimelineResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EditIncidentTimelineEntryRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	IncidentId  string `json:"incidentId"`
+	EntryId     string `json:"entryId"`
+	Body        *EditIncidentTimelineEntryJSONRequestBody
+}
+
+type EditIncidentTimelineEntryResponseObject interface {
+	VisitEditIncidentTimelineEntryResponse(w http.ResponseWriter) error
+}
+
+type EditIncidentTimelineEntry200JSONResponse IncidentEvent
+
+func (response EditIncidentTimelineEntry200JSONResponse) VisitEditIncidentTimelineEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EditIncidentTimelineEntry400ApplicationProblemPlusJSONResponse Problem
+
+func (response EditIncidentTimelineEntry400ApplicationProblemPlusJSONResponse) VisitEditIncidentTimelineEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EditIncidentTimelineEntry401ApplicationProblemPlusJSONResponse Problem
+
+func (response EditIncidentTimelineEntry401ApplicationProblemPlusJSONResponse) VisitEditIncidentTimelineEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EditIncidentTimelineEntry403ApplicationProblemPlusJSONResponse Problem
+
+func (response EditIncidentTimelineEntry403ApplicationProblemPlusJSONResponse) VisitEditIncidentTimelineEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EditIncidentTimelineEntry404ApplicationProblemPlusJSONResponse Problem
+
+func (response EditIncidentTimelineEntry404ApplicationProblemPlusJSONResponse) VisitEditIncidentTimelineEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EditIncidentTimelineEntry409ApplicationProblemPlusJSONResponse Problem
+
+func (response EditIncidentTimelineEntry409ApplicationProblemPlusJSONResponse) VisitEditIncidentTimelineEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddIncidentTimelineAttachmentRequestObject struct {
+	WorkspaceId   string `json:"workspaceId"`
+	IncidentId    string `json:"incidentId"`
+	EntryId       string `json:"entryId"`
+	JSONBody      *AddIncidentTimelineAttachmentJSONRequestBody
+	MultipartBody *multipart.Reader
+}
+
+type AddIncidentTimelineAttachmentResponseObject interface {
+	VisitAddIncidentTimelineAttachmentResponse(w http.ResponseWriter) error
+}
+
+type AddIncidentTimelineAttachment200JSONResponse IncidentAttachment
+
+func (response AddIncidentTimelineAttachment200JSONResponse) VisitAddIncidentTimelineAttachmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddIncidentTimelineAttachment400ApplicationProblemPlusJSONResponse Problem
+
+func (response AddIncidentTimelineAttachment400ApplicationProblemPlusJSONResponse) VisitAddIncidentTimelineAttachmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddIncidentTimelineAttachment401ApplicationProblemPlusJSONResponse Problem
+
+func (response AddIncidentTimelineAttachment401ApplicationProblemPlusJSONResponse) VisitAddIncidentTimelineAttachmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddIncidentTimelineAttachment403ApplicationProblemPlusJSONResponse Problem
+
+func (response AddIncidentTimelineAttachment403ApplicationProblemPlusJSONResponse) VisitAddIncidentTimelineAttachmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddIncidentTimelineAttachment404ApplicationProblemPlusJSONResponse Problem
+
+func (response AddIncidentTimelineAttachment404ApplicationProblemPlusJSONResponse) VisitAddIncidentTimelineAttachmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddIncidentTimelineAttachment409ApplicationProblemPlusJSONResponse Problem
+
+func (response AddIncidentTimelineAttachment409ApplicationProblemPlusJSONResponse) VisitAddIncidentTimelineAttachmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddIncidentTimelineAttachment413ApplicationProblemPlusJSONResponse Problem
+
+func (response AddIncidentTimelineAttachment413ApplicationProblemPlusJSONResponse) VisitAddIncidentTimelineAttachmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(413)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentTimelineRevisionsRequestObject struct {
+	WorkspaceId string `json:"workspaceId"`
+	IncidentId  string `json:"incidentId"`
+	EntryId     string `json:"entryId"`
+}
+
+type ListIncidentTimelineRevisionsResponseObject interface {
+	VisitListIncidentTimelineRevisionsResponse(w http.ResponseWriter) error
+}
+
+type ListIncidentTimelineRevisions200JSONResponse TimelineRevisionList
+
+func (response ListIncidentTimelineRevisions200JSONResponse) VisitListIncidentTimelineRevisionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentTimelineRevisions401ApplicationProblemPlusJSONResponse Problem
+
+func (response ListIncidentTimelineRevisions401ApplicationProblemPlusJSONResponse) VisitListIncidentTimelineRevisionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentTimelineRevisions403ApplicationProblemPlusJSONResponse Problem
+
+func (response ListIncidentTimelineRevisions403ApplicationProblemPlusJSONResponse) VisitListIncidentTimelineRevisionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentTimelineRevisions404ApplicationProblemPlusJSONResponse Problem
+
+func (response ListIncidentTimelineRevisions404ApplicationProblemPlusJSONResponse) VisitListIncidentTimelineRevisionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -19452,6 +20757,12 @@ type StrictServerInterface interface {
 	// Unlink an alert from an incident
 	// (DELETE /workspaces/{workspaceId}/incidents/{incidentId}/alerts/{alertId})
 	UnlinkIncidentAlert(ctx context.Context, request UnlinkIncidentAlertRequestObject) (UnlinkIncidentAlertResponseObject, error)
+	// Remove an attachment from a timeline entry
+	// (DELETE /workspaces/{workspaceId}/incidents/{incidentId}/attachments/{attachmentId})
+	RemoveIncidentTimelineAttachment(ctx context.Context, request RemoveIncidentTimelineAttachmentRequestObject) (RemoveIncidentTimelineAttachmentResponseObject, error)
+	// Download an attachment stored for a timeline entry
+	// (GET /workspaces/{workspaceId}/incidents/{incidentId}/attachments/{attachmentId}/content)
+	DownloadIncidentTimelineAttachment(ctx context.Context, request DownloadIncidentTimelineAttachmentRequestObject) (DownloadIncidentTimelineAttachmentResponseObject, error)
 	// Set an incident's custom field values
 	// (PUT /workspaces/{workspaceId}/incidents/{incidentId}/custom-fields)
 	SetIncidentCustomFields(ctx context.Context, request SetIncidentCustomFieldsRequestObject) (SetIncidentCustomFieldsResponseObject, error)
@@ -19479,6 +20790,24 @@ type StrictServerInterface interface {
 	// Move an incident to a valid next status
 	// (POST /workspaces/{workspaceId}/incidents/{incidentId}/status)
 	ChangeIncidentStatus(ctx context.Context, request ChangeIncidentStatusRequestObject) (ChangeIncidentStatusResponseObject, error)
+	// List the incident timeline
+	// (GET /workspaces/{workspaceId}/incidents/{incidentId}/timeline)
+	ListIncidentTimeline(ctx context.Context, request ListIncidentTimelineRequestObject) (ListIncidentTimelineResponseObject, error)
+	// Add a manual timeline entry
+	// (POST /workspaces/{workspaceId}/incidents/{incidentId}/timeline)
+	AddIncidentTimelineEntry(ctx context.Context, request AddIncidentTimelineEntryRequestObject) (AddIncidentTimelineEntryResponseObject, error)
+	// Export the incident timeline
+	// (GET /workspaces/{workspaceId}/incidents/{incidentId}/timeline/export)
+	ExportIncidentTimeline(ctx context.Context, request ExportIncidentTimelineRequestObject) (ExportIncidentTimelineResponseObject, error)
+	// Edit a manual timeline entry
+	// (PATCH /workspaces/{workspaceId}/incidents/{incidentId}/timeline/{entryId})
+	EditIncidentTimelineEntry(ctx context.Context, request EditIncidentTimelineEntryRequestObject) (EditIncidentTimelineEntryResponseObject, error)
+	// Attach evidence to a timeline entry
+	// (POST /workspaces/{workspaceId}/incidents/{incidentId}/timeline/{entryId}/attachments)
+	AddIncidentTimelineAttachment(ctx context.Context, request AddIncidentTimelineAttachmentRequestObject) (AddIncidentTimelineAttachmentResponseObject, error)
+	// List the edit history of a timeline entry
+	// (GET /workspaces/{workspaceId}/incidents/{incidentId}/timeline/{entryId}/revisions)
+	ListIncidentTimelineRevisions(ctx context.Context, request ListIncidentTimelineRevisionsRequestObject) (ListIncidentTimelineRevisionsResponseObject, error)
 	// List API keys in a workspace
 	// (GET /workspaces/{workspaceId}/keys)
 	ListKeys(ctx context.Context, request ListKeysRequestObject) (ListKeysResponseObject, error)
@@ -22350,6 +23679,62 @@ func (sh *strictHandler) UnlinkIncidentAlert(w http.ResponseWriter, r *http.Requ
 	}
 }
 
+// RemoveIncidentTimelineAttachment operation middleware
+func (sh *strictHandler) RemoveIncidentTimelineAttachment(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, attachmentId string) {
+	var request RemoveIncidentTimelineAttachmentRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.IncidentId = incidentId
+	request.AttachmentId = attachmentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RemoveIncidentTimelineAttachment(ctx, request.(RemoveIncidentTimelineAttachmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RemoveIncidentTimelineAttachment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RemoveIncidentTimelineAttachmentResponseObject); ok {
+		if err := validResponse.VisitRemoveIncidentTimelineAttachmentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DownloadIncidentTimelineAttachment operation middleware
+func (sh *strictHandler) DownloadIncidentTimelineAttachment(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, attachmentId string) {
+	var request DownloadIncidentTimelineAttachmentRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.IncidentId = incidentId
+	request.AttachmentId = attachmentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DownloadIncidentTimelineAttachment(ctx, request.(DownloadIncidentTimelineAttachmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DownloadIncidentTimelineAttachment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DownloadIncidentTimelineAttachmentResponseObject); ok {
+		if err := validResponse.VisitDownloadIncidentTimelineAttachmentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // SetIncidentCustomFields operation middleware
 func (sh *strictHandler) SetIncidentCustomFields(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
 	var request SetIncidentCustomFieldsRequestObject
@@ -22637,6 +24022,204 @@ func (sh *strictHandler) ChangeIncidentStatus(w http.ResponseWriter, r *http.Req
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ChangeIncidentStatusResponseObject); ok {
 		if err := validResponse.VisitChangeIncidentStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListIncidentTimeline operation middleware
+func (sh *strictHandler) ListIncidentTimeline(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, params ListIncidentTimelineParams) {
+	var request ListIncidentTimelineRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.IncidentId = incidentId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListIncidentTimeline(ctx, request.(ListIncidentTimelineRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListIncidentTimeline")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListIncidentTimelineResponseObject); ok {
+		if err := validResponse.VisitListIncidentTimelineResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AddIncidentTimelineEntry operation middleware
+func (sh *strictHandler) AddIncidentTimelineEntry(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	var request AddIncidentTimelineEntryRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.IncidentId = incidentId
+
+	var body AddIncidentTimelineEntryJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddIncidentTimelineEntry(ctx, request.(AddIncidentTimelineEntryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddIncidentTimelineEntry")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddIncidentTimelineEntryResponseObject); ok {
+		if err := validResponse.VisitAddIncidentTimelineEntryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ExportIncidentTimeline operation middleware
+func (sh *strictHandler) ExportIncidentTimeline(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string) {
+	var request ExportIncidentTimelineRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.IncidentId = incidentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ExportIncidentTimeline(ctx, request.(ExportIncidentTimelineRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ExportIncidentTimeline")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ExportIncidentTimelineResponseObject); ok {
+		if err := validResponse.VisitExportIncidentTimelineResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// EditIncidentTimelineEntry operation middleware
+func (sh *strictHandler) EditIncidentTimelineEntry(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, entryId string) {
+	var request EditIncidentTimelineEntryRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.IncidentId = incidentId
+	request.EntryId = entryId
+
+	var body EditIncidentTimelineEntryJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.EditIncidentTimelineEntry(ctx, request.(EditIncidentTimelineEntryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "EditIncidentTimelineEntry")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(EditIncidentTimelineEntryResponseObject); ok {
+		if err := validResponse.VisitEditIncidentTimelineEntryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AddIncidentTimelineAttachment operation middleware
+func (sh *strictHandler) AddIncidentTimelineAttachment(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, entryId string) {
+	var request AddIncidentTimelineAttachmentRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.IncidentId = incidentId
+	request.EntryId = entryId
+	if strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
+
+		var body AddIncidentTimelineAttachmentJSONRequestBody
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+		request.JSONBody = &body
+
+	}
+	if strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
+		if reader, err := r.MultipartReader(); err != nil {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode multipart body: %w", err))
+			return
+		} else {
+			request.MultipartBody = reader
+		}
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddIncidentTimelineAttachment(ctx, request.(AddIncidentTimelineAttachmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddIncidentTimelineAttachment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddIncidentTimelineAttachmentResponseObject); ok {
+		if err := validResponse.VisitAddIncidentTimelineAttachmentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListIncidentTimelineRevisions operation middleware
+func (sh *strictHandler) ListIncidentTimelineRevisions(w http.ResponseWriter, r *http.Request, workspaceId string, incidentId string, entryId string) {
+	var request ListIncidentTimelineRevisionsRequestObject
+
+	request.WorkspaceId = workspaceId
+	request.IncidentId = incidentId
+	request.EntryId = entryId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListIncidentTimelineRevisions(ctx, request.(ListIncidentTimelineRevisionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListIncidentTimelineRevisions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListIncidentTimelineRevisionsResponseObject); ok {
+		if err := validResponse.VisitListIncidentTimelineRevisionsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

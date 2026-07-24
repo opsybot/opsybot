@@ -48,9 +48,6 @@ func (s IncidentStatus) index() int {
 	return -1
 }
 
-// CanTransition reports whether a manual status change from s to target is legal:
-// forward exactly one stage, or back one stage (never returning to declared).
-// resolved is terminal here — leaving it requires the explicit reopen operation.
 func (s IncidentStatus) CanTransition(target IncidentStatus) bool {
 	if !s.Valid() || !target.Valid() || s == target || s == IncidentStatusResolved {
 		return false
@@ -100,7 +97,6 @@ const (
 	IncidentSummaryMaxLength    = 2000
 	IncidentResolutionMaxLength = 2000
 	IncidentListMaxPageSize     = 100
-	IncidentTimelineLimit       = 200
 	FollowupTitleMaxLength      = 200
 	SeverityDefinitionMaxLength = 200
 	SeverityLevelMaxLength      = 12
@@ -166,12 +162,25 @@ type IncidentFollowup struct {
 }
 
 type IncidentEvent struct {
-	ID         string
-	IncidentID string
-	At         time.Time
-	Kind       string
-	Text       string
-	Actor      string
+	ID             string
+	IncidentID     string
+	WorkspaceID    string
+	At             time.Time
+	Kind           IncidentEventKind
+	Category       IncidentEventCategory
+	Source         IncidentEventSource
+	Text           string
+	Actor          string
+	ActorUserID    string
+	Retroactive    bool
+	EditedAt       time.Time
+	EditedBy       string
+	IdempotencyKey string
+	Attachments    []IncidentEventAttachment
+	AlertID        string
+	AlertTitle     string
+	AlertKind      AlertEventKind
+	Result         string
 }
 
 type IncidentSeverity struct {

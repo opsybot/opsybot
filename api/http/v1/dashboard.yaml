@@ -3031,6 +3031,149 @@ paths:
         "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
         "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
         "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incidents/{incidentId}/timeline:
+    get:
+      operationId: listIncidentTimeline
+      summary: List the incident timeline
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: incidentId, in: path, required: true, schema: { type: string } }
+        - { name: category, in: query, required: false, schema: { type: array, items: { $ref: "#/components/schemas/TimelineCategory" } }, style: form, explode: true }
+        - { name: cursor, in: query, required: false, schema: { type: string } }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 200 } }
+      responses:
+        "200": { description: Timeline page, content: { application/json: { schema: { $ref: "#/components/schemas/TimelinePage" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    post:
+      operationId: addIncidentTimelineEntry
+      summary: Add a manual timeline entry
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: incidentId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AddTimelineEntryRequest" }
+      responses:
+        "200": { description: Timeline entry, content: { application/json: { schema: { $ref: "#/components/schemas/IncidentEvent" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incidents/{incidentId}/timeline/export:
+    get:
+      operationId: exportIncidentTimeline
+      summary: Export the incident timeline
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: incidentId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Timeline export
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/TimelineExport" } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incidents/{incidentId}/timeline/{entryId}:
+    patch:
+      operationId: editIncidentTimelineEntry
+      summary: Edit a manual timeline entry
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: incidentId, in: path, required: true, schema: { type: string } }
+        - { name: entryId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EditTimelineEntryRequest" }
+      responses:
+        "200": { description: Timeline entry, content: { application/json: { schema: { $ref: "#/components/schemas/IncidentEvent" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incidents/{incidentId}/timeline/{entryId}/revisions:
+    get:
+      operationId: listIncidentTimelineRevisions
+      summary: List the edit history of a timeline entry
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: incidentId, in: path, required: true, schema: { type: string } }
+        - { name: entryId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Revisions, content: { application/json: { schema: { $ref: "#/components/schemas/TimelineRevisionList" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incidents/{incidentId}/timeline/{entryId}/attachments:
+    post:
+      operationId: addIncidentTimelineAttachment
+      summary: Attach evidence to a timeline entry
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: incidentId, in: path, required: true, schema: { type: string } }
+        - { name: entryId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AddAttachmentRequest" }
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/AddAttachmentUpload" }
+      responses:
+        "200": { description: Attachment, content: { application/json: { schema: { $ref: "#/components/schemas/IncidentAttachment" } } } }
+        "400": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "413": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incidents/{incidentId}/attachments/{attachmentId}:
+    delete:
+      operationId: removeIncidentTimelineAttachment
+      summary: Remove an attachment from a timeline entry
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: incidentId, in: path, required: true, schema: { type: string } }
+        - { name: attachmentId, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Attachment removed }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+  /workspaces/{workspaceId}/incidents/{incidentId}/attachments/{attachmentId}/content:
+    get:
+      operationId: downloadIncidentTimelineAttachment
+      summary: Download an attachment stored for a timeline entry
+      tags: [incidents]
+      parameters:
+        - { name: workspaceId, in: path, required: true, schema: { type: string } }
+        - { name: incidentId, in: path, required: true, schema: { type: string } }
+        - { name: attachmentId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Attachment content
+          content:
+            application/octet-stream: { schema: { type: string, format: binary } }
+        "401": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "403": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: The request failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
   /workspaces/{workspaceId}/incident-severities:
     get:
       operationId: listIncidentSeverities
@@ -4181,15 +4324,112 @@ components:
         dueAt: { type: string, format: date-time }
         done: { type: boolean }
         doneAt: { type: string, format: date-time }
+    TimelineCategory:
+      type: string
+      enum: [status, communication, action, observation, decision]
+    AttachmentKind:
+      type: string
+      enum: [image, log, link]
+    IncidentAttachment:
+      type: object
+      required: [id, entryId, kind, label]
+      properties:
+        id: { type: string }
+        entryId: { type: string }
+        kind: { $ref: "#/components/schemas/AttachmentKind" }
+        label: { type: string }
+        url: { type: string }
+        body: { type: string }
+        contentType: { type: string }
+        sizeBytes: { type: integer, format: int64 }
+        createdAt: { type: string, format: date-time }
     IncidentEvent:
       type: object
-      required: [id, at, kind, text]
+      required: [id, at, text, category, source, retroactive, attachments]
       properties:
         id: { type: string }
         at: { type: string, format: date-time }
         kind: { type: string }
         text: { type: string }
         actor: { type: string }
+        actorUserId: { type: string }
+        category: { $ref: "#/components/schemas/TimelineCategory" }
+        source: { type: string, enum: [system, ui, api, chat] }
+        retroactive: { type: boolean }
+        editedAt: { type: string, format: date-time }
+        editedBy: { type: string }
+        alertId: { type: string }
+        alertTitle: { type: string }
+        alertKind: { type: string }
+        result: { type: string }
+        attachments:
+          type: array
+          items: { $ref: "#/components/schemas/IncidentAttachment" }
+    TimelinePage:
+      type: object
+      required: [entries]
+      properties:
+        entries:
+          type: array
+          items: { $ref: "#/components/schemas/IncidentEvent" }
+        nextCursor: { type: string }
+    TimelineRevision:
+      type: object
+      required: [id, at, text, category]
+      properties:
+        id: { type: string }
+        at: { type: string, format: date-time }
+        editorLabel: { type: string }
+        text: { type: string }
+        category: { $ref: "#/components/schemas/TimelineCategory" }
+    TimelineRevisionList:
+      type: object
+      required: [revisions]
+      properties:
+        revisions:
+          type: array
+          items: { $ref: "#/components/schemas/TimelineRevision" }
+    TimelineExport:
+      type: object
+      required: [incidentId, number, name, exportedAt, entries, text, truncated]
+      properties:
+        incidentId: { type: string }
+        number: { type: integer }
+        name: { type: string }
+        exportedAt: { type: string, format: date-time }
+        entries:
+          type: array
+          items: { $ref: "#/components/schemas/IncidentEvent" }
+        text: { type: string }
+        truncated: { type: boolean }
+    AddTimelineEntryRequest:
+      type: object
+      required: [text]
+      properties:
+        text: { type: string }
+        category: { $ref: "#/components/schemas/TimelineCategory" }
+        at: { type: string, format: date-time }
+        idempotencyKey: { type: string }
+    EditTimelineEntryRequest:
+      type: object
+      required: [text, category]
+      properties:
+        text: { type: string }
+        category: { $ref: "#/components/schemas/TimelineCategory" }
+    AddAttachmentRequest:
+      type: object
+      required: [kind, label]
+      properties:
+        kind: { $ref: "#/components/schemas/AttachmentKind" }
+        label: { type: string }
+        url: { type: string }
+        body: { type: string }
+    AddAttachmentUpload:
+      type: object
+      required: [label, file]
+      properties:
+        label: { type: string }
+        file: { type: string, format: binary }
     Incident:
       type: object
       required: [id, number, name, summary, severityLevel, status, declaredAt, services, alerts, relations, followups, timeline, customFields]

@@ -20,6 +20,7 @@ import (
 	"github.com/opsybot/opsybot/internal/pkg/logger"
 	"github.com/opsybot/opsybot/internal/pkg/mailer"
 	"github.com/opsybot/opsybot/internal/pkg/ntfy"
+	"github.com/opsybot/opsybot/internal/pkg/objectstore"
 	"github.com/opsybot/opsybot/internal/pkg/otel"
 	"github.com/opsybot/opsybot/internal/pkg/postgres"
 	"github.com/opsybot/opsybot/internal/pkg/secretbox"
@@ -35,6 +36,7 @@ import (
 	"github.com/opsybot/opsybot/internal/repository/alert_source"
 	"github.com/opsybot/opsybot/internal/repository/api_key"
 	"github.com/opsybot/opsybot/internal/repository/audit"
+	"github.com/opsybot/opsybot/internal/repository/blob"
 	"github.com/opsybot/opsybot/internal/repository/channel"
 	"github.com/opsybot/opsybot/internal/repository/channel_verification"
 	"github.com/opsybot/opsybot/internal/repository/chat_connection"
@@ -237,7 +239,17 @@ func InitApp(cfgFile string) (*App, func(), error) {
 	repositoryIncident := incident.New(postgresClient)
 	repositoryService := service.New(postgresClient)
 	incidentFieldDef := incident_field_def.New(postgresClient)
-	serviceIncidents := incidents.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, repositoryIncident, repositoryService, incidentSeverity, incidentFieldDef, repositoryAlert, repositoryPolicy, repositoryAudit, serviceEscalations)
+	s3 := config.NewS3(configConfig)
+	objectstoreClient, cleanup5, err := objectstore.New(s3)
+	if err != nil {
+		cleanup4()
+		cleanup3()
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	repositoryBlob := blob.New(objectstoreClient)
+	serviceIncidents := incidents.New(repositoryTransactor, repositoryLock, repositoryWorkspace, repositoryMember, repositoryTeam, repositoryIncident, repositoryService, incidentSeverity, incidentFieldDef, repositoryAlert, repositoryBlob, repositoryPolicy, repositoryAudit, serviceEscalations)
 	serviceServices := services.New(repositoryTransactor, repositoryWorkspace, repositoryMember, repositoryTeam, repositoryService, repositoryPolicy, repositoryAudit)
 	strictServerInterface := dashboard.New(configAuth, serviceAuth, serviceWorkspaces, serviceMembers, serviceUsers, serviceChannels, serviceTeams, serviceSchedules, apiKeys, serviceAudits, serviceSSO, serviceAlerts, alertSources, alertRoutes, serviceSilences, alertMonitors, serviceEscalations, notificationRules, serviceChats, serviceIncidents, serviceServices, configIngest)
 	handler := http.NewRouter(slogLogger, configAuth, configIngest, configTelegram, serviceAuth, apiKeys, serviceSSO, serviceSchedules, serviceIngest, serviceRateLimiter, serviceChannels, serviceInteractions, serviceActions, serviceChats, strictServerInterface)
@@ -250,6 +262,7 @@ func InitApp(cfgFile string) (*App, func(), error) {
 		Router:   handler,
 	}
 	return app, func() {
+		cleanup5()
 		cleanup4()
 		cleanup3()
 		cleanup2()

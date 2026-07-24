@@ -14,6 +14,8 @@ import {
 	updateIncident
 } from '$lib/server/incidents-api';
 
+type IncidentParams = { workspace: string; id: string };
+
 export const incidentActions = {
 	rename: async ({ request, params, cookies }) => {
 		const form = await request.formData();
@@ -142,4 +144,4 @@ export const incidentActions = {
 	'post-update': async () => {},
 	entry: async () => {},
 	postmortem: async () => {}
-} satisfies Actions;
+} satisfies Actions<IncidentParams>;

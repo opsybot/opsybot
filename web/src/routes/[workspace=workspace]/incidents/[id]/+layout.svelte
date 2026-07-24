@@ -7,6 +7,7 @@
 	import { tick, untrack } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
+	import type { Severity } from '$lib/dashboard';
 	import IncidentTabs from '$lib/components/incidents/incident-tabs.svelte';
 	import ResolveDialog from '$lib/components/incidents/resolve-dialog.svelte';
 	import StatusStepper from '$lib/components/incidents/status-stepper.svelte';
@@ -51,7 +52,7 @@
 
 	async function changeSeverity(next: string) {
 		if (next === incident.severity) return;
-		severityValue = next;
+		severityValue = next as Severity;
 		await tick();
 		severityForm?.requestSubmit();
 	}
